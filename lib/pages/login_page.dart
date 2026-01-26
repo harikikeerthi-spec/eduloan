@@ -1,0 +1,501 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../services/auth_service.dart';
+import 'complete_profile_page.dart';
+import 'main_navigation.dart';
+import '../widgets/mesh_background.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  // Constants
+  static const Color primaryColor = Colors.black;
+  static const Color surfaceColor = Color(0xFFF5F5F7);
+  static const Color errorColor = Color(0xFFD32F2F);
+
+  // Controllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+
+  // State
+  bool _isLoading = false;
+  bool _isOtpSent = false;
+  bool _isNewUser = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  void _handleError(String message) {
+    setState(() {
+      _isLoading = false;
+      _errorMessage = message;
+    });
+
+    // Clear error after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
+    });
+  }
+
+  // Step 1: Check if user exists and send appropriate OTP
+  Future<void> _handleEmailSubmit() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      _handleError('Please enter a valid email address');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 1. Check User Existence
+      final checkResult = await AuthService.checkUserExists(email);
+
+      if (!checkResult['success']) {
+        _handleError(checkResult['message'] ?? 'Failed to verify email');
+        return;
+      }
+
+      final bool exists = checkResult['exists'];
+      setState(() {
+        _isNewUser = !exists;
+      });
+
+      // 2. Send OTP based on user status
+      final Map<String, dynamic> otpResult;
+      if (exists) {
+        otpResult = await AuthService.sendLoginOTP(email);
+      } else {
+        otpResult = await AuthService.sendRegisterOTP(email);
+      }
+
+      if (otpResult['success']) {
+        setState(() {
+          _isLoading = false;
+          _isOtpSent = true;
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              exists ? 'Login OTP sent!' : 'Welcome! Register OTP sent.',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        _handleError(otpResult['message'] ?? 'Failed to send OTP');
+      }
+    } catch (e) {
+      _handleError('An unexpected error occurred: $e');
+    }
+  }
+
+  // Step 2: Verify OTP
+  Future<void> _handleOtpSubmit() async {
+    final otp = _otpController.text.trim();
+    final email = _emailController.text.trim();
+
+    if (otp.length != 6) {
+      _handleError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final Map<String, dynamic> result;
+      if (_isNewUser) {
+        result = await AuthService.verifyRegisterOTP(email, otp);
+      } else {
+        result = await AuthService.verifyLoginOTP(email, otp);
+      }
+
+      if (!mounted) return;
+
+      if (result['success']) {
+        // Smart Navigation Logic
+        // If user exists (Login flow) -> Dashboard
+        // If user is new (Register flow) -> Complete Profile
+
+        if (!_isNewUser) {
+          // Existing User -> Dashboard (HomeTab)
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
+        } else {
+          // New User -> Complete Profile
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CompleteProfilePage(email: email),
+            ),
+          );
+        }
+      } else {
+        _handleError(result['message'] ?? 'Invalid OTP');
+      }
+    } catch (e) {
+      _handleError('Verification failed: $e');
+    }
+  }
+
+  void _resetFlow() {
+    setState(() {
+      _isOtpSent = false;
+      _otpController.clear();
+      _errorMessage = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MeshBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  // --- Header Section (Outside Card) ---
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.school_rounded,
+                      size: 48,
+                      color: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Welcome Back',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Premium Education Financing',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // --- Main Content Card ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _isOtpSent ? 'Verify OTP' : 'Welcome !',
+                          textAlign: TextAlign.start,
+                          style: GoogleFonts.inter(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isOtpSent
+                              ? 'Enter the code sent to your email'
+                              : 'Enter your email address to continue',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        if (_errorMessage != null)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 24),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: errorColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: errorColor.withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: errorColor,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: GoogleFonts.inter(
+                                      color: errorColor,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        if (!_isOtpSent) ...[
+                          // Email Input
+                          Container(
+                            decoration: BoxDecoration(
+                              color: surfaceColor,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: TextField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              style: GoogleFonts.inter(fontSize: 16),
+                              decoration: InputDecoration(
+                                hintText: 'Email Address',
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.grey[500],
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.email_outlined,
+                                  color: Color(0xFF5B4DBC),
+                                ), // Icon color like image
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleEmailSubmit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(
+                                  0xFF281C9D,
+                                ), // Deep purple like image
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Send OTP',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ] else ...[
+                          // OTP Input
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: surfaceColor,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: ListTile(
+                              leading: const CircleAvatar(
+                                backgroundColor: Colors.white,
+                                child: Icon(
+                                  Icons.email_outlined,
+                                  size: 20,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              title: Text(
+                                _emailController.text,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              trailing: TextButton(
+                                onPressed: _resetFlow,
+                                child: Text(
+                                  'Change',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          Container(
+                            decoration: BoxDecoration(
+                              color: surfaceColor,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: TextField(
+                              controller: _otpController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              maxLength: 6,
+                              style: GoogleFonts.inter(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 8,
+                              ),
+                              decoration: InputDecoration(
+                                counterText: "",
+                                hintText: '000000',
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.grey[300],
+                                  letterSpacing: 8,
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+
+                          SizedBox(
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleOtpSubmit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(
+                                  0xFF281C9D,
+                                ), // Deep purple
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Verify & Continue',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: TextButton(
+                              onPressed: _isLoading ? null : _handleEmailSubmit,
+                              child: Text(
+                                'Resend OTP',
+                                style: GoogleFonts.inter(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 24),
+                        // Footer inside card as per image "Don't have an account? Sign up"
+                        // Since we unified flow, we can just say "Secure Login" or similar,
+                        // OR keep the "Don't have an account..." for familiarity even if logic is smart.
+                        // I'll put a generic message or just leave it clean.
+                        // The image has it. I'll add a dummy one or a privacy text.
+                        Center(
+                          child: Text(
+                            'By continuing, you agree to our Terms.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

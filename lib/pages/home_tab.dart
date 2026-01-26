@@ -1,0 +1,421 @@
+import 'package:flutter/material.dart';
+import '../widgets/institute_selection_modal.dart';
+import 'emi_calculator_page.dart';
+import 'apply_loan_page.dart';
+import 'main_navigation.dart';
+import '../widgets/mesh_background.dart';
+
+class HomeTab extends StatefulWidget {
+  const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: MeshBackground(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 32,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF311B92).withValues(alpha: 0.12),
+                        const Color(0xFF311B92).withValues(alpha: 0.05),
+                      ],
+                    ),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              MainNavigation.of(context)?.openDrawer();
+                            },
+                            icon: const Icon(
+                              Icons.menu,
+                              color: Colors.black,
+                              size: 28,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.black54,
+                            size: 28,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Welcome to',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black.withValues(alpha: 0.6),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Edu Loan',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black, // Solid black
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Quick Stats Card
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(
+                                0xFF311B92,
+                              ).withValues(alpha: 0.08),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              'Active Loans',
+                              '0',
+                              Icons.account_balance,
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.withValues(alpha: 0.2),
+                            ),
+                            _buildStatItem(
+                              'Total Amount',
+                              '₹0',
+                              Icons.currency_rupee,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // Quick Actions
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        'Quick Actions',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          _buildActionCard(
+                            icon: Icons.add_circle_outline,
+                            title: 'Apply for Loan',
+                            description: 'New application',
+                            color: const Color(0xFF10B981),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ApplyLoanPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          _buildActionCard(
+                            icon: Icons.calculate_outlined,
+                            title: 'EMI Cal',
+                            description: 'Check EMI',
+                            color: const Color(0xFFF59E0B),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const EmiCalculatorPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          _buildActionCard(
+                            icon: Icons.school_outlined,
+                            title: 'Resources',
+                            description: 'Courses & Institutes',
+                            color: const Color(0xFF311B92),
+                            onTap: () => _showResourcesModal(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                ),
+
+                // Lending Partners
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildSparkleIcon(isLeft: true),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Our Lending Partners',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2D3436),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildSparkleIcon(isLeft: false),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Multiple lenders to choose from',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      Center(
+                        child: Wrap(
+                          spacing: 20,
+                          runSpacing: 24,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            _buildCircularPartner('AUXILO', Colors.orange),
+                            _buildCircularPartner('AVANSE', Colors.teal),
+                            _buildCircularPartner('Credila', Colors.indigo),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 48),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSparkleIcon({required bool isLeft}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Transform.rotate(
+          angle: isLeft ? -0.5 : 0.5,
+          child: Icon(
+            Icons.auto_awesome,
+            size: 20,
+            color: isLeft ? const Color(0xFF311B92) : const Color(0xFFF59E0B),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCircularPartner(String name, Color accentColor) {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFFE1F5FE), // Light blue border from image
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.account_balance,
+                size: 20,
+                color: accentColor.withValues(alpha: 0.8),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFF311B92), size: 28), // Darker icon
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.black, // Solid black
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.black.withValues(alpha: 0.6), // Darker for clarity
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF311B92).withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.black.withValues(alpha: 0.6),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showResourcesModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => const InstituteSelectionModal(),
+    );
+  }
+}
