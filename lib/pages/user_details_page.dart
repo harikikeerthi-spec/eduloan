@@ -126,25 +126,15 @@ class _UserDetailsPageState extends State<UserDetailsPage>
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      final fullName =
-          '${_firstNameController.text} ${_lastNameController.text}';
-
       Map<String, dynamic> result;
-      if (widget.isEdit) {
-        result = await AuthService.updateUserProfile(
-          widget.email,
-          fullName,
-          _phoneController.text,
-          _dobController.text,
-        );
-      } else {
-        result = await AuthService.completeRegistration(
-          widget.email,
-          fullName,
-          _phoneController.text.isEmpty ? null : _phoneController.text,
-          _dobController.text.isEmpty ? null : _dobController.text,
-        );
-      }
+      // Unified update logic (handles both edit and complete registration)
+      result = await AuthService.updateUserDetails(
+        widget.email,
+        _firstNameController.text.trim(),
+        _lastNameController.text.trim(),
+        _phoneController.text.isEmpty ? '' : _phoneController.text.trim(),
+        _dobController.text.isEmpty ? '' : _dobController.text.trim(),
+      );
 
       if (!mounted) return;
       setState(() => _isLoading = false);

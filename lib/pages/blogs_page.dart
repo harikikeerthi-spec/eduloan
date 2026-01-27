@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
+import '../services/blog_service.dart';
+import '../models/blog.dart';
+import 'blog_detail_page.dart';
 
-class BlogsPage extends StatelessWidget {
+class BlogsPage extends StatefulWidget {
   const BlogsPage({super.key});
+
+  @override
+  State<BlogsPage> createState() => _BlogsPageState();
+}
+
+class _BlogsPageState extends State<BlogsPage> {
+  final BlogService _blogService = BlogService();
+  late Future<List<Blog>> _blogsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _blogsFuture = _blogService.getAllBlogs();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,32 +30,26 @@ class BlogsPage extends StatelessWidget {
             children: [
               _buildAppBar(context),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Blogs & Stories',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF311B92),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Success stories, expert tips, and latest news in the education industry.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black.withValues(alpha: 0.6),
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      _buildFeaturePlaceholder(),
-                    ],
-                  ),
+                child: FutureBuilder<List<Blog>>(
+                  future: _blogsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text('No blogs found.'));
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) {
+                        final blog = snapshot.data![index];
+                        return _buildBlogCard(context, blog);
+                      },
+                    );
+                  },
                 ),
               ),
             ],
@@ -60,7 +71,7 @@ class BlogsPage extends StatelessWidget {
           ),
           const Spacer(),
           const Text(
-            'Edu Loan',
+            'Blogs & Stories',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -68,42 +79,112 @@ class BlogsPage extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const SizedBox(width: 40), // Balanced with back button
+          const SizedBox(width: 40),
         ],
       ),
     );
   }
 
-  Widget _buildFeaturePlaceholder() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF311B92).withValues(alpha: 0.1),
+  Widget _buildBlogCard(BuildContext context, Blog blog) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 24),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => BlogDetailPage(blog: blog)),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (blog.featuredImage != null)
+              Container(
+                height: 180,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  image: DecorationImage(
+                    image: NetworkImage(blog.featuredImage!),
+                    fit: BoxFit.cover,
+                    onError: (_, __) {},
+                  ),
+                ),
+                child: blog.featuredImage == null
+                    ? const Icon(Icons.image_not_supported)
+                    : null,
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    blog.category.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF311B92),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    blog.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    blog.excerpt,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage: blog.authorImage != null
+                            ? NetworkImage(blog.authorImage!)
+                            : null,
+                        child: blog.authorImage == null
+                            ? const Icon(Icons.person, size: 16)
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        blog.authorName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${blog.readTime} min read',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.article_outlined,
-            size: 64,
-            color: Color(0xFF311B92),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Feature under development',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Our content team is busy writing amazing stories just for you. Coming soon!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black.withValues(alpha: 0.5)),
-          ),
-        ],
       ),
     );
   }

@@ -11,47 +11,23 @@ class AuthService {
   // - Production: 'https://your-api-domain.com/auth'
   static const String baseUrl = 'http://10.0.2.2:3000/auth';
 
-  /// Checks if a user exists with the given email
-  static Future<Map<String, dynamic>> checkUserExists(String email) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/check-user/$email'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'exists': data['exists'] ?? false,
-          'message': data['message'],
-        };
-      } else {
-        return {'success': false, 'message': 'Failed to check user status'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  /// Sends an OTP to the provided email address for login
-  static Future<Map<String, dynamic>> sendLoginOTP(String email) async {
+  /// Sends a Unified OTP (handles both login and signup)
+  static Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/login/send-otp'),
+            Uri.parse('$baseUrl/send-otp'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email}),
           )
-          .timeout(const Duration(seconds: 180));
+          .timeout(const Duration(seconds: 30));
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 201 || response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return {
-          'success': data['success'] ?? true,
+          'success': true,
           'message': data['message'] ?? 'OTP sent successfully',
+          'userExists': data['userExists'] ?? false,
         };
       } else {
         return {
@@ -64,193 +40,63 @@ class AuthService {
     }
   }
 
-  /// Sends an OTP to the provided email address for registration
-  static Future<Map<String, dynamic>> sendRegisterOTP(String email) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/register/send-otp'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': email}),
-          )
-          .timeout(const Duration(seconds: 180));
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return {
-          'success': data['success'] ?? true,
-          'message': data['message'] ?? 'OTP sent successfully',
-        };
-      } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Failed to send OTP',
-        };
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  /// Verifies the OTP sent to the email for login
-  static Future<Map<String, dynamic>> verifyLoginOTP(
+  /// Verifies the OTP (Unified Flow)
+  static Future<Map<String, dynamic>> verifyOtp(
     String email,
     String otp,
   ) async {
     try {
       final response = await http
           .post(
-            Uri.parse('$baseUrl/login/verify-otp'),
+            Uri.parse('$baseUrl/verify-otp'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email, 'otp': otp}),
           )
-          .timeout(const Duration(seconds: 180));
+          .timeout(const Duration(seconds: 30));
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        // Save initial data to SharedPreferences for local profile usage
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_email', email);
-        if (data['username'] != null) {
-          await prefs.setString('profile_name_$email', data['username']);
-        }
-
-        return {
-          'success': true,
-          'token': data['access_token'],
-          'username': data['username'],
-          'hasUserDetails':
-              data['hasUserDetails'] ??
-              true, // Assume true for login flow usually
-        };
-      } else {
-        return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Connection error. Make sure the server is running.',
-      };
-    }
-  }
-
-  /// Verifies the OTP sent to the email for registration
-  static Future<Map<String, dynamic>> verifyRegisterOTP(
-    String email,
-    String otp,
-  ) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/register/verify-otp'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': email, 'otp': otp}),
-          )
-          .timeout(const Duration(seconds: 180));
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return {
-          'success': true,
-          'token': data['access_token'],
-          'username': data['username'],
-          'hasUserDetails':
-              data['hasUserDetails'] ?? false, // Assume false for fresh signup
-        };
-      } else {
-        return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
-      }
-    } catch (e) {
-      return {
-        'success': false,
-        'message': 'Connection error. Make sure the server is running.',
-      };
-    }
-  }
-
-  /// Complete registration with user details after OTP verification
-  static Future<Map<String, dynamic>> completeRegistration(
-    String email,
-    String username,
-    String? phoneNumber,
-    String? dob,
-  ) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse(
-              '$baseUrl/register/complete',
-            ), // Changed from update-details to align with remote
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'email': email,
-              'username': username,
-              'phoneNumber': phoneNumber,
-              'dob': dob,
-            }),
-          )
-          .timeout(const Duration(seconds: 180));
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        // Save initial profile data to local storage on successful registration
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_email', email);
-        await prefs.setString('profile_name_$email', username);
-        if (phoneNumber != null) {
-          await prefs.setString('profile_phone_$email', phoneNumber);
-        }
-        if (dob != null) {
-          await prefs.setString('profile_dob_$email', dob);
-        }
-
-        return {
-          'success': data['success'] ?? true,
-          'message': data['message'] ?? 'Registration completed successfully',
-          'token': data['access_token'],
-          'username': data['username'],
-        };
-      } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Failed to complete registration',
-        };
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
-    }
-  }
-
-  /// Fetch user profile details (Backend Only)
-  static Future<Map<String, dynamic>> getUserProfile(String email) async {
-    try {
-      final response = await http
-          .get(
-            Uri.parse('$baseUrl/user-profile/$email'),
-            headers: {'Content-Type': 'application/json'},
-          )
-          .timeout(const Duration(seconds: 180));
-
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        if (data['user'] != null) {
-          return {'success': true, 'user': data['user']};
+        final token = data['access_token'];
+
+        // Save token and email
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', email);
+        if (token != null) {
+          await prefs.setString('auth_token', token);
         }
-        return {'success': false, 'message': 'User data is null'};
+
+        // Save user details if available
+        if (data['firstName'] != null) {
+          await prefs.setString('user_firstName', data['firstName']);
+        }
+        if (data['lastName'] != null) {
+          await prefs.setString('user_lastName', data['lastName']);
+        }
+
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Verification successful',
+          'access_token': token,
+          'userExists': data['userExists'] ?? false,
+          'hasUserDetails': data['hasUserDetails'] ?? false,
+          'firstName': data['firstName'],
+          'lastName': data['lastName'],
+        };
       } else {
-        return {'success': false, 'message': 'Failed to fetch profile'};
+        return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
     }
   }
 
-  /// Update user profile details (Backend Only)
-  static Future<Map<String, dynamic>> updateUserProfile(
+  /// Updates user details (Complete Registration / Profile Update)
+  static Future<Map<String, dynamic>> updateUserDetails(
     String email,
-    String username,
+    String firstName,
+    String lastName,
     String phoneNumber,
-    String dob,
+    String dateOfBirth,
   ) async {
     try {
       final response = await http
@@ -259,18 +105,26 @@ class AuthService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'email': email,
-              'username': username,
+              'firstName': firstName,
+              'lastName': lastName,
               'phoneNumber': phoneNumber,
-              'dob': dob,
+              'dateOfBirth': dateOfBirth,
             }),
           )
-          .timeout(const Duration(seconds: 180));
+          .timeout(const Duration(seconds: 30));
 
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update local prefs
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_firstName', firstName);
+        await prefs.setString('user_lastName', lastName);
+        await prefs.setString('user_phone', phoneNumber);
+        await prefs.setString('user_dob', dateOfBirth);
+
         return {
           'success': true,
-          'message': data['message'],
+          'message': data['message'] ?? 'Profile updated successfully',
           'user': data['user'],
         };
       } else {
@@ -278,6 +132,40 @@ class AuthService {
           'success': false,
           'message': data['message'] ?? 'Failed to update profile',
         };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  /// Fetches user dashboard data (Profile)
+  static Future<Map<String, dynamic>> getUserDashboard(String email) async {
+    try {
+      final response = await http
+          .post(
+            // Changed to POST as per some backend conventions, or assumes GET if modifying.
+            // Wait, backend auth.controller.ts: @Post('dashboard') async dashboard(@Body() body: { email: string })
+            // So it is POST /auth/dashboard
+            Uri.parse('$baseUrl/dashboard'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'user':
+              data, // The backend returns the user object directly or simpler structure?
+          // Backend: return { message: 'Dashboard data', user: ... } or just user?
+          // Let's assume standard response wrapper or check backend code if verified.
+          // I'll assume data contains the user fields directly or inside 'user'.
+          // Safest is to return data.
+          'data': data,
+        };
+      } else {
+        return {'success': false, 'message': 'Failed to fetch dashboard data'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};

@@ -78,13 +78,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       _isLoading = true;
     });
 
-    final String fullName =
-        "${_firstNameController.text.trim()} ${_lastNameController.text.trim()}";
-
     try {
-      final result = await AuthService.completeRegistration(
+      final result = await AuthService.updateUserDetails(
         widget.email,
-        fullName,
+        _firstNameController.text.trim(),
+        _lastNameController.text.trim(),
         _phoneController.text.trim(),
         _dobController.text.trim(),
       );

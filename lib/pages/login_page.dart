@@ -51,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  // Step 1: Check if user exists and send appropriate OTP
+  // Step 1: Send OTP (Unified Flow)
   Future<void> _handleEmailSubmit() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
@@ -65,38 +65,22 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // 1. Check User Existence
-      final checkResult = await AuthService.checkUserExists(email);
-
-      if (!checkResult['success']) {
-        _handleError(checkResult['message'] ?? 'Failed to verify email');
-        return;
-      }
-
-      final bool exists = checkResult['exists'];
-      setState(() {
-        _isNewUser = !exists;
-      });
-
-      // 2. Send OTP based on user status
-      final Map<String, dynamic> otpResult;
-      if (exists) {
-        otpResult = await AuthService.sendLoginOTP(email);
-      } else {
-        otpResult = await AuthService.sendRegisterOTP(email);
-      }
+      // Unified Send OTP
+      final otpResult = await AuthService.sendOtp(email);
 
       if (otpResult['success']) {
         setState(() {
           _isLoading = false;
           _isOtpSent = true;
+          // Determine if new user based on backend response
+          _isNewUser = !(otpResult['userExists'] ?? false);
         });
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              exists ? 'Login OTP sent!' : 'Welcome! Register OTP sent.',
+              _isNewUser ? 'Welcome! OTP sent.' : 'Welcome back! OTP sent.',
             ),
             backgroundColor: Colors.green,
           ),
@@ -125,28 +109,21 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      final Map<String, dynamic> result;
-      if (_isNewUser) {
-        result = await AuthService.verifyRegisterOTP(email, otp);
-      } else {
-        result = await AuthService.verifyLoginOTP(email, otp);
-      }
+      final result = await AuthService.verifyOtp(email, otp);
 
       if (!mounted) return;
 
       if (result['success']) {
-        // Smart Navigation Logic
-        // If user exists (Login flow) -> Dashboard
-        // If user is new (Register flow) -> Complete Profile
+        final bool hasUserDetails = result['hasUserDetails'] ?? false;
 
-        if (!_isNewUser) {
-          // Existing User -> Dashboard (HomeTab)
+        if (hasUserDetails) {
+          // Profile exists -> Dashboard
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const MainNavigation()),
             (route) => false,
           );
         } else {
-          // New User -> Complete Profile
+          // Incomplete profile -> Complete Profile Page
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CompleteProfilePage(email: email),

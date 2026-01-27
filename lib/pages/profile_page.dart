@@ -32,19 +32,31 @@ class _ProfilePageState extends State<ProfilePage> {
       print('DEBUG: ProfilePage fetching for email: $email');
 
       if (email != null && email.isNotEmpty) {
-        final result = await AuthService.getUserProfile(email);
+        final result = await AuthService.getUserDashboard(email);
         if (mounted) {
           if (result['success'] == true) {
-            final user = result['user'];
+            // Handle potentially nested user object
+            final data = result['user'];
+            final user = data['user'] ?? data;
+
             setState(() {
-              _name = user['username'] ?? 'User';
+              final fname = user['firstName'] ?? '';
+              final lname = user['lastName'] ?? '';
+              _name = '$fname $lname'.trim();
+              if (_name.isEmpty) _name = 'User';
+
               _email = user['email'] ?? email;
               _phone = user['phoneNumber'] ?? 'Not set';
-              _dob = user['dob'] ?? 'Not set';
+              // Check for dateOfBirth or dob
+              _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
+              // If it's a full ISO string, might want to take just date part
+              if (_dob.contains('T')) {
+                _dob = _dob.split('T')[0];
+              }
               _isLoading = false;
             });
           } else {
-            print('DEBUG: getUserProfile failed: ${result['message']}');
+            print('DEBUG: getUserDashboard failed: ${result['message']}');
             _handleError();
           }
         }

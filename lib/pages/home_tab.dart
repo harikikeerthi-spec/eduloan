@@ -234,13 +234,22 @@ class _HomeTabState extends State<HomeTab> {
                       const SizedBox(height: 32),
                       Center(
                         child: Wrap(
-                          spacing: 20,
-                          runSpacing: 24,
+                          spacing: 16,
+                          runSpacing: 16,
                           alignment: WrapAlignment.center,
                           children: [
-                            _buildCircularPartner('AUXILO', Colors.orange),
-                            _buildCircularPartner('AVANSE', Colors.teal),
-                            _buildCircularPartner('Credila', Colors.indigo),
+                            _buildRectangularPartner(
+                              'AUXILO',
+                              assetPath: 'assets/images/auxilo_logo_final.png',
+                            ),
+                            _buildRectangularPartner(
+                              'AVANSE',
+                              assetPath: 'assets/images/avanse_logo_final.png',
+                            ),
+                            _buildRectangularPartner(
+                              'Credila',
+                              assetPath: 'assets/images/credila_logo_final.png',
+                            ),
                           ],
                         ),
                       ),
@@ -272,50 +281,59 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildCircularPartner(String name, Color accentColor) {
+  Widget _buildRectangularPartner(String name, {String? assetPath}) {
     return Container(
-      width: 100,
-      height: 100,
+      width: 160, // Increased width
+      height: 90, // Increased height
       decoration: BoxDecoration(
         color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFE1F5FE), // Light blue border from image
-          width: 2,
-        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.account_balance,
-                size: 20,
-                color: accentColor.withValues(alpha: 0.8),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                name,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.all(8.0), // Reduced padding
+          child: assetPath != null
+              ? Image.asset(
+                  assetPath,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPartnerFallback(name, Colors.grey),
+                )
+              : _buildPartnerFallback(name, Colors.grey),
         ),
       ),
+    );
+  }
+
+  Widget _buildPartnerFallback(String name, Color accentColor) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.account_balance,
+          size: 20,
+          color: accentColor.withValues(alpha: 0.8),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          name,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.black.withValues(alpha: 0.8),
+          ),
+        ),
+      ],
     );
   }
 
