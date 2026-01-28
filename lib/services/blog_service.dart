@@ -28,7 +28,7 @@ class BlogService {
 
   Future<Blog> getBlogBySlug(String slug) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/blogs/$slug'));
+      final response = await http.get(Uri.parse('$baseUrl/blogs/slug/$slug'));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
@@ -42,6 +42,33 @@ class BlogService {
       }
     } catch (e) {
       throw Exception('Error fetching blog: $e');
+    }
+  }
+
+  Future<Comment> addComment(
+    String blogId,
+    String content,
+    String authorName,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/blogs/$blogId/comments'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'content': content, 'authorName': authorName}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true && responseData['data'] != null) {
+          return Comment.fromJson(responseData['data']);
+        } else {
+          throw Exception('Failed to add comment: ${responseData['message']}');
+        }
+      } else {
+        throw Exception('Failed to add comment: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error adding comment: $e');
     }
   }
 }

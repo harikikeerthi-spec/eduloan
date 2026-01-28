@@ -15,6 +15,8 @@ class Blog {
   final bool published;
   final DateTime? publishedAt;
   final DateTime createdAt;
+  final List<String> hashtags;
+  final List<Comment> comments;
 
   Blog({
     required this.id,
@@ -33,6 +35,8 @@ class Blog {
     required this.published,
     this.publishedAt,
     required this.createdAt,
+    this.hashtags = const [],
+    this.comments = const [],
   });
 
   factory Blog.fromJson(Map<String, dynamic> json) {
@@ -54,6 +58,39 @@ class Blog {
       publishedAt: json['publishedAt'] != null
           ? DateTime.parse(json['publishedAt'])
           : null,
+      createdAt: DateTime.parse(json['createdAt']),
+      hashtags:
+          (json['hashtags'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      comments:
+          (json['comments'] as List<dynamic>?)
+              ?.map((e) => Comment.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class Comment {
+  final String id;
+  final String content;
+  final String authorName;
+  final DateTime createdAt;
+
+  Comment({
+    required this.id,
+    required this.content,
+    required this.authorName,
+    required this.createdAt,
+  });
+
+  factory Comment.fromJson(Map<String, dynamic> json) {
+    return Comment(
+      id: json['id'],
+      content: json['content'],
+      authorName: json['authorName'],
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
