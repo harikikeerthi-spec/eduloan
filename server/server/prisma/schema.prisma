@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  firstName         String?
+  lastName          String?
+  phoneNumber       String?
+  dateOfBirth       DateTime?
+  mobile            String
+  password          String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
+  blogs             Blog[]              @relation("AuthorBlogs")
+  loanApplications  LoanApplication[]
+  documents         UserDocument[]
+}
+
+model Blog {
+  id            String    @id @default(uuid())
+  title         String                          // H1 title of the blog
+  slug          String    @unique               // URL-friendly slug
+  excerpt       String                          // Short summary/description
+  content       String    @db.Text              // Full HTML content
+  category      String                          // Blog category
+  authorName    String                          // Author's display name
+  authorImage   String?                         // Author's profile image URL
+  authorRole    String?                         // Author's role/title
+  featuredImage String?                         // Main blog image URL
+  readTime      Int       @default(5)           // Estimated read time in minutes
+  views         Int       @default(0)           // View count
+  isFeatured    Boolean   @default(false)        // Featured blog flag
+  isPublished   Boolean   @default(false)        // Publication status
+  publishedAt   DateTime?                       // Publication date
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  comments      Comment[]
+  tags          BlogTag[]
+  
+  // Optional relation to User (author)
+  authorId      String?
+  author        User?     @relation("AuthorBlogs", fields: [authorId], references: [id])
+  
+  @@index([category])
+  @@index([isPublished])
+  @@index([isFeatured])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  blogId    String
+  author    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  blog      Blog     @relation(fields: [blogId], references: [id])
+
+  @@index([blogId])
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  blogs     BlogTag[]
+}
+
+model BlogTag {
+  blogId String
+  tagId  String
+  blog   Blog @relation(fields: [blogId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([blogId, tagId])
+  @@index([tagId])
+}
+
+model LoanApplication {
+  id        String   @id @default(uuid())
+  userId    String
+  bank      String
+  loanType  String   // education, home, personal, business, vehicle
+  amount    Float
+  purpose   String?
+  status    String   @default("pending") // pending, processing, approved, rejected
+  date      DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model UserDocument {
+  id        String   @id @default(uuid())
+  userId    String
+  docType   String   // aadhar, pan, passport, 10th, 12th, degree
+  uploaded  Boolean  @default(false)
+  status    String   @default("pending") // pending, uploaded, verified, rejected
+  filePath  String?
+  uploadedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, docType])
+  @@index([userId])
+  @@index([docType])
+}
