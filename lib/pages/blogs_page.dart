@@ -14,11 +14,74 @@ class BlogsPage extends StatefulWidget {
 class _BlogsPageState extends State<BlogsPage> {
   final BlogService _blogService = BlogService();
   late Future<List<Blog>> _blogsFuture;
+  List<Blog> _allBlogs = [];
+  List<Blog> _filteredBlogs = [];
+  String? _selectedCategory;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final List<String> _categories = [
+    'All',
+    'Education Loans',
+    'Study Abroad',
+    'Financial Tips',
+    'Success Stories',
+  ];
 
   @override
   void initState() {
     super.initState();
     _blogsFuture = _blogService.getAllBlogs();
+    _loadBlogs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBlogs() async {
+    try {
+      final blogs = await _blogService.getAllBlogs();
+      setState(() {
+        _allBlogs = blogs;
+        _filteredBlogs = blogs;
+      });
+    } catch (e) {
+      // Error handling is done in FutureBuilder
+    }
+  }
+
+  void _filterBlogs() {
+    setState(() {
+      _filteredBlogs = _allBlogs.where((blog) {
+        // Filter by category
+        bool matchesCategory =
+            _selectedCategory == null ||
+            _selectedCategory == 'All' ||
+            blog.category == _selectedCategory;
+
+        // Filter by search query
+        bool matchesSearch =
+            _searchQuery.isEmpty ||
+            blog.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            blog.excerpt.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            blog.category.toLowerCase().contains(_searchQuery.toLowerCase());
+
+        return matchesCategory && matchesSearch;
+      }).toList();
+    });
+  }
+
+  void _filterByCategory(String? category) {
+    _selectedCategory = category;
+    _filterBlogs();
+  }
+
+  void _onSearchChanged(String query) {
+    _searchQuery = query;
+    _filterBlogs();
   }
 
   @override
@@ -29,6 +92,8 @@ class _BlogsPageState extends State<BlogsPage> {
           child: Column(
             children: [
               _buildAppBar(context),
+              _buildSearchBar(),
+              _buildCategoryChips(),
               Expanded(
                 child: FutureBuilder<List<Blog>>(
                   future: _blogsFuture,
@@ -41,11 +106,40 @@ class _BlogsPageState extends State<BlogsPage> {
                       return const Center(child: Text('No blogs found.'));
                     }
 
+                    // Use filtered blogs instead of all blogs
+                    final blogsToDisplay =
+                        _filteredBlogs.isEmpty && _selectedCategory != null
+                        ? []
+                        : _filteredBlogs;
+
+                    if (blogsToDisplay.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search_off,
+                              size: 64,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No blogs found in this category',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
                     return ListView.builder(
                       padding: const EdgeInsets.all(24),
-                      itemCount: snapshot.data!.length,
+                      itemCount: blogsToDisplay.length,
                       itemBuilder: (context, index) {
-                        final blog = snapshot.data![index];
+                        final blog = blogsToDisplay[index];
                         return _buildBlogCard(context, blog);
                       },
                     );
@@ -85,6 +179,96 @@ class _BlogsPageState extends State<BlogsPage> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: _onSearchChanged,
+          decoration: InputDecoration(
+            hintText: 'Search blogs by title, category...',
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFF311B92)),
+            suffixIcon:
+                _searchQuery.isNotEmpty ||
+                    (_selectedCategory != null && _selectedCategory != 'All')
+                ? IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      _searchQuery = '';
+                      _filterByCategory('All');
+                    },
+                    color: Colors.grey[600],
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChips() {
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          final isSelected =
+              _selectedCategory == category ||
+              (_selectedCategory == null && category == 'All');
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(category),
+              selected: isSelected,
+              onSelected: (selected) {
+                _filterByCategory(selected ? category : 'All');
+              },
+              backgroundColor: Colors.white,
+              selectedColor: const Color(0xFF311B92).withValues(alpha: 0.15),
+              checkmarkColor: const Color(0xFF311B92),
+              labelStyle: TextStyle(
+                color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
+              side: BorderSide(
+                color: isSelected
+                    ? const Color(0xFF311B92)
+                    : Colors.grey.withValues(alpha: 0.3),
+                width: isSelected ? 1.5 : 1,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildBlogCard(BuildContext context, Blog blog) {
     return Card(
       margin: const EdgeInsets.only(bottom: 24),
@@ -102,22 +286,64 @@ class _BlogsPageState extends State<BlogsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (blog.featuredImage != null)
-              Container(
-                height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  image: DecorationImage(
-                    image: NetworkImage(blog.featuredImage!),
-                    fit: BoxFit.cover,
-                    onError: (_, __) {},
-                  ),
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
                 ),
-                child: blog.featuredImage == null
-                    ? const Icon(Icons.image_not_supported)
-                    : null,
+                child: Image.network(
+                  blog.featuredImage!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Container(
+                      height: 180,
+                      color: Colors.grey[200],
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 180,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF311B92).withValues(alpha: 0.1),
+                            const Color(0xFF7E57C2).withValues(alpha: 0.1),
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.article_outlined,
+                              size: 48,
+                              color: Color(0xFF311B92),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Blog Image',
+                              style: TextStyle(
+                                color: Color(0xFF311B92),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             Padding(
               padding: const EdgeInsets.all(16),

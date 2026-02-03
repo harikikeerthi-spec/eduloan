@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/institute_selection_modal.dart';
 import '../data/institutes_data.dart';
+import '../services/loan_service.dart';
 
 class ApplyLoanPage extends StatefulWidget {
   const ApplyLoanPage({super.key});
@@ -51,7 +53,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
   }
 
-  void _submitApplication() {
+  void _submitApplication() async {
     if (_nameController.text.isEmpty ||
         _phoneController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -68,14 +70,62 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       return;
     }
 
-    // Mock submission
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Application Submitted Successfully!'),
-        backgroundColor: Color(0xFF10B981),
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF311B92)),
       ),
     );
-    Navigator.pop(context);
+
+    try {
+      // Get userId from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? '';
+
+      if (userId.isEmpty) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('User not logged in'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
+      // Submit loan application
+      final loanService = LoanService();
+      await loanService.createLoan(
+        userId: userId,
+        applicantName: _nameController.text,
+        phoneNumber: _phoneController.text,
+        email: _emailController.text,
+        institute: _instituteController.text,
+        course: _courseController.text,
+        amount: double.parse(_amountController.text),
+        tenure: int.parse(_tenureController.text),
+      );
+
+      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context); // Go back to home
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loan Application Submitted Successfully!'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   @override

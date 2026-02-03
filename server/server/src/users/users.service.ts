@@ -87,18 +87,31 @@ export class UsersService {
 
   // Loan Application Methods
   async createLoanApplication(userId: string, data: {
+    applicantName: string;
+    phoneNumber: string;
+    email: string;
+    institute: string;
+    course: string;
     bank: string;
     loanType: string;
     amount: number;
+    tenure: number;
     purpose?: string;
   }) {
     return this.prisma.loanApplication.create({
       data: {
         userId,
+        applicantName: data.applicantName,
+        phoneNumber: data.phoneNumber,
+        email: data.email,
+        institute: data.institute,
+        course: data.course,
         bank: data.bank,
         loanType: data.loanType,
         amount: data.amount,
+        tenure: data.tenure,
         purpose: data.purpose || null,
+        progress: 10, // Initial progress
       },
     });
   }
@@ -180,4 +193,5 @@ export class UsersService {
       applications,
       documents,
     };
-  }}
+  }
+}

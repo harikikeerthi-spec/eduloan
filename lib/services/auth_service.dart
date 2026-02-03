@@ -65,6 +65,11 @@ class AuthService {
           await prefs.setString('auth_token', token);
         }
 
+        // Save userId if available
+        if (data['userId'] != null) {
+          await prefs.setString('userId', data['userId']);
+        }
+
         // Save user details if available
         if (data['firstName'] != null) {
           await prefs.setString('user_firstName', data['firstName']);
@@ -81,6 +86,7 @@ class AuthService {
           'hasUserDetails': data['hasUserDetails'] ?? false,
           'firstName': data['firstName'],
           'lastName': data['lastName'],
+          'userId': data['userId'],
         };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};

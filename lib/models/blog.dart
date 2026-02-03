@@ -78,20 +78,33 @@ class Comment {
   final String content;
   final String authorName;
   final DateTime createdAt;
+  final String? parentId;
+  final int likes;
+  final List<Comment> replies;
 
   Comment({
     required this.id,
     required this.content,
     required this.authorName,
     required this.createdAt,
+    this.parentId,
+    this.likes = 0,
+    this.replies = const [],
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     return Comment(
       id: json['id'],
       content: json['content'],
-      authorName: json['authorName'],
+      authorName: json['author'] ?? json['authorName'] ?? 'Anonymous',
       createdAt: DateTime.parse(json['createdAt']),
+      parentId: json['parentId'],
+      likes: json['likes'] ?? 0,
+      replies:
+          (json['replies'] as List<dynamic>?)
+              ?.map((e) => Comment.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 }

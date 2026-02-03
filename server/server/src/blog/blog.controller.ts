@@ -191,6 +191,51 @@ export class BlogController {
     }
 
     /**
+     * Delete a comment from a blog post
+     * DELETE /blogs/comments/:commentId
+     * @param commentId - Comment ID
+     */
+    @Delete('comments/:commentId')
+    async deleteComment(@Param('commentId') commentId: string) {
+        return this.blogService.deleteComment(commentId);
+    }
+
+    /**
+     * Add a reply to a comment
+     * POST /blogs/comments/:commentId/replies
+     * @param commentId - Comment ID
+     * @body author, content
+     */
+    @Post('comments/:commentId/replies')
+    async addReplyToComment(
+        @Param('commentId') commentId: string,
+        @Body()
+        body: {
+            author: string;
+            content: string;
+        },
+    ) {
+        return this.blogService.addReplyToComment(commentId, body);
+    }
+
+    /**
+     * Like or unlike a comment
+     * POST /blogs/comments/:commentId/like
+     * @param commentId - Comment ID
+     * @body userId - User identifier (IP address for anonymous users)
+     */
+    @Post('comments/:commentId/like')
+    async toggleCommentLike(
+        @Param('commentId') commentId: string,
+        @Body()
+        body: {
+            userId: string;
+        },
+    ) {
+        return this.blogService.toggleCommentLike(commentId, body.userId);
+    }
+
+    /**
      * Get blog statistics
      * GET /blogs/:id/stats
      * @param id - Blog ID

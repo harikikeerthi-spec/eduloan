@@ -125,16 +125,28 @@ export class AuthController {
   @Post('create-application')
   async createApplication(@Body() body: {
     userId: string;
+    applicantName: string;
+    phoneNumber: string;
+    email: string;
+    institute: string;
+    course: string;
     bank: string;
     loanType: string;
     amount: number;
+    tenure: number;
     purpose?: string;
   }) {
     try {
       const application = await this.usersService.createLoanApplication(body.userId, {
+        applicantName: body.applicantName,
+        phoneNumber: body.phoneNumber,
+        email: body.email,
+        institute: body.institute,
+        course: body.course,
         bank: body.bank,
         loanType: body.loanType,
         amount: body.amount,
+        tenure: body.tenure,
         purpose: body.purpose,
       });
       return {

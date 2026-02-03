@@ -71,4 +71,70 @@ class BlogService {
       throw Exception('Error adding comment: $e');
     }
   }
+
+  Future<void> deleteComment(String commentId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/blogs/comments/$commentId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete comment: ${response.statusCode}');
+      }
+    } catch (e) {
+      print(
+        'Error deleting comment: $e',
+      ); // Corrected from 'Error posting comment'
+      rethrow;
+    }
+  }
+
+  // Like or unlike a comment
+  Future<Map<String, dynamic>> toggleCommentLike(
+    String commentId,
+    String userId,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/blogs/comments/$commentId/like'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to toggle like');
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+      rethrow;
+    }
+  }
+
+  // Add a reply to a comment
+  Future<Comment> addReplyToComment(
+    String commentId,
+    String author,
+    String content,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/blogs/comments/$commentId/replies'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'authorName': author, 'content': content}),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return Comment.fromJson(data['data']);
+      } else {
+        throw Exception('Failed to add reply');
+      }
+    } catch (e) {
+      print('Error adding reply: $e');
+      rethrow;
+    }
+  }
 }

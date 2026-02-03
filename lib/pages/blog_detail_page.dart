@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/blog.dart';
 import '../services/blog_service.dart';
@@ -18,12 +19,19 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
   late Future<Blog> _blogFuture;
   final BlogService _blogService = BlogService();
   final TextEditingController _commentController = TextEditingController();
+  final Map<String, TextEditingController> _replyControllers = {};
   bool _isSubmitting = false;
   String _authorName = 'Guest User';
+  String _deviceId = '';
+  Set<String> _likedComments = {};
+  String? _replyingToCommentId;
 
   @override
   void dispose() {
     _commentController.dispose();
+    for (var controller in _replyControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -31,8 +39,24 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
   void initState() {
     super.initState();
     _loadUserData();
+    _loadDeviceId();
     // Fetch fresh data including content using the slug
     _blogFuture = _blogService.getBlogBySlug(widget.blog.slug);
+  }
+
+  Future<void> _loadDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceId = prefs.getString('device_id');
+
+    if (deviceId == null) {
+      // Generate a simple device ID based on timestamp
+      deviceId = 'device_${DateTime.now().millisecondsSinceEpoch}';
+      await prefs.setString('device_id', deviceId);
+    }
+
+    setState(() {
+      _deviceId = deviceId!;
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -206,45 +230,134 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                                     },
                                   ),
                                 const SizedBox(height: 32),
-                                const Divider(),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Comments (${blog.comments.length})',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                const Divider(thickness: 1),
+                                const SizedBox(height: 24),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.comment_outlined,
+                                      color: Color(0xFF311B92),
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Comments (${blog.comments.length})',
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF311B92),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
                                 // Add Comment Section
                                 Container(
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(12),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(
+                                          0xFF311B92,
+                                        ).withValues(alpha: 0.05),
+                                        const Color(
+                                          0xFF7E57C2,
+                                        ).withValues(alpha: 0.05),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF311B92,
+                                      ).withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      const Text(
-                                        'Leave a comment',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      TextField(
-                                        controller: _commentController,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Write your thoughts...',
-                                          border: OutlineInputBorder(),
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 12,
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 20,
+                                            backgroundColor: const Color(
+                                              0xFF311B92,
+                                            ),
+                                            child: Text(
+                                              _authorName.isNotEmpty
+                                                  ? _authorName[0].toUpperCase()
+                                                  : 'G',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                              ),
+                                            ),
                                           ),
+                                          const SizedBox(width: 12),
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              const Text(
+                                                'Share your thoughts',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              Text(
+                                                'Posting as $_authorName',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.05,
+                                              ),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
-                                        maxLines: 3,
+                                        child: TextField(
+                                          controller: _commentController,
+                                          decoration: InputDecoration(
+                                            hintText: 'Write your thoughts...',
+                                            hintStyle: TextStyle(
+                                              color: Colors.grey[400],
+                                            ),
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 14,
+                                                ),
+                                          ),
+                                          maxLines: 4,
+                                          minLines: 3,
+                                        ),
                                       ),
                                       const SizedBox(height: 12),
                                       ElevatedButton(
@@ -256,6 +369,15 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                                             0xFF311B92,
                                           ),
                                           foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          elevation: 2,
                                         ),
                                         child: _isSubmitting
                                             ? const SizedBox(
@@ -267,72 +389,495 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                                                       color: Colors.white,
                                                     ),
                                               )
-                                            : const Text('Post Comment'),
+                                            : const Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.send, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    'Post Comment',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 24),
                                 if (blog.comments.isEmpty)
-                                  const Text(
-                                    'No comments yet. Be the first to comment!',
-                                    style: TextStyle(color: Colors.grey),
-                                  )
-                                else
-                                  ...blog.comments.map(
-                                    (comment) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 16,
-                                      ),
+                                  Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(32),
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            children: [
-                                              CircleAvatar(
-                                                radius: 16,
-                                                backgroundColor:
-                                                    Colors.grey.shade200,
-                                                child: Text(
-                                                  comment.authorName.isNotEmpty
-                                                      ? comment.authorName[0]
-                                                            .toUpperCase()
-                                                      : '?',
-                                                  style: const TextStyle(
-                                                    color: Colors.black54,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                comment.authorName,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              const Spacer(),
-                                              Text(
-                                                '${comment.createdAt.day}/${comment.createdAt.month}/${comment.createdAt.year}',
-                                                style: const TextStyle(
-                                                  color: Colors.grey,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
+                                          Icon(
+                                            Icons.chat_bubble_outline,
+                                            size: 64,
+                                            color: Colors.grey[300],
                                           ),
-                                          const SizedBox(height: 4),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              left: 40,
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'No comments yet',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.grey[600],
                                             ),
-                                            child: Text(comment.content),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Be the first to share your thoughts!',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[500],
+                                            ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ),
+                                  )
+                                else
+                                  ...blog.comments
+                                      .where(
+                                        (comment) => comment.parentId == null,
+                                      )
+                                      .map(
+                                        (comment) => Container(
+                                          margin: const EdgeInsets.only(
+                                            bottom: 16,
+                                          ),
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey.withValues(
+                                                alpha: 0.2,
+                                              ),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.03,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 20,
+                                                    backgroundColor:
+                                                        const Color(
+                                                          0xFF311B92,
+                                                        ).withValues(
+                                                          alpha: 0.1,
+                                                        ),
+                                                    child: Text(
+                                                      comment
+                                                              .authorName
+                                                              .isNotEmpty
+                                                          ? comment
+                                                                .authorName[0]
+                                                                .toUpperCase()
+                                                          : '?',
+                                                      style: const TextStyle(
+                                                        color: Color(
+                                                          0xFF311B92,
+                                                        ),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          comment.authorName,
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 15,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 2,
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons.access_time,
+                                                              size: 12,
+                                                              color: Colors
+                                                                  .grey[500],
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 4,
+                                                            ),
+                                                            Text(
+                                                              '${comment.createdAt.day}/${comment.createdAt.month}/${comment.createdAt.year}',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .grey[600],
+                                                                fontSize: 12,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  // Delete button - only show for user's own comments
+                                                  if (comment.authorName ==
+                                                      _authorName)
+                                                    IconButton(
+                                                      icon: const Icon(
+                                                        Icons.delete_outline,
+                                                        size: 20,
+                                                      ),
+                                                      color: Colors.red[400],
+                                                      onPressed: () =>
+                                                          _deleteComment(
+                                                            blog.id,
+                                                            comment.id,
+                                                          ),
+                                                      tooltip: 'Delete comment',
+                                                      padding: EdgeInsets.zero,
+                                                      constraints:
+                                                          const BoxConstraints(),
+                                                    ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.withValues(
+                                                    alpha: 0.05,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  comment.content,
+                                                  style: const TextStyle(
+                                                    fontSize: 14,
+                                                    height: 1.5,
+                                                    color: Colors.black87,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              // Like and Reply buttons
+                                              Row(
+                                                children: [
+                                                  // Like button
+                                                  InkWell(
+                                                    onTap: () => _toggleLike(
+                                                      blog.id,
+                                                      comment.id,
+                                                      comment.likes,
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          _likedComments
+                                                                  .contains(
+                                                                    comment.id,
+                                                                  )
+                                                              ? Icons.favorite
+                                                              : Icons
+                                                                    .favorite_border,
+                                                          size: 18,
+                                                          color:
+                                                              _likedComments
+                                                                  .contains(
+                                                                    comment.id,
+                                                                  )
+                                                              ? Colors.red
+                                                              : Colors
+                                                                    .grey[600],
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                        Text(
+                                                          '${comment.likes}',
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            color: Colors
+                                                                .grey[600],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  // Reply button
+                                                  InkWell(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        if (_replyingToCommentId ==
+                                                            comment.id) {
+                                                          _replyingToCommentId =
+                                                              null;
+                                                        } else {
+                                                          _replyingToCommentId =
+                                                              comment.id;
+                                                          _replyControllers[comment
+                                                                  .id] ??=
+                                                              TextEditingController();
+                                                        }
+                                                      });
+                                                    },
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.reply,
+                                                          size: 18,
+                                                          color:
+                                                              Colors.grey[600],
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 4,
+                                                        ),
+                                                        Text(
+                                                          'Reply',
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            color: Colors
+                                                                .grey[600],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              // Reply input field
+                                              if (_replyingToCommentId ==
+                                                  comment.id)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 12,
+                                                      ),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: TextField(
+                                                          controller:
+                                                              _replyControllers[comment
+                                                                  .id],
+                                                          decoration: InputDecoration(
+                                                            hintText:
+                                                                'Reply to ${comment.authorName}...',
+                                                            hintStyle: TextStyle(
+                                                              color: Colors
+                                                                  .grey[400],
+                                                            ),
+                                                            filled: true,
+                                                            fillColor:
+                                                                Colors.grey[50],
+                                                            border: OutlineInputBorder(
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                              borderSide:
+                                                                  BorderSide
+                                                                      .none,
+                                                            ),
+                                                            contentPadding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal:
+                                                                      12,
+                                                                  vertical: 8,
+                                                                ),
+                                                          ),
+                                                          maxLines: 2,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      IconButton(
+                                                        onPressed: () =>
+                                                            _submitReply(
+                                                              comment.id,
+                                                            ),
+                                                        icon: const Icon(
+                                                          Icons.send,
+                                                        ),
+                                                        color: const Color(
+                                                          0xFF311B92,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              // Display nested replies
+                                              if (comment.replies.isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        left: 16,
+                                                        top: 12,
+                                                      ),
+                                                  child: Column(
+                                                    children: comment.replies.map((
+                                                      reply,
+                                                    ) {
+                                                      return Container(
+                                                        margin:
+                                                            const EdgeInsets.only(
+                                                              bottom: 8,
+                                                            ),
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              12,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color:
+                                                              Colors.grey[100],
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Row(
+                                                              children: [
+                                                                CircleAvatar(
+                                                                  radius: 12,
+                                                                  backgroundColor:
+                                                                      const Color(
+                                                                        0xFF311B92,
+                                                                      ),
+                                                                  child: Text(
+                                                                    reply
+                                                                        .authorName[0]
+                                                                        .toUpperCase(),
+                                                                    style: const TextStyle(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontSize:
+                                                                          10,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      Text(
+                                                                        reply
+                                                                            .authorName,
+                                                                        style: const TextStyle(
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                          fontSize:
+                                                                              12,
+                                                                        ),
+                                                                      ),
+                                                                      Text(
+                                                                        'Replying to @${comment.authorName}',
+                                                                        style: const TextStyle(
+                                                                          fontSize:
+                                                                              11,
+                                                                          color: Color(
+                                                                            0xFF311B92,
+                                                                          ),
+                                                                          fontWeight:
+                                                                              FontWeight.w500,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                // Delete button for user's own replies
+                                                                if (reply
+                                                                        .authorName ==
+                                                                    _authorName)
+                                                                  IconButton(
+                                                                    icon: const Icon(
+                                                                      Icons
+                                                                          .delete_outline,
+                                                                      size: 16,
+                                                                    ),
+                                                                    color: Colors
+                                                                        .red[400],
+                                                                    onPressed: () =>
+                                                                        _deleteComment(
+                                                                          blog.id,
+                                                                          reply
+                                                                              .id,
+                                                                        ),
+                                                                    tooltip:
+                                                                        'Delete reply',
+                                                                    padding:
+                                                                        EdgeInsets
+                                                                            .zero,
+                                                                    constraints:
+                                                                        const BoxConstraints(),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            Text(
+                                                              reply.content,
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        13,
+                                                                    color: Colors
+                                                                        .black87,
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }).toList(),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                               ],
                             ),
                           ),
@@ -386,6 +931,146 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     }
   }
 
+  Future<void> _deleteComment(String blogId, String commentId) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _blogService.deleteComment(commentId);
+
+      // Refresh the blog data to remove the deleted comment
+      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
+
+      setState(() {
+        _blogFuture = Future.value(updatedBlog);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment deleted successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting comment: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleLike(
+    String blogId,
+    String commentId,
+    int currentLikes,
+  ) async {
+    if (_deviceId.isEmpty) return;
+
+    // Optimistically update UI immediately
+    final bool wasLiked = _likedComments.contains(commentId);
+    setState(() {
+      if (wasLiked) {
+        _likedComments.remove(commentId);
+      } else {
+        _likedComments.add(commentId);
+      }
+    });
+
+    try {
+      await _blogService.toggleCommentLike(commentId, _deviceId);
+
+      // Refresh blog data to get updated like counts from server
+      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
+      setState(() {
+        _blogFuture = Future.value(updatedBlog);
+      });
+    } catch (e) {
+      // Revert optimistic update on error
+      setState(() {
+        if (wasLiked) {
+          _likedComments.add(commentId);
+        } else {
+          _likedComments.remove(commentId);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error toggling like: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _submitReply(String commentId) async {
+    final controller = _replyControllers[commentId];
+    if (controller == null || controller.text.trim().isEmpty) return;
+
+    try {
+      await _blogService.addReplyToComment(
+        commentId,
+        _authorName,
+        controller.text.trim(),
+      );
+
+      controller.clear();
+      setState(() {
+        _replyingToCommentId = null;
+      });
+
+      // Refresh blog data to show new reply
+      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
+      setState(() {
+        _blogFuture = Future.value(updatedBlog);
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reply added successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding reply: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  void _shareBlog() {
+    final blogTitle = widget.blog.title;
+    final blogExcerpt = widget.blog.excerpt;
+    final shareText =
+        '''
+Check out this blog: $blogTitle
+
+$blogExcerpt
+
+Read more on Eduloan app!
+''';
+    Share.share(shareText);
+  }
+
   Widget _buildAppBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -398,9 +1083,7 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
           ),
           const Spacer(),
           IconButton(
-            onPressed: () {
-              // Share functionality placeholder
-            },
+            onPressed: _shareBlog,
             icon: const Icon(Icons.share_outlined),
           ),
         ],

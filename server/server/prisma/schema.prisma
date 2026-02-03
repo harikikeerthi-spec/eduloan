@@ -58,10 +58,28 @@ model Comment {
   blogId    String
   author    String
   content   String   @db.Text
+  parentId  String?  // For nested replies
+  likes     Int      @default(0) // Number of likes
   createdAt DateTime @default(now())
   blog      Blog     @relation(fields: [blogId], references: [id])
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+  likesData CommentLike[]
 
   @@index([blogId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  userId    String   // IP address or user identifier for anonymous likes
+  createdAt DateTime @default(now())
+  comment   Comment  @relation(fields: [commentId], references: [id])
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
 }
 
 model Tag {
@@ -83,17 +101,24 @@ model BlogTag {
 }
 
 model LoanApplication {
-  id        String   @id @default(uuid())
-  userId    String
-  bank      String
-  loanType  String   // education, home, personal, business, vehicle
-  amount    Float
-  purpose   String?
-  status    String   @default("pending") // pending, processing, approved, rejected
-  date      DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  userId         String
+  applicantName  String
+  phoneNumber    String
+  email          String
+  institute      String
+  course         String
+  bank           String
+  loanType       String   // education, home, personal, business, vehicle
+  amount         Float
+  tenure         Int      // in months
+  purpose        String?
+  status         String   @default("pending") // pending, processing, approved, rejected
+  progress       Int      @default(0) // 0-100 percentage
+  date           DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@index([userId])
   @@index([status])
