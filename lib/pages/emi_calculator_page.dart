@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../widgets/mesh_background.dart';
 import '../widgets/institute_selection_modal.dart';
 import '../data/institutes_data.dart';
@@ -13,12 +14,55 @@ class EmiCalculatorPage extends StatefulWidget {
 class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
   final TextEditingController _instituteController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _rateController = TextEditingController(
+    text: "10.5",
+  );
+  final TextEditingController _tenureController = TextEditingController();
+
+  double? _monthlyEmi;
+  double? _totalInterest;
+  double? _totalPayment;
 
   @override
   void dispose() {
     _instituteController.dispose();
     _courseController.dispose();
+    _amountController.dispose();
+    _rateController.dispose();
+    _tenureController.dispose();
     super.dispose();
+  }
+
+  void _calculateEmi() {
+    FocusScope.of(context).unfocus();
+
+    final double amount = double.tryParse(_amountController.text) ?? 0;
+    final double rate = double.tryParse(_rateController.text) ?? 0;
+    final double years = double.tryParse(_tenureController.text) ?? 0;
+
+    if (amount <= 0 || rate <= 0 || years <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid details'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final double monthlyRate = rate / (12 * 100);
+    final double months = years * 12;
+
+    final double emi =
+        (amount * monthlyRate * pow(1 + monthlyRate, months)) /
+        (pow(1 + monthlyRate, months) - 1);
+
+    setState(() {
+      _monthlyEmi = emi;
+      _totalPayment = emi * months;
+      _totalInterest = _totalPayment! - amount;
+    });
   }
 
   Future<void> _showInstituteSelection() async {
@@ -160,21 +204,133 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
                           _showInstituteSelection, // Re-open selection if clicked
                       controller: _courseController,
                     ),
+                    const SizedBox(height: 16),
+
+                    // Loan Amount Input
+                    _buildNumberField(
+                      label: 'Loan Amount (₹)',
+                      hint: 'e.g. 500000',
+                      icon: Icons.currency_rupee,
+                      controller: _amountController,
+                    ),
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildNumberField(
+                            label: 'Interest Rate (%)',
+                            hint: '10.5',
+                            icon: Icons.percent,
+                            controller: _rateController,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildNumberField(
+                            label: 'Tenure (Years)',
+                            hint: 'e.g. 2',
+                            icon: Icons.calendar_today,
+                            controller: _tenureController,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 32),
+
+                    // Results Display
+                    if (_monthlyEmi != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF311B92,
+                          ).withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.1),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'Monthly EMI',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black.withValues(alpha: 0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₹${_monthlyEmi!.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF311B92),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Total Interest',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${_totalInterest!.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Total Amount',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹${_totalPayment!.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
 
                     // Action Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Calculation logic coming soon!'),
-                              backgroundColor: Color(0xFFF59E0B),
-                            ),
-                          );
-                        },
+                        onPressed: _calculateEmi,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF311B92),
                           foregroundColor: Colors.white,
@@ -184,7 +340,7 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
                           ),
                         ),
                         child: const Text(
-                          'Know Your Plan',
+                          'Calculate EMI',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -237,6 +393,59 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildNumberField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.black, // Ensure text is black
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.black.withValues(alpha: 0.4),
+                fontSize: 16,
+              ),
+              border: InputBorder.none,
+              suffixIcon: Icon(
+                icon,
+                color: const Color(0xFF311B92).withValues(alpha: 0.5),
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

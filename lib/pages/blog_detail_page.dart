@@ -57,6 +57,13 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     setState(() {
       _deviceId = deviceId!;
     });
+
+    if (mounted) {
+      final likes = await _blogService.getLikedComments(_deviceId);
+      setState(() {
+        _likedComments = likes.toSet();
+      });
+    }
   }
 
   Future<void> _loadUserData() async {

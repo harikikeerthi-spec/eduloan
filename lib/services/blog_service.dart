@@ -113,6 +113,26 @@ class BlogService {
     }
   }
 
+  // Get comments liked by a user
+  Future<List<String>> getLikedComments(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/blogs/comments/likes/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return List<String>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching likes: $e');
+      return [];
+    }
+  }
+
   // Add a reply to a comment
   Future<Comment> addReplyToComment(
     String commentId,

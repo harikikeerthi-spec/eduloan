@@ -7,11 +7,12 @@ import 'emi_calculator_page.dart';
 import 'sop_writer_page.dart';
 import 'university_compare_page.dart';
 import 'admit_predictor_page.dart';
-import 'grade_converter_page.dart';
 import 'study_abroad_page.dart';
 import 'blogs_page.dart';
 import 'community_page.dart';
-import 'loan_eligibility_checker_page.dart';
+import 'ai_tools/ai_tools_page.dart';
+import 'ai_tools/eligibility_checker_page.dart';
+import 'ai_tools/grade_converter_page.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -136,7 +137,13 @@ class MainNavigationState extends State<MainNavigation> {
               context,
               icon: Icons.fact_check_outlined,
               title: 'Loan eligibility checker',
-              destination: const LoanEligibilityCheckerPage(),
+              destination: const EligibilityCheckerPage(),
+            ),
+            _buildDrawerLink(
+              context,
+              icon: Icons.smart_toy_outlined,
+              title: 'AI Tools Hub',
+              destination: const AiToolsPage(),
             ),
             const Divider(),
             ListTile(
