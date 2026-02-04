@@ -264,12 +264,13 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
               child: ElevatedButton(
                 onPressed: _analyzeGrades,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFC51162),
+                  backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  elevation: 0,
+                  elevation: 4,
+                  shadowColor: const Color(0xFF311B92).withOpacity(0.4),
                 ),
                 child: _isLoading
                     ? const SizedBox(

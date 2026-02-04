@@ -30,64 +30,78 @@ class AiToolsPage extends StatelessWidget {
           ),
           centerTitle: true,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Power up your journey',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
-                  fontFamily: 'Noto Serif',
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Power up your journey',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1F2937),
+                        fontFamily: 'Noto Serif',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Smart tools to help you plan, qualify, and succeed.',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Smart tools to help you plan, qualify, and succeed.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black.withValues(alpha: 0.6),
+              Expanded(
+                child: GridView.count(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.85, // Adjust for card height
+                  children: [
+                    _buildGridCard(
+                      context,
+                      title: 'Eligibility\nChecker',
+                      icon: Icons.assignment_ind_outlined,
+                      color: const Color(0xFF6200EA),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/ai/eligibility'),
+                    ),
+                    _buildGridCard(
+                      context,
+                      title: 'Grade\nConverter',
+                      icon: Icons.school_outlined,
+                      color: const Color(0xFFC51162),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/ai/grade-converter'),
+                    ),
+                    _buildGridCard(
+                      context,
+                      title: 'University\nCompare',
+                      icon: Icons.balance,
+                      color: const Color(0xFFFF9800),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        '/ai/university-compare',
+                      ),
+                    ),
+                    _buildGridCard(
+                      context,
+                      title: 'AI Support\nAssistant',
+                      icon: Icons.chat_bubble_outline,
+                      color: const Color(0xFF009688),
+                      onTap: () => Navigator.pushNamed(context, '/ai/bot'),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 32),
-
-              _buildToolCard(
-                context,
-                title: 'Loan Eligibility Checker',
-                description:
-                    'Get an instant eligibility estimate based on your profile.',
-                icon: Icons.assignment_ind_outlined,
-                color: const Color(0xFF6200EA),
-                onTap: () {
-                  Navigator.pushNamed(context, '/ai/eligibility');
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildToolCard(
-                context,
-                title: 'Grade Converter & Analyzer',
-                description:
-                    'Convert grades to international standards and get analysis.',
-                icon: Icons.school_outlined,
-                color: const Color(0xFFC51162),
-                onTap: () {
-                  Navigator.pushNamed(context, '/ai/grade-converter');
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildToolCard(
-                context,
-                title: 'AI Support Assistant',
-                description:
-                    '24/7 answers to your loan and application queries.',
-                icon: Icons.chat_bubble_outline,
-                color: const Color(0xFF009688),
-                onTap: () {
-                  Navigator.pushNamed(context, '/ai/bot');
-                },
               ),
             ],
           ),
@@ -96,70 +110,50 @@ class AiToolsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildToolCard(
+  Widget _buildGridCard(
     BuildContext context, {
     required String title,
-    required String description,
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withValues(alpha: 0.08),
-              blurRadius: 24,
+              color: color.withOpacity(0.08),
+              blurRadius: 16,
               offset: const Offset(0, 8),
             ),
           ],
-          border: Border.all(color: color.withValues(alpha: 0.1)),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 32),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black.withValues(alpha: 0.5),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2937),
+                height: 1.2,
               ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.black.withValues(alpha: 0.3),
             ),
           ],
         ),

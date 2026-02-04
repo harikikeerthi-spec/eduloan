@@ -8,6 +8,7 @@ import 'pages/ai_tools/ai_tools_page.dart';
 import 'pages/ai_tools/eligibility_checker_page.dart';
 import 'pages/ai_tools/grade_converter_page.dart';
 import 'pages/ai_tools/customer_care_bot_page.dart';
+import 'pages/university_compare_page.dart';
 
 void main() {
   // Set system UI overlay style
@@ -65,6 +66,7 @@ class MyApp extends StatelessWidget {
         '/ai/eligibility': (context) => const EligibilityCheckerPage(),
         '/ai/grade-converter': (context) => const GradeConverterPage(),
         '/ai/bot': (context) => const CustomerCareBotPage(),
+        '/ai/university-compare': (context) => const UniversityComparePage(),
       },
     );
   }

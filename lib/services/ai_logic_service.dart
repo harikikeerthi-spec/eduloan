@@ -133,6 +133,35 @@ class GradeConversionResult {
   }
 }
 
+class UniversityData {
+  final String name;
+  final String rank;
+  final String tuition;
+  final String rate;
+  final String salary;
+  final String loc;
+
+  UniversityData({
+    required this.name,
+    required this.rank,
+    required this.tuition,
+    required this.rate,
+    required this.salary,
+    required this.loc,
+  });
+
+  factory UniversityData.fromJson(Map<String, dynamic> json) {
+    return UniversityData(
+      name: json['name'] ?? '',
+      rank: json['rank'] ?? '',
+      tuition: json['tuition'] ?? '',
+      rate: json['rate'] ?? '',
+      salary: json['salary'] ?? '',
+      loc: json['loc'] ?? '',
+    );
+  }
+}
+
 class AiLogicService {
   // Try these URLs in order until one works
   static const List<String> _baseUrls = [
@@ -191,6 +220,29 @@ class AiLogicService {
       final body = await _postRequest('convert-grades', data.toJson());
       if (body['success'] == true && body['gradeConversion'] != null) {
         return GradeConversionResult.fromJson(body['gradeConversion']);
+      }
+      throw Exception('Invalid response format');
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<Map<String, UniversityData>> compareUniversities(
+    String uni1,
+    String uni2,
+  ) async {
+    try {
+      final body = await _postRequest('compare-universities', {
+        'uni1': uni1,
+        'uni2': uni2,
+      });
+
+      if (body['success'] == true && body['data'] != null) {
+        final data = body['data'];
+        return {
+          'uni1': UniversityData.fromJson(data['uni1']),
+          'uni2': UniversityData.fromJson(data['uni2']),
+        };
       }
       throw Exception('Invalid response format');
     } catch (e) {
