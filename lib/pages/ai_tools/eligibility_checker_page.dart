@@ -22,6 +22,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
   // Dropdown Values
   String _employment = 'employed';
   String _study = 'masters';
+  String _maritalStatus = 'single';
   bool _coApplicant = false;
   bool _collateral = false;
 
@@ -53,6 +54,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
         loan: double.parse(_loanController.text),
         employment: _employment,
         study: _study,
+        maritalStatus: _maritalStatus,
         coApplicant: _coApplicant,
         collateral: _collateral,
       );
@@ -290,6 +292,17 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
               DropdownMenuItem(value: 'doctoral', child: Text('Doctoral')),
               DropdownMenuItem(value: 'diploma', child: Text('Diploma')),
             ], (val) => setState(() => _study = val!)),
+            const SizedBox(height: 16),
+
+            _buildDropdown(
+              "Marital Status",
+              _maritalStatus,
+              const [
+                DropdownMenuItem(value: 'single', child: Text('Single')),
+                DropdownMenuItem(value: 'married', child: Text('Married')),
+              ],
+              (val) => setState(() => _maritalStatus = val!),
+            ),
             const SizedBox(height: 16),
 
             Row(

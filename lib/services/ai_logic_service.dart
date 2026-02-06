@@ -3,6 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 
 // Data Models
+class AiServiceException implements Exception {
+  final String message;
+  AiServiceException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class EligibilityCheckDto {
   final int age;
   final int credit;
@@ -10,6 +18,7 @@ class EligibilityCheckDto {
   final double loan;
   final String employment; // 'employed', 'self', 'student', 'unemployed'
   final String study; // 'undergrad', 'masters', 'doctoral', 'diploma'
+  final String maritalStatus; // 'single', 'married'
   final bool coApplicant;
   final bool collateral;
 
@@ -20,6 +29,7 @@ class EligibilityCheckDto {
     required this.loan,
     required this.employment,
     required this.study,
+    required this.maritalStatus,
     required this.coApplicant,
     required this.collateral,
   });
@@ -32,6 +42,7 @@ class EligibilityCheckDto {
       'loan': loan,
       'employment': employment,
       'study': study,
+      'maritalStatus': maritalStatus,
       'coApplicant': coApplicant ? 'yes' : 'no',
       'collateral': collateral ? 'yes' : 'no',
     };
@@ -152,12 +163,65 @@ class UniversityData {
 
   factory UniversityData.fromJson(Map<String, dynamic> json) {
     return UniversityData(
-      name: json['name'] ?? '',
-      rank: json['rank'] ?? '',
-      tuition: json['tuition'] ?? '',
-      rate: json['rate'] ?? '',
-      salary: json['salary'] ?? '',
-      loc: json['loc'] ?? '',
+      name: json['name'] ?? 'N/A',
+      rank: json['rank'] ?? 'N/A',
+      tuition: json['tuition'] ?? 'N/A',
+      rate: json['rate'] ?? 'N/A',
+      salary: json['salary'] ?? 'N/A',
+      loc: json['loc'] ?? 'N/A',
+    );
+  }
+}
+
+class SopAnalysisResult {
+  final double totalScore;
+  final String quality;
+  final List<Map<String, dynamic>> categories; // {name, score, weight}
+  final List<Map<String, String>> weakAreas; // {issue, recommendation}
+  final String summary;
+
+  SopAnalysisResult({
+    required this.totalScore,
+    required this.quality,
+    required this.categories,
+    required this.weakAreas,
+    required this.summary,
+  });
+
+  factory SopAnalysisResult.fromJson(Map<String, dynamic> json) {
+    return SopAnalysisResult(
+      totalScore: (json['totalScore'] ?? 0).toDouble(),
+      quality: json['quality'] ?? '',
+      categories: List<Map<String, dynamic>>.from(json['categories'] ?? []),
+      weakAreas:
+          (json['weakAreas'] as List?)
+              ?.map((e) => Map<String, String>.from(e))
+              .toList() ??
+          [],
+      summary: json['summary'] ?? '',
+    );
+  }
+}
+
+class AdmitPredictionResult {
+  final String university;
+  final int probability;
+  final List<String> feedback;
+  final int tier;
+
+  AdmitPredictionResult({
+    required this.university,
+    required this.probability,
+    required this.feedback,
+    required this.tier,
+  });
+
+  factory AdmitPredictionResult.fromJson(Map<String, dynamic> json) {
+    return AdmitPredictionResult(
+      university: json['university'] ?? '',
+      probability: json['probability'] ?? 0,
+      feedback: List<String>.from(json['feedback'] ?? []),
+      tier: json['tier'] ?? 3,
     );
   }
 }
@@ -185,68 +249,99 @@ class AiLogicService {
               headers: {'Content-Type': 'application/json'},
               body: jsonEncode(data),
             )
-            .timeout(const Duration(seconds: 5));
+            .timeout(const Duration(seconds: 15));
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.statusCode >= 200 && response.statusCode < 300) {
           debugPrint('Success connected to: $url');
           return jsonDecode(response.body);
         } else {
-          lastError =
-              'Error ${response.statusCode} at $url\nBody: ${response.body}';
+          // Server responded, but with error (400, 500, etc.)
+          dynamic msg = response.body;
+          try {
+            final errorBody = jsonDecode(response.body);
+            msg = errorBody['message'] ?? response.body;
+          } catch (_) {}
+
+          if (response.statusCode >= 400 && response.statusCode < 500) {
+            throw AiServiceException(msg.toString());
+          } else {
+            throw AiServiceException('Error ${response.statusCode}: $msg');
+          }
         }
       } catch (e) {
+        if (e is AiServiceException) {
+          throw e;
+        }
+
         lastError = e.toString();
         debugPrint('Failed to connect to $baseUrl: $e');
-        // Continue to next URL
+        // Continue to next URL for network failures
       }
     }
     throw Exception('Connection failed. Last error: $lastError');
   }
 
   Future<EligibilityResult> checkEligibility(EligibilityCheckDto data) async {
-    try {
-      final body = await _postRequest('eligibility-check', data.toJson());
-      if (body['success'] == true && body['eligibility'] != null) {
-        return EligibilityResult.fromJson(body['eligibility']);
-      }
-      throw Exception('Invalid response format');
-    } catch (e) {
-      throw Exception(e.toString());
+    final body = await _postRequest('eligibility-check', data.toJson());
+    if (body['success'] == true && body['eligibility'] != null) {
+      return EligibilityResult.fromJson(body['eligibility']);
     }
+    throw Exception('Invalid response format');
   }
 
   Future<GradeConversionResult> convertGrade(GradeConversionInput data) async {
-    try {
-      final body = await _postRequest('convert-grades', data.toJson());
-      if (body['success'] == true && body['gradeConversion'] != null) {
-        return GradeConversionResult.fromJson(body['gradeConversion']);
-      }
-      throw Exception('Invalid response format');
-    } catch (e) {
-      throw Exception(e.toString());
+    final body = await _postRequest('convert-grades', data.toJson());
+    if (body['success'] == true && body['gradeConversion'] != null) {
+      return GradeConversionResult.fromJson(body['gradeConversion']);
     }
+    throw Exception('Invalid response format');
   }
 
   Future<Map<String, UniversityData>> compareUniversities(
     String uni1,
     String uni2,
   ) async {
-    try {
-      final body = await _postRequest('compare-universities', {
-        'uni1': uni1,
-        'uni2': uni2,
-      });
+    final body = await _postRequest('compare-universities', {
+      'uni1': uni1,
+      'uni2': uni2,
+    });
 
-      if (body['success'] == true && body['data'] != null) {
-        final data = body['data'];
-        return {
-          'uni1': UniversityData.fromJson(data['uni1']),
-          'uni2': UniversityData.fromJson(data['uni2']),
-        };
-      }
-      throw Exception('Invalid response format');
-    } catch (e) {
-      throw Exception(e.toString());
+    if (body['success'] == true && body['data'] != null) {
+      final data = body['data'];
+      final u1 = data['uni1'] ?? <String, dynamic>{};
+      final u2 = data['uni2'] ?? <String, dynamic>{};
+
+      return {
+        'uni1': UniversityData.fromJson(Map<String, dynamic>.from(u1)),
+        'uni2': UniversityData.fromJson(Map<String, dynamic>.from(u2)),
+      };
     }
+    throw Exception('Invalid response format');
+  }
+
+  Future<SopAnalysisResult> analyzeSop(String text) async {
+    final body = await _postRequest('sop-analysis', {'sop': text});
+    if (body['success'] == true && body['analysis'] != null) {
+      return SopAnalysisResult.fromJson(body['analysis']);
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<AdmitPredictionResult> predictAdmission(
+    Map<String, dynamic> profile,
+  ) async {
+    final body = await _postRequest('predict-admission', profile);
+    if (body['success'] == true && body['prediction'] != null) {
+      return AdmitPredictionResult.fromJson(body['prediction']);
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<String> sendSupportMessage(String message) async {
+    final body = await _postRequest('support-chat', {'message': message});
+    if (body['success'] == true && body['message'] != null) {
+      return body['message'];
+    }
+    throw Exception('Invalid response format');
   }
 }

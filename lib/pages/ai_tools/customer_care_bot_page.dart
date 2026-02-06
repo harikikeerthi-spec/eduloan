@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/mesh_background.dart';
+import '../../services/ai_logic_service.dart';
 
 class CustomerCareBotPage extends StatefulWidget {
   const CustomerCareBotPage({super.key});
@@ -10,6 +11,9 @@ class CustomerCareBotPage extends StatefulWidget {
 
 class _CustomerCareBotPageState extends State<CustomerCareBotPage> {
   final TextEditingController _controller = TextEditingController();
+  final AiLogicService _aiService = AiLogicService();
+  bool _isTyping = false;
+
   final List<Map<String, String>> _messages = [
     {
       'sender': 'bot',
@@ -17,38 +21,35 @@ class _CustomerCareBotPageState extends State<CustomerCareBotPage> {
     },
   ];
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     if (_controller.text.isEmpty) return;
 
     final userText = _controller.text;
     setState(() {
       _messages.add({'sender': 'user', 'text': userText});
       _controller.clear();
+      _isTyping = true;
     });
 
-    // Mock AI Delay
-    Future.delayed(const Duration(seconds: 1), () {
-      final response = _getBotResponse(userText);
-      setState(() {
-        _messages.add({'sender': 'bot', 'text': response});
-      });
-    });
-  }
-
-  String _getBotResponse(String input) {
-    final lower = input.toLowerCase();
-    if (lower.contains('interest') || lower.contains('rate')) {
-      return "Our interest rates currently start from 8.5% for international studies and 9% for domestic. Check the Eligibility tool for a personalized rate!";
-    } else if (lower.contains('document') || lower.contains('required')) {
-      return "You typically need: 1. ID Proof, 2. Academic Records, 3. Admission Letter, 4. Income Proof of Co-applicant.";
-    } else if (lower.contains('contact') || lower.contains('support')) {
-      return "You can reach our human team at support@eduloan.com or call +1-800-EDU-LOAN.";
-    } else if (lower.contains('emi')) {
-      return "We have an EMI Calculator! Go to the 'Loans' section to plan your repayment.";
-    } else if (lower.contains('hello') || lower.contains('hi')) {
-      return "Hello there! Ask me anything about loans or your application.";
+    try {
+      final response = await _aiService.sendSupportMessage(userText);
+      if (mounted) {
+        setState(() {
+          _messages.add({'sender': 'bot', 'text': response});
+          _isTyping = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add({
+            'sender': 'bot',
+            'text': 'Sorry, I encountered an error. Please try again later.',
+          });
+          _isTyping = false;
+        });
+      }
     }
-    return "I'm still learning! Please contact support for complex queries, or ask me about interest rates, documents, or EMI.";
   }
 
   @override
@@ -77,8 +78,30 @@ class _CustomerCareBotPageState extends State<CustomerCareBotPage> {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: _messages.length,
+                itemCount: _messages.length + (_isTyping ? 1 : 0),
                 itemBuilder: (context, index) {
+                  if (index == _messages.length) {
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(
+                            20,
+                          ).copyWith(bottomLeft: Radius.zero),
+                        ),
+                        child: const Text(
+                          'Typing...',
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
                   final msg = _messages[index];
                   final isUser = msg['sender'] == 'user';
                   return Align(

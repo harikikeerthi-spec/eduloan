@@ -133,8 +133,8 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'AI Analysis',
@@ -144,12 +144,14 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                   color: Color(0xFF1F2937),
                 ),
               ),
+              const SizedBox(height: 4),
               Text(
                 strength.toUpperCase(),
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFFC51162),
                   letterSpacing: 1.1,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -202,9 +204,17 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

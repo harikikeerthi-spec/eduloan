@@ -57,24 +57,24 @@ class _ProfilePageState extends State<ProfilePage> {
             });
           } else {
             print('DEBUG: getUserDashboard failed: ${result['message']}');
-            _handleError();
+            _handleError(result['message']);
           }
         }
       } else {
         print('DEBUG: user_email not found in SharedPreferences');
-        _handleError();
+        _handleError('User email not found. Please log in.');
       }
     } catch (e) {
       print('DEBUG: Error in _fetchProfile: $e');
-      _handleError();
+      _handleError('Error: $e');
     }
   }
 
-  void _handleError() {
+  void _handleError([String? message]) {
     if (mounted) {
       setState(() {
         _name = 'Session Expired';
-        _email = 'Please Log Out & Log In again';
+        _email = message ?? 'Please Log Out & Log In again';
         _isLoading = false;
       });
     }

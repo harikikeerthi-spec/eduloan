@@ -12,41 +12,24 @@ class UniversityComparePage extends StatefulWidget {
 class _UniversityComparePageState extends State<UniversityComparePage> {
   final AiLogicService _aiService = AiLogicService();
   bool _isLoading = false;
-  String _uni1 = 'harvard';
-  String _uni2 = 'stanford';
+  final TextEditingController _uni1Controller = TextEditingController(
+    text: 'Harvard University',
+  );
+  final TextEditingController _uni2Controller = TextEditingController(
+    text: 'Stanford University',
+  );
+
+  @override
+  void dispose() {
+    _uni1Controller.dispose();
+    _uni2Controller.dispose();
+    super.dispose();
+  }
+
   Map<String, UniversityData>? _comparisonData;
   String? _error;
 
-  final List<String> _universities = [
-    'harvard',
-    'stanford',
-    'mit',
-    'oxford',
-    'cambridge',
-    'toronto',
-    'melbourne',
-  ];
-
-  String _formatUniName(String key) {
-    switch (key) {
-      case 'harvard':
-        return 'Harvard';
-      case 'stanford':
-        return 'Stanford';
-      case 'mit':
-        return 'MIT';
-      case 'oxford':
-        return 'Oxford';
-      case 'cambridge':
-        return 'Cambridge';
-      case 'toronto':
-        return 'Toronto';
-      case 'melbourne':
-        return 'Melbourne';
-      default:
-        return key;
-    }
-  }
+  // Removed hardcoded list and format helper since we act on live input
 
   Future<void> _compare() async {
     setState(() {
@@ -57,8 +40,8 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
 
     try {
       final result = await _aiService.compareUniversities(
-        _uni1.toLowerCase(),
-        _uni2.toLowerCase(),
+        _uni1Controller.text.trim(),
+        _uni2Controller.text.trim(),
       );
       setState(() {
         _comparisonData = result;
@@ -157,21 +140,9 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: _buildUniSelector(
-                1,
-                _uni1,
-                (val) => setState(() => _uni1 = val!),
-              ),
-            ),
+            Expanded(child: _buildUniSelector(1, _uni1Controller)),
             const SizedBox(width: 40), // Space for VS badge
-            Expanded(
-              child: _buildUniSelector(
-                2,
-                _uni2,
-                (val) => setState(() => _uni2 = val!),
-              ),
-            ),
+            Expanded(child: _buildUniSelector(2, _uni2Controller)),
           ],
         ),
         Container(
@@ -204,11 +175,7 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
     );
   }
 
-  Widget _buildUniSelector(
-    int index,
-    String value,
-    ValueChanged<String?> onChanged,
-  ) {
+  Widget _buildUniSelector(int index, TextEditingController controller) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -242,14 +209,31 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
             ),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: value,
-            isDense: true,
-            isExpanded: true,
-            icon: const Icon(Icons.keyboard_arrow_down, size: 20),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.zero,
+          TextFormField(
+            controller: controller,
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: 'Enter University',
+              filled: true,
+              fillColor: Colors.grey[50],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () {
+                  if (index == 1) {
+                    _uni1Controller.clear();
+                  } else {
+                    _uni2Controller.clear();
+                  }
+                },
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             style: const TextStyle(
               color: Colors.black87,
@@ -257,18 +241,6 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
               fontSize: 15,
               fontFamily: 'Inter',
             ),
-            items: _universities.map((uni) {
-              return DropdownMenuItem(
-                value: uni,
-                child: Center(
-                  child: Text(
-                    _formatUniName(uni),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              );
-            }).toList(),
-            onChanged: onChanged,
           ),
         ],
       ),
