@@ -363,8 +363,25 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           ),
           child: TextFormField(
             controller: controller,
-            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-            validator: (v) => v!.isEmpty ? 'Required' : null,
+            keyboardType: isNumber
+                ? const TextInputType.numberWithOptions(decimal: true)
+                : TextInputType.text,
+            textCapitalization: TextCapitalization.characters,
+            onChanged: (val) {
+              if (!isNumber) {
+                _valueController.value = _valueController.value.copyWith(
+                  text: val.toUpperCase(),
+                  selection: TextSelection.collapsed(offset: val.length),
+                );
+              }
+            },
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Required';
+              if (!isNumber && double.tryParse(v) != null) {
+                return 'Please enter a letter grade (e.g. A, B+)';
+              }
+              return null;
+            },
             decoration: InputDecoration(
               hintText: hint,
               border: InputBorder.none,
