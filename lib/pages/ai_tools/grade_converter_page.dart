@@ -377,8 +377,16 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
             },
             validator: (v) {
               if (v == null || v.isEmpty) return 'Required';
-              if (!isNumber && double.tryParse(v) != null) {
-                return 'Please enter a letter grade (e.g. A, B+)';
+              if (!isNumber) {
+                if (double.tryParse(v) != null) {
+                  return 'Please enter a letter grade (e.g. A, B+)';
+                }
+                if (v.contains('+')) {
+                  final base = v.replaceAll('+', '').trim().toUpperCase();
+                  if (base != 'A' && base != 'B') {
+                    return 'Only A and B grades can have a +';
+                  }
+                }
               }
               return null;
             },
