@@ -283,7 +283,7 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
                   child: _buildDropdown(
                     "English Test",
                     _englishType,
-                    ['IELTS', 'TOEFL'],
+                    ['IELTS', 'TOEFL', 'PTE', 'Duolingo', 'MOI'],
                     (v) => setState(() => _englishType = v!),
                   ),
                 ),
@@ -293,6 +293,7 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
                     "Score",
                     _englishScoreController,
                     isNumber: true,
+                    hint: _englishType == 'MOI' ? 'Enter 1' : 'Score',
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Required';
                       final val = double.tryParse(v);
@@ -301,6 +302,10 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
                         return '0-9';
                       if (_englishType == 'TOEFL' && (val < 0 || val > 120))
                         return '0-120';
+                      if (_englishType == 'PTE' && (val < 10 || val > 90))
+                        return '10-90';
+                      if (_englishType == 'Duolingo' && (val < 10 || val > 160))
+                        return '10-160';
                       return null;
                     },
                   ),
