@@ -95,6 +95,22 @@ class AiToolsPage extends StatelessWidget {
                     ),
                     _buildGridCard(
                       context,
+                      title: 'Admit\nPredictor',
+                      icon: Icons.analytics_outlined,
+                      color: const Color(0xFF2962FF),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/ai/admit-predictor'),
+                    ),
+                    _buildGridCard(
+                      context,
+                      title: 'SOP\nWriter',
+                      icon: Icons.description_outlined,
+                      color: const Color(0xFF00BFA5),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/ai/sop-writer'),
+                    ),
+                    _buildGridCard(
+                      context,
                       title: 'AI Support\nAssistant',
                       icon: Icons.chat_bubble_outline,
                       color: const Color(0xFF009688),

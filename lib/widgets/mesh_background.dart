@@ -10,52 +10,30 @@ class MeshBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Base Background Color - Soft lavender tint
-        Positioned.fill(child: Container(color: const Color(0xFFF8F4FF))),
+        // Base Background Color - Light background from web
+        Positioned.fill(child: Container(color: const Color(0xFFF7F5F8))),
 
-        // Deep Lavender Glow (Center West)
+        // Deep Purple Glow (Web Primary: #6605c7) - Top Left
         Positioned(
-          top: MediaQuery.of(context).size.height * 0.2,
-          left: -150,
+          top: -100,
+          left: -100,
           child: Container(
             width: 500,
             height: 500,
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  const Color(
-                    0xFFD4B4FF,
-                  ).withValues(alpha: 0.6), // Vibrant Lavender
-                  const Color(0xFFD4B4FF).withValues(alpha: 0),
+                  const Color(0xFF6605C7).withOpacity(0.3),
+                  Colors.transparent,
                 ],
               ),
             ),
           ),
         ),
 
-        // Soft Purple Glow (Top West)
+        // Gold Glow (Web Accent: #e0c389) - Top Right
         Positioned(
-          top: -100,
-          left: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(
-                    0xFFB388FF,
-                  ).withValues(alpha: 0.4), // Purplish blue
-                  const Color(0xFFB388FF).withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Cream/Yellow Glow (East - Mid)
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.3,
+          top: -50,
           right: -100,
           child: Container(
             width: 450,
@@ -63,17 +41,15 @@ class MeshBackground extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  const Color(
-                    0xFFFFECB3,
-                  ).withValues(alpha: 0.6), // Saturated Cream
-                  const Color(0xFFFFECB3).withValues(alpha: 0),
+                  const Color(0xFFE0C389).withOpacity(0.4),
+                  Colors.transparent,
                 ],
               ),
             ),
           ),
         ),
 
-        // Sky Blue Glow (Bottom East)
+        // Light Blue/Cyan Glow (Bottom Right)
         Positioned(
           bottom: -50,
           right: -50,
@@ -83,10 +59,26 @@ class MeshBackground extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: RadialGradient(
                 colors: [
-                  const Color(
-                    0xFFD1F1FF,
-                  ).withValues(alpha: 0.5), // Soft Sky Blue
-                  const Color(0xFFD1F1FF).withValues(alpha: 0),
+                  const Color(0xFF8BC0E8).withOpacity(0.3),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Deep Purple Glow (Bottom Left)
+        Positioned(
+          bottom: -100,
+          left: -50,
+          child: Container(
+            width: 400,
+            height: 400,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  const Color(0xFF6605C7).withOpacity(0.2),
+                  Colors.transparent,
                 ],
               ),
             ),
@@ -96,7 +88,7 @@ class MeshBackground extends StatelessWidget {
         // Blur Layer
         Positioned.fill(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+            filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
             child: Container(color: Colors.transparent),
           ),
         ),

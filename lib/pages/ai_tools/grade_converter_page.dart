@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/ai_logic_service.dart';
 import '../../widgets/mesh_background.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/primary_button.dart';
+import '../../widgets/glass_text_field.dart';
 
 class GradeConverterPage extends StatefulWidget {
   const GradeConverterPage({super.key});
@@ -65,6 +68,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
               content: Text(
                 'Error: ${e.toString().replaceAll("Exception: ", "")}',
               ),
+              backgroundColor: Colors.redAccent,
             ),
           );
         }
@@ -89,6 +93,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
             style: TextStyle(
               color: Color(0xFF1F2937),
               fontWeight: FontWeight.w600,
+              fontFamily: 'Noto Serif',
             ),
           ),
           centerTitle: true,
@@ -97,8 +102,118 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              if (_result != null) _buildResultCard(),
-              _buildFormCard(),
+              if (_result != null) _buildResultSection(),
+              GlassCard(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Input Details",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildDropdown(
+                        "Input Type",
+                        _inputType,
+                        const [
+                          DropdownMenuItem(
+                            value: 'percentage',
+                            child: Text('Percentage'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'marks',
+                            child: Text('Marks (x/y)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'gpa',
+                            child: Text('GPA (4.0)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'cgpa',
+                            child: Text('CGPA (10.0)'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'letterGrade',
+                            child: Text('Letter Grade (A, B+)'),
+                          ),
+                        ],
+                        (val) => setState(() => _inputType = val!),
+                      ),
+                      const SizedBox(height: 16),
+                      GlassTextField(
+                        controller: _valueController,
+                        hintText: _inputType == 'letterGrade'
+                            ? "e.g. A+"
+                            : "e.g. 85",
+                        labelText: "Input Value",
+                        isNumber: _inputType != 'letterGrade',
+                        keyboardType: _inputType == 'letterGrade'
+                            ? TextInputType.text
+                            : const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                        onChanged: (val) {
+                          if (_inputType == 'letterGrade' && val.isNotEmpty) {
+                            final upper = val.toUpperCase();
+                            if (upper != val) {
+                              _valueController.value = _valueController.value
+                                  .copyWith(
+                                    text: upper,
+                                    selection: TextSelection.collapsed(
+                                      offset: upper.length,
+                                    ),
+                                  );
+                            }
+                          }
+                        },
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Required';
+                          if (_inputType == 'letterGrade') {
+                            if (double.tryParse(v) != null) {
+                              return 'Enter a letter grade';
+                            }
+                          } else {
+                            if (double.tryParse(v) == null) {
+                              return 'Enter a valid number';
+                            }
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (_inputType == 'marks')
+                        GlassTextField(
+                          controller: _totalMarksController,
+                          hintText: "e.g. 100",
+                          labelText: "Total Marks",
+                          isNumber: true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            if (double.tryParse(v) == null) {
+                              return 'Enter a valid number';
+                            }
+                            return null;
+                          },
+                        ),
+                      const SizedBox(height: 32),
+                      PrimaryButton(
+                        text: 'Analyze Grades',
+                        onPressed: _analyzeGrades,
+                        isLoading: _isLoading,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -106,203 +221,157 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
     );
   }
 
-  Widget _buildResultCard() {
+  Widget _buildResultSection() {
     final analysis = _result!.analysis;
-    final String strength = analysis['strength'];
-    final List<String> recommendations = List<String>.from(
+    final strength = analysis['strength'] ?? 'N/A';
+    final recommendations = List<String>.from(
       analysis['recommendations'] ?? [],
     );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFC51162).withValues(alpha: 0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-        border: Border.all(
-          color: const Color(0xFFC51162).withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
+    return Column(
+      children: [
+        // Main Result Card
+        GlassCard(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'AI Analysis',
+                'AI Analysis Result',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1F2937),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                strength.toUpperCase(),
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFC51162),
-                  letterSpacing: 1.1,
-                  fontSize: 16,
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0C389).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFE0C389).withOpacity(0.5),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.insights,
+                      size: 20,
+                      color: Color(0xFF8D6E63),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        strength,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5D4037),
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildScoreBadge(
+                    'Percentage',
+                    '${_result!.percentage}%',
+                    const Color(0xFF4CAF50),
+                  ),
+                  _buildScoreBadge(
+                    'US GPA',
+                    '${_result!.gpa}',
+                    const Color(0xFF2196F3),
+                  ),
+                  _buildScoreBadge(
+                    'CGPA',
+                    '${_result!.cgpa}',
+                    const Color(0xFF9C27B0),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "Recommendations",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ...recommendations.map(
+                (rec) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        size: 18,
+                        color: Color(0xFF6605C7),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          rec,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black.withOpacity(0.7),
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildInfoRow('Percentage', '${_result!.percentage}%'),
-          _buildInfoRow('US GPA (4.0)', '${_result!.gpa}'),
-          _buildInfoRow('CGPA (10.0)', '${_result!.cgpa}'),
-          _buildInfoRow('Classification', _result!.classification),
-
-          const Divider(height: 32),
-          Text(
-            analysis['competitiveness'],
-            style: const TextStyle(
-              fontStyle: FontStyle.italic,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "Recommendations:",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          ...recommendations.map(
-            (rec) => Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    size: 16,
-                    color: Color(0xFFC51162),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(rec, style: const TextStyle(fontSize: 13)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: Colors.grey)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFormCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFC51162).withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDropdown("Input Type", _inputType, const [
-              DropdownMenuItem(value: 'percentage', child: Text('Percentage')),
-              DropdownMenuItem(value: 'marks', child: Text('Marks (x/y)')),
-              DropdownMenuItem(value: 'gpa', child: Text('GPA (4.0)')),
-              DropdownMenuItem(value: 'cgpa', child: Text('CGPA (10.0)')),
-              DropdownMenuItem(
-                value: 'letterGrade',
-                child: Text('Letter Grade (A, B+)'),
-              ),
-            ], (val) => setState(() => _inputType = val!)),
-            const SizedBox(height: 16),
-
-            _buildInputField(
-              "Input Value",
-              _inputType == 'letterGrade' ? "e.g. A+" : "e.g. 85",
-              _valueController,
-              isNumber: _inputType != 'letterGrade',
-            ),
-            const SizedBox(height: 16),
-
-            if (_inputType == 'marks')
-              _buildInputField(
-                "Total Marks",
-                "e.g. 100",
-                _totalMarksController,
-                isNumber: true,
-              ),
-
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _analyzeGrades,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF311B92),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 4,
-                  shadowColor: const Color(0xFF311B92).withOpacity(0.4),
-                ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Text(
-                        'Analyze Grades',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-          ],
         ),
-      ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildScoreBadge(String label, String value, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: color.withOpacity(0.3), width: 2),
+          ),
+          child: Center(
+            child: Text(
+              value.replaceAll('%', ''),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.black.withOpacity(0.6),
+          ),
+        ),
+      ],
     );
   }
 
@@ -323,9 +392,16 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            color: Colors.white.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -333,66 +409,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
               items: items,
               onChanged: onChanged,
               isExpanded: true,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInputField(
-    String label,
-    String hint,
-    TextEditingController controller, {
-    bool isNumber = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: TextFormField(
-            controller: controller,
-            keyboardType: isNumber
-                ? const TextInputType.numberWithOptions(decimal: true)
-                : TextInputType.text,
-            textCapitalization: TextCapitalization.characters,
-            onChanged: (val) {
-              if (!isNumber) {
-                _valueController.value = _valueController.value.copyWith(
-                  text: val.toUpperCase(),
-                  selection: TextSelection.collapsed(offset: val.length),
-                );
-              }
-            },
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Required';
-              if (!isNumber) {
-                if (double.tryParse(v) != null) {
-                  return 'Please enter a letter grade (e.g. A, B+)';
-                }
-                if (v.contains('+')) {
-                  final base = v.replaceAll('+', '').trim().toUpperCase();
-                  if (base != 'A' && base != 'B') {
-                    return 'Only A and B grades can have a +';
-                  }
-                }
-              }
-              return null;
-            },
-            decoration: InputDecoration(
-              hintText: hint,
-              border: InputBorder.none,
+              dropdownColor: Colors.white,
             ),
           ),
         ),
