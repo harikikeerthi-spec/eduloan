@@ -61,9 +61,9 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
         'testScore': _testScoreController.text.isEmpty
             ? 0
             : double.parse(_testScoreController.text),
-        'englishTestType': _englishScoreController.text.isEmpty
-            ? 'None'
-            : _englishType,
+        'englishTestType': (_englishType == 'MOI')
+            ? 'MOI'
+            : (_englishScoreController.text.isEmpty ? 'None' : _englishType),
         'englishTestScore': _englishScoreController.text.isEmpty
             ? 0
             : double.parse(_englishScoreController.text),
@@ -352,34 +352,36 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
                     (v) => setState(() => _englishType = v!),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: GlassTextField(
-                    controller: _englishScoreController,
-                    hintText: _englishType == 'MOI' ? 'Enter 1' : 'Score',
-                    labelText: "Score",
-                    isNumber: true,
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Required';
-                      final val = double.tryParse(v);
-                      if (val == null) return 'Invalid';
-                      if (_englishType == 'IELTS' && (val < 0 || val > 9)) {
-                        return '0-9';
-                      }
-                      if (_englishType == 'TOEFL' && (val < 0 || val > 120)) {
-                        return '0-120';
-                      }
-                      if (_englishType == 'PTE' && (val < 10 || val > 90)) {
-                        return '10-90';
-                      }
-                      if (_englishType == 'Duolingo' &&
-                          (val < 10 || val > 160)) {
-                        return '10-160';
-                      }
-                      return null;
-                    },
+                if (_englishType != 'MOI') ...[
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: GlassTextField(
+                      controller: _englishScoreController,
+                      hintText: "Score",
+                      labelText: "Score",
+                      isNumber: true,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Required';
+                        final val = double.tryParse(v);
+                        if (val == null) return 'Invalid';
+                        if (_englishType == 'IELTS' && (val < 0 || val > 9)) {
+                          return '0-9';
+                        }
+                        if (_englishType == 'TOEFL' && (val < 0 || val > 120)) {
+                          return '0-120';
+                        }
+                        if (_englishType == 'PTE' && (val < 10 || val > 90)) {
+                          return '10-90';
+                        }
+                        if (_englishType == 'Duolingo' &&
+                            (val < 10 || val > 160)) {
+                          return '10-160';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             if (_englishType == 'MOI') ...[
