@@ -53,8 +53,8 @@ class Blog {
       featuredImage: json['featuredImage'],
       readTime: json['readTime'] ?? 5,
       views: json['views'] ?? 0,
-      featured: json['featured'] ?? false,
-      published: json['published'] ?? false,
+      featured: json['isFeatured'] ?? json['featured'] ?? false,
+      published: json['isPublished'] ?? json['published'] ?? false,
       publishedAt: json['publishedAt'] != null
           ? DateTime.parse(json['publishedAt'])
           : null,

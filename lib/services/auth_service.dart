@@ -23,7 +23,9 @@ class AuthService {
           .timeout(const Duration(seconds: 30));
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      // Check both status code AND the 'success' flag from backend
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
         return {
           'success': true,
           'message': data['message'] ?? 'OTP sent successfully',
@@ -55,7 +57,11 @@ class AuthService {
           .timeout(const Duration(seconds: 30));
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 || response.statusCode == 201) {
+
+      // CRITICAL FIX: The backend might return 201 Created but with { success: false } body
+      // We must check data['success'] explicitly.
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
         final token = data['access_token'];
 
         // Save token and email
@@ -126,7 +132,9 @@ class AuthService {
         await prefs.setString('user_firstName', firstName);
         await prefs.setString('user_lastName', lastName);
         await prefs.setString('user_phone', phoneNumber);
-        await prefs.setString('user_dob', dateOfBirth);
+        if (data['user'] != null && data['user']['userId'] != null) {
+          await prefs.setString('userId', data['user']['userId']);
+        }
 
         return {
           'success': true,

@@ -32,6 +32,12 @@ class MainNavigationState extends State<MainNavigation> {
     _scaffoldKey.currentState?.openDrawer();
   }
 
+  void switchToTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   final List<Widget> _pages = [
     const HomeTab(),
     const MyLoansPage(),

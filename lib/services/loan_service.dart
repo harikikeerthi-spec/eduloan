@@ -1,33 +1,71 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 
 class LoanService {
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'http://10.0.2.2:3000/applications';
+
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    print(
+      'LoanService: Sending request with token: ${token != null ? "Present (Starts with ${token.substring(0, 10)}...)" : "MISSING"}',
+    );
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<Loan> createLoan({
     required String userId,
-    required String applicantName,
+    required String firstName,
+    required String lastName,
     required String phoneNumber,
     required String email,
-    required String institute,
-    required String course,
+    required String universityName,
+    required String courseName,
+    required String bank,
+    required String loanType,
     required double amount,
     required int tenure,
+    String? purpose,
+    String? fatherName,
+    String? fatherPhone,
+    String? fatherEmail,
+    String? motherName,
+    String? motherPhone,
+    String? motherEmail,
+    bool hasCollateral = false,
+    String? collateralDetails,
   }) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.post(
-        Uri.parse('$baseUrl/loans'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse(baseUrl),
+        headers: headers,
         body: json.encode({
           'userId': userId,
-          'applicantName': applicantName,
-          'phoneNumber': phoneNumber,
+          'firstName': firstName,
+          'lastName': lastName,
+          'phone': phoneNumber,
           'email': email,
-          'institute': institute,
-          'course': course,
+          'universityName': universityName,
+          'courseName': courseName,
+          'bank': bank,
+          'loanType': loanType,
           'amount': amount,
           'tenure': tenure,
+          'purpose': purpose,
+          'fatherName': fatherName,
+          'fatherPhone': fatherPhone,
+          'fatherEmail': fatherEmail,
+          'motherName': motherName,
+          'motherPhone': motherPhone,
+          'motherEmail': motherEmail,
+          'hasCollateral': hasCollateral,
+          'collateralDetails': collateralDetails,
         }),
       );
 
@@ -42,11 +80,12 @@ class LoanService {
     }
   }
 
-  Future<List<Loan>> getUserLoans(String userId) async {
+  Future<List<Loan>> getUserLoans() async {
     try {
+      final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/loans/user/$userId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/my'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -63,9 +102,10 @@ class LoanService {
 
   Future<Loan> getLoanById(String loanId) async {
     try {
+      final headers = await _getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/loans/$loanId'),
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('$baseUrl/$loanId'),
+        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -76,6 +116,58 @@ class LoanService {
       }
     } catch (e) {
       throw Exception('Error fetching loan: $e');
+    }
+  }
+
+  Future<void> deleteLoan(String loanId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/$loanId'),
+        headers: headers,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete loan: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error deleting loan: $e');
+    }
+  }
+
+  Future<void> uploadDocument({
+    required String applicationId,
+    required String docType,
+    required String docName,
+    required String filePath,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/$applicationId/documents'),
+      );
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields['docType'] = docType;
+      request.fields['docName'] = docName;
+
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('Upload failed: ${response.body}');
+        throw Exception('Failed to upload document: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error uploading document: $e');
     }
   }
 }

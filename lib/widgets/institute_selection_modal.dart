@@ -38,15 +38,10 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
-        color: Color(0xFF111827),
+        color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(32),
           topRight: Radius.circular(32),
-        ),
-        image: DecorationImage(
-          image: AssetImage('assets/images/edu_loan_bg.png'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.black87, BlendMode.darken),
         ),
       ),
       child: Column(
@@ -57,7 +52,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: const Color(0xFF311B92).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -88,7 +83,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 8),
@@ -96,25 +91,25 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 'Search and select your institute to view courses',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.6),
+                  color: Colors.black.withValues(alpha: 0.6),
                 ),
               ),
               const SizedBox(height: 24),
               // Search Bar
               TextField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: 'Search institutes...',
                   hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                   ),
                   prefixIcon: Icon(
                     Icons.search,
-                    color: Colors.white.withValues(alpha: 0.4),
+                    color: const Color(0xFF311B92).withValues(alpha: 0.6),
                   ),
                   filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.1),
+                  fillColor: const Color(0xFF311B92).withValues(alpha: 0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -140,7 +135,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                       Icon(
                         Icons.search_off_rounded,
                         size: 64,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.2),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -148,7 +143,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.black.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -156,7 +151,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                         'Try searching with a different name',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                         ),
                       ),
                     ],
@@ -194,13 +189,13 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   children: [
                     Icon(
                       Icons.arrow_back,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: const Color(0xFF311B92).withValues(alpha: 0.8),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Back to Selection',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -213,7 +208,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 8),
@@ -241,14 +236,14 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   Icon(
                     Icons.location_on_outlined,
                     size: 14,
-                    color: Colors.white.withValues(alpha: 0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _selectedInstitute!.state,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -259,7 +254,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               ),
               const SizedBox(height: 16),
@@ -284,10 +279,10 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: const Color(0xFF311B92).withValues(alpha: 0.03),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: const Color(0xFF311B92).withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(
@@ -306,13 +301,13 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                           course,
                           style: const TextStyle(
                             fontSize: 16,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                         ),
                       ),
                       Icon(
                         Icons.check_circle_outline,
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.3),
                         size: 20,
                       ),
                     ],
@@ -338,9 +333,18 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF311B92).withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -366,7 +370,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.black,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -374,7 +378,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                     '${institute.courses.length} Courses Available',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
@@ -382,7 +386,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withValues(alpha: 0.3),
+              color: const Color(0xFF311B92).withValues(alpha: 0.4),
               size: 16,
             ),
           ],

@@ -32,7 +32,7 @@ class _HomeTabState extends State<HomeTab> {
       final userId = prefs.getString('userId') ?? '';
 
       if (userId.isNotEmpty) {
-        final loans = await _loanService.getUserLoans(userId);
+        final loans = await _loanService.getUserLoans();
         setState(() {
           _activeLoans = loans
               .where(
@@ -544,7 +544,7 @@ class _HomeTabState extends State<HomeTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      loan.institute,
+                      loan.universityName ?? 'Educational Loan',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -555,7 +555,7 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      loan.course,
+                      loan.courseName ?? 'General Course',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.black.withValues(alpha: 0.6),

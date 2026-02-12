@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
 import '../services/auth_service.dart';
 import 'user_details_page.dart';
+import 'main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -192,7 +193,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 32),
 
                       const Text(
-                        'Settings',
+                        'Quick Actions',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -200,6 +201,46 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       const SizedBox(height: 16),
+
+                      _buildSettingItem(
+                        icon: Icons.dashboard_outlined,
+                        title: 'Dashboard',
+                        onTap: () {
+                          // Switch to Home tab (index 0)
+                          final mainNav = MainNavigation.of(context);
+                          if (mainNav != null) {
+                            mainNav.switchToTab(0);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildSettingItem(
+                        icon: Icons.description_outlined,
+                        title: 'My Applications',
+                        onTap: () {
+                          // Switch to My Loans tab (index 1)
+                          final mainNav = MainNavigation.of(context);
+                          if (mainNav != null) {
+                            mainNav.switchToTab(1);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildSettingItem(
+                        icon: Icons.folder_outlined,
+                        title: 'Document Vault',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Document Vault coming soon!'),
+                              backgroundColor: Color(0xFF311B92),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
 
                       _buildSettingItem(
                         icon: Icons.edit_outlined,
@@ -234,24 +275,32 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 12),
 
                       _buildSettingItem(
-                        icon: Icons.notifications_outlined,
-                        title: 'Notifications',
-                        onTap: () {},
+                        icon: Icons.settings_outlined,
+                        title: 'Settings',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Settings coming soon!'),
+                              backgroundColor: Color(0xFF311B92),
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
 
                       _buildSettingItem(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
-                        onTap: () {},
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Help & Support coming soon!'),
+                              backgroundColor: Color(0xFF311B92),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 12),
 
-                      _buildSettingItem(
-                        icon: Icons.privacy_tip_outlined,
-                        title: 'Privacy Policy',
-                        onTap: () {},
-                      ),
                       const SizedBox(height: 24),
 
                       // Logout Button
