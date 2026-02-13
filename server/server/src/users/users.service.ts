@@ -55,6 +55,13 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
+  async updateUserRole(email: string, role: 'admin' | 'user') {
+    return this.prisma.user.update({
+      where: { email },
+      data: { role },
+    });
+  }
+
   async updateUserDetails(
     email: string,
     firstName: string,
@@ -85,33 +92,30 @@ export class UsersService {
     });
   }
 
+  async updateRefreshToken(email: string, refreshToken: string | null) {
+    return this.prisma.user.update({
+      where: { email },
+      data: {
+        refreshToken,
+      },
+    });
+  }
+
   // Loan Application Methods
   async createLoanApplication(userId: string, data: {
-    applicantName: string;
-    phoneNumber: string;
-    email: string;
-    institute: string;
-    course: string;
     bank: string;
     loanType: string;
     amount: number;
-    tenure: number;
     purpose?: string;
   }) {
     return this.prisma.loanApplication.create({
       data: {
         userId,
-        applicantName: data.applicantName,
-        phoneNumber: data.phoneNumber,
-        email: data.email,
-        institute: data.institute,
-        course: data.course,
         bank: data.bank,
         loanType: data.loanType,
         amount: data.amount,
-        tenure: data.tenure,
         purpose: data.purpose || null,
-        progress: 10, // Initial progress
+        applicationNumber: 'APP' + Date.now() + Math.floor(Math.random() * 1000),
       },
     });
   }
