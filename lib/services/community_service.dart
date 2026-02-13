@@ -253,6 +253,31 @@ class CommunityService {
     return [];
   }
 
+  Future<ForumPost> getForumPostById(String id) async {
+    final response = await _getRequest('/community/forum/$id');
+    if (response['success'] == true) {
+      return ForumPost.fromJson(response['data']);
+    }
+    throw Exception('Post not found');
+  }
+
+  Future<Map<String, dynamic>> likeForumPost(String id) async {
+    final response = await _postRequest('/community/forum/$id/like', {});
+    return response;
+  }
+
+  Future<Map<String, dynamic>> addForumComment({
+    required String postId,
+    required String content,
+    String? parentId,
+  }) async {
+    final response = await _postRequest('/community/forum/$postId/comments', {
+      'content': content,
+      if (parentId != null) 'parentId': parentId,
+    });
+    return response;
+  }
+
   // ==================== RESOURCES ====================
 
   Future<List<CommunityResource>> getAllResources({

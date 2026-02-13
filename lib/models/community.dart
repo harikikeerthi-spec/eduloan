@@ -86,12 +86,17 @@ class CommunityEvent {
   final String location;
   final String type;
   final String? imageUrl;
-  final String organizer;
+  final String? speaker;
+  final String? speakerTitle;
+  final String? speakerBio;
   final int? maxAttendees;
   final int attendeesCount;
   final double price;
+  final bool isFree;
   final bool isOnline;
   final String? meetingLink;
+  final String? recordingUrl;
+  final bool isFeatured;
 
   CommunityEvent({
     required this.id,
@@ -101,31 +106,39 @@ class CommunityEvent {
     required this.location,
     required this.type,
     this.imageUrl,
-    required this.organizer,
+    this.speaker,
+    this.speakerTitle,
+    this.speakerBio,
     this.maxAttendees,
     required this.attendeesCount,
     required this.price,
+    required this.isFree,
     required this.isOnline,
     this.meetingLink,
+    this.recordingUrl,
+    required this.isFeatured,
   });
 
   factory CommunityEvent.fromJson(Map<String, dynamic> json) {
     return CommunityEvent(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'Untitled Event',
+      description: json['description'] ?? '',
       date: DateTime.tryParse(json['date'] ?? '') ?? DateTime.now(),
       location: json['location'] ?? 'Online',
-      type: json['type'],
-      imageUrl:
-          json['imageUrl'] ??
-          'https://via.placeholder.com/150', // Default image
-      organizer: json['organizer'] ?? 'EduLoan',
+      type: json['type'] ?? 'webinar',
+      imageUrl: json['imageUrl'],
+      speaker: json['speaker'],
+      speakerTitle: json['speakerTitle'],
+      speakerBio: json['speakerBio'],
       maxAttendees: json['maxAttendees'],
       attendeesCount: json['attendeesCount'] ?? 0,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      isFree: json['isFree'] ?? true,
       isOnline: json['isOnline'] ?? true,
       meetingLink: json['meetingLink'],
+      recordingUrl: json['recordingUrl'],
+      isFeatured: json['isFeatured'] ?? false,
     );
   }
 }
@@ -138,7 +151,11 @@ class SuccessStory {
   final String? imageUrl;
   final String? videoUrl;
   final String content;
-  final double? loanAmount;
+  final String country;
+  final String loanAmount;
+  final String bank;
+  final String? interestRate;
+  final String? tips;
   final bool isFeatured;
 
   SuccessStory({
@@ -149,23 +166,28 @@ class SuccessStory {
     this.imageUrl,
     this.videoUrl,
     required this.content,
-    this.loanAmount,
+    required this.country,
+    required this.loanAmount,
+    required this.bank,
+    this.interestRate,
+    this.tips,
     required this.isFeatured,
   });
 
   factory SuccessStory.fromJson(Map<String, dynamic> json) {
     return SuccessStory(
-      id: json['id'],
-      studentName: json['name'] ?? 'Student', // Mapped from 'name'
-      university: json['university'],
-      course: json['degree'] ?? 'Degree', // Mapped from 'degree'
-      imageUrl: json['image'], // Mapped from 'image'
+      id: json['id'] ?? '',
+      studentName: json['name'] ?? 'Student',
+      university: json['university'] ?? 'University',
+      course: json['degree'] ?? 'Degree',
+      imageUrl: json['image'],
       videoUrl: json['videoUrl'],
-      content: json['story'] ?? '', // Mapped from 'story'
-      // Parse loanAmount string "4000000" to double safely
-      loanAmount: json['loanAmount'] != null
-          ? double.tryParse(json['loanAmount'].toString())
-          : null,
+      content: json['story'] ?? '',
+      country: json['country'] ?? '',
+      loanAmount: json['loanAmount']?.toString() ?? '',
+      bank: json['bank'] ?? '',
+      interestRate: json['interestRate'],
+      tips: json['tips'],
       isFeatured: json['isFeatured'] ?? false,
     );
   }
@@ -186,6 +208,7 @@ class ForumPost {
   final bool isSolved;
   final DateTime createdAt;
   final int commentCount;
+  final List<ForumComment> comments;
 
   ForumPost({
     required this.id,
@@ -202,25 +225,70 @@ class ForumPost {
     required this.isSolved,
     required this.createdAt,
     this.commentCount = 0,
+    required this.comments,
   });
 
   factory ForumPost.fromJson(Map<String, dynamic> json) {
     return ForumPost(
-      id: json['id'],
-      authorId: json['authorId'],
-      userName: json['userName'],
+      id: json['id'] ?? '',
+      authorId: json['authorId'] ?? '',
+      userName: json['author'] != null
+          ? '${json['author']['firstName']} ${json['author']['lastName']}'
+          : (json['userName'] ?? 'Anonymous'),
       userImage: json['userImage'],
-      title: json['title'],
-      content: json['content'],
-      category: json['category'],
+      title: json['title'] ?? 'Untitled Post',
+      content: json['content'] ?? '',
+      category: json['category'] ?? 'General',
       tags: List<String>.from(json['tags'] ?? []),
       isMentorOnly: json['isMentorOnly'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
       isSolved: json['isSolved'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
-      commentCount:
-          json['commentCount'] ?? 0, // Often returned by backend aggregations
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      commentCount: json['_count']?['comments'] ?? json['commentCount'] ?? 0,
+      comments:
+          (json['comments'] as List?)
+              ?.map((c) => ForumComment.fromJson(c))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class ForumComment {
+  final String id;
+  final String content;
+  final String authorName;
+  final String? authorImage;
+  final DateTime createdAt;
+  final int likes;
+  final List<ForumComment> replies;
+
+  ForumComment({
+    required this.id,
+    required this.content,
+    required this.authorName,
+    this.authorImage,
+    required this.createdAt,
+    required this.likes,
+    required this.replies,
+  });
+
+  factory ForumComment.fromJson(Map<String, dynamic> json) {
+    return ForumComment(
+      id: json['id'] ?? '',
+      content: json['content'] ?? '',
+      authorName: json['author'] != null
+          ? '${json['author']['firstName']} ${json['author']['lastName']}'
+          : 'Anonymous',
+      authorImage: json['userImage'],
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      likes: json['likes'] ?? 0,
+      replies:
+          (json['replies'] as List?)
+              ?.map((r) => ForumComment.fromJson(r))
+              .toList() ??
+          [],
     );
   }
 }

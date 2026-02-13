@@ -14,6 +14,8 @@ import 'pages/admit_predictor_page.dart';
 import 'pages/sop_writer_page.dart';
 import 'pages/mentors_page.dart';
 import 'pages/events_page.dart';
+import 'pages/forum_page.dart';
+import 'pages/forum_post_detail_page.dart';
 
 void main() {
   // Set system UI overlay style
@@ -78,6 +80,8 @@ class MyApp extends StatelessWidget {
         '/ai/sop-writer': (context) => const SopWriterPage(),
         '/community/mentors': (context) => const MentorsPage(),
         '/community/events': (context) => const EventsPage(),
+        '/community/forum': (context) => const ForumPage(),
+        '/community/forum/detail': (context) => const ForumPostDetailPage(),
       },
     );
   }

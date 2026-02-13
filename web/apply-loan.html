@@ -45,30 +45,6 @@
         };
     </script>
     <style>
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.05);
-        }
-
-        .dark .glass-card {
-            background: rgba(25, 15, 35, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .nav-scrolled {
-            background: rgba(255, 255, 255, 0.8) !important;
-            backdrop-filter: blur(12px);
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
-
-        .dark .nav-scrolled {
-            background: rgba(17, 8, 26, 0.8) !important;
-        }
-
         body {
             background-attachment: fixed;
         }
@@ -87,64 +63,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav id="mainNav"
-        class="fixed top-0 w-full px-6 py-6 flex justify-center items-center z-50 transition-all duration-500">
-        <div class="w-full max-w-7xl flex justify-between items-center">
-            <div class="flex items-center gap-12">
-                <a href="index.html" class="flex items-center gap-2 group cursor-pointer relative z-10">
-                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg">
-                        <span class="material-symbols-outlined text-2xl">school</span>
-                    </div>
-                    <span class="font-bold text-2xl tracking-tight font-display text-gray-900 dark:text-white">LoanHero
-                        <span class="text-primary/80"></span></span>
-                </a>
-
-                <div class="hidden lg:flex items-center gap-8">
-                    <a href="about-us.html"
-                        class="nav-link text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">About</a>
-                    <a href="how-it-works.html"
-                        class="nav-link text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">How
-                        It Works</a>
-                    <a href="emi.html"
-                        class="nav-link text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors font-sans">EMI
-                        Calculator</a>
-                    <a href="faq.html"
-                        class="nav-link text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">FAQ</a>
-                    <a href="contact.html"
-                        class="nav-link text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Contact</a>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <a href="login.html" id="loginLink"
-                    class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">Sign
-                    In</a>
-
-
-                <!-- User Profile Dropdown (Hidden initially) -->
-                <div id="userProfileSection" class="hidden flex items-center gap-4 relative">
-                    <button id="profileBtn"
-                        class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
-                        <span class="material-symbols-outlined text-2xl text-primary">account_circle</span>
-                        <span id="userEmail" class="text-sm font-bold text-gray-900 dark:text-white"></span>
-                    </button>
-
-                    <!-- Dropdown Menu -->
-                    <div id="profileDropdown"
-                        class="hidden absolute top-12 right-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 w-48">
-                        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Logged in as</p>
-                            <p id="dropdownEmail" class="text-sm font-bold text-gray-900 dark:text-white truncate"></p>
-                        </div>
-                        <a href="index.html"
-                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Dashboard</a>
-                        <a href="#" id="logoutBtn"
-                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 border-t border-gray-200 dark:border-gray-700">Logout</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <div id="navbar-placeholder"></div>
 
     <main class="relative z-10 pt-32 pb-24">
         <section class="max-w-4xl mx-auto px-6">
@@ -159,18 +78,22 @@
 
             <div class="glass-card rounded-3xl p-8 md:p-12 shadow-xl">
                 <form id="loanApplicationForm" class="space-y-8">
+                    <!-- Personal Details -->
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2">Personal Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">First Name
                                 *</label>
-                            <input type="text" id="firstName" required
+                            <input type="text" id="firstName" required pattern="[A-Za-z\s]+"
+                                title="Only alphabets are allowed"
                                 class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
                                 placeholder="Enter your first name">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Last Name
                                 *</label>
-                            <input type="text" id="lastName" required
+                            <input type="text" id="lastName" required pattern="[A-Za-z\s]+"
+                                title="Only alphabets are allowed"
                                 class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
                                 placeholder="Enter your last name">
                         </div>
@@ -187,41 +110,101 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phone Number
                                 *</label>
-                            <input type="tel" id="phone" required
+                            <input type="tel" id="phone" required pattern="[0-9]{10}"
+                                title="Please enter a valid 10-digit phone number"
                                 class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
-                                placeholder="+91 98765 43210">
+                                placeholder="9876543210">
                         </div>
                     </div>
 
+                    <!-- Loan Details -->
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2">Loan Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Preferred Bank
                                 *</label>
-                            <select id="bankName" required
-                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3">
-                                <option value="">Select a bank</option>
-                                <option value="SBI">State Bank of India</option>
-                                <option value="HDFC">HDFC Bank</option>
-                                <option value="ICICI">ICICI Bank</option>
-                                <option value="Axis">Axis Bank</option>
-                                <option value="Kotak">Kotak Mahindra Bank</option>
-                                <option value="BOB">Bank of Baroda</option>
-                                <option value="PNB">Punjab National Bank</option>
-                            </select>
+                            <input type="text" id="bankName" required
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Enter preferred bank name">
                         </div>
                         <div>
                             <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Loan Type
                                 *</label>
-                            <select id="loanType" required
-                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3">
-                                <option value="">Select loan type</option>
-                                <option value="education" selected>Education Loan</option>
-                                <option value="home">Home Loan</option>
-                                <option value="personal">Personal Loan</option>
-                                <option value="business">Business Loan</option>
-                                <option value="vehicle">Vehicle Loan</option>
-                            </select>
+                            <input type="text" id="loanType" value="Education Loan" readonly
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-gray-100 dark:bg-zinc-900 cursor-not-allowed text-gray-500 focus:border-primary focus:ring-primary px-4 py-3">
                         </div>
+                    </div>
+
+                    <!-- Parent Details -->
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2">Parent Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Father's Name
+                                *</label>
+                            <input type="text" id="fatherName" required pattern="[A-Za-z\s]+"
+                                title="Only alphabets are allowed"
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Father's Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Father's Phone
+                                *</label>
+                            <input type="tel" id="fatherPhone" required pattern="[0-9]{10}"
+                                title="Please enter a valid 10-digit phone number"
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Father's Phone">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Father's Email
+                                *</label>
+                            <input type="email" id="fatherEmail" required
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Father's Email">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mother's Name
+                                *</label>
+                            <input type="text" id="motherName" required pattern="[A-Za-z\s]+"
+                                title="Only alphabets are allowed"
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Mother's Name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mother's Phone
+                                *</label>
+                            <input type="tel" id="motherPhone" required pattern="[0-9]{10}"
+                                title="Please enter a valid 10-digit phone number"
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Mother's Phone">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Mother's Email
+                                *</label>
+                            <input type="email" id="motherEmail" required
+                                class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                                placeholder="Mother's Email">
+                        </div>
+                    </div>
+
+                    <!-- Collateral -->
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200 border-b pb-2">Collateral Information
+                    </h3>
+                    <div>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="hasCollateral"
+                                class="form-checkbox h-5 w-5 text-primary rounded border-gray-300 focus:ring-primary transition duration-150 ease-in-out">
+                            <span class="ml-2 text-gray-700 dark:text-gray-300 font-medium">Do you have
+                                collateral?</span>
+                        </label>
+                    </div>
+                    <div id="collateralSection" class="hidden animate-fade-in-down transition-all duration-300">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Collateral Details
+                            *</label>
+                        <textarea id="collateralDetails" rows="3"
+                            class="w-full rounded-xl border-gray-200 dark:border-zinc-700 bg-white/50 dark:bg-zinc-800/50 focus:border-primary focus:ring-primary px-4 py-3"
+                            placeholder="Describe your collateral (e.g., Property type, location, estimated value)"></textarea>
                     </div>
 
                     <div>
@@ -262,70 +245,7 @@
         </section>
     </main>
 
-    <footer class="bg-[#190f23] text-white py-20 relative overflow-hidden">
-        <div class="max-w-7xl mx-auto px-6 relative z-10">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                <div class="col-span-1 md:col-span-2">
-                    <div class="flex items-center gap-2 mb-6">
-                        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                            <span class="material-symbols-outlined text-white">school</span>
-                        </div>
-                        <span class="text-2xl font-bold font-display tracking-tight text-white">LoanHero</span>
-                    </div>
-                    <p class="text-gray-400 max-w-sm font-sans leading-relaxed mb-8">
-                        Empowering students with transparent, flexible, and accessible education financing solutions.
-                        Join thousands of students pursuing their dreams.
-                    </p>
-                    <div class="flex items-center gap-4">
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="LinkedIn">
-                            <span class="material-symbols-outlined text-white">language</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Twitter">
-                            <span class="material-symbols-outlined text-white">mail</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Facebook">
-                            <span class="material-symbols-outlined text-white">forum</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Instagram">
-                            <span class="material-symbols-outlined text-white">share</span>
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-lg font-bold mb-6 font-display text-white">Quick Links</h4>
-                    <ul class="space-y-4 text-gray-400 font-sans">
-                        <li><a href="about-us.html" class="hover:text-primary transition-colors">About Us</a></li>
-                        <li><a href="emi.html" class="hover:text-primary transition-colors">EMI Calculator</a></li>
-                        <li><a href="contact.html" class="hover:text-primary transition-colors">Contact</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-lg font-bold mb-6 font-display text-white">Legal</h4>
-                    <ul class="space-y-4 text-gray-400 font-sans">
-                        <li><a href="privacy-policy.html" class="hover:text-primary transition-colors">Privacy
-                                Policy</a></li>
-                        <li><a href="terms-conditions.html" class="hover:text-primary transition-colors">Terms of
-                                Service</a></li>
-                        <li><a href="cookies.html" class="hover:text-primary transition-colors">Cookie Policy</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="pt-8 border-t border-white/10 text-center text-gray-500 text-xs font-sans">
-                <p>&copy; 2023 LoanHero Inc. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <div id="footer-placeholder"></div>
 
     <!-- Success Modal -->
     <div id="successModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -338,11 +258,17 @@
             </div>
             <h2 class="text-2xl font-bold font-display mb-4 text-gray-900 dark:text-white">Application Submitted!</h2>
             <p class="text-gray-500 dark:text-gray-400 mb-6">Your loan application has been submitted successfully. You
-                can track its status from your dashboard.</p>
-            <a href="dashboard.html"
-                class="inline-block px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all">
-                Go to Dashboard
-            </a>
+                can track its status from your applications page.</p>
+            <div class="flex gap-3">
+                <a href="my-applications.html"
+                    class="flex-1 inline-block px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all">
+                    View My Applications
+                </a>
+                <a href="dashboard.html"
+                    class="flex-1 inline-block px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
+                    Go to Dashboard
+                </a>
+            </div>
         </div>
     </div>
 
@@ -366,75 +292,188 @@
         .animate-bounce-in {
             animation: bounce-in 0.4s ease-out forwards;
         }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translate3d(0, -20px, 0);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate3d(0, 0, 0);
+            }
+        }
+
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out;
+        }
     </style>
 
     <script>
-        // Nav scroll effect
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('mainNav');
-            if (window.scrollY > 50) {
-                nav.classList.add('nav-scrolled');
+        const API_URL = 'http://localhost:3000';
+
+        // Collateral toggle
+        document.getElementById('hasCollateral').addEventListener('change', function () {
+            const section = document.getElementById('collateralSection');
+            const details = document.getElementById('collateralDetails');
+            if (this.checked) {
+                section.classList.remove('hidden');
+                details.required = true;
             } else {
-                nav.classList.remove('nav-scrolled');
+                section.classList.add('hidden');
+                details.required = false;
+                details.value = '';
             }
         });
 
         // Form submission handler
-        document.getElementById('loanApplicationForm').addEventListener('submit', function (e) {
+        document.getElementById('loanApplicationForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Submitting...';
 
+            // Get user info from localStorage
+            const userId = localStorage.getItem('userId');
+            const accessToken = localStorage.getItem('accessToken');
+            const userEmail = localStorage.getItem('userEmail');
+
+            if (!userId || !accessToken || !userEmail) {
+                alert('You must be logged in to submit an application');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Application';
+                window.location.href = 'login.html';
+                return;
+            }
+
             // Gather form data
-            const application = {
-                id: Date.now(),
-                firstName: document.getElementById('firstName').value,
-                lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                bank: document.getElementById('bankName').value,
-                type: document.getElementById('loanType').value,
-                university: document.getElementById('university').value,
-                amount: document.getElementById('loanAmount').value,
-                purpose: document.getElementById('courseDetails').value,
-                status: 'pending',
-                date: new Date().toISOString()
-            };
+            const loanType = 'education'; // Hardcoded
+            const bank = document.getElementById('bankName').value;
+            const amount = parseFloat(document.getElementById('loanAmount').value);
+            const purpose = document.getElementById('courseDetails').value;
 
-            // Load existing dashboard data
-            let dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || {
-                applications: [],
-                documents: {
-                    aadhar: { uploaded: false, status: 'pending' },
-                    pan: { uploaded: false, status: 'pending' },
-                    passport: { uploaded: false, status: 'pending' },
-                    '10th': { uploaded: false, status: 'pending' },
-                    '12th': { uploaded: false, status: 'pending' },
-                    degree: { uploaded: false, status: 'pending' },
-                },
-                activity: []
-            };
+            // New fields
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const fatherName = document.getElementById('fatherName').value;
+            const fatherPhone = document.getElementById('fatherPhone').value;
+            const fatherEmail = document.getElementById('fatherEmail').value;
+            const motherName = document.getElementById('motherName').value;
+            const motherPhone = document.getElementById('motherPhone').value;
+            const motherEmail = document.getElementById('motherEmail').value;
 
-            // Add new application
-            dashboardData.applications.unshift(application);
+            const hasCollateral = document.getElementById('hasCollateral').checked;
+            const collateralDetails = document.getElementById('collateralDetails').value;
+            const university = document.getElementById('university').value;
 
-            // Add activity log
-            dashboardData.activity.unshift({
-                type: 'new_application',
-                description: `New ${formatLoanType(application.type)} application submitted to ${application.bank}`,
-                amount: application.amount,
-                date: new Date().toISOString()
-            });
+            try {
+                // Call backend API to create application
+                const response = await fetch(`${API_URL}/auth/create-application`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        userId,
+                        firstName,
+                        lastName,
+                        email,
+                        phone,
+                        bank,
+                        loanType,
+                        amount,
+                        purpose,
+                        universityName: university,
+                        fatherName, fatherPhone, fatherEmail,
+                        motherName, motherPhone, motherEmail,
+                        hasCollateral, collateralDetails
+                    })
+                });
 
-            // Save to localStorage
-            localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+                const data = await response.json();
 
-            // Show success modal after a short delay
-            setTimeout(() => {
-                document.getElementById('successModal').classList.remove('hidden');
-            }, 500);
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to submit application');
+                }
+
+                // Build local application object for caching
+                const application = {
+                    id: data.application.id,
+                    userId: data.application.userId,
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    email: userEmail,
+                    phone: document.getElementById('phone').value,
+                    bank: data.application.bank,
+                    type: data.application.loanType,
+                    university: document.getElementById('university').value,
+                    amount: data.application.amount,
+                    purpose: data.application.purpose,
+                    status: data.application.status || 'pending',
+                    date: data.application.date || new Date().toISOString()
+                };
+
+                // Load existing dashboard data
+                let dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || {
+                    applications: [],
+                    documents: {
+                        aadhar: { uploaded: false, status: 'pending' },
+                        pan: { uploaded: false, status: 'pending' },
+                        passport: { uploaded: false, status: 'pending' },
+                        '10th': { uploaded: false, status: 'pending' },
+                        '12th': { uploaded: false, status: 'pending' },
+                        degree: { uploaded: false, status: 'pending' },
+                    },
+                    activity: []
+                };
+
+                // Ensure arrays exist and are arrays
+                if (!Array.isArray(dashboardData.applications)) {
+                    dashboardData.applications = [];
+                }
+                if (!Array.isArray(dashboardData.activity)) {
+                    dashboardData.activity = [];
+                }
+                if (!dashboardData.documents || typeof dashboardData.documents !== 'object') {
+                    dashboardData.documents = {
+                        aadhar: { uploaded: false, status: 'pending' },
+                        pan: { uploaded: false, status: 'pending' },
+                        passport: { uploaded: false, status: 'pending' },
+                        '10th': { uploaded: false, status: 'pending' },
+                        '12th': { uploaded: false, status: 'pending' },
+                        degree: { uploaded: false, status: 'pending' },
+                    };
+                }
+
+                // Add new application
+                dashboardData.applications.unshift(application);
+
+                // Add activity log
+                dashboardData.activity.unshift({
+                    type: 'new_application',
+                    description: `New ${formatLoanType(application.type)} application submitted to ${application.bank}`,
+                    amount: application.amount,
+                    date: new Date().toISOString()
+                });
+
+                // Save to localStorage
+                localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+
+                // Show success modal after a short delay
+                setTimeout(() => {
+                    document.getElementById('successModal').classList.remove('hidden');
+                }, 500);
+            } catch (error) {
+                console.error('Error submitting application:', error);
+                alert('Error submitting application: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Application';
+            }
         });
 
         function formatLoanType(type) {
@@ -449,6 +488,7 @@
         }
     </script>
     <script src="assets/js/auth.js"></script>
+    <script src="assets/js/components-loader.js"></script>
 </body>
 
 </html>

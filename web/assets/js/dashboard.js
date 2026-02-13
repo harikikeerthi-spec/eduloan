@@ -15,6 +15,13 @@ const publicPages = [
     'terms-conditions.html',
     'cookies.html',
     'eligibility.html',
+    'explore.html',
+    'engage.html',
+    'blog.html',
+    'community-events.html',
+    'community-mentorship.html',
+    'community-resources.html',
+    'community-success-stories.html',
     ''  // Root path
 ];
 
@@ -119,6 +126,11 @@ async function loadDynamicDashboardData(userId) {
             // Render the updated dashboard
             if (typeof renderDashboard === 'function') {
                 renderDashboard();
+            }
+
+            // Update Progress Tracker
+            if (window.progressTracker && typeof window.progressTracker.updateFromDashboardData === 'function') {
+                window.progressTracker.updateFromDashboardData(window.dashboardData);
             }
 
             console.log('Dashboard data loaded from database');

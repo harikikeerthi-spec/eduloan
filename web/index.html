@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="index">
 
 <head>
     <meta charset="utf-8" />
@@ -19,6 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
     <link href="assets/css/main.css" rel="stylesheet" />
+    <link href="assets/css/design-tokens.css" rel="stylesheet" />
 
     <!-- Styles & Config -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
@@ -44,220 +45,22 @@
             },
         };
     </script>
-    <style>
-        .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 4px 20px 0 rgba(31, 38, 135, 0.05);
-        }
 
-        .dark .glass-card {
-            background: rgba(25, 15, 35, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .nav-scrolled {
-            background: rgba(17, 8, 26, 0.95) !important;
-            backdrop-filter: blur(12px);
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
-
-        .dark .nav-scrolled {
-            background: rgba(17, 8, 26, 0.8) !important;
-        }
-
-        body {
-            background-attachment: fixed;
-        }
-
-        @keyframes scrollLeft {
-            0% {
-                transform: translateX(0);
-            }
-
-            100% {
-                transform: translateX(-50%);
-            }
-        }
-
-        @keyframes scrollRight {
-            0% {
-                transform: translateX(-50%);
-            }
-
-            100% {
-                transform: translateX(0);
-            }
-        }
-
-        .animate-scroll-left {
-            animation: scrollLeft 30s linear infinite;
-        }
-
-        .animate-scroll-right {
-            animation: scrollRight 30s linear infinite;
-        }
-
-        .paused {
-            animation-play-state: paused !important;
-        }
-
-        .bank-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 3rem;
-            opacity: 0.6;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .bank-item:hover {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        /* Drop from top animation - starts off-screen at top */
-        @keyframes dropFromTop {
-            0% {
-                opacity: 0;
-                transform: translateY(-300px);
-            }
-
-            50% {
-                opacity: 1;
-                transform: translateY(20px);
-            }
-
-            75% {
-                transform: translateY(-10px);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .drop-from-top {
-            animation: dropFromTop 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-    </style>
 </head>
 
 <body
-    class="bg-background-light dark:bg-background-dark min-h-screen font-sans transition-colors duration-500 text-gray-900 dark:text-gray-100 relative">
+    class="home-page bg-background-light dark:bg-background-dark min-h-screen font-sans transition-colors duration-500 text-gray-900 dark:text-gray-100 relative">
 
     <!-- Background Structure -->
     <div class="fixed inset-0 z-0 bg-background-light dark:bg-background-dark pointer-events-none overflow-hidden">
 
-        <div class="absolute inset-0 bg-mesh-gradient opacity-80"></div>
-        <div class="absolute inset-0 opacity-20 mix-blend-overlay"
+        <div class="absolute inset-0 bg-mesh-gradient opacity-90"></div>
+        <div class="absolute inset-0 opacity-30 mix-blend-overlay"
             style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCSQJcRexkqlKu3kzwZCWIGdx9mSdhvK4Je6lxA9kVrWHQFg-ShCu6j3XLipgBh0waP45VYm3rBVD2Psy-FTMp2qLU946EXQwD2sIGZJLe5tw2ugWPYnnOTMWoTGM95X4u1epiDmYaEV_vVdH7tyv2ZlDuFjSMZlzWulHW3UyesMipUWi30MryHEiz-_Lje83ApXK-FpMUQdIEWe0M_ZFfiu3BcH1_opus8b5qOTiMh8tMBAX7ifzSLR_qpWnWtdB8obUzknDxLtfeP');">
         </div>
     </div>
-    <!-- Navigation -->
-    <nav id="mainNav"
-        class="fixed top-0 w-full px-6 py-6 flex justify-center items-center z-50 transition-all duration-500">
-        <div class="w-full max-w-7xl flex justify-between items-center">
-            <div class="flex items-center gap-12">
-                <a href="index.html" class="flex items-center gap-2 group cursor-pointer relative z-10">
-                    <div
-                        class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white shadow-lg backdrop-blur-sm border border-white/20">
-                        <span class="material-symbols-outlined text-2xl">school</span>
-                    </div>
-                    <span class="font-bold text-2xl tracking-tight font-display text-white">LoanHero
-                        <span class="text-primary/80"></span></span>
-                </a>
-
-                <div class="hidden lg:flex items-center gap-8">
-                    <a href="about-us.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors">About</a>
-                    <a href="how-it-works.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors">How
-                        It Works</a>
-                    <a href="emi.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors font-sans">EMI
-                        Calculator</a>
-                    <a href="blog.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors">Blog</a>
-                    <a href="faq.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors">FAQ</a>
-                    <a href="contact.html"
-                        class="nav-link text-sm font-semibold text-white/90 hover:text-primary transition-colors">Contact</a>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <a href="login.html" id="loginLink"
-                    class="px-6 py-2.5 text-sm font-bold bg-white text-primary rounded-full hover:bg-gray-100 transition-all shadow-lg hover:shadow-white/20 cursor-pointer">Login</a>
-
-                <!-- User Profile Dropdown (Hidden initially) -->
-                <div id="userProfileSection" class="hidden flex items-center gap-4 relative">
-                    <button id="profileBtn"
-                        class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 transition-all text-white border border-white/20">
-                        <span class="material-symbols-outlined text-2xl text-white">account_circle</span>
-                        <span id="userEmail" class="text-sm font-bold text-white"></span>
-                    </button>
-
-                    <!-- Dropdown Menu -->
-                    <div id="profileDropdown"
-                        class="hidden absolute top-12 right-0 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 w-64 overflow-hidden">
-                        <div
-                            class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary/5 to-purple-500/5">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 font-sans">Logged in as</p>
-                            <p id="dropdownEmail" class="text-sm font-bold text-gray-900 dark:text-white truncate"></p>
-                        </div>
-
-                        <div class="py-2">
-                            <a href="dashboard.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">dashboard</span>
-                                <span class="font-semibold">Dashboard</span>
-                            </a>
-                            <a href="profile.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">person</span>
-                                <span class="font-semibold">My Profile</span>
-                            </a>
-                            <a href="my-applications.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">description</span>
-                                <span class="font-semibold">My Applications</span>
-                            </a>
-                            <a href="vault.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">folder_open</span>
-                                <span class="font-semibold">Document Vault</span>
-                            </a>
-                            <a href="settings.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">settings</span>
-                                <span class="font-semibold">Settings</span>
-                            </a>
-                            <a href="help.html"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <span class="material-symbols-outlined text-lg text-primary">help</span>
-                                <span class="font-semibold">Help & Support</span>
-                            </a>
-                        </div>
-
-                        <div class="border-t border-gray-200 dark:border-gray-700">
-                            <a href="#" id="logoutBtn"
-                                class="flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-semibold">
-                                <span class="material-symbols-outlined text-lg">logout</span>
-                                <span>Logout</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Navigation Component Placeholder -->
+    <div id="navbar-placeholder"></div>
 
     <main class="relative z-10">
         <!-- Hero Section Wrapper -->
@@ -291,11 +94,11 @@
                 <!-- Hanging Badge -->
                 <div class="relative inline-block mb-12 group drop-from-top">
                     <!-- Vertical Hanging Lines -->
-                    <div class="absolute -top-48 left-[20%] w-px h-48 bg-white/30"></div>
-                    <div class="absolute -top-48 right-[20%] w-px h-48 bg-white/30"></div>
+                    <!-- <div class="absolute -top-48 left-[20%] w-px h-48 bg-white/30"></div>
+                    <div class="absolute -top-48 right-[20%] w-px h-48 bg-white/30"></div> -->
 
                     <!-- Badge -->
-                    <div
+                    <!-- <div
                         class="inline-flex items-center gap-6 rounded-full border border-white/20 bg-white/90 backdrop-blur-md px-8 py-3 shadow-md relative z-10 transition-transform hover:-translate-y-1">
                         <a href="apply-loan.html" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
                             <span class="material-symbols-outlined text-2xl text-primary">school</span>
@@ -309,7 +112,7 @@
                             <span
                                 class="material-symbols-outlined text-[16px] text-gray-500 group-hover/link:text-primary group-hover/link:translate-x-0.5 transition-all">arrow_forward</span>
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
                 <h1
@@ -331,7 +134,7 @@
                 </div>
 
                 <!-- Stats -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto border-t border-white/10 pt-16">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
                     <div class="text-center px-8">
                         <h3 class="text-5xl font-bold text-white mb-3 font-display">$150M+</h3>
                         <p class="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-100 leading-relaxed">Total
@@ -378,7 +181,7 @@
                 <div class="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg">
                     <img alt="Student Portrait Ananya"
                         class="w-full h-[480px] object-cover transition-transform duration-700 group-hover:scale-105"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-tz-bgJeqqYOLvNptm7fJd6WOm31qLte1hh7rYEJoxuxROWBjZVsAOTBsMWDr-TVUiVCeYpsiayflSZzCd7hsVdBXYQfPF_3v-cqCpwwz_y-7VQVI8nLFlFq4JwrZoMp2KNutuTh2cT60tz2MWXsYpmgozz_BI6R1bAStxmPnmkfcnEWxI9ImfV_eu14gWRb8dyGHbgojouiUZzSgFSLgaG4Lsj9AkihqytsmEf3zumDv-BLm7FqNbKZ_TZuNuBSxX5vtMgIVbUw" />
+                        src="assets/img/story_ananya.png" />
                     <div
                         class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300">
                     </div>
@@ -399,7 +202,7 @@
                 <div class="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg">
                     <img alt="Student David Statue Art"
                         class="w-full h-[480px] object-cover grayscale transition-transform duration-700 group-hover:scale-105"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB8Y-ndBcatwDUx2NaDjxdVa4k8vatz7zuGpCWTqeHR1vyLbkayDaJOnFYu3o-Zft-wOLhrNOCttfEznE3THvkAmZj5P1S2uIvJow-0zRHEmb2jln6OqwwiDo12oDxenketq614J3mRZ1TvnapI106l4_hi8dxV8qeyy9PG71ZvpgIYAyRhDp_Nx7fFmZzUQ51ApwawS8xeU733b08fzDINRjGbrebf3bYcIz1RMsOaib-kLbkmV2jy1Y8ttMYy9CMwjXMRx3rIu0" />
+                        src="assets/img/story_david.png" />
                     <div
                         class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300">
                     </div>
@@ -420,7 +223,7 @@
                 <div class="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg">
                     <img alt="Student Portrait Mei"
                         class="w-full h-[480px] object-cover transition-transform duration-700 group-hover:scale-105"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXTOml06uMZtpLp1QlQiRs2sNmhKT9PYP9mNviyHpC4PK_n1Px1u3bZ2sqTkHjmYlXyax3oPNYSuVVZvnAbgMhARuMTcwChch2x373KVLhgdz9QMGdFUCdC2zXbvukSOxLPjQ109dWiRuEGcVVagjoAuMXi1pTKWgFkHU58ms_QMGBKLlJFw6pcaYYysyvfoUSiBDHr_v-Eip-YngQt1ObXyR_v7INqzpoX7YlgSS6cwSjYEckfMo15-9zjhgR_SEpCwbaHUCXTxE" />
+                        src="assets/img/story_mei.png" />
                     <div
                         class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300">
                     </div>
@@ -740,6 +543,176 @@
                 </div>
             </div>
         </section>
+        <!-- Trending Discussions Section -->
+        <section id="trending-discussions" class="max-w-7xl mx-auto px-6 py-24 scroll-mt-24">
+            <div class="flex justify-between items-end mb-12">
+                <div>
+                    <span class="text-primary font-bold text-[11px] tracking-[0.2em] uppercase mb-2 block">Live
+                        Community</span>
+                    <h2 class="text-4xl md:text-5xl font-display text-gray-900 dark:text-white">
+                        Trending <br />
+                        <span class="italic font-normal text-gray-600 dark:text-gray-400">Discussions</span>
+                    </h2>
+                </div>
+                <a href="explore.html"
+                    class="hidden md:flex items-center gap-2 text-primary font-bold text-sm hover:underline">
+                    View All Topics <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Discussion 1 -->
+                <a href="engage.html?topic=usa-visa"
+                    class="glass-card p-8 rounded-[2.5rem] group hover:-translate-y-2 transition-all duration-500 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-6">
+                        <span
+                            class="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-3 py-1 rounded-full uppercase tracking-wider">
+                            <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Hot
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-4 mb-6">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600">
+                            <span class="material-symbols-outlined">flight_takeoff</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Visa & Travel</p>
+                            <h4 class="font-bold text-gray-900 dark:text-white">USA F-1 Interview Slots</h4>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">"Is anyone else seeing bulk
+                        slots opening for Mumbai Consulate in June? Just booked mine!"</p>
+                    <div
+                        class="flex items-center gap-6 pt-6 border-t border-gray-100 dark:border-white/5 text-xs text-gray-500 font-bold">
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">chat_bubble</span> 142 Comments</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">visibility</span> 2.4k Views</span>
+                    </div>
+                </a>
+
+                <!-- Discussion 2 -->
+                <a href="engage.html?topic=loan-strategy"
+                    class="glass-card p-8 rounded-[2.5rem] group hover:-translate-y-2 transition-all duration-500">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div
+                            class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-600">
+                            <span class="material-symbols-outlined">account_balance</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Loans</p>
+                            <h4 class="font-bold text-gray-900 dark:text-white">SBI vs Prodigy Finance</h4>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">"Comparing 8.5% with
+                        collateral vs 11% non-collateral. What makes sense for a 2-year masters?"</p>
+                    <div
+                        class="flex items-center gap-6 pt-6 border-t border-gray-100 dark:border-white/5 text-xs text-gray-500 font-bold">
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">chat_bubble</span> 89 Comments</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">visibility</span> 1.8k Views</span>
+                    </div>
+                </a>
+
+                <!-- Discussion 3 -->
+                <a href="engage.html?topic=accommodation-uk"
+                    class="glass-card p-8 rounded-[2.5rem] group hover:-translate-y-2 transition-all duration-500">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div
+                            class="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600">
+                            <span class="material-symbols-outlined">home</span>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Housing</p>
+                            <h4 class="font-bold text-gray-900 dark:text-white">London Zone 2 Sharing</h4>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-6 line-clamp-2">"Looking for 2 female
+                        roommates for a 3BHK near Canary Wharf. Available from August."</p>
+                    <div
+                        class="flex items-center gap-6 pt-6 border-t border-gray-100 dark:border-white/5 text-xs text-gray-500 font-bold">
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">chat_bubble</span> 34 Comments</span>
+                        <span class="flex items-center gap-1.5"><span
+                                class="material-symbols-outlined text-sm">visibility</span> 950 Views</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section class="max-w-7xl mx-auto px-6 py-24 relative overflow-hidden">
+            <div
+                class="glass-card p-12 md:p-20 rounded-[4rem] overflow-hidden relative shadow-2xl border-white/40 dark:border-white/5">
+                <!-- Decorative Gradients -->
+                <div
+                    class="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2">
+                </div>
+                <div
+                    class="absolute bottom-0 left-0 w-96 h-96 bg-gold-accent/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2">
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    <div class="relative z-10">
+                        <span
+                            class="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.2em] mb-6">Student
+                            Network</span>
+                        <h2
+                            class="text-4xl md:text-5xl font-bold font-display text-gray-900 dark:text-white mb-6 leading-tight">
+                            Join our thriving <span
+                                class="text-primary italic underline decoration-gold-accent/30 underline-offset-8">Student
+                                Community</span>
+                        </h2>
+                        <p class="text-lg text-gray-600 dark:text-gray-400 mb-10 font-sans leading-relaxed">
+                            Connect with thousands of ambitious students worldwide. Share experiences, get insider tips
+                            on loan approvals, discuss university life, and find the best accommodation options
+                            together.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+                            <a href="explore.html"
+                                class="group relative inline-flex items-center justify-center px-12 py-6 font-bold text-white transition-all duration-300 bg-primary rounded-full hover:bg-background-light/90 hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(102,5,199,0.3)]">
+                                <span class="relative flex items-center gap-3 tracking-widest uppercase text-xs">
+                                    Join the Hub
+                                    <span
+                                        class="material-symbols-outlined group-hover:translate-x-1 transition-transform">groups</span>
+                                </span>
+                                <!-- Button Glow Animation -->
+                                <div
+                                    class="absolute inset-0 rounded-full bg-primary blur-lg opacity-0 group-hover:opacity-40 transition-opacity animate-pulse">
+                                </div>
+                            </a>
+                            <div class="flex items-center gap-4">
+                                <div class="flex -space-x-4">
+                                    <img src="assets/img/avatar_2.png"
+                                        class="w-12 h-12 rounded-full border-4 border-white dark:border-zinc-900 object-cover"
+                                        alt="User">
+                                    <img src="assets/img/avatar_1.png"
+                                        class="w-12 h-12 rounded-full border-4 border-white dark:border-zinc-900 object-cover"
+                                        alt="User">
+                                    <img src="assets/img/avatar_3.png"
+                                        class="w-12 h-12 rounded-full border-4 border-white dark:border-zinc-900 object-cover"
+                                        alt="User">
+                                </div>
+                                <div class="text-sm font-bold text-gray-500 dark:text-gray-400">
+                                    <span class="text-primary">+2,400</span> students active now
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative group">
+                        <div
+                            class="absolute inset-0 bg-primary/20 rounded-[3rem] blur-3xl group-hover:bg-primary/30 transition-all duration-500">
+                        </div>
+                        <div class="relative z-10 overflow-hidden rounded-[3rem] shadow-2xl border border-white/20">
+                            <img src="assets/img/community_hero.png" alt="Community Illustration"
+                                class="w-full h-full object-cover transform scale-105 group-hover:scale-110 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- CTA Section -->
         <section class="max-w-7xl mx-auto px-6 py-24">
             <div
@@ -768,71 +741,8 @@
         </section>
     </main>
 
-    <footer class="bg-[#190f23] text-white py-20 relative overflow-hidden">
-        <div class="max-w-7xl mx-auto px-6 relative z-10">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                <div class="col-span-1 md:col-span-2">
-                    <div class="flex items-center gap-2 mb-6">
-                        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                            <span class="material-symbols-outlined text-white">school</span>
-                        </div>
-                        <span class="text-2xl font-bold font-display tracking-tight text-white">LoanHero</span>
-                    </div>
-                    <p class="text-gray-400 max-w-sm font-sans leading-relaxed mb-8">
-                        Empowering students with transparent, flexible, and accessible education financing solutions.
-                        Join
-                        thousands of students pursuing their dreams.
-                    </p>
-                    <div class="flex items-center gap-4">
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="LinkedIn">
-                            <span class="material-symbols-outlined text-white">language</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Twitter">
-                            <span class="material-symbols-outlined text-white">mail</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Facebook">
-                            <span class="material-symbols-outlined text-white">forum</span>
-                        </a>
-                        <a href="#"
-                            class="w-10 h-10 bg-white/10 hover:bg-primary rounded-full flex items-center justify-center transition-colors"
-                            aria-label="Instagram">
-                            <span class="material-symbols-outlined text-white">share</span>
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <h4 class="text-lg font-bold mb-6 font-display text-white">Quick Links</h4>
-                    <ul class="space-y-4 text-gray-400 font-sans">
-                        <li><a href="about-us.html" class="hover:text-primary transition-colors">About Us</a></li>
-                        <li><a href="emi.html" class="hover:text-primary transition-colors">EMI Calculator</a></li>
-                        <li><a href="contact.html" class="hover:text-primary transition-colors">Contact</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h4 class="text-lg font-bold mb-6 font-display text-white">Legal</h4>
-                    <ul class="space-y-4 text-gray-400 font-sans">
-                        <li><a href="privacy-policy.html" class="hover:text-primary transition-colors">Privacy
-                                Policy</a></li>
-                        <li><a href="terms-conditions.html" class="hover:text-primary transition-colors">Terms of
-                                Service</a></li>
-                        <li><a href="cookies.html" class="hover:text-primary transition-colors">Cookie Policy</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="pt-8 border-t border-white/10 text-center text-gray-500 text-xs font-sans">
-                <p>&copy; 2026 LoanHero Inc. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <!-- Footer Component Placeholder -->
+    <div id="footer-placeholder"></div>
 
     <script>
         // Bank Row Click Interaction
@@ -842,21 +752,18 @@
                 const isPaused = this.classList.contains('paused');
 
                 // User said: "that row should stop and other 2 row should be moved in their directions"
-                // So we stop this one. We don't necessarily restart it on second click, 
+                // So we stop this one. We don't necessarily restart it on second click,
                 // but a toggle is more user-friendly. I'll make it toggle.
                 this.classList.toggle('paused');
             });
         });
-
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('mainNav');
-            if (window.scrollY > 50) {
-                nav.classList.add('nav-scrolled');
-            } else {
-                nav.classList.remove('nav-scrolled');
-            }
-        });
     </script>
+    <!-- Component Loader - Must be loaded first -->
+    <script src="assets/js/components-loader.js"></script>
+    <script src="assets/js/theme-manager.js"></script>
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/auth-guard.js"></script>
+    <script src="assets/js/blog-api.js"></script>
     <script src="assets/js/dashboard.js"></script>
     <script src="assets/js/auth.js"></script>
 </body>

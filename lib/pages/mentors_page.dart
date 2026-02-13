@@ -245,7 +245,7 @@ class _MentorsPageState extends State<MentorsPage> {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Color(0xFF10B981),
                     ),
                   ),
                   Text(

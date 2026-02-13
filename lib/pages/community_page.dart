@@ -201,6 +201,15 @@ class _CommunityPageState extends State<CommunityPage>
             color: const Color(0xFFE91E63),
             onTap: () => _showResourcesModal(context),
           ),
+          const SizedBox(width: 16),
+          _buildCategoryCard(
+            context,
+            title: 'Forum',
+            subtitle: 'Discuss & Ask',
+            icon: Icons.forum_outlined,
+            color: const Color(0xFF6366F1),
+            onTap: () => Navigator.pushNamed(context, '/community/forum'),
+          ),
         ],
       ),
     );
@@ -313,16 +322,21 @@ class _CommunityPageState extends State<CommunityPage>
         itemCount: _stories.length > 5 ? 5 : _stories.length,
         itemBuilder: (context, index) {
           final story = _stories[index];
-          return _buildStoryCard(story);
+          return SizedBox(
+            width: 280,
+            child: _buildStoryCard(story, isHorizontal: true),
+          );
         },
       ),
     );
   }
 
-  Widget _buildStoryCard(SuccessStory story) {
+  Widget _buildStoryCard(SuccessStory story, {bool isHorizontal = false}) {
     return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
+      margin: EdgeInsets.only(
+        right: isHorizontal ? 16 : 0,
+        bottom: isHorizontal ? 0 : 16,
+      ),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -337,6 +351,7 @@ class _CommunityPageState extends State<CommunityPage>
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -384,16 +399,35 @@ class _CommunityPageState extends State<CommunityPage>
             ],
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: Text(
-              story.content,
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.7),
-                height: 1.5,
-                fontSize: 13,
+          Row(
+            children: [
+              Text(
+                '₹${story.loanAmount}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
               ),
+              const Spacer(),
+              Text(
+                story.country,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.black.withOpacity(0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            story.content,
+            maxLines: isHorizontal ? 3 : 10,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.7),
+              height: 1.5,
+              fontSize: 13,
             ),
           ),
         ],
@@ -428,7 +462,7 @@ class _CommunityPageState extends State<CommunityPage>
               child: ListView.builder(
                 itemCount: _stories.length,
                 itemBuilder: (context, index) =>
-                    _buildStoryCard(_stories[index]),
+                    _buildStoryCard(_stories[index], isHorizontal: false),
               ),
             ),
           ],
@@ -522,22 +556,27 @@ class _CommunityPageState extends State<CommunityPage>
                 ),
                 const SizedBox(height: 6),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 14),
-                    const SizedBox(width: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          mentor.rating.toString(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                     Text(
-                      mentor.rating.toString(),
+                      '₹${mentor.hourlyRate.toStringAsFixed(0)}/hr',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '(${mentor.studentsMentored})',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Color(0xFF10B981),
                       ),
                     ),
                   ],
@@ -563,13 +602,19 @@ class _CommunityPageState extends State<CommunityPage>
         itemCount: _resources.length,
         itemBuilder: (context, index) {
           final resource = _resources[index];
-          return _buildResourceCard(resource);
+          return SizedBox(
+            width: 300,
+            child: _buildResourceCard(resource, isHorizontal: true),
+          );
         },
       ),
     );
   }
 
-  Widget _buildResourceCard(CommunityResource resource) {
+  Widget _buildResourceCard(
+    CommunityResource resource, {
+    bool isHorizontal = false,
+  }) {
     IconData icon;
     Color color;
 
@@ -596,8 +641,10 @@ class _CommunityPageState extends State<CommunityPage>
     }
 
     return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: 16),
+      margin: EdgeInsets.only(
+        right: isHorizontal ? 16 : 0,
+        bottom: isHorizontal ? 0 : 16,
+      ),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -625,6 +672,7 @@ class _CommunityPageState extends State<CommunityPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   resource.title,
@@ -689,7 +737,7 @@ class _CommunityPageState extends State<CommunityPage>
               child: ListView.builder(
                 itemCount: _resources.length,
                 itemBuilder: (context, index) =>
-                    _buildResourceCard(_resources[index]),
+                    _buildResourceCard(_resources[index], isHorizontal: false),
               ),
             ),
           ],
