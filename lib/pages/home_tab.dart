@@ -117,7 +117,7 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Edu Loan',
+                        'VidhyaLoan',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

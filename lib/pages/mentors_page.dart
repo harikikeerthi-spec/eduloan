@@ -240,14 +240,24 @@ class _MentorsPageState extends State<MentorsPage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '₹${mentor.hourlyRate.toStringAsFixed(0)}/hr',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF10B981),
+                  if (mentor.hourlyRate > 0)
+                    Text(
+                      '₹${mentor.hourlyRate.toStringAsFixed(0)}/hr',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
                     ),
-                  ),
+                  if (mentor.hourlyRate == 0)
+                    const Text(
+                      'Free Session',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF10B981),
+                      ),
+                    ),
                   Text(
                     '${mentor.studentsMentored} students',
                     style: TextStyle(

@@ -86,7 +86,7 @@ class MainNavigationState extends State<MainNavigation> {
                     const Icon(Icons.school, color: Colors.white, size: 48),
                     const SizedBox(height: 12),
                     const Text(
-                      'Edu Loan',
+                      'VidhyaLoan',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,

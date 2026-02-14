@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 
 class CommunityService {
@@ -9,16 +10,28 @@ class CommunityService {
     'http://192.168.1.19:3000', // 3. LAN IP
   ];
 
+  /// Helper to get common headers including auth token
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
   /// Helper for GET requests
   Future<dynamic> _getRequest(String endpoint) async {
     String lastError = 'Unknown error';
+    final headers = await _getHeaders();
+
     for (String baseUrl in _baseUrls) {
       final url = Uri.parse('$baseUrl$endpoint');
       print('Trying to connect to: $url');
       try {
         print('Fetching: $url');
         final response = await http
-            .get(url)
+            .get(url, headers: headers)
             .timeout(const Duration(seconds: 5));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -41,16 +54,14 @@ class CommunityService {
     Map<String, dynamic> body,
   ) async {
     String lastError = 'Unknown error';
+    final headers = await _getHeaders();
+
     for (String baseUrl in _baseUrls) {
       final url = Uri.parse('$baseUrl$endpoint');
       print('Trying to POST to: $url');
       try {
         final response = await http
-            .post(
-              url,
-              headers: {'Content-Type': 'application/json'},
-              body: json.encode(body),
-            )
+            .post(url, headers: headers, body: json.encode(body))
             .timeout(const Duration(seconds: 10));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -237,12 +248,14 @@ class CommunityService {
   Future<List<ForumPost>> getForumPosts({
     String? category,
     String? tag,
+    String? sort,
     int limit = 10,
     int offset = 0,
   }) async {
     String query = '?limit=$limit&offset=$offset';
     if (category != null) query += '&category=$category';
     if (tag != null) query += '&tag=$tag';
+    if (sort != null) query += '&sort=$sort';
 
     final response = await _getRequest('/community/forum$query');
     if (response['success'] == true) {
@@ -251,6 +264,53 @@ class CommunityService {
           .toList();
     }
     return [];
+  }
+
+  Future<List<ForumPost>> getHubPosts({
+    required String topic,
+    String? sort,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    String query = '?limit=$limit&offset=$offset';
+    if (sort != null) query += '&sort=$sort';
+
+    final response = await _getRequest(
+      '/community/explore/hub/$topic/forum$query',
+    );
+    if (response['success'] == true) {
+      return (response['data'] as List)
+          .map((json) => ForumPost.fromJson(json))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createForumPost({
+    required String title,
+    required String content,
+    required String category,
+    List<String>? tags,
+  }) async {
+    final response = await _postRequest('/community/forum', {
+      'title': title,
+      'content': content,
+      'category': category,
+      if (tags != null) 'tags': tags,
+    });
+    return response;
+  }
+
+  Future<Map<String, dynamic>> createHubPost({
+    required String topic,
+    required String title,
+    required String content,
+  }) async {
+    final response = await _postRequest('/community/explore/hub/$topic/forum', {
+      'title': title,
+      'content': content,
+    });
+    return response;
   }
 
   Future<ForumPost> getForumPostById(String id) async {
@@ -266,6 +326,14 @@ class CommunityService {
     return response;
   }
 
+  Future<Map<String, dynamic>> likeForumComment(String id) async {
+    final response = await _postRequest(
+      '/community/forum/comments/$id/like',
+      {},
+    );
+    return response;
+  }
+
   Future<Map<String, dynamic>> addForumComment({
     required String postId,
     required String content,
@@ -276,6 +344,37 @@ class CommunityService {
       if (parentId != null) 'parentId': parentId,
     });
     return response;
+  }
+
+  // ==================== HUB STATS ====================
+
+  Future<List<Map<String, dynamic>>> getAllHubs() async {
+    final response = await _getRequest('/community/explore/hubs');
+    if (response['success'] == true && response['data'] != null) {
+      return (response['data'] as List)
+          .map((h) => h as Map<String, dynamic>)
+          .toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getHubStats(String topic) async {
+    final data = await getHubData(topic);
+    return data['hub']?['stats'] ?? {};
+  }
+
+  Future<Map<String, dynamic>> getHubData(String topic) async {
+    // Normalize category to topic for exploration API
+    String targetTopic = topic.toLowerCase();
+    if (targetTopic == 'all') targetTopic = 'general';
+    if (targetTopic == 'loans') targetTopic = 'eligibility';
+    if (targetTopic == 'admissions') targetTopic = 'universities';
+
+    final response = await _getRequest('/community/explore/hub/$targetTopic');
+    if (response['success'] == true && response['data'] != null) {
+      return response['data'] as Map<String, dynamic>;
+    }
+    return {};
   }
 
   // ==================== RESOURCES ====================

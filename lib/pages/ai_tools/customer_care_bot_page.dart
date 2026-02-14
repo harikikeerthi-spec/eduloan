@@ -17,7 +17,7 @@ class _CustomerCareBotPageState extends State<CustomerCareBotPage> {
   final List<Map<String, String>> _messages = [
     {
       'sender': 'bot',
-      'text': 'Hi! I am the EduLoan AI Assistant. How can I help you today?',
+      'text': 'Hi! I am the VidhyaLoan AI Assistant. How can I help you today?',
     },
   ];
 

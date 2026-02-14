@@ -47,7 +47,7 @@ class Blog {
       excerpt: json['excerpt'] ?? '',
       content: json['content'] ?? '',
       category: json['category'] ?? 'General',
-      authorName: json['authorName'] ?? 'EduLoan Team',
+      authorName: json['authorName'] ?? 'VidhyaLoan Team',
       authorImage: json['authorImage'],
       authorRole: json['authorRole'],
       featuredImage: json['featuredImage'],

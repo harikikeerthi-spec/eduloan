@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/community.dart';
 import '../services/community_service.dart';
 import '../widgets/mesh_background.dart';
@@ -76,6 +77,44 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     }
   }
 
+  Future<void> _toggleLikePost() async {
+    if (_post == null) return;
+    try {
+      final result = await _communityService.likeForumPost(_post!.id);
+      if (result['success'] == true) {
+        _loadPost(_post!.id); // Reload to update like count
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
+    }
+  }
+
+  Future<void> _toggleLikeComment(String commentId) async {
+    try {
+      final result = await _communityService.likeForumComment(commentId);
+      if (result['success'] == true) {
+        _loadPost(_post!.id); // Reload to update like count
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to like comment: $e')));
+    }
+  }
+
+  void _sharePost() {
+    if (_post == null) return;
+
+    final String text =
+        'Check out this discussion on VidhyaLoan: ${_post!.title}\n\n'
+        '${_post!.content}\n\n'
+        'Join the community at VidhyaLoan!';
+
+    Share.share(text, subject: _post!.title);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -147,6 +186,27 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               height: 1.6,
             ),
           ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildActionItem(
+                Icons.thumb_up_outlined,
+                '${_post!.likes} Likes',
+                onTap: _toggleLikePost,
+              ),
+              const SizedBox(width: 24),
+              _buildActionItem(
+                Icons.chat_bubble_outline,
+                '${_post!.commentCount} Comments',
+              ),
+              const SizedBox(width: 24),
+              _buildActionItem(
+                Icons.share_outlined,
+                'Share',
+                onTap: _sharePost,
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 16),
@@ -164,7 +224,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF311B92).withOpacity(0.1),
+                  color: const Color(0xFF6605C7).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -172,7 +232,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF311B92),
+                    color: Color(0xFF6605C7),
                   ),
                 ),
               ),
@@ -191,12 +251,12 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+          backgroundColor: const Color(0xFF6605C7).withOpacity(0.1),
           child: Text(
-            (_post!.userName ?? 'A')[0].toUpperCase(),
+            'U',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF311B92),
+              color: Color(0xFF6605C7),
             ),
           ),
         ),
@@ -204,9 +264,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              _post!.userName ?? 'Anonymous',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            const Text(
+              'User',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             Text(
               _formatDate(_post!.createdAt),
@@ -221,14 +281,14 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF311B92).withOpacity(0.05),
+            color: const Color(0xFF6605C7).withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             _post!.category,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF311B92),
+              color: Color(0xFF6605C7),
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -250,7 +310,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                 radius: 14,
                 backgroundColor: Colors.grey[200],
                 child: Text(
-                  comment.authorName[0].toUpperCase(),
+                  'U',
                   style: const TextStyle(fontSize: 10, color: Colors.grey),
                 ),
               ),
@@ -261,9 +321,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          comment.authorName,
-                          style: const TextStyle(
+                        const Text(
+                          'User',
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -291,9 +351,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: () {
-                            // TODO: Like comment
-                          },
+                          onTap: () => _toggleLikeComment(comment.id),
                           child: Row(
                             children: [
                               Icon(
@@ -324,7 +382,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF311B92).withOpacity(0.6),
+                              color: const Color(0xFF6605C7).withOpacity(0.6),
                             ),
                           ),
                         ),
@@ -412,7 +470,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               ),
               const SizedBox(width: 12),
               CircleAvatar(
-                backgroundColor: const Color(0xFF311B92),
+                backgroundColor: const Color(0xFF6605C7),
                 child: IconButton(
                   onPressed: _submitComment,
                   icon: const Icon(Icons.send, color: Colors.white, size: 18),
@@ -437,5 +495,25 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     } else {
       return 'Just now';
     }
+  }
+
+  Widget _buildActionItem(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.black.withOpacity(0.6)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

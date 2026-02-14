@@ -16,6 +16,7 @@ import 'pages/mentors_page.dart';
 import 'pages/events_page.dart';
 import 'pages/forum_page.dart';
 import 'pages/forum_post_detail_page.dart';
+import 'pages/create_post_page.dart';
 
 void main() {
   // Set system UI overlay style
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EduLoan',
+      title: 'VidhyaLoan',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -81,6 +82,7 @@ class MyApp extends StatelessWidget {
         '/community/mentors': (context) => const MentorsPage(),
         '/community/events': (context) => const EventsPage(),
         '/community/forum': (context) => const ForumPage(),
+        '/community/forum/create': (context) => const CreatePostPage(),
         '/community/forum/detail': (context) => const ForumPostDetailPage(),
       },
     );

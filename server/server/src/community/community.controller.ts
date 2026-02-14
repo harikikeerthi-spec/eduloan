@@ -577,7 +577,7 @@ export class CommunityController {
         return this.communityService.getForumPostById(id, userId);
     }
 
-    @Post('forum/:id/comment')
+    @Post('forum/:id/comments')
     @UseGuards(UserGuard)
     async createForumComment(
         @Request() req,
