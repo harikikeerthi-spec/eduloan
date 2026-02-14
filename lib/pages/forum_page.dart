@@ -18,7 +18,7 @@ class _ForumPageState extends State<ForumPage> {
   List<ForumPost> _posts = [];
   bool _isLoading = true;
   String? _error;
-  String _selectedCategory = 'All';
+  String _selectedCategory = 'General';
   String? _customTitle;
   int _membersCount = 0;
   int _discussionsCount = 0;
@@ -26,15 +26,6 @@ class _ForumPageState extends State<ForumPage> {
   String? _hubDescription;
   String? _hubIcon;
   File? _selectedImage;
-
-  final List<String> _categories = [
-    'All',
-    'General',
-    'Admissions',
-    'Loans',
-    'Visa',
-    'Accommodation',
-  ];
 
   bool _hasInitialLoaded = false;
   bool _isExpanding = false;
@@ -54,11 +45,10 @@ class _ForumPageState extends State<ForumPage> {
     super.didChangeDependencies();
     if (!_hasInitialLoaded) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      if (args is String && _categories.contains(args)) {
+      if (args is String) {
         _selectedCategory = args;
       } else if (args is Map<String, dynamic>) {
-        if (args.containsKey('category') &&
-            _categories.contains(args['category'])) {
+        if (args.containsKey('category')) {
           _selectedCategory = args['category'];
         }
         _customTitle = args['title'];
@@ -82,8 +72,11 @@ class _ForumPageState extends State<ForumPage> {
     try {
       // Fetch stats and posts in parallel
       final results = await Future.wait([
-        _selectedCategory == 'All'
-            ? _communityService.getForumPosts(sort: _selectedSort)
+        _selectedCategory == 'General'
+            ? _communityService.getForumPosts(
+                category: 'General',
+                sort: _selectedSort,
+              )
             : _communityService.getHubPosts(
                 topic: _selectedCategory,
                 sort: _selectedSort,
@@ -306,7 +299,7 @@ class _ForumPageState extends State<ForumPage> {
         }
       }
 
-      if (_selectedCategory == 'All') {
+      if (_selectedCategory == 'General') {
         await _communityService.createForumPost(
           title: title,
           content: content,
@@ -316,7 +309,7 @@ class _ForumPageState extends State<ForumPage> {
         await _communityService.createHubPost(
           topic: _selectedCategory,
           title: title,
-          content: content,
+          content: '', // No content for title-only posts
         );
       }
 
@@ -578,18 +571,6 @@ class _ForumPageState extends State<ForumPage> {
           ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          controller: _contentController,
-          maxLines: null,
-          style: const TextStyle(fontSize: 14, height: 1.5),
-          decoration: const InputDecoration(
-            hintText: 'Share more details...',
-            hintStyle: TextStyle(color: Colors.black26),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
         if (_selectedImage != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -887,17 +868,6 @@ class _ForumPageState extends State<ForumPage> {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E293B),
                     height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  post.content,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: const Color(0xFF1E293B).withOpacity(0.6),
-                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 20),

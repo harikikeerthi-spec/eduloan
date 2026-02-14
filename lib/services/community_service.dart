@@ -7,7 +7,7 @@ class CommunityService {
   static const List<String> _baseUrls = [
     'http://127.0.0.1:3000', // 1. Localhost (ADB Reverse) - Most reliable
     'http://10.0.2.2:3000', // 2. Android Emulator
-    'http://192.168.1.19:3000', // 3. LAN IP
+    'http://192.168.55.106:3000', // 3. LAN IP
   ];
 
   /// Helper to get common headers including auth token
@@ -367,8 +367,6 @@ class CommunityService {
     // Normalize category to topic for exploration API
     String targetTopic = topic.toLowerCase();
     if (targetTopic == 'all') targetTopic = 'general';
-    if (targetTopic == 'loans') targetTopic = 'eligibility';
-    if (targetTopic == 'admissions') targetTopic = 'universities';
 
     final response = await _getRequest('/community/explore/hub/$targetTopic');
     if (response['success'] == true && response['data'] != null) {

@@ -183,7 +183,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       await _communityService.createForumPost(
         title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
+        content: '', // Title-only
         category: _selectedCategory,
       );
 
@@ -284,39 +284,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter a title';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Content',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _contentController,
-                          maxLines: 10,
-                          decoration: InputDecoration(
-                            hintText: 'Share more details...',
-                            filled: true,
-                            fillColor: Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[200]!),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[200]!),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter some content';
                             }
                             return null;
                           },

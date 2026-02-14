@@ -177,15 +177,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            _post!.content,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.black.withOpacity(0.8),
-              height: 1.6,
-            ),
-          ),
           const SizedBox(height: 16),
           Row(
             children: [

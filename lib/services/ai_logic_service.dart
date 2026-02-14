@@ -230,7 +230,7 @@ class AiLogicService {
   // Try these URLs in order until one works
   static const List<String> _baseUrls = [
     'http://10.0.2.2:3000/ai', // 1. Standard Android Emulator
-    'http://192.168.55.102:3000/ai', // 2. Your LAN IP (Works for devices)
+    'http://192.168.55.106:3000/ai', // 2. Your LAN IP (Works for devices)
     'http://127.0.0.1:3000/ai', // 3. Localhost (ADB Reverse)
   ];
 

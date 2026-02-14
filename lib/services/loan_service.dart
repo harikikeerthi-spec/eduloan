@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 
 class LoanService {
-  static const String baseUrl = 'http://10.0.2.2:3000/applications';
+  static const String baseUrl = 'http://192.168.55.106:3000/applications';
 
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();

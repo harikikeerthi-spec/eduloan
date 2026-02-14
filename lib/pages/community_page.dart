@@ -17,11 +17,16 @@ class _CommunityPageState extends State<CommunityPage>
 
   List<SuccessStory> _stories = [];
   List<CommunityResource> _resources = [];
+  List<Mentor> _mentors = [];
+  List<ForumPost> _mentorPosts = [];
   bool _isLoading = true;
   String? _error;
   String? _activeCategory;
 
   List<Map<String, dynamic>> _hubs = [];
+  final TextEditingController _mentorTitleController = TextEditingController();
+  bool _isMentorForumExpanding = false;
+  bool _isMentorForumSubmitting = false;
 
   @override
   void initState() {
@@ -41,13 +46,16 @@ class _CommunityPageState extends State<CommunityPage>
         _communityService.getAllMentors(limit: 3),
         _communityService.getPopularResources(limit: 4),
         _communityService.getAllHubs(),
+        _communityService.getHubPosts(topic: 'mentors'),
       ]);
 
       if (mounted) {
         setState(() {
           _stories = results[0] as List<SuccessStory>;
+          _mentors = results[1] as List<Mentor>;
           _resources = results[2] as List<CommunityResource>;
           _hubs = results[3] as List<Map<String, dynamic>>;
+          _mentorPosts = results[4] as List<ForumPost>;
           _isLoading = false;
         });
       }
@@ -71,6 +79,59 @@ class _CommunityPageState extends State<CommunityPage>
         'Join the community at VidhyaLoan!';
 
     Share.share(text, subject: 'Success Story: ${story.studentName}');
+  }
+
+  Future<void> _loadMentorPosts() async {
+    try {
+      final posts = await _communityService.getHubPosts(topic: 'mentors');
+      if (mounted) {
+        setState(() {
+          _mentorPosts = posts;
+        });
+      }
+    } catch (e) {
+      print('Error loading mentor posts: $e');
+    }
+  }
+
+  Future<void> _submitMentorPost() async {
+    final title = _mentorTitleController.text.trim();
+    if (title.isEmpty) return;
+
+    setState(() {
+      _isMentorForumSubmitting = true;
+    });
+
+    try {
+      final result = await _communityService.createHubPost(
+        topic: 'mentors',
+        title: title,
+        content: '', // Title-only
+      );
+
+      if (result['success'] == true && mounted) {
+        _mentorTitleController.clear();
+        setState(() {
+          _isMentorForumExpanding = false;
+        });
+        _loadMentorPosts();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Question posted successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post question: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isMentorForumSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -142,43 +203,20 @@ class _CommunityPageState extends State<CommunityPage>
   Widget _buildGridBody() {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    final List<Map<String, dynamic>> items = [
-      ..._hubs.map(
-        (hub) => {
-          'title': hub['title'] ?? hub['id'],
-          'desc': hub['description'] ?? '',
-          'icon': _getIconData(hub['icon']),
-          'color': _getHubColor(hub['id']),
-          'route': '/community/forum',
-          'argument': {
-            'category': hub['id'],
-            'title': hub['title'],
-            'hideFilters': false,
+    final List<Map<String, dynamic>> items = _hubs
+        .map(
+          (hub) => {
+            'id': hub['id'],
+            'title': hub['title'] ?? hub['id'],
+            'desc': hub['description'] ?? '',
+            'icon': _getIconData(hub['icon']),
+            'color': _getHubColor(hub['id']),
+            'isExternalRoute': hub['isExternalRoute'] ?? false,
+            'isSpecialRoute': hub['isSpecialRoute'] ?? false,
+            'route': hub['route'],
           },
-        },
-      ),
-      {
-        'title': 'Success Stories',
-        'desc': 'Real student journeys, mistakes, and triumph reports.',
-        'icon': Icons.auto_stories_outlined,
-        'color': const Color(0xFFEC4899),
-        'action': 'stories',
-      },
-      {
-        'title': 'Events & AMAs',
-        'desc': 'Live sessions with banks, alumni, and industry experts.',
-        'icon': Icons.calendar_today_outlined,
-        'color': const Color(0xFFF97316),
-        'action': 'events',
-      },
-      {
-        'title': 'Resources',
-        'desc': 'Download free guides, checklists, and templates.',
-        'icon': Icons.folder_outlined,
-        'color': const Color(0xFF64748B),
-        'action': 'resources',
-      },
-    ];
+        )
+        .toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -235,16 +273,18 @@ class _CommunityPageState extends State<CommunityPage>
   Widget _buildCategoryGridCard(Map<String, dynamic> category) {
     return GestureDetector(
       onTap: () {
-        if (category.containsKey('route')) {
-          Navigator.pushNamed(
-            context,
-            category['route'],
-            arguments: category['argument'],
-          );
-        } else if (category.containsKey('action')) {
+        if (category['isExternalRoute'] == true) {
+          Navigator.pushNamed(context, category['route']);
+        } else if (category['isSpecialRoute'] == true) {
           setState(() {
             _activeCategory = category['title'];
           });
+        } else {
+          Navigator.pushNamed(
+            context,
+            '/community/forum',
+            arguments: {'category': category['id'], 'title': category['title']},
+          );
         }
       },
       child: Container(
@@ -321,6 +361,46 @@ class _CommunityPageState extends State<CommunityPage>
           itemCount: _stories.length,
           itemBuilder: (context, index) =>
               _buildStoryCard(_stories[index], isHorizontal: false),
+        ),
+      );
+    } else if (categoryTitle == 'Alumni & Mentors') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: RefreshIndicator(
+          onRefresh: () => Future.wait([_loadData(), _loadMentorPosts()]),
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            children: [
+              _buildMentorForumInputBox(),
+              const SizedBox(height: 24),
+              const Text(
+                'Verified Alumni & Mentors',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ..._mentors.map((m) => _buildMentorCard(m)),
+              const SizedBox(height: 32),
+              const Text(
+                'Latest Questions',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (_mentorPosts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: Text('No questions asked yet.')),
+                ),
+              ..._mentorPosts.map((p) => _buildMiniForumPostCard(p)),
+            ],
+          ),
         ),
       );
     } else if (categoryTitle == 'Resources') {
@@ -431,6 +511,133 @@ class _CommunityPageState extends State<CommunityPage>
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMentorCard(Mentor mentor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF311B92).withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                backgroundImage: mentor.imageUrl != null
+                    ? NetworkImage(mentor.imageUrl!)
+                    : null,
+                child: mentor.imageUrl == null
+                    ? Text(
+                        mentor.name[0],
+                        style: const TextStyle(
+                          color: Color(0xFF311B92),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      mentor.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      mentor.role,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      mentor.rating.toString(),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF311B92),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            mentor.bio,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black.withOpacity(0.7),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: mentor.expertise
+                .map(
+                  (skill) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF311B92).withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      skill,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF311B92),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -808,14 +1015,24 @@ class _CommunityPageState extends State<CommunityPage>
         return Icons.account_balance_wallet_outlined;
       case 'menu_book':
         return Icons.menu_book_outlined;
-      case 'assignment':
-        return Icons.assignment_outlined;
+      case 'lightbulb':
+        return Icons.lightbulb_outline;
+      case 'groups':
+        return Icons.groups_outlined;
+      case 'card_membership':
+        return Icons.card_membership_outlined;
       case 'home':
         return Icons.home_outlined;
-      case 'airplanemode_active':
-        return Icons.airplanemode_active_outlined;
-      case 'psychology':
-        return Icons.psychology_outlined;
+      case 'edit_note':
+        return Icons.edit_note_outlined;
+      case 'event':
+        return Icons.event_outlined;
+      case 'flight':
+        return Icons.flight_outlined;
+      case 'smart_toy':
+        return Icons.smart_toy_outlined;
+      case 'folder_open':
+        return Icons.folder_open_outlined;
       default:
         return Icons.hub_outlined;
     }
@@ -823,20 +1040,194 @@ class _CommunityPageState extends State<CommunityPage>
 
   Color _getHubColor(String id) {
     switch (id) {
-      case 'eligibility':
+      case 'loans':
         return const Color(0xFF10B981);
       case 'universities':
         return const Color(0xFF311B92);
       case 'courses':
         return const Color(0xFF6366F1);
-      case 'visa':
-        return const Color(0xFF0EA5E9);
-      case 'testprep':
-        return const Color(0xFF3B82F6);
+      case 'stories':
+        return const Color(0xFFF59E0B);
+      case 'mentors':
+        return const Color(0xFF8B5CF6);
+      case 'scholarships':
+        return const Color(0xFF14B8A6);
       case 'accommodation':
         return const Color(0xFFEF4444);
+      case 'testprep':
+        return const Color(0xFF0EA5E9);
+      case 'events':
+        return const Color(0xFFF97316);
+      case 'visa':
+        return const Color(0xFF3B82F6);
+      case 'aitools':
+        return const Color(0xFFEC4899);
+      case 'resources':
+        return const Color(0xFFD946EF);
       default:
         return const Color(0xFF311B92);
     }
+  }
+
+  Widget _buildMentorForumInputBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                child: const Text(
+                  'Q',
+                  style: TextStyle(color: Color(0xFF311B92)),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextField(
+                  controller: _mentorTitleController,
+                  onTap: () {
+                    if (!_isMentorForumExpanding) {
+                      setState(() => _isMentorForumExpanding = true);
+                    }
+                  },
+                  decoration: const InputDecoration(
+                    hintText: 'Ask mentors a question...',
+                    hintStyle: TextStyle(color: Colors.black26, fontSize: 14),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_isMentorForumExpanding)
+            Padding(
+              padding: const EdgeInsets.only(top: 12, left: 56),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isMentorForumExpanding = false;
+                        _mentorTitleController.clear();
+                      });
+                    },
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: _isMentorForumSubmitting
+                        ? null
+                        : _submitMentorPost,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF311B92),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isMentorForumSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Ask Question'),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniForumPostCard(ForumPost post) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            '/community/forum/detail',
+            arguments: post.id,
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              post.title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 14,
+                  color: Colors.black.withOpacity(0.3),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${post.commentCount} Answers',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black.withOpacity(0.4),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _formatDate(post.createdAt),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays > 7) return '${date.day}/${date.month}/${date.year}';
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    return 'Just now';
   }
 }
