@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/community.dart';
 import '../services/community_service.dart';
+import '../widgets/mesh_background.dart';
 
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
@@ -25,18 +24,10 @@ class _ForumPageState extends State<ForumPage> {
   String _selectedSort = 'newest';
   String? _hubDescription;
   String? _hubIcon;
-  File? _selectedImage;
-
   bool _hasInitialLoaded = false;
-  bool _isExpanding = false;
-  bool _isSubmitting = false;
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
     super.dispose();
   }
 
@@ -131,237 +122,48 @@ class _ForumPageState extends State<ForumPage> {
     Share.share(text, subject: post.title);
   }
 
-  double _calculateSimilarity(String s1, String s2) {
-    final words1 = s1
-        .toLowerCase()
-        .split(RegExp(r'\W+'))
-        .where((e) => e.length > 2)
-        .toSet();
-    final words2 = s2
-        .toLowerCase()
-        .split(RegExp(r'\W+'))
-        .where((e) => e.length > 2)
-        .toSet();
-    if (words1.isEmpty || words2.isEmpty) return 0.0;
-    final intersection = words1.intersection(words2);
-    return intersection.length / ((words1.length + words2.length) / 2);
-  }
-
-  Future<void> _pickImage() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.image,
-        allowMultiple: false,
-      );
-
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          _selectedImage = File(result.files.single.path!);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
-      }
-    }
-  }
-
-  Future<ForumPost?> _findSimilarPost() async {
-    try {
-      final newTitle = _titleController.text.trim();
-      ForumPost? bestMatch;
-      double maxSimilarity = 0.0;
-
-      for (var post in _posts) {
-        final similarity = _calculateSimilarity(newTitle, post.title);
-        if (similarity > maxSimilarity) {
-          maxSimilarity = similarity;
-          bestMatch = post;
-        }
-      }
-
-      if (maxSimilarity > 0.6) return bestMatch;
-    } catch (e) {
-      print('Error checking similarity: $e');
-    }
-    return null;
-  }
-
-  Future<void> _submitPost({bool skipSimilarityCheck = false}) async {
-    final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
-
-    if (title.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Please enter a title')));
-      }
-      return;
-    }
-    if (content.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter your discussion content')),
-        );
-      }
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-
-      if (token == null && mounted) {
-        setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please log in to post a discussion')),
-        );
-        Navigator.pushNamed(context, '/login');
-        return;
-      }
-
-      if (!skipSimilarityCheck) {
-        final similarPost = await _findSimilarPost();
-        if (similarPost != null && mounted) {
-          setState(() => _isSubmitting = false);
-
-          final proceed = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Color(0xFF311B92)),
-                  SizedBox(width: 10),
-                  Text('Similar Question Found'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('A similar question has already been asked:'),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF311B92).withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      similarPost.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Would you like to view it instead?'),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text(
-                    'Post Anyway',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, false);
-                    Navigator.pushNamed(
-                      context,
-                      '/community/forum/detail',
-                      arguments: similarPost.id,
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6605C7),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('View Existing'),
-                ),
-              ],
-            ),
-          );
-
-          if (proceed != true) return;
-          setState(() => _isSubmitting = true);
-        }
-      }
-
-      if (_selectedCategory == 'General') {
-        await _communityService.createForumPost(
-          title: title,
-          content: content,
-          category: 'General',
-        );
-      } else {
-        await _communityService.createHubPost(
-          topic: _selectedCategory,
-          title: title,
-          content: '', // No content for title-only posts
-        );
-      }
-
-      if (mounted) {
-        _titleController.clear();
-        _contentController.clear();
-        setState(() {
-          _isExpanding = false;
-          _isSubmitting = false;
-          _selectedImage = null;
-        });
-        _loadPosts(); // Refresh list
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post created successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create post: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildStickyNavbar(context),
-            _buildHeroHeader(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  _buildStartDiscussionBox(),
-                  const SizedBox(height: 32),
-                  _buildFeedHeader(),
-                  const SizedBox(height: 16),
-                  _buildBody(),
-                ],
-              ),
+      extendBodyBehindAppBar:
+          true, // Optional, for full screen effect if needed
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.pushNamed(
+            context,
+            '/community/forum/create',
+            arguments: {'category': _selectedCategory},
+          );
+
+          if (result == true && mounted) {
+            _loadPosts(); // Refresh if a post was created
+          }
+        },
+        backgroundColor: const Color(0xFF311B92),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: MeshBackground(
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildStickyNavbar(context),
+                _buildHeroHeader(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      _buildFeedHeader(),
+                      const SizedBox(height: 16),
+                      _buildBody(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 100),
+              ],
             ),
-            const SizedBox(height: 100),
-          ],
+          ),
         ),
       ),
     );
@@ -487,187 +289,6 @@ class _ForumPageState extends State<ForumPage> {
               color: const Color(0xFF1E293B).withOpacity(0.4),
               letterSpacing: 0.5,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStartDiscussionBox() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: _isExpanding
-                ? CrossAxisAlignment.start
-                : CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
-                child: const Text(
-                  'A',
-                  style: TextStyle(color: Color(0xFF311B92)),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _isExpanding
-                    ? _buildExpandedInput()
-                    : _buildCollapsedInput(),
-              ),
-            ],
-          ),
-          if (_isExpanding) _buildExpandedActions(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCollapsedInput() {
-    return GestureDetector(
-      onTap: () => setState(() => _isExpanding = true),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'Start a discussion...',
-          style: TextStyle(color: Colors.black26, fontSize: 14),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpandedInput() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: _titleController,
-          autofocus: true,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          decoration: const InputDecoration(
-            hintText: 'Title of your discussion',
-            hintStyle: TextStyle(
-              color: Colors.black26,
-              fontWeight: FontWeight.normal,
-            ),
-            border: InputBorder.none,
-            isDense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (_selectedImage != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 12),
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    _selectedImage!,
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedImage = null),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildExpandedActions() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, left: 56),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: _pickImage,
-            icon: Icon(
-              Icons.image_outlined,
-              size: 20,
-              color: _selectedImage != null
-                  ? const Color(0xFF6605C7)
-                  : const Color(0xFF6605C7).withOpacity(0.5),
-            ),
-          ),
-          const Spacer(),
-          TextButton(
-            onPressed: _isSubmitting
-                ? null
-                : () {
-                    setState(() {
-                      _isExpanding = false;
-                      _titleController.clear();
-                      _contentController.clear();
-                      _selectedImage = null;
-                    });
-                  },
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: _isSubmitting ? null : () => _submitPost(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6605C7),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isSubmitting
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text(
-                    'Post',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
           ),
         ],
       ),
@@ -868,6 +489,17 @@ class _ForumPageState extends State<ForumPage> {
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF1E293B),
                     height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  post.content,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: const Color(0xFF1E293B).withOpacity(0.7),
+                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 20),

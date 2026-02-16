@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 import '../services/community_service.dart';
 import '../widgets/mesh_background.dart';
@@ -19,6 +20,20 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
   bool _isLoading = true;
   String? _error;
   String? _replyingToCommentId;
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentUserId = prefs.getString('userId');
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -27,6 +42,171 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
       final postId = ModalRoute.of(context)!.settings.arguments as String;
       _loadPost(postId);
     }
+  }
+
+  // ... (existing methods)
+
+  Future<void> _deleteComment(String commentId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final result = await _communityService.deleteForumComment(commentId);
+      if (result['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Comment deleted')));
+        }
+        _loadPost(_post!.id); // Reload to remove comment
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete comment: $e')));
+      }
+    }
+  }
+
+  // ...
+
+  Widget _buildCommentTile(ForumComment comment, {int depth = 0}) {
+    final isAuthor =
+        _currentUserId != null && comment.authorId == _currentUserId;
+
+    return Padding(
+      padding: EdgeInsets.only(left: depth * 24.0, bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: Colors.grey[200],
+                child: Text(
+                  comment.authorName.isNotEmpty
+                      ? comment.authorName[0].toUpperCase()
+                      : 'U',
+                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          comment.authorName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatDate(comment.createdAt),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.black.withOpacity(0.3),
+                          ),
+                        ),
+                        if (isAuthor) ...[
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => _deleteComment(comment.id),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              size: 16,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      comment.content,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.black.withOpacity(0.8),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => _toggleLikeComment(comment.id),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.thumb_up_outlined,
+                                size: 14,
+                                color: Colors.black.withOpacity(0.4),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${comment.likes}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.black.withOpacity(0.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _replyingToCommentId = comment.id;
+                            });
+                          },
+                          child: Text(
+                            'Reply',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF6605C7).withOpacity(0.6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (comment.replies.isNotEmpty)
+            ...comment.replies.map(
+              (reply) => _buildCommentTile(reply, depth: depth + 1),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadPost(String id) async {
@@ -118,6 +298,8 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       body: MeshBackground(
         child: SafeArea(
           child: Column(
@@ -137,17 +319,32 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+              color: Colors.black87,
+            ),
           ),
           const Spacer(),
           const Text(
             'Discussion',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              letterSpacing: 1.0,
+              color: Color(0xFF1E293B),
+              letterSpacing: 0.5,
             ),
           ),
           const Spacer(),
@@ -167,48 +364,75 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPostHeader(),
-          const SizedBox(height: 16),
-          Text(
-            _post!.title,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPostHeader(),
+                const SizedBox(height: 16),
+                Text(
+                  _post!.title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _post!.content,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: const Color(0xFF1E293B).withOpacity(0.8),
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    _buildActionItem(
+                      Icons.thumb_up_outlined,
+                      '${_post!.likes}',
+                      onTap: _toggleLikePost,
+                    ),
+                    const SizedBox(width: 24),
+                    _buildActionItem(
+                      Icons.chat_bubble_outline,
+                      '${_post!.commentCount}',
+                    ),
+                    const SizedBox(width: 24),
+                    _buildActionItem(
+                      Icons.share_outlined,
+                      'Share',
+                      onTap: _sharePost,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildActionItem(
-                Icons.thumb_up_outlined,
-                '${_post!.likes} Likes',
-                onTap: _toggleLikePost,
-              ),
-              const SizedBox(width: 24),
-              _buildActionItem(
-                Icons.chat_bubble_outline,
-                '${_post!.commentCount} Comments',
-              ),
-              const SizedBox(width: 24),
-              _buildActionItem(
-                Icons.share_outlined,
-                'Share',
-                onTap: _sharePost,
-              ),
-            ],
-          ),
           const SizedBox(height: 24),
-          const Divider(),
-          const SizedBox(height: 16),
           Row(
             children: [
               Text(
-                'Comments',
+                'Discussion',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black.withOpacity(0.8),
+                  color: const Color(0xFF1E293B).withOpacity(0.9),
                 ),
               ),
               const SizedBox(width: 8),
@@ -229,7 +453,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           ..._post!.comments.map((comment) => _buildCommentTile(comment)),
           const SizedBox(height: 100), // Space for input field
         ],
@@ -285,111 +509,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCommentTile(ForumComment comment, {int depth = 0}) {
-    return Padding(
-      padding: EdgeInsets.only(left: depth * 24.0, bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.grey[200],
-                child: Text(
-                  'U',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'User',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatDate(comment.createdAt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.black.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      comment.content,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black.withOpacity(0.8),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => _toggleLikeComment(comment.id),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.thumb_up_outlined,
-                                size: 14,
-                                color: Colors.black.withOpacity(0.4),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${comment.likes}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black.withOpacity(0.4),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _replyingToCommentId = comment.id;
-                            });
-                          },
-                          child: Text(
-                            'Reply',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF6605C7).withOpacity(0.6),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (comment.replies.isNotEmpty)
-            ...comment.replies.map(
-              (reply) => _buildCommentTile(reply, depth: depth + 1),
-            ),
-        ],
-      ),
     );
   }
 

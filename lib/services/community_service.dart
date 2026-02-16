@@ -5,8 +5,8 @@ import '../models/community.dart';
 
 class CommunityService {
   static const List<String> _baseUrls = [
-    'http://127.0.0.1:3000', // 1. Localhost (ADB Reverse) - Most reliable
-    'http://10.0.2.2:3000', // 2. Android Emulator
+    'http://10.0.2.2:3000', // 1. Android Emulator
+    'http://127.0.0.1:3000', // 2. Localhost
     'http://192.168.55.106:3000', // 3. LAN IP
   ];
 
@@ -62,7 +62,33 @@ class CommunityService {
       try {
         final response = await http
             .post(url, headers: headers, body: json.encode(body))
-            .timeout(const Duration(seconds: 10));
+            .timeout(const Duration(seconds: 30));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return json.decode(response.body);
+        } else {
+          lastError = 'Status ${response.statusCode}: ${response.body}';
+        }
+      } catch (e) {
+        lastError = e.toString();
+        print('Error connecting to $baseUrl: $e');
+      }
+    }
+    throw Exception('Connection failed: $lastError');
+  }
+
+  /// Helper for DELETE requests
+  Future<dynamic> _deleteRequest(String endpoint) async {
+    String lastError = 'Unknown error';
+    final headers = await _getHeaders();
+
+    for (String baseUrl in _baseUrls) {
+      final url = Uri.parse('$baseUrl$endpoint');
+      print('Trying to DELETE: $url');
+      try {
+        final response = await http
+            .delete(url, headers: headers)
+            .timeout(const Duration(seconds: 30));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           return json.decode(response.body);
@@ -346,6 +372,19 @@ class CommunityService {
     return response;
   }
 
+  Future<Map<String, dynamic>> checkDuplicateQuestion({
+    required String title,
+    required String content,
+    required String category,
+  }) async {
+    final response = await _postRequest('/community/forum/check-duplicate', {
+      'title': title,
+      'content': content,
+      'category': category,
+    });
+    return response;
+  }
+
   // ==================== HUB STATS ====================
 
   Future<List<Map<String, dynamic>>> getAllHubs() async {
@@ -420,6 +459,18 @@ class CommunityService {
     final response = await _postRequest(
       '/community/resources/$resourceId/track',
       {},
+    );
+    return response;
+  }
+
+  Future<Map<String, dynamic>> deleteForumPost(String postId) async {
+    final response = await _deleteRequest('/community/forum/$postId');
+    return response;
+  }
+
+  Future<Map<String, dynamic>> deleteForumComment(String commentId) async {
+    final response = await _deleteRequest(
+      '/community/forum/comments/$commentId',
     );
     return response;
   }

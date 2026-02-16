@@ -258,6 +258,7 @@ class ForumPost {
 class ForumComment {
   final String id;
   final String content;
+  final String authorId;
   final String authorName;
   final String? authorImage;
   final DateTime createdAt;
@@ -267,6 +268,7 @@ class ForumComment {
   ForumComment({
     required this.id,
     required this.content,
+    required this.authorId,
     required this.authorName,
     this.authorImage,
     required this.createdAt,
@@ -278,6 +280,7 @@ class ForumComment {
     return ForumComment(
       id: json['id'] ?? '',
       content: json['content'] ?? '',
+      authorId: json['authorId'] ?? '',
       authorName: json['author'] != null
           ? '${json['author']['firstName']} ${json['author']['lastName']}'
           : 'Anonymous',

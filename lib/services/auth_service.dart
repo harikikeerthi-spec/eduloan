@@ -9,7 +9,7 @@ class AuthService {
   // - iOS Simulator/Web: 'http://localhost:3000/auth'
   // - Real device: 'http://YOUR_COMPUTER_IP:3000/auth'
   // - Production: 'https://your-api-domain.com/auth'
-  static const String baseUrl = 'http://192.168.55.106:3000/auth';
+  static const String baseUrl = 'http://10.0.2.2:3000/auth';
 
   /// Sends a Unified OTP (handles both login and signup)
   static Future<Map<String, dynamic>> sendOtp(String email) async {

@@ -226,6 +226,26 @@ class AdmitPredictionResult {
   }
 }
 
+class PostAnalysisResult {
+  final String sentiment;
+  final List<String> tags;
+  final String feedback;
+
+  PostAnalysisResult({
+    required this.sentiment,
+    required this.tags,
+    required this.feedback,
+  });
+
+  factory PostAnalysisResult.fromJson(Map<String, dynamic> json) {
+    return PostAnalysisResult(
+      sentiment: json['sentiment'] ?? 'Neutral',
+      tags: List<String>.from(json['tags'] ?? []),
+      feedback: json['feedback'] ?? '',
+    );
+  }
+}
+
 class AiLogicService {
   // Try these URLs in order until one works
   static const List<String> _baseUrls = [
@@ -343,5 +363,35 @@ class AiLogicService {
       return body['message'];
     }
     throw Exception('Invalid response format');
+  }
+
+  Future<PostAnalysisResult> analyzePost(String title, String content) async {
+    final body = await _postRequest('analyze-post', {
+      'title': title,
+      'content': content,
+    });
+    if (body['success'] == true && body['analysis'] != null) {
+      return PostAnalysisResult.fromJson(body['analysis']);
+    }
+    throw Exception('Invalid response format');
+  }
+
+  Future<Map<String, dynamic>> checkDuplicate(
+    String title,
+    String content,
+  ) async {
+    final body = await _postRequest('check-duplicate', {
+      'title': title,
+      'content': content,
+    });
+    if (body['success'] == true) {
+      return {
+        'isDuplicate': body['isDuplicate'] ?? false,
+        'similarPostId': body['similarPostId'],
+        'similarPostTitle': body['similarPostTitle'],
+        'similarPostContent': body['similarPostContent'],
+      };
+    }
+    return {'isDuplicate': false};
   }
 }

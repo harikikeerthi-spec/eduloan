@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/community.dart';
+
 import '../services/community_service.dart';
 import '../widgets/mesh_background.dart';
 
@@ -33,7 +33,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
             _contentController.text = args['content'] as String;
           }
           if (args.containsKey('category')) {
-            _selectedCategory = args['category'] as String;
+            String category = args['category'] as String;
+            if (category.isNotEmpty) {
+              // Capitalize first letter to match dropdown items
+              category =
+                  category[0].toUpperCase() +
+                  category.substring(1).toLowerCase();
+            }
+            // Ensure the category exists in the list, fallback to 'General'
+            if (_categories.contains(category)) {
+              _selectedCategory = category;
+            } else {
+              _selectedCategory = 'General';
+            }
           }
         });
       }
@@ -48,50 +60,19 @@ class _CreatePostPageState extends State<CreatePostPage> {
     'Accommodation',
   ];
 
-  double _calculateSimilarity(String s1, String s2) {
-    // Basic word-overlap similarity
-    final words1 = s1
-        .toLowerCase()
-        .split(RegExp(r'\W+'))
-        .where((e) => e.length > 2)
-        .toSet();
-    final words2 = s2
-        .toLowerCase()
-        .split(RegExp(r'\W+'))
-        .where((e) => e.length > 2)
-        .toSet();
-
-    if (words1.isEmpty || words2.isEmpty) return 0.0;
-
-    final intersection = words1.intersection(words2);
-    return intersection.length / ((words1.length + words2.length) / 2);
-  }
-
-  Future<ForumPost?> _findSimilarPost() async {
+  Future<Map<String, dynamic>?> _checkDuplicateWithAI() async {
     try {
-      final posts = await _communityService.getForumPosts(
+      final result = await _communityService.checkDuplicateQuestion(
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
         category: _selectedCategory,
-        limit: 50,
       );
-      final newTitle = _titleController.text.trim();
 
-      ForumPost? bestMatch;
-      double maxSimilarity = 0.0;
-
-      for (var post in posts) {
-        final similarity = _calculateSimilarity(newTitle, post.title);
-        if (similarity > maxSimilarity) {
-          maxSimilarity = similarity;
-          bestMatch = post;
-        }
-      }
-
-      if (maxSimilarity > 0.6) {
-        // 60% threshold for prompt
-        return bestMatch;
+      if (result['success'] == true && result['isDuplicate'] == true) {
+        return result;
       }
     } catch (e) {
-      print('Error checking similarity: $e');
+      print('Error checking duplicate with AI: $e');
     }
     return null;
   }
@@ -103,8 +84,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
     try {
       if (!skipSimilarityCheck) {
-        final similarPost = await _findSimilarPost();
-        if (similarPost != null && mounted) {
+        final duplicateResult = await _checkDuplicateWithAI();
+        if (duplicateResult != null && mounted) {
           setState(() => _isSubmitting = false);
 
           final proceed = await showDialog<bool>(
@@ -124,22 +105,27 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'A similar question has already been asked in this category:',
+                  Text(
+                    'A similar question has already been asked: "${duplicateResult['similarPostTitle']}"',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6605C7).withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
+                  if (duplicateResult['similarPostContent'] != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6605C7).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        duplicateResult['similarPostContent'],
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ),
-                    child: Text(
-                      similarPost.title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                  ],
                   const Text(
                     'Would you like to view it instead of posting a new one?',
                   ),
@@ -160,7 +146,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     Navigator.pushReplacementNamed(
                       context,
                       '/community/forum/detail',
-                      arguments: similarPost.id,
+                      arguments: duplicateResult['similarPostId'],
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -183,7 +169,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       await _communityService.createForumPost(
         title: _titleController.text.trim(),
-        content: '', // Title-only
+        content: _contentController.text.trim(),
         category: _selectedCategory,
       );
 
@@ -222,41 +208,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Category',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black54,
-                          ),
-                        ),
                         const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey[200]!),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedCategory,
-                              isExpanded: true,
-                              items: _categories.map((String category) {
-                                return DropdownMenuItem<String>(
-                                  value: category,
-                                  child: Text(category),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                if (newValue != null) {
-                                  setState(() => _selectedCategory = newValue);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
                         const Text(
                           'Title',
                           style: TextStyle(
@@ -288,7 +240,40 @@ class _CreatePostPageState extends State<CreatePostPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _contentController,
+                          maxLines: 5,
+                          decoration: InputDecoration(
+                            hintText: 'Share more details...',
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Colors.grey[200]!),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter a description';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           height: 56,
@@ -312,7 +297,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                     ),
                                   )
                                 : const Text(
-                                    'Create Discussion',
+                                    'Analyze & Post',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,

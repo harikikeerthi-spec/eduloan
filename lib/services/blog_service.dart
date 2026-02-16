@@ -4,7 +4,8 @@ import '../models/blog.dart';
 
 class BlogService {
   // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
-  static const String baseUrl = 'http://192.168.55.106:3000';
+  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
+  static const String baseUrl = 'http://10.0.2.2:3000/blogs';
 
   Future<List<Blog>> getAllBlogs() async {
     try {
