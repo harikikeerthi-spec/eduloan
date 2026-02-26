@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
+import 'api_config.dart';
 
 // Data Models
 class AiServiceException implements Exception {
@@ -16,9 +16,9 @@ class EligibilityCheckDto {
   final int credit;
   final double income;
   final double loan;
-  final String employment; // 'employed', 'self', 'student', 'unemployed'
-  final String study; // 'undergrad', 'masters', 'doctoral', 'diploma'
-  final String maritalStatus; // 'single', 'married'
+  final String employment;
+  final String study;
+  final String maritalStatus;
   final bool coApplicant;
   final bool collateral;
 
@@ -97,45 +97,39 @@ class GradeConversionInput {
     return {
       'inputType': inputType,
       'inputValue': inputValue,
-      if (totalMarks != null) 'totalMarks': totalMarks,
+      'totalMarks': totalMarks,
       'outputType': outputType,
-      if (gradingSystem != null) 'gradingSystem': gradingSystem,
+      'gradingSystem': gradingSystem,
     };
   }
 }
 
 class GradeConversionResult {
-  final String inputGrade;
-  final String outputGrade;
-  final double percentage;
-  final double gpa;
-  final double cgpa;
-  final String letterGrade;
-  final String classification;
+  final double score;
+  final String scale;
+  final String quality;
   final Map<String, String> internationalEquivalent;
   final Map<String, dynamic> analysis;
 
   GradeConversionResult({
-    required this.inputGrade,
-    required this.outputGrade,
-    required this.percentage,
-    required this.gpa,
-    required this.cgpa,
-    required this.letterGrade,
-    required this.classification,
+    required this.score,
+    required this.scale,
+    required this.quality,
     required this.internationalEquivalent,
     required this.analysis,
   });
 
+  // Compatibility getters for legacy code
+  double get percentage => (analysis['percentage'] ?? score).toDouble();
+  double get gpa => (analysis['gpa'] ?? score).toDouble();
+  double get cgpa => (analysis['cgpa'] ?? score).toDouble();
+  String get outputGrade => quality;
+
   factory GradeConversionResult.fromJson(Map<String, dynamic> json) {
     return GradeConversionResult(
-      inputGrade: json['inputGrade'] ?? '',
-      outputGrade: json['outputGrade'] ?? '',
-      percentage: (json['percentage'] ?? 0).toDouble(),
-      gpa: (json['gpa'] ?? 0).toDouble(),
-      cgpa: (json['cgpa'] ?? 0).toDouble(),
-      letterGrade: json['letterGrade'] ?? '',
-      classification: json['classification'] ?? '',
+      score: (json['score'] ?? 0).toDouble(),
+      scale: json['scale'] ?? '',
+      quality: json['quality'] ?? '',
       internationalEquivalent: Map<String, String>.from(
         json['internationalEquivalent'] ?? {},
       ),
@@ -176,8 +170,8 @@ class UniversityData {
 class SopAnalysisResult {
   final double totalScore;
   final String quality;
-  final List<Map<String, dynamic>> categories; // {name, score, weight}
-  final List<Map<String, String>> weakAreas; // {issue, recommendation}
+  final List<Map<String, dynamic>> categories;
+  final List<Map<String, String>> weakAreas;
   final String summary;
 
   SopAnalysisResult({
@@ -246,152 +240,409 @@ class PostAnalysisResult {
   }
 }
 
-class AiLogicService {
-  // Try these URLs in order until one works
-  static const List<String> _baseUrls = [
-    'http://10.0.2.2:3000/ai', // 1. Standard Android Emulator
-    'http://192.168.55.106:3000/ai', // 2. Your LAN IP (Works for devices)
-    'http://127.0.0.1:3000/ai', // 3. Localhost (ADB Reverse)
-  ];
+class UniversityRecommendation {
+  final String name;
+  final String chance;
+  final String type;
+  final String rank;
+  final String tuition;
+  final String location;
+  final String reason;
+  final String avgSalary;
+  final String deadline;
+  final String flag;
+  final String country;
+  final String programName;
+  final String logoUrl;
+  final String description;
+  final String roi;
+  final String acceptanceRate;
+  final String duration;
+  final String category;
+  final String indianCommunity;
+  final String theRank;
+  final String costOfLiving;
+  final String medianPackage;
+  final String websiteUrl;
+  final String universityType;
+  final String genderRatio;
+  final String studentTeacherRatio;
+  final String raceRatio;
+  final String safetyStatus;
+  final String academicFocus;
+  final List<String> images;
+  final List<String> admissionProcess;
+  final Map<String, String> testRequirements;
 
-  Future<dynamic> _postRequest(
-    String endpoint,
-    Map<String, dynamic> data,
-  ) async {
-    String lastError = 'Unknown error';
-    for (String baseUrl in _baseUrls) {
-      final url = Uri.parse('$baseUrl/$endpoint');
-      try {
-        debugPrint('Trying connection to: $url');
-        final response = await http
-            .post(
-              url,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(data),
-            )
-            .timeout(const Duration(seconds: 15));
+  UniversityRecommendation({
+    required this.name,
+    required this.chance,
+    required this.type,
+    required this.rank,
+    required this.tuition,
+    required this.location,
+    required this.reason,
+    this.avgSalary = '',
+    this.deadline = '',
+    this.flag = '',
+    this.country = '',
+    this.programName = '',
+    this.logoUrl = '',
+    this.description = '',
+    this.roi = '',
+    this.acceptanceRate = '',
+    this.duration = '',
+    this.category = '',
+    this.indianCommunity = '',
+    this.theRank = '',
+    this.costOfLiving = '',
+    this.medianPackage = '',
+    this.websiteUrl = '',
+    this.universityType = '',
+    this.genderRatio = '',
+    this.studentTeacherRatio = '',
+    this.raceRatio = '',
+    this.safetyStatus = '',
+    this.academicFocus = '',
+    this.images = const [],
+    this.admissionProcess = const [],
+    this.testRequirements = const {},
+  });
 
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          debugPrint('Success connected to: $url');
-          return jsonDecode(response.body);
-        } else {
-          // Server responded, but with error (400, 500, etc.)
-          dynamic msg = response.body;
-          try {
-            final errorBody = jsonDecode(response.body);
-            msg = errorBody['message'] ?? response.body;
-          } catch (_) {}
+  factory UniversityRecommendation.fromJson(Map<String, dynamic> json) {
+    String logo = json['logoUrl'] ?? '';
+    if (logo.isEmpty) {
+      String? domainSource =
+          json['domain']?.toString() ?? json['websiteUrl']?.toString();
 
-          if (response.statusCode >= 400 && response.statusCode < 500) {
-            throw AiServiceException(msg.toString());
-          } else {
-            throw AiServiceException('Error ${response.statusCode}: $msg');
-          }
+      if (domainSource != null && domainSource.isNotEmpty) {
+        String domain = domainSource.trim().toLowerCase();
+        domain = domain.replaceFirst(
+          RegExp(r'^(domain|website|url|site|link):\s*'),
+          '',
+        );
+        domain = domain.replaceFirst(RegExp(r'^https?://'), '');
+        domain = domain.replaceFirst(RegExp(r'^www\.'), '');
+
+        // Handle paths (e.g., stanford.edu/admission -> stanford.edu)
+        if (domain.contains('/')) {
+          domain = domain.split('/').first;
         }
-      } catch (e) {
-        if (e is AiServiceException) {
-          throw e;
-        }
 
-        lastError = e.toString();
-        debugPrint('Failed to connect to $baseUrl: $e');
-        // Continue to next URL for network failures
+        if (domain.isNotEmpty && domain.contains('.')) {
+          logo = "https://logo.clearbit.com/$domain";
+        }
       }
     }
-    throw Exception('Connection failed. Last error: $lastError');
+
+    return UniversityRecommendation(
+      name: json['name'] ?? '',
+      chance: json['chance'] ?? '',
+      type: json['type'] ?? '',
+      rank: json['rank'] ?? '',
+      tuition: json['tuition'] ?? '',
+      location: json['location'] ?? '',
+      reason: json['reason'] ?? '',
+      avgSalary: json['avgSalary'] ?? '',
+      deadline: json['deadline'] ?? '',
+      flag: json['flag'] ?? '',
+      country: json['country'] ?? '',
+      programName: json['programName'] ?? '',
+      logoUrl: logo,
+      description: json['description'] ?? '',
+      roi: json['roi'] ?? '',
+      acceptanceRate: json['acceptanceRate'] ?? '',
+      duration: json['duration'] ?? '',
+      category: json['category'] ?? '',
+      indianCommunity: json['indianCommunity'] ?? '',
+      theRank: json['theRank'] ?? '',
+      costOfLiving: json['costOfLiving'] ?? '',
+      medianPackage: json['medianPackage'] ?? '',
+      websiteUrl: json['websiteUrl'] ?? '',
+      universityType: json['universityType'] ?? '',
+      genderRatio: json['genderRatio'] ?? '',
+      studentTeacherRatio: json['studentTeacherRatio'] ?? '',
+      raceRatio: json['raceRatio'] ?? '',
+      safetyStatus: json['safetyStatus'] ?? '',
+      academicFocus: json['academicFocus'] ?? '',
+      images: List<String>.from(json['images'] ?? []),
+      admissionProcess: List<String>.from(json['admissionProcess'] ?? []),
+      testRequirements: Map<String, String>.from(
+        json['testRequirements'] ?? {},
+      ),
+    );
+  }
+}
+
+class ShortlistResult {
+  final List<UniversityRecommendation> recommendations;
+
+  ShortlistResult({required this.recommendations});
+
+  factory ShortlistResult.fromJson(Map<String, dynamic> json) {
+    var data =
+        json['data']?['recommendations'] ?? json['recommendations'] ?? [];
+    var list = data as List;
+    return ShortlistResult(
+      recommendations: list
+          .map((e) => UniversityRecommendation.fromJson(e))
+          .toList(),
+    );
+  }
+}
+
+class LoanOffer {
+  final String id;
+  final String bank;
+  final String name;
+  final String amount;
+  final String rate;
+  final String processingTime;
+  final String savings;
+  final bool requiresCoApplicant;
+  final bool requiresCollateral;
+  final String bestFor;
+
+  LoanOffer({
+    required this.id,
+    required this.bank,
+    required this.name,
+    required this.amount,
+    required this.rate,
+    required this.processingTime,
+    required this.savings,
+    required this.requiresCoApplicant,
+    required this.requiresCollateral,
+    required this.bestFor,
+  });
+
+  factory LoanOffer.fromJson(Map<String, dynamic> json) {
+    return LoanOffer(
+      id: json['id'] ?? '',
+      bank: json['bank'] ?? '',
+      name: json['name'] ?? '',
+      amount: json['amount'] ?? '',
+      rate: json['rate'] ?? '',
+      processingTime: json['processingTime'] ?? '',
+      savings: json['savings'] ?? '',
+      requiresCoApplicant: json['requiresCoApplicant'] ?? false,
+      requiresCollateral: json['requiresCollateral'] ?? false,
+      bestFor: json['bestFor'] ?? '',
+    );
+  }
+}
+
+class LoanRecommendationResult {
+  final LoanOffer primary;
+  final int primaryFit;
+  final List<LoanOffer> alternatives;
+
+  LoanRecommendationResult({
+    required this.primary,
+    this.primaryFit = 0,
+    this.alternatives = const [],
+  });
+
+  factory LoanRecommendationResult.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] ?? json;
+    final primaryData = data['primary'] ?? {};
+    final primaryOffer = primaryData['offer'] != null
+        ? LoanOffer.fromJson(primaryData['offer'])
+        : LoanOffer(
+            id: '0',
+            bank: 'N/A',
+            name: 'No Primary Offer',
+            amount: 'N/A',
+            rate: 'N/A',
+            processingTime: 'N/A',
+            savings: 'N/A',
+            requiresCoApplicant: false,
+            requiresCollateral: false,
+            bestFor: '',
+          );
+
+    final alternativesList = data['alternatives'] as List? ?? [];
+
+    return LoanRecommendationResult(
+      primary: primaryOffer,
+      primaryFit: (primaryData['fit'] ?? 0).toInt(),
+      alternatives: alternativesList
+          .map((e) => LoanOffer.fromJson(e['offer'] ?? e))
+          .toList(),
+    );
+  }
+}
+
+class AiLogicService {
+  static final AiLogicService _instance = AiLogicService._internal();
+  factory AiLogicService() => _instance;
+  AiLogicService._internal();
+
+  Future<Map<String, dynamic>> _postRequest(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
+    final String baseUrl = await ApiConfig.getBaseUrl();
+    final url = Uri.parse('$baseUrl/ai/$endpoint');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw AiServiceException('Error from AI service: ${response.statusCode}');
+    }
   }
 
-  Future<EligibilityResult> checkEligibility(EligibilityCheckDto data) async {
-    final body = await _postRequest('eligibility-check', data.toJson());
-    if (body['success'] == true && body['eligibility'] != null) {
-      return EligibilityResult.fromJson(body['eligibility']);
-    }
-    throw Exception('Invalid response format');
+  Future<String> sendSupportMessage(String message) async {
+    final data = await _postRequest('support-chat', {'message': message});
+    return data['message'] ?? '';
   }
 
-  Future<GradeConversionResult> convertGrade(GradeConversionInput data) async {
-    final body = await _postRequest('convert-grades', data.toJson());
-    if (body['success'] == true && body['gradeConversion'] != null) {
-      return GradeConversionResult.fromJson(body['gradeConversion']);
-    }
-    throw Exception('Invalid response format');
+  Future<EligibilityResult> checkEligibility(EligibilityCheckDto dto) async {
+    final data = await _postRequest('eligibility-check', dto.toJson());
+    return EligibilityResult.fromJson(data['eligibility'] ?? data);
+  }
+
+  Future<GradeConversionResult> convertGrade(GradeConversionInput input) async {
+    final data = await _postRequest('convert-grades', input.toJson());
+    return GradeConversionResult.fromJson(data['gradeConversion'] ?? data);
   }
 
   Future<Map<String, UniversityData>> compareUniversities(
     String uni1,
     String uni2,
   ) async {
-    final body = await _postRequest('compare-universities', {
+    final data = await _postRequest('compare-universities', {
       'uni1': uni1,
       'uni2': uni2,
     });
-
-    if (body['success'] == true && body['data'] != null) {
-      final data = body['data'];
-      final u1 = data['uni1'] ?? <String, dynamic>{};
-      final u2 = data['uni2'] ?? <String, dynamic>{};
-
-      return {
-        'uni1': UniversityData.fromJson(Map<String, dynamic>.from(u1)),
-        'uni2': UniversityData.fromJson(Map<String, dynamic>.from(u2)),
-      };
-    }
-    throw Exception('Invalid response format');
+    final map = data['data'] ?? data;
+    return {
+      'uni1': UniversityData.fromJson(map['uni1']),
+      'uni2': UniversityData.fromJson(map['uni2']),
+    };
   }
 
-  Future<SopAnalysisResult> analyzeSop(String text) async {
-    final body = await _postRequest('sop-analysis', {'sop': text});
-    if (body['success'] == true && body['analysis'] != null) {
-      return SopAnalysisResult.fromJson(body['analysis']);
-    }
-    throw Exception('Invalid response format');
+  Future<SopAnalysisResult> analyzeSop(
+    String content, [
+    String? profile,
+  ]) async {
+    final data = await _postRequest('sop-analysis', {
+      'sop': content,
+      'profile': profile,
+    });
+    return SopAnalysisResult.fromJson(data['analysis'] ?? data);
   }
 
   Future<AdmitPredictionResult> predictAdmission(
-    Map<String, dynamic> profile,
-  ) async {
-    final body = await _postRequest('predict-admission', profile);
-    if (body['success'] == true && body['prediction'] != null) {
-      return AdmitPredictionResult.fromJson(body['prediction']);
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<String> sendSupportMessage(String message) async {
-    final body = await _postRequest('support-chat', {'message': message});
-    if (body['success'] == true && body['message'] != null) {
-      return body['message'];
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<PostAnalysisResult> analyzePost(String title, String content) async {
-    final body = await _postRequest('analyze-post', {
-      'title': title,
-      'content': content,
-    });
-    if (body['success'] == true && body['analysis'] != null) {
-      return PostAnalysisResult.fromJson(body['analysis']);
-    }
-    throw Exception('Invalid response format');
-  }
-
-  Future<Map<String, dynamic>> checkDuplicate(
-    String title,
-    String content,
-  ) async {
-    final body = await _postRequest('check-duplicate', {
-      'title': title,
-      'content': content,
-    });
-    if (body['success'] == true) {
-      return {
-        'isDuplicate': body['isDuplicate'] ?? false,
-        'similarPostId': body['similarPostId'],
-        'similarPostTitle': body['similarPostTitle'],
-        'similarPostContent': body['similarPostContent'],
+    dynamic targetOrProfile, [
+    Map<String, dynamic>? profileExtra,
+  ]) async {
+    Map<String, dynamic> body;
+    if (targetOrProfile is Map<String, dynamic>) {
+      body = {
+        'university': targetOrProfile['targetUniversity'] ?? '',
+        'profile': targetOrProfile,
+      };
+    } else {
+      body = {
+        'university': targetOrProfile.toString(),
+        'profile': profileExtra,
       };
     }
-    return {'isDuplicate': false};
+
+    final data = await _postRequest('predict-admission', body);
+    return AdmitPredictionResult.fromJson(data['prediction'] ?? data);
+  }
+
+  Future<PostAnalysisResult> analyzePost(String content) async {
+    final data = await _postRequest('analyze-post', {'content': content});
+    return PostAnalysisResult.fromJson(data['analysis'] ?? data);
+  }
+
+  Future<bool> checkDuplicate(String content) async {
+    final data = await _postRequest('check-duplicate', {'content': content});
+    return data['isDuplicate'] ?? false;
+  }
+
+  Future<ShortlistResult> shortlistUniversities(
+    Map<String, dynamic> profile,
+  ) async {
+    final data = await _postRequest('shortlist', profile);
+    return ShortlistResult.fromJson(data);
+  }
+
+  Future<ShortlistResult> evaluateShortlist(
+    Map<String, dynamic> profile,
+  ) async {
+    final data = await _postRequest('shortlist', profile);
+    return ShortlistResult.fromJson(data);
+  }
+
+  Future<List<Map<String, String>>> searchGlobalUniversities(
+    String query, {
+    String degree = 'masters',
+    String? country,
+  }) async {
+    final data = await _postRequest('search-universities', {
+      'query': query,
+      'degree': degree,
+      'country': country,
+    });
+    final list = data['universities'] as List? ?? [];
+    return list.map((e) => Map<String, String>.from(e)).toList();
+  }
+
+  Future<List<Map<String, String>>> searchUniversityCourses(
+    String university,
+    String query, {
+    String degree = 'masters',
+  }) async {
+    final data = await _postRequest('search-courses', {
+      'university': university,
+      'query': query,
+      'degree': degree,
+    });
+    final list = data['courses'] as List? ?? [];
+    return list.map((e) {
+      if (e is Map) return Map<String, String>.from(e);
+      return {'name': e.toString()};
+    }).toList();
+  }
+
+  Future<List<Map<String, String>>> searchCountries(String query) async {
+    final data = await _postRequest('search-countries', {'query': query});
+    final list = data['countries'] as List? ?? [];
+    return list.map((e) => Map<String, String>.from(e as Map)).toList();
+  }
+
+  Future<List<String>> searchFields(String query) async {
+    final data = await _postRequest('search-fields', {'query': query});
+    final list = data['fields'] as List? ?? [];
+    return List<String>.from(list);
+  }
+
+  Future<LoanRecommendationResult> getLoanRecommendations(
+    Map<String, dynamic> profile,
+  ) async {
+    final data = await _postRequest('loan-recommendations', profile);
+    return LoanRecommendationResult.fromJson(data);
+  }
+
+  Future<String?> lookupPincode(String pincode) async {
+    try {
+      final data = await _postRequest('pincode-lookup', {'pincode': pincode});
+      return data['address'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<String?> pincodeLookup(String pincode) async {
+    return lookupPincode(pincode);
   }
 }

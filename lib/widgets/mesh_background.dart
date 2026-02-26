@@ -11,85 +11,57 @@ class MeshBackground extends StatelessWidget {
     return Stack(
       children: [
         // Base Background Color - Light background from web
-        Positioned.fill(child: Container(color: const Color(0xFFF7F5F8))),
+        // Base Background Color - White for clean look
+        Positioned.fill(child: Container(color: Colors.white)),
 
-        // Deep Purple Glow (Web Primary: #6605c7) - Top Left
+        // Top Left: Soft Purple Blob
+        Positioned(
+          top: -120,
+          left: -120,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: const BoxDecoration(
+                color: Color(0xFFD8B4FE), // Purple-300
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ),
+
+        // Top Right: Soft Peach Blob
         Positioned(
           top: -100,
-          left: -100,
-          child: Container(
-            width: 500,
-            height: 500,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF6605C7).withOpacity(0.3),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Gold Glow (Web Accent: #e0c389) - Top Right
-        Positioned(
-          top: -50,
           right: -100,
-          child: Container(
-            width: 450,
-            height: 450,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFFE0C389).withOpacity(0.4),
-                  Colors.transparent,
-                ],
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFCC80), // Orange-200
+                shape: BoxShape.circle,
               ),
             ),
           ),
         ),
 
-        // Light Blue/Cyan Glow (Bottom Right)
+        // Bottom Left/Middle: Subtle Pink Accent
         Positioned(
-          bottom: -50,
-          right: -50,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF8BC0E8).withOpacity(0.3),
-                  Colors.transparent,
-                ],
+          top: 300,
+          left: -100,
+          child: ImageFiltered(
+            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFBCFE8), // Pink-200
+                shape: BoxShape.circle,
               ),
             ),
-          ),
-        ),
-
-        // Deep Purple Glow (Bottom Left)
-        Positioned(
-          bottom: -100,
-          left: -50,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  const Color(0xFF6605C7).withOpacity(0.2),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Blur Layer
-        Positioned.fill(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-            child: Container(color: Colors.transparent),
           ),
         ),
 

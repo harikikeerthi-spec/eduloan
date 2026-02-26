@@ -1,14 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/blog.dart';
+import 'api_config.dart';
 
 class BlogService {
-  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
-  // Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
-  static const String baseUrl = 'http://10.0.2.2:3000/blogs';
-
   Future<List<Blog>> getAllBlogs() async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(Uri.parse('$baseUrl/blogs'));
 
       if (response.statusCode == 200) {
@@ -29,6 +27,7 @@ class BlogService {
 
   Future<Blog> getBlogBySlug(String slug) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(Uri.parse('$baseUrl/blogs/slug/$slug'));
 
       if (response.statusCode == 200) {
@@ -52,6 +51,7 @@ class BlogService {
     String authorName,
   ) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.post(
         Uri.parse('$baseUrl/blogs/$blogId/comments'),
         headers: {'Content-Type': 'application/json'},
@@ -75,6 +75,7 @@ class BlogService {
 
   Future<void> deleteComment(String commentId) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.delete(
         Uri.parse('$baseUrl/blogs/comments/$commentId'),
         headers: {'Content-Type': 'application/json'},
@@ -97,6 +98,7 @@ class BlogService {
     String userId,
   ) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.post(
         Uri.parse('$baseUrl/blogs/comments/$commentId/like'),
         headers: {'Content-Type': 'application/json'},
@@ -117,6 +119,7 @@ class BlogService {
   // Get comments liked by a user
   Future<List<String>> getLikedComments(String userId) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(
         Uri.parse('$baseUrl/blogs/comments/likes/$userId'),
       );
@@ -141,6 +144,7 @@ class BlogService {
     String content,
   ) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.post(
         Uri.parse('$baseUrl/blogs/comments/$commentId/replies'),
         headers: {'Content-Type': 'application/json'},

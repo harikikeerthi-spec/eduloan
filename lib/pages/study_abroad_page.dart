@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
+import 'ai_tools/university_shortlisting_page.dart';
 
 class StudyAbroadPage extends StatelessWidget {
   const StudyAbroadPage({super.key});
@@ -18,25 +19,35 @@ class StudyAbroadPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Study Abroad',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF311B92),
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4, bottom: 16),
+                        child: Text(
+                          'BEGIN YOUR JOURNEY',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            color: Color(0xFF1F2937),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Your complete guide to studying in the USA, UK, Canada, and beyond.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black.withValues(alpha: 0.6),
-                          height: 1.5,
-                        ),
+                      _buildMenuCard(
+                        context,
+                        title: 'Shortlist Universities',
+                        subtitle: 'Fully powered by ',
+                        subtitleSuffix: 'AI ✨',
+                        icon: Icons.bookmark_add_outlined,
+                        gradientText: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UniversityShortlistingPage(),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 32),
-                      _buildFeaturePlaceholder(),
                     ],
                   ),
                 ),
@@ -60,7 +71,7 @@ class StudyAbroadPage extends StatelessWidget {
           ),
           const Spacer(),
           const Text(
-            'VidhyaLoan',
+            'Study Abroad',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -74,32 +85,119 @@ class StudyAbroadPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFeaturePlaceholder() {
+  Widget _buildMenuCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    String? subtitleSuffix,
+    required IconData icon,
+    bool gradientText = false,
+    required VoidCallback onTap,
+  }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF311B92).withValues(alpha: 0.1),
-        ),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.flight_takeoff, size: 64, color: Color(0xFF311B92)),
-          const SizedBox(height: 24),
-          const Text(
-            'Feature under development',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'We are curating the best destination guides and university lists for you.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black.withValues(alpha: 0.5)),
+        color: const Color(
+          0xFF6200EE,
+        ).withValues(alpha: 0.95), // Vibrant Purple
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF7C4DFF), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6200EE).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(icon, color: const Color(0xFF6200EE), size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          if (subtitleSuffix != null)
+                            gradientText
+                                ? ShaderMask(
+                                    shaderCallback: (bounds) =>
+                                        const LinearGradient(
+                                          colors: [
+                                            Colors.white,
+                                            Color(0xFFEDE9FE),
+                                          ],
+                                        ).createShader(bounds),
+                                    child: Text(
+                                      subtitleSuffix,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    subtitleSuffix,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.black.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Colors.white54,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

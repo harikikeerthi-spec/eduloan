@@ -506,8 +506,9 @@ class _ForumPageState extends State<ForumPage> {
                 Row(
                   children: [
                     _buildStatAction(
-                      Icons.thumb_up_outlined,
+                      post.liked ? Icons.thumb_up : Icons.thumb_up_outlined,
                       '${post.likes}',
+                      color: post.liked ? const Color(0xFF6605C7) : null,
                       onTap: () => _toggleLikePost(post.id),
                     ),
                     const SizedBox(width: 16),
@@ -536,20 +537,26 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  Widget _buildStatAction(IconData icon, String value, {VoidCallback? onTap}) {
+  Widget _buildStatAction(
+    IconData icon,
+    String value, {
+    Color? color,
+    VoidCallback? onTap,
+  }) {
+    final activeColor = color ?? const Color(0xFF1E293B).withOpacity(0.4);
     return GestureDetector(
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF1E293B).withOpacity(0.4)),
+          Icon(icon, size: 16, color: activeColor),
           const SizedBox(width: 6),
           if (value.isNotEmpty)
             Text(
               value,
               style: TextStyle(
                 fontSize: 12,
-                color: const Color(0xFF1E293B).withOpacity(0.4),
-                fontWeight: FontWeight.w500,
+                color: activeColor,
+                fontWeight: color != null ? FontWeight.bold : FontWeight.w500,
               ),
             ),
         ],

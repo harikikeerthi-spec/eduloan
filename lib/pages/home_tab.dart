@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/kyc_modal.dart';
+import 'document_vault_page.dart';
 import '../widgets/institute_selection_modal.dart';
 import 'emi_calculator_page.dart';
 import 'apply_loan_page.dart';
@@ -19,6 +21,7 @@ class _HomeTabState extends State<HomeTab> {
   final LoanService _loanService = LoanService();
   List<Loan> _activeLoans = [];
   bool _isLoadingLoans = true;
+  bool _showKycNudge = true;
 
   @override
   void initState() {
@@ -66,21 +69,7 @@ class _HomeTabState extends State<HomeTab> {
                     horizontal: 24,
                     vertical: 32,
                   ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF311B92).withValues(alpha: 0.12),
-                        const Color(0xFF311B92).withValues(alpha: 0.05),
-                      ],
-                    ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFF311B92).withValues(alpha: 0.08),
-                      ),
-                    ),
-                  ),
+                  // Removed glass gradient decoration
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -99,10 +88,15 @@ class _HomeTabState extends State<HomeTab> {
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
-                          const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.black54,
-                            size: 28,
+                          Row(
+                            children: [
+                              const SizedBox(width: 16),
+                              const Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.black54,
+                                size: 28,
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -169,6 +163,11 @@ class _HomeTabState extends State<HomeTab> {
                 ),
 
                 const SizedBox(height: 32),
+
+                if (_showKycNudge) ...[
+                  _buildKycNudge(),
+                  const SizedBox(height: 32),
+                ],
 
                 // Quick Actions
                 Column(
@@ -313,6 +312,11 @@ class _HomeTabState extends State<HomeTab> {
                               'IDFC FIRST Bank',
                               assetPath: 'assets/images/idfc_logo.png',
                             ),
+                            _buildRectangularPartner(
+                              'Poonawalla Fincorp',
+                              assetPath:
+                                  'assets/images/poonawalla_logo_final.jpg',
+                            ),
                           ],
                         ),
                       ),
@@ -324,6 +328,85 @@ class _HomeTabState extends State<HomeTab> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildKycNudge() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3E8FF), // Light purple
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE9D5FF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.verified_user_outlined,
+              color: Color(0xFF7E22CE),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Complete your KYC',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Get 50% off on processing fees',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: const Color(0xFF1F2937).withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showKycModal(context),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF7E22CE),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: const Text(
+              'Verify Now',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showKycModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => KycModal(
+        onManualUpload: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DocumentVaultPage()),
+          );
+        },
       ),
     );
   }

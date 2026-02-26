@@ -1,15 +1,15 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
+import 'api_config.dart';
 
 class LoanService {
-  static const String baseUrl = 'http://10.0.2.2:3000/applications';
-
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
-    print(
+    debugPrint(
       'LoanService: Sending request with token: ${token != null ? "Present (Starts with ${token.substring(0, 10)}...)" : "MISSING"}',
     );
     return {
@@ -42,8 +42,9 @@ class LoanService {
   }) async {
     try {
       final headers = await _getHeaders();
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.post(
-        Uri.parse(baseUrl),
+        Uri.parse('$baseUrl/applications'),
         headers: headers,
         body: json.encode({
           'userId': userId,
@@ -83,8 +84,9 @@ class LoanService {
   Future<List<Loan>> getUserLoans() async {
     try {
       final headers = await _getHeaders();
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(
-        Uri.parse('$baseUrl/my'),
+        Uri.parse('$baseUrl/applications/my'),
         headers: headers,
       );
 
@@ -103,8 +105,9 @@ class LoanService {
   Future<Loan> getLoanById(String loanId) async {
     try {
       final headers = await _getHeaders();
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(
-        Uri.parse('$baseUrl/$loanId'),
+        Uri.parse('$baseUrl/applications/$loanId'),
         headers: headers,
       );
 
@@ -122,8 +125,9 @@ class LoanService {
   Future<void> deleteLoan(String loanId) async {
     try {
       final headers = await _getHeaders();
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.delete(
-        Uri.parse('$baseUrl/$loanId'),
+        Uri.parse('$baseUrl/applications/$loanId'),
         headers: headers,
       );
 
@@ -145,9 +149,10 @@ class LoanService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
+      final baseUrl = await ApiConfig.getBaseUrl();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/$applicationId/documents'),
+        Uri.parse('$baseUrl/applications/$applicationId/documents'),
       );
 
       if (token != null) {

@@ -162,16 +162,25 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                           child: Row(
                             children: [
                               Icon(
-                                Icons.thumb_up_outlined,
+                                comment.liked
+                                    ? Icons.thumb_up
+                                    : Icons.thumb_up_outlined,
                                 size: 14,
-                                color: Colors.black.withOpacity(0.4),
+                                color: comment.liked
+                                    ? const Color(0xFF6605C7)
+                                    : Colors.black.withOpacity(0.4),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '${comment.likes}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.black.withOpacity(0.4),
+                                  fontWeight: comment.liked
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: comment.liked
+                                      ? const Color(0xFF6605C7)
+                                      : Colors.black.withOpacity(0.4),
                                 ),
                               ),
                             ],
@@ -404,8 +413,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                 Row(
                   children: [
                     _buildActionItem(
-                      Icons.thumb_up_outlined,
+                      _post!.liked ? Icons.thumb_up : Icons.thumb_up_outlined,
                       '${_post!.likes}',
+                      color: _post!.liked ? const Color(0xFF6605C7) : null,
                       onTap: _toggleLikePost,
                     ),
                     const SizedBox(width: 24),
@@ -607,19 +617,25 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     }
   }
 
-  Widget _buildActionItem(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _buildActionItem(
+    IconData icon,
+    String label, {
+    Color? color,
+    VoidCallback? onTap,
+  }) {
+    final activeColor = color ?? Colors.black.withOpacity(0.6);
     return GestureDetector(
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.black.withOpacity(0.6)),
+          Icon(icon, size: 20, color: activeColor),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.black.withOpacity(0.6),
-              fontWeight: FontWeight.w500,
+              color: activeColor,
+              fontWeight: color != null ? FontWeight.bold : FontWeight.w500,
             ),
           ),
         ],

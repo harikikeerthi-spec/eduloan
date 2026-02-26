@@ -1,22 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
 
 class AuthService {
-  // IMPORTANT: Update this URL based on where your API is running
-  // For local development:
-  // - Android Emulator: 'http://10.0.2.2:3000/auth'
-  // - iOS Simulator/Web: 'http://localhost:3000/auth'
-  // - Real device: 'http://YOUR_COMPUTER_IP:3000/auth'
-  // - Production: 'https://your-api-domain.com/auth'
-  static const String baseUrl = 'http://10.0.2.2:3000/auth';
-
   /// Sends a Unified OTP (handles both login and signup)
   static Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$baseUrl/send-otp'),
+            Uri.parse('$baseUrl/auth/send-otp'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email}),
           )
@@ -48,9 +42,10 @@ class AuthService {
     String otp,
   ) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$baseUrl/verify-otp'),
+            Uri.parse('$baseUrl/auth/verify-otp'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email, 'otp': otp}),
           )
@@ -108,12 +103,14 @@ class AuthService {
     String firstName,
     String lastName,
     String phoneNumber,
-    String dateOfBirth,
-  ) async {
+    String dateOfBirth, {
+    String? profileImage,
+  }) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$baseUrl/update-details'),
+            Uri.parse('$baseUrl/auth/update-details'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
               'email': email,
@@ -121,6 +118,7 @@ class AuthService {
               'lastName': lastName,
               'phoneNumber': phoneNumber,
               'dateOfBirth': dateOfBirth,
+              'profileImage': profileImage,
             }),
           )
           .timeout(const Duration(seconds: 30));
@@ -132,6 +130,9 @@ class AuthService {
         await prefs.setString('user_firstName', firstName);
         await prefs.setString('user_lastName', lastName);
         await prefs.setString('user_phone', phoneNumber);
+        if (profileImage != null) {
+          await prefs.setString('user_profileImage', profileImage);
+        }
         if (data['user'] != null && data['user']['userId'] != null) {
           await prefs.setString('userId', data['user']['userId']);
         }
@@ -155,12 +156,13 @@ class AuthService {
   /// Fetches user dashboard data (Profile)
   static Future<Map<String, dynamic>> getUserDashboard(String email) async {
     try {
+      final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
             // Changed to POST as per some backend conventions, or assumes GET if modifying.
             // Wait, backend auth.controller.ts: @Post('dashboard') async dashboard(@Body() body: { email: string })
             // So it is POST /auth/dashboard
-            Uri.parse('$baseUrl/dashboard'),
+            Uri.parse('$baseUrl/auth/dashboard'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email}),
           )

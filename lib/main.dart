@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'pages/login_page.dart';
 import 'pages/main_navigation.dart';
 import 'pages/apply_loan_page.dart';
@@ -41,7 +42,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         colorSchemeSeed: const Color(0xFF311B92), // Deep Purple
-        fontFamily: 'Inter',
+        fontFamily: GoogleFonts.outfit().fontFamily,
         scaffoldBackgroundColor: Colors.transparent,
         cardColor: Colors.white,
         cardTheme: CardThemeData(

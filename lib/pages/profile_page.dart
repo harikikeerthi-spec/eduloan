@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
 import '../services/auth_service.dart';
 import 'user_details_page.dart';
-import 'main_navigation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/avatar_selection_dialog.dart';
+import 'refer_and_earn_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -18,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = 'Loading...';
   String _phone = 'Loading...';
   String _dob = 'Loading...';
+  String? _profileImage;
 
   @override
   void initState() {
@@ -54,6 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
               if (_dob.contains('T')) {
                 _dob = _dob.split('T')[0];
               }
+              _profileImage = user['profileImage'];
               _isLoading = false;
             });
           } else {
@@ -68,6 +71,48 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       print('DEBUG: Error in _fetchProfile: $e');
       _handleError('Error: $e');
+    }
+  }
+
+  Future<void> _changeAvatar() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AvatarSelectionDialog(currentAvatar: _profileImage),
+    );
+
+    if (result != null && mounted) {
+      setState(() => _isLoading = true);
+      final updateResult = await AuthService.updateUserDetails(
+        _email,
+        _name.split(' ')[0],
+        _name.contains(' ') ? _name.split(' ').sublist(1).join(' ') : '',
+        _phone,
+        _dob,
+        profileImage: result,
+      );
+
+      if (mounted) {
+        if (updateResult['success'] == true) {
+          await _fetchProfile();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Avatar updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                updateResult['message'] ?? 'Failed to update avatar',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -96,40 +141,64 @@ class _ProfilePageState extends State<ProfilePage> {
                 // Header with Profile Info
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        const Color(0xFF311B92).withValues(alpha: 0.12),
-                        const Color(0xFF311B92).withValues(alpha: 0.05),
-                      ],
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(32),
-                      bottomRight: Radius.circular(32),
-                    ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: const Color(0xFF311B92).withValues(alpha: 0.1),
-                      ),
-                    ),
-                  ),
+                  // Removed glass gradient decoration
                   child: Column(
                     children: [
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Color(0xFF311B92),
-                        ),
+                      Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF6366F1,
+                              ).withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                            ),
+                            child: _profileImage != null
+                                ? Center(
+                                    child: Icon(
+                                      AvatarSelectionDialog.avatars.firstWhere(
+                                        (a) => a['name'] == _profileImage,
+                                        orElse: () =>
+                                            AvatarSelectionDialog.avatars[0],
+                                      )['icon'],
+                                      size: 50,
+                                      color: AvatarSelectionDialog.avatars
+                                          .firstWhere(
+                                            (a) => a['name'] == _profileImage,
+                                            orElse: () => AvatarSelectionDialog
+                                                .avatars[0],
+                                          )['color'],
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Color(0xFF311B92),
+                                  ),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _changeAvatar,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF311B92),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -203,46 +272,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 16),
 
                       _buildSettingItem(
-                        icon: Icons.dashboard_outlined,
-                        title: 'Dashboard',
-                        onTap: () {
-                          // Switch to Home tab (index 0)
-                          final mainNav = MainNavigation.of(context);
-                          if (mainNav != null) {
-                            mainNav.switchToTab(0);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
-                        icon: Icons.description_outlined,
-                        title: 'My Applications',
-                        onTap: () {
-                          // Switch to My Loans tab (index 1)
-                          final mainNav = MainNavigation.of(context);
-                          if (mainNav != null) {
-                            mainNav.switchToTab(1);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
-                        icon: Icons.folder_outlined,
-                        title: 'Document Vault',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Document Vault coming soon!'),
-                              backgroundColor: Color(0xFF311B92),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
                         icon: Icons.edit_outlined,
                         title: 'Edit Profile',
                         onTap:
@@ -296,6 +325,20 @@ class _ProfilePageState extends State<ProfilePage> {
                             const SnackBar(
                               content: Text('Help & Support coming soon!'),
                               backgroundColor: Color(0xFF311B92),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildSettingItem(
+                        icon: Icons.stars_rounded,
+                        title: 'Refer & Earn',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ReferAndEarnPage(),
                             ),
                           );
                         },

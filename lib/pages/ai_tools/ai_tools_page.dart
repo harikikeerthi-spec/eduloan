@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/mesh_background.dart';
 
 // Will import specific pages later
 // import 'eligibility_checker_page.dart';
@@ -11,116 +10,141 @@ class AiToolsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MeshBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: const Text(
-            'AI Tools Suite',
-            style: TextStyle(
-              color: Color(0xFF1F2937),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          centerTitle: true,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
+          onPressed: () => Navigator.pop(context),
         ),
-        body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        title: const Text(
+          'AI Tools Suite',
+          style: TextStyle(
+            color: Color(0xFF1F2937),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Power up your journey',
+                      'AI Tools Suite',
                       style: TextStyle(
-                        fontSize: 26,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1F2937),
                         fontFamily: 'Noto Serif',
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    Container(
+                      height: 4,
+                      width: 60,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6200EA), Color(0xFFD482F6)],
+                        ),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
                       'Smart tools to help you plan, qualify, and succeed.',
                       style: TextStyle(
-                        fontSize: 15,
-                        color: Colors.black.withOpacity(0.6),
+                        fontSize: 16,
+                        color: Color(0xFF6B7280),
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
                 ),
               ),
-              Expanded(
-                child: GridView.count(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 0.85, // Adjust for card height
-                  children: [
-                    _buildGridCard(
-                      context,
-                      title: 'Eligibility\nChecker',
-                      icon: Icons.assignment_ind_outlined,
-                      color: const Color(0xFF6200EA),
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/ai/eligibility'),
-                    ),
-                    _buildGridCard(
-                      context,
-                      title: 'Grade\nConverter',
-                      icon: Icons.school_outlined,
-                      color: const Color(0xFFC51162),
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/ai/grade-converter'),
-                    ),
-                    _buildGridCard(
-                      context,
-                      title: 'University\nCompare',
-                      icon: Icons.balance,
-                      color: const Color(0xFFFF9800),
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        '/ai/university-compare',
-                      ),
-                    ),
-                    _buildGridCard(
-                      context,
-                      title: 'Admit\nPredictor',
-                      icon: Icons.analytics_outlined,
-                      color: const Color(0xFF2962FF),
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/ai/admit-predictor'),
-                    ),
-                    _buildGridCard(
-                      context,
-                      title: 'SOP\nWriter',
-                      icon: Icons.description_outlined,
-                      color: const Color(0xFF00BFA5),
-                      onTap: () =>
-                          Navigator.pushNamed(context, '/ai/sop-writer'),
-                    ),
-                    _buildGridCard(
-                      context,
-                      title: 'AI Support\nAssistant',
-                      icon: Icons.chat_bubble_outline,
-                      color: const Color(0xFF009688),
-                      onTap: () => Navigator.pushNamed(context, '/ai/bot'),
-                    ),
-                  ],
+                  childAspectRatio: 0.9,
                 ),
+                delegate: SliverChildListDelegate([
+                  _buildGridCard(
+                    context,
+                    title: 'Eligibility\nChecker',
+                    subtitle: 'Check loan qualification',
+                    icon: Icons.assignment_ind_outlined,
+                    color: const Color(0xFF6200EA),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/ai/eligibility'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'Grade\nConverter',
+                    subtitle: 'GPA & marks conversion',
+                    icon: Icons.school_outlined,
+                    color: const Color(0xFFC51162),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/ai/grade-converter'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'University\nCompare',
+                    subtitle: 'Head-to-head comparison',
+                    icon: Icons.balance,
+                    color: const Color(0xFFFF9800),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/ai/university-compare'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'Admit\nPredictor',
+                    subtitle: 'Predict admission chance',
+                    icon: Icons.analytics_outlined,
+                    color: const Color(0xFF2962FF),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/ai/admit-predictor'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'SOP\nWriter & Review',
+                    subtitle: 'AI-assisted essay writing',
+                    icon: Icons.description_outlined,
+                    color: const Color(0xFF00BFA5),
+                    onTap: () => Navigator.pushNamed(context, '/ai/sop-writer'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'University\nShortlist',
+                    subtitle: 'Find your target programs',
+                    icon: Icons.map_outlined,
+                    color: const Color(0xFF673AB7),
+                    onTap: () => Navigator.pushNamed(context, '/master-plan'),
+                  ),
+                  _buildGridCard(
+                    context,
+                    title: 'AI Support\nAssistant',
+                    subtitle: '24/7 student guidance',
+                    icon: Icons.chat_bubble_outline,
+                    color: const Color(0xFF009688),
+                    onTap: () => Navigator.pushNamed(context, '/ai/bot'),
+                  ),
+                ]),
               ),
-            ],
-          ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          ],
         ),
       ),
     );
@@ -129,6 +153,7 @@ class AiToolsPage extends StatelessWidget {
   Widget _buildGridCard(
     BuildContext context, {
     required String title,
+    required String subtitle,
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
@@ -137,38 +162,49 @@ class AiToolsPage extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
             ),
           ],
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: const Color(0xFFF3F4F6), width: 1),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 32),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(height: 16),
+            const Spacer(),
             Text(
               title,
-              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w800,
                 color: Color(0xFF1F2937),
-                height: 1.2,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF9CA3AF),
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

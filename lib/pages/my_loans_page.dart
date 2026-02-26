@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
+
+import 'document_vault_page.dart';
 import '../widgets/mesh_background.dart';
 import '../models/loan.dart';
 import '../models/application_document.dart';
@@ -471,9 +472,52 @@ class _MyLoansPageState extends State<MyLoansPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              ...loan.documents
-                  .map((doc) => _buildDocumentItem(loan.id, doc))
-                  .toList(),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.3,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      ...loan.documents
+                          .where(
+                            (doc) =>
+                                doc.status != 'pending' ||
+                                !doc.docName.contains('Unnamed'),
+                          )
+                          .map((doc) => _buildDocumentItem(loan.id, doc))
+                          .toList(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DocumentVaultPage(),
+                      ),
+                    ).then((_) => _fetchLoans());
+                  },
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text(
+                    'UPLOAD FROM VAULT',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
               Row(
                 children: [
@@ -914,10 +958,15 @@ class _MyLoansPageState extends State<MyLoansPage> {
               ],
             ),
           ),
+
           if (!isUploaded)
-            TextButton(
-              onPressed: () => _pickAndUploadFile(applicationId, doc),
-              child: const Text('UPLOAD'),
+            const Text(
+              'PENDING',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
             )
           else
             const Text(
@@ -931,46 +980,5 @@ class _MyLoansPageState extends State<MyLoansPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _pickAndUploadFile(
-    String applicationId,
-    ApplicationDocument doc,
-  ) async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'pdf', 'doc', 'docx', 'png'],
-      );
-
-      if (result != null && result.files.single.path != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Uploading document...')),
-          );
-        }
-
-        await _loanService.uploadDocument(
-          applicationId: applicationId,
-          docType: doc.docType,
-          docName: doc.docName,
-          filePath: result.files.single.path!,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Document uploaded successfully')),
-          );
-          _fetchLoans();
-          Navigator.pop(context);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/ai_logic_service.dart';
-import '../../widgets/mesh_background.dart';
 
 class EligibilityCheckerPage extends StatefulWidget {
   const EligibilityCheckerPage({super.key});
@@ -86,32 +85,42 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MeshBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
-            onPressed: () => Navigator.pop(context),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text(
+          "Eligibility Checker",
+          style: TextStyle(
+            color: Color(0xFF1F2937),
+            fontWeight: FontWeight.bold,
           ),
-          title: const Text(
-            'Eligibility Checker',
-            style: TextStyle(
-              color: Color(0xFF1F2937),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          centerTitle: true,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text(
+                "Find out if you qualify for a loan in seconds.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
               if (_result != null) _buildResultCard(),
-
               _buildFormCard(),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -124,33 +133,30 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     Color textColor;
 
     if (_result!.status == 'eligible') {
-      badgeColor = Colors.green.shade100;
-      textColor = Colors.green.shade800;
+      badgeColor = Colors.green.withOpacity(0.1);
+      textColor = Colors.green.shade700;
     } else if (_result!.status == 'borderline') {
-      badgeColor = Colors.orange.shade100;
-      textColor = Colors.orange.shade800;
+      badgeColor = Colors.orange.withOpacity(0.1);
+      textColor = Colors.orange.shade700;
     } else {
-      badgeColor = Colors.red.shade100;
-      textColor = Colors.red.shade800;
+      badgeColor = Colors.red.withOpacity(0.1);
+      textColor = Colors.red.shade700;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6200EA).withValues(alpha: 0.1),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFF6200EA).withValues(alpha: 0.1),
-        ),
       ),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -158,65 +164,76 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'AI Snapshot',
+                'AI ANALYSIS',
                 style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF6B7280),
+                  letterSpacing: 1.2,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 10,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: badgeColor,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: textColor.withOpacity(0.3)),
                 ),
                 child: Text(
                   _result!.status.toUpperCase(),
                   style: TextStyle(
                     color: textColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             children: [
               const Text(
-                'Eligibility Score: ',
-                style: TextStyle(color: Colors.grey),
-              ),
-              Text(
-                '${_result!.score}/100',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                'Qualification Score',
+                style: TextStyle(
                   fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_result!.score}%',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                  fontSize: 24,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: _result!.score / 100,
-            backgroundColor: Colors.grey.withValues(alpha: 0.2),
-            color: const Color(0xFF6200EA),
+          const SizedBox(height: 12),
+          ClipRRect(
             borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _result!.score / 100,
+              backgroundColor: Colors.black.withOpacity(0.05),
+              color: textColor,
+              minHeight: 8,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             _result!.summary,
             style: const TextStyle(
-              height: 1.5,
+              height: 1.6,
               fontSize: 14,
-              color: Colors.black87,
+              color: Color(0xFF4B5563),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -226,47 +243,62 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
 
   Widget _buildFormCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6200EA).withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(24),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildNumberField("Age", "e.g. 24", Icons.person, _ageController),
-            const SizedBox(height: 16),
+            const Text(
+              "Profile Details",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildNumberField(
+              "Age",
+              "e.g. 24",
+              Icons.person_outline,
+              _ageController,
+            ),
+            const SizedBox(height: 20),
             _buildNumberField(
               "Credit Score",
               "e.g. 750",
-              Icons.credit_score,
+              Icons.credit_score_outlined,
               _creditController,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildNumberField(
-              "Annual Income (\u0024)",
+              "Annual Income (\$)",
               "e.g. 50000",
-              Icons.attach_money,
+              Icons.payments_outlined,
               _incomeController,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             _buildNumberField(
-              "Loan Amount (\u0024)",
+              "Loan Amount (\$)",
               "e.g. 25000",
-              Icons.account_balance_wallet,
+              Icons.account_balance_outlined,
               _loanController,
             ),
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 24),
             _buildDropdown(
               "Employment Status",
               _employment,
@@ -281,8 +313,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
               ],
               (val) => setState(() => _employment = val!),
             ),
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 20),
             _buildDropdown("Study Level", _study, const [
               DropdownMenuItem(
                 value: 'undergrad',
@@ -292,19 +323,16 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
               DropdownMenuItem(value: 'doctoral', child: Text('Doctoral')),
               DropdownMenuItem(value: 'diploma', child: Text('Diploma')),
             ], (val) => setState(() => _study = val!)),
-            const SizedBox(height: 16),
-
-            _buildDropdown(
-              "Marital Status",
-              _maritalStatus,
-              const [
-                DropdownMenuItem(value: 'single', child: Text('Single')),
-                DropdownMenuItem(value: 'married', child: Text('Married')),
-              ],
-              (val) => setState(() => _maritalStatus = val!),
+            const SizedBox(height: 24),
+            const Text(
+              "Additional Info",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF4B5563),
+              ),
             ),
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -314,7 +342,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
                     (v) => setState(() => _coApplicant = v),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: _buildSwitch(
                     "Collateral",
@@ -324,7 +352,6 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -332,18 +359,29 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
               child: ElevatedButton(
                 onPressed: _checkEligibility,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF311B92),
+                  backgroundColor: const Color(0xFF1A1A1A),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  elevation: 4,
-                  shadowColor: const Color(0xFF311B92).withOpacity(0.4),
+                  elevation: 0,
                 ),
-                child: const Text(
-                  'Check Eligibility',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Check Eligibility',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -361,26 +399,40 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Color(0xFF374151),
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade300),
+            color: Colors.white.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.5),
+              width: 1.5,
+            ),
           ),
           child: TextFormField(
             controller: controller,
             keyboardType: TextInputType.number,
             validator: (v) => v!.isEmpty ? 'Required' : null,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             decoration: InputDecoration(
               hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.black.withOpacity(0.3),
+                fontSize: 14,
+              ),
               border: InputBorder.none,
-              suffixIcon: Icon(icon, color: Colors.grey),
+              suffixIcon: Icon(icon, color: Colors.black45, size: 20),
             ),
           ),
         ),
@@ -424,16 +476,17 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
 
   Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: value
-            ? const Color(0xFF6200EA).withValues(alpha: 0.1)
-            : Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+            ? const Color(0xFF6200EA).withOpacity(0.05)
+            : Colors.black.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: value
-              ? const Color(0xFF6200EA).withValues(alpha: 0.3)
-              : Colors.grey.shade300,
+              ? const Color(0xFF6200EA).withOpacity(0.2)
+              : Colors.white.withOpacity(0.5),
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -442,7 +495,8 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
               color: value ? const Color(0xFF6200EA) : Colors.black54,
             ),
           ),
@@ -451,12 +505,18 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             children: [
               Text(
                 value ? "Yes" : "No",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
-              Switch(
-                value: value,
-                onChanged: onChanged,
-                activeColor: const Color(0xFF6200EA),
+              Transform.scale(
+                scale: 0.7,
+                child: Switch(
+                  value: value,
+                  onChanged: onChanged,
+                  activeColor: const Color(0xFF6200EA),
+                ),
               ),
             ],
           ),

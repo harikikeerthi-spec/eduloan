@@ -75,13 +75,14 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('Compare Universities'),
+          title: const Text('University Compare'),
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(
               Icons.arrow_back_ios_new,
               color: Color(0xFF1F2937),
+              size: 20,
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -89,22 +90,25 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
           titleTextStyle: const TextStyle(
             color: Color(0xFF1F2937),
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             fontFamily: 'Noto Serif',
           ),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             children: [
               _buildVersusHeader(),
               const SizedBox(height: 32),
-              PrimaryButton(
-                text: 'Compare Universities',
-                onPressed: _compare,
-                isLoading: _isLoading,
+              SizedBox(
+                width: double.infinity,
+                child: PrimaryButton(
+                  text: 'Compare Selection',
+                  onPressed: _compare,
+                  isLoading: _isLoading,
+                ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
               if (_result != null) _buildComparisonResult(),
             ],
           ),
@@ -114,31 +118,23 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
   }
 
   Widget _buildVersusHeader() {
-    return Stack(
-      alignment: Alignment.center,
+    return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: _buildUniSelector(1, _uni1Controller)),
-            const SizedBox(width: 40), // Space for VS badge
-            Expanded(child: _buildUniSelector(2, _uni2Controller)),
-          ],
-        ),
+        Row(children: [Expanded(child: _buildUniSelector(1, _uni1Controller))]),
+        const SizedBox(height: 16),
         Container(
-          width: 50,
-          height: 50,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            color: Colors.white.withValues(alpha: 0.9),
+            border: Border.all(
+              color: const Color(0xFF6200EA).withValues(alpha: 0.2),
+              width: 1.5,
             ),
-            border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.3),
+                color: const Color(0xFF6200EA).withValues(alpha: 0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -148,13 +144,16 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
             child: Text(
               'VS',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFF6200EA),
                 fontWeight: FontWeight.w900,
                 fontSize: 14,
+                letterSpacing: 0.5,
               ),
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        Row(children: [Expanded(child: _buildUniSelector(2, _uni2Controller))]),
       ],
     );
   }
@@ -162,7 +161,8 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
   Widget _buildUniSelector(int index, TextEditingController controller) {
     return GlassTextField(
       controller: controller,
-      hintText: 'University $index',
+      hintText: 'Enter University $index Name...',
+      labelText: 'University $index',
     );
   }
 
@@ -219,52 +219,99 @@ class _UniversityComparePageState extends State<UniversityComparePage> {
     Color color,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 18, color: color),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 20, color: color),
+                ),
+                const SizedBox(width: 12),
                 Text(
                   title.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
                     color: color,
-                    letterSpacing: 1.0,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    v1,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1F2937),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        v1,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'University 1',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.grey.withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
                   ),
                 ),
-                Container(width: 1, height: 24, color: Colors.grey[300]),
                 Expanded(
-                  child: Text(
-                    v2,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1F2937),
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        v2,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'University 2',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

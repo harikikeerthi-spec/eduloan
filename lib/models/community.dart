@@ -205,6 +205,7 @@ class ForumPost {
   final bool isMentorOnly;
   final int views;
   final int likes;
+  final bool liked;
   final bool isSolved;
   final DateTime createdAt;
   final int commentCount;
@@ -222,6 +223,7 @@ class ForumPost {
     required this.isMentorOnly,
     required this.views,
     required this.likes,
+    this.liked = false,
     required this.isSolved,
     required this.createdAt,
     this.commentCount = 0,
@@ -243,6 +245,7 @@ class ForumPost {
       isMentorOnly: json['isMentorOnly'] ?? false,
       views: json['views'] ?? 0,
       likes: json['likes'] ?? 0,
+      liked: json['liked'] ?? false,
       isSolved: json['isSolved'] ?? false,
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       commentCount: json['_count']?['comments'] ?? json['commentCount'] ?? 0,
@@ -263,6 +266,7 @@ class ForumComment {
   final String? authorImage;
   final DateTime createdAt;
   final int likes;
+  final bool liked;
   final List<ForumComment> replies;
 
   ForumComment({
@@ -273,6 +277,7 @@ class ForumComment {
     this.authorImage,
     required this.createdAt,
     required this.likes,
+    this.liked = false,
     required this.replies,
   });
 
@@ -287,6 +292,7 @@ class ForumComment {
       authorImage: json['userImage'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       likes: json['likes'] ?? 0,
+      liked: json['liked'] ?? false,
       replies:
           (json['replies'] as List?)
               ?.map((r) => ForumComment.fromJson(r))

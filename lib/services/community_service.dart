@@ -1,15 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
+import 'api_config.dart';
 
 class CommunityService {
-  static const List<String> _baseUrls = [
-    'http://10.0.2.2:3000', // 1. Android Emulator
-    'http://127.0.0.1:3000', // 2. Localhost
-    'http://192.168.55.106:3000', // 3. LAN IP
-  ];
-
   /// Helper to get common headers including auth token
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -22,30 +18,23 @@ class CommunityService {
 
   /// Helper for GET requests
   Future<dynamic> _getRequest(String endpoint) async {
-    String lastError = 'Unknown error';
     final headers = await _getHeaders();
+    final baseUrl = await ApiConfig.getBaseUrl();
+    final url = Uri.parse('$baseUrl$endpoint');
+    debugPrint('Connecting to: $url');
+    try {
+      final response = await http
+          .get(url, headers: headers)
+          .timeout(const Duration(seconds: 15));
 
-    for (String baseUrl in _baseUrls) {
-      final url = Uri.parse('$baseUrl$endpoint');
-      print('Trying to connect to: $url');
-      try {
-        print('Fetching: $url');
-        final response = await http
-            .get(url, headers: headers)
-            .timeout(const Duration(seconds: 5));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          return json.decode(response.body);
-        } else {
-          lastError = 'Status ${response.statusCode}: ${response.body}';
-        }
-      } catch (e) {
-        lastError = e.toString();
-        print('Error connecting to $baseUrl: $e');
-        print('Detailed error for $baseUrl: $e');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Status ${response.statusCode}: ${response.body}');
       }
+    } catch (e) {
+      throw Exception('Connection failed to $url: $e');
     }
-    throw Exception('Connection failed: $lastError');
   }
 
   /// Helper for POST requests
@@ -53,54 +42,44 @@ class CommunityService {
     String endpoint,
     Map<String, dynamic> body,
   ) async {
-    String lastError = 'Unknown error';
     final headers = await _getHeaders();
+    final baseUrl = await ApiConfig.getBaseUrl();
+    final url = Uri.parse('$baseUrl$endpoint');
+    debugPrint('Connecting to: $url');
+    try {
+      final response = await http
+          .post(url, headers: headers, body: json.encode(body))
+          .timeout(const Duration(seconds: 30));
 
-    for (String baseUrl in _baseUrls) {
-      final url = Uri.parse('$baseUrl$endpoint');
-      print('Trying to POST to: $url');
-      try {
-        final response = await http
-            .post(url, headers: headers, body: json.encode(body))
-            .timeout(const Duration(seconds: 30));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          return json.decode(response.body);
-        } else {
-          lastError = 'Status ${response.statusCode}: ${response.body}';
-        }
-      } catch (e) {
-        lastError = e.toString();
-        print('Error connecting to $baseUrl: $e');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Status ${response.statusCode}: ${response.body}');
       }
+    } catch (e) {
+      throw Exception('Connection failed to $url: $e');
     }
-    throw Exception('Connection failed: $lastError');
   }
 
   /// Helper for DELETE requests
   Future<dynamic> _deleteRequest(String endpoint) async {
-    String lastError = 'Unknown error';
     final headers = await _getHeaders();
+    final baseUrl = await ApiConfig.getBaseUrl();
+    final url = Uri.parse('$baseUrl$endpoint');
+    debugPrint('Connecting to: $url');
+    try {
+      final response = await http
+          .delete(url, headers: headers)
+          .timeout(const Duration(seconds: 30));
 
-    for (String baseUrl in _baseUrls) {
-      final url = Uri.parse('$baseUrl$endpoint');
-      print('Trying to DELETE: $url');
-      try {
-        final response = await http
-            .delete(url, headers: headers)
-            .timeout(const Duration(seconds: 30));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          return json.decode(response.body);
-        } else {
-          lastError = 'Status ${response.statusCode}: ${response.body}';
-        }
-      } catch (e) {
-        lastError = e.toString();
-        print('Error connecting to $baseUrl: $e');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Status ${response.statusCode}: ${response.body}');
       }
+    } catch (e) {
+      throw Exception('Connection failed to $url: $e');
     }
-    throw Exception('Connection failed: $lastError');
   }
 
   // ==================== MENTORS ====================
