@@ -1,0 +1,12 @@
+{
+    "degree": "Masters",
+    "major": "Computer Science",
+    "university": "Stanford University",
+    "cgpa": "9.5",
+    "testStatus": "Yes, I've taken them",
+    "testScores": {
+        "GRE": "325",
+        "IELTS": "8.0"
+    },
+    "country": "United States"
+}

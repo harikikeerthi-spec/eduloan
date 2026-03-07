@@ -5,7 +5,8 @@ import 'dart:convert';
 class ApiConfig {
   static const List<String> _baseUrls = [
     'http://10.0.2.2:3000', // standard Android emulator
-    'http://192.168.55.101:3000', // user's local IP
+    'http://10.94.206.91:3000', // user's current local IP
+    'http://192.168.55.101:3000', // user's previous local IP
     'http://localhost:3000', // adb reverse or web
   ];
 

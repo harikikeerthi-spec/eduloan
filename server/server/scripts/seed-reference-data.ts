@@ -189,6 +189,7 @@ async function main() {
                 popularCities: ['New York', 'Boston', 'San Francisco', 'Los Angeles', 'Chicago', 'Austin'],
                 currency: 'USD',
                 language: ['English'],
+                flagUrl: 'https://flagcdn.com/w320/us.png',
                 description: 'The USA is home to many of the world\'s top-ranked universities and offers excellent opportunities for international students. Known for cutting-edge research, diverse culture, and strong job market.',
             },
             {
@@ -207,6 +208,7 @@ async function main() {
                 popularCities: ['London', 'Oxford', 'Cambridge', 'Edinburgh', 'Manchester'],
                 currency: 'GBP',
                 language: ['English'],
+                flagUrl: 'https://flagcdn.com/w320/gb.png',
                 description: 'UK universities are globally recognized for academic excellence. Shorter course duration and rich cultural heritage make it an attractive destination.',
             },
             {
@@ -225,6 +227,7 @@ async function main() {
                 popularCities: ['Toronto', 'Vancouver', 'Montreal', 'Ottawa', 'Calgary'],
                 currency: 'CAD',
                 language: ['English', 'French'],
+                flagUrl: 'https://flagcdn.com/w320/ca.png',
                 description: 'Canada offers high-quality education, affordable tuition, and excellent immigration opportunities. Known for welcoming international students.',
             },
             {
@@ -243,6 +246,7 @@ async function main() {
                 popularCities: ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide'],
                 currency: 'AUD',
                 language: ['English'],
+                flagUrl: 'https://flagcdn.com/w320/au.png',
                 description: 'Australia is known for its world-class education system, beautiful landscapes, and high quality of life. Strong focus on research and innovation.',
             },
             {
@@ -253,13 +257,15 @@ async function main() {
                 universities: 400,
                 averageTuitionFee: '€0-€3,000/year (Public universities)',
                 averageLivingCost: '€10,000-€12,000/year',
-                studyDuration: '2 years for Masters, 3-4 years for Bachelors', visaType: 'Student Visa (National Visa)',
+                studyDuration: '2 years for Masters, 3-4 years for Bachelors',
+                visaType: 'Student Visa (National Visa)',
                 visaProcessingTime: '6-8 weeks',
                 workPermit: true,
                 postStudyWorkVisa: '18 months job seeker visa',
                 popularCities: ['Berlin', 'Munich', 'Frankfurt', 'Hamburg', 'Stuttgart'],
                 currency: 'EUR',
                 language: ['German', 'English'],
+                flagUrl: 'https://flagcdn.com/w320/de.png',
                 description: 'Germany offers tuition-free or low-cost education at public universities. Strong in engineering, technology, and research.',
             },
         ],

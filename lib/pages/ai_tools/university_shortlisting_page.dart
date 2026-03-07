@@ -6,6 +6,8 @@ import '../../services/ai_logic_service.dart';
 import 'university_results_page.dart';
 import 'dart:async';
 import 'dart:math';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   const UniversityShortlistingPage({super.key});
@@ -52,7 +54,7 @@ class _UniversityShortlistingPageState
     super.initState();
     Future.delayed(const Duration(milliseconds: 500), () {
       _addAiMessage(
-        'Looking for answers to your masters abroad questions?',
+        'Looking for answers to your studies abroad questions?',
         isHeader: true,
       );
       Future.delayed(const Duration(milliseconds: 800), () {
@@ -76,6 +78,12 @@ class _UniversityShortlistingPageState
           _activeFlow = 'masters';
           _addAiMessage("Alright! Which country do you want to study in?");
           _flow = 'masters_country';
+        } else if (option == "Help me on my Bachelor's plan") {
+          _activeFlow = 'bachelors';
+          _addAiMessage(
+            "Great! Which country are you targeting for your Bachelor's?",
+          );
+          _flow = 'masters_country'; // Reuse the country selection flow
         } else if (option == "Need help with an education loan") {
           _activeFlow = 'loan';
           _addAiMessage(
@@ -244,6 +252,20 @@ class _UniversityShortlistingPageState
       }
 
       if (mounted) {
+        // Cache the recommendations for the Home Tab
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final String recommendationsJson = jsonEncode(
+            result.recommendations.map((uni) => uni.toJson()).toList(),
+          );
+          await prefs.setString(
+            'latest_ai_recommendations',
+            recommendationsJson,
+          );
+        } catch (e) {
+          debugPrint('Failed to cache recommendations: $e');
+        }
+
         // AI Summary Message
         setState(() {
           _messages.add(
@@ -326,6 +348,9 @@ class _UniversityShortlistingPageState
       body: MeshBackground(
         child: Column(
           children: [
+            SizedBox(
+              height: MediaQuery.of(context).padding.top + kToolbarHeight,
+            ),
             Expanded(
               child: _messages.isEmpty
                   ? const SizedBox.shrink()
@@ -334,7 +359,7 @@ class _UniversityShortlistingPageState
                       padding: const EdgeInsets.only(
                         left: 20,
                         right: 20,
-                        top: 100, // Increased to clear AppBar
+                        top: 16,
                         bottom: 24,
                       ),
                       itemCount: _messages.length,
@@ -438,12 +463,17 @@ class _UniversityShortlistingPageState
           Row(
             children: [
               Expanded(
-                child: _OptionCard(
-                  icon: Icons.help_outline_rounded,
-                  text: "Help me on my Master's plan",
-                  color: Colors.purple,
-                  onTap: () =>
-                      _handleOptionSelected("Help me on my Master's plan"),
+                child: Column(
+                  children: [
+                    _OptionCard(
+                      icon: Icons.help_outline_rounded,
+                      text: "Help me on my Master's plan",
+                      color: Colors.purple,
+                      isSmall: true,
+                      onTap: () =>
+                          _handleOptionSelected("Help me on my Master's plan"),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -520,7 +550,9 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1000), () {
-            _addAiMessage("Nice! When do you plan to start your Master's?");
+            _addAiMessage(
+              "Nice! When do you plan to start your ${_activeFlow == 'bachelors' ? "Bachelor's" : "Master's"}?",
+            );
             setState(() => _flow = 'masters_start_date');
           });
         },
@@ -568,7 +600,7 @@ class _UniversityShortlistingPageState
               setState(() => _flow = 'loan_country');
             } else {
               _addAiMessage(
-                "Understood. Please select your master's university.",
+                "Understood. Please select your ${_activeFlow == 'bachelors' ? "bachelor's" : "master's"} university.",
               );
               setState(() => _flow = 'loan_university');
             }
@@ -1355,11 +1387,14 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1200), () {
+            String degree = _activeFlow == 'bachelors'
+                ? "bachelor's"
+                : "master's";
             String reply =
-                "Alright! Please select your enrolling month for your masters?";
+                "Alright! Please select your enrolling month for your $degree?";
             if (status == 'Yet to Apply') {
               reply =
-                  "Got it. When are you planning to enroll for your masters?";
+                  "Got it. When are you planning to enroll for your $degree?";
             }
             _addAiMessage(reply);
             setState(() => _flow = 'loan_start_date');
@@ -1371,7 +1406,7 @@ class _UniversityShortlistingPageState
         hintText: "Search your university",
         onSearch: (query) => AiLogicService().searchGlobalUniversities(
           query,
-          degree: 'Master\'s',
+          degree: _activeFlow == 'bachelors' ? 'Bachelor\'s' : 'Master\'s',
         ),
         onSelect: (uni) {
           setState(() {
@@ -1896,7 +1931,11 @@ class _DynamicCountrySelectorState extends State<_DynamicCountrySelector> {
       final results = await AiLogicService().searchCountries(query);
       if (mounted) {
         setState(() {
-          _countries = results;
+          // Filter out India for destination selection if flow is masters/bachelors/evaluate
+          _countries = results
+              .where((c) => c['name'] != 'India')
+              .cast<Map<String, String>>()
+              .toList();
           _isLoading = false;
         });
       }
@@ -1942,9 +1981,12 @@ class _DynamicCountrySelectorState extends State<_DynamicCountrySelector> {
             child: CircularProgressIndicator(),
           )
         else
-          SizedBox(
-            height: 300, // Fixed height for scrolling grid
+          Container(
+            constraints: const BoxConstraints(
+              maxHeight: 300,
+            ), // Dynamic height up to 300
             child: SingleChildScrollView(
+              padding: EdgeInsets.zero,
               child: Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -2790,9 +2832,10 @@ class _SearchableListState extends State<_SearchableList> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 300,
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 300),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _controller,
@@ -2819,56 +2862,71 @@ class _SearchableListState extends State<_SearchableList> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                String title = "";
-                String? subtitle;
-
-                if (item is Map) {
-                  title = item['name'] ?? "";
-                  final city = item['city'];
-                  final country = item['country'];
-                  if (city != null || country != null) {
-                    subtitle = [
-                      city,
-                      country,
-                    ].where((e) => e != null).join(", ");
-                  }
-                } else {
-                  title = item.toString();
-                }
-
-                return ListTile(
-                  title: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+          Flexible(
+            child: _isLoading
+                ? const SizedBox.shrink()
+                : _items.isEmpty && _controller.text.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No results found for \"${_controller.text}\"",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
-                  ),
-                  subtitle: subtitle != null
-                      ? Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
+                  )
+                : ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: _items.length,
+                    itemBuilder: (context, index) {
+                      final item = _items[index];
+                      String title = "";
+                      String? subtitle;
+
+                      if (item is Map) {
+                        title = item['name'] ?? "";
+                        final city = item['city'];
+                        final country = item['country'];
+                        if (city != null || country != null) {
+                          subtitle = [
+                            city,
+                            country,
+                          ].where((e) => e != null).join(", ");
+                        }
+                      } else {
+                        title = item.toString();
+                      }
+
+                      return ListTile(
+                        title: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
-                        )
-                      : null,
-                  onTap: () => widget.onSelect(title),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
+                        ),
+                        subtitle: subtitle != null
+                            ? Text(
+                                subtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                              )
+                            : null,
+                        onTap: () => widget.onSelect(title),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      );
+                    },
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -3704,7 +3762,18 @@ class _LoanResults extends StatelessWidget {
           const SizedBox(height: 32),
           Center(
             child: ElevatedButton.icon(
-              onPressed: onAction,
+              onPressed: () {
+                onAction();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'We received your request, our guidance team will contact you',
+                    ),
+                    duration: Duration(seconds: 3),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
               icon: const Icon(Icons.phone_outlined, size: 20),
               label: const Text(
                 "Request a call back",

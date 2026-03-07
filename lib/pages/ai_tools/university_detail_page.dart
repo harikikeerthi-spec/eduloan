@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../services/ai_logic_service.dart';
 import '../../widgets/mesh_background.dart';
+import '../loan_eligibility_checker_page.dart';
+import '../sop_writer_page.dart';
+import 'customer_care_bot_page.dart';
 
 class UniversityDetailPage extends StatefulWidget {
   final UniversityRecommendation university;
@@ -14,8 +21,26 @@ class UniversityDetailPage extends StatefulWidget {
 class _UniversityDetailPageState extends State<UniversityDetailPage> {
   bool _isExpanded = false;
   int _currentImageIndex = 0;
+  bool _isSaved = false;
   bool _isUsd = false;
+  bool _isFastTracked = false;
   int _admissionTabIndex = 0; // 0 for Mandatory, 1 for Optional
+  final AiLogicService _aiService = AiLogicService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSavedStatus();
+  }
+
+  Future<void> _checkSavedStatus() async {
+    final saved = await _aiService.isUniversitySaved(widget.university.name);
+    if (mounted) {
+      setState(() {
+        _isSaved = saved;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,91 +49,51 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(context),
       body: MeshBackground(
-        child: Stack(
+        child: Column(
           children: [
-            SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 100, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildNewHeader(),
-                    const SizedBox(height: 24),
-                    _buildStatsBar(),
-                    const SizedBox(height: 24),
-                    _buildInfoGrid(),
-                    const SizedBox(height: 32),
-                    _buildRankings(),
-                    const SizedBox(height: 32),
-                    _buildAdmissionCriteria(),
-                    const SizedBox(height: 32),
-                    _buildExpensesSection(),
-                    const SizedBox(height: 32),
-                    _buildIntakeBanner(),
-                    const SizedBox(height: 32),
-                    _buildAdmissionProcess(),
-                    const SizedBox(height: 32),
-                    _buildAboutSection(),
-                    const SizedBox(height: 32),
-                    _buildImageCarousel(),
-                    const SizedBox(height: 32),
-                    _buildDemographics(),
-                    const SizedBox(height: 32),
-                    _buildSafetyFocus(),
-                    const SizedBox(height: 32),
-                    _buildGuidanceCard(),
-                    const SizedBox(height: 120), // Space for bottom bar
-                  ],
+            SizedBox(
+              height: MediaQuery.of(context).padding.top + kToolbarHeight,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildNewHeader(),
+                      const SizedBox(height: 24),
+                      _buildStatsBar(),
+                      const SizedBox(height: 24),
+                      _buildInfoGrid(),
+                      const SizedBox(height: 32),
+                      _buildRankings(),
+                      const SizedBox(height: 32),
+                      _buildAdmissionCriteria(),
+                      const SizedBox(height: 32),
+                      _buildExpensesSection(),
+                      const SizedBox(height: 32),
+                      _buildIntakeBanner(),
+                      const SizedBox(height: 32),
+                      _buildAdmissionProcess(),
+                      const SizedBox(height: 32),
+                      _buildAboutSection(),
+                      const SizedBox(height: 32),
+                      _buildImageCarousel(),
+                      const SizedBox(height: 32),
+                      _buildDemographics(),
+                      const SizedBox(height: 32),
+                      _buildSafetyFocus(),
+                      const SizedBox(height: 32),
+                      _buildGuidanceCard(),
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 70),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6200EA), Color(0xFF9D50BB)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6200EA).withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {},
-              borderRadius: BorderRadius.circular(24),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Ask VL',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomBar(context),
     );
   }
@@ -147,20 +132,110 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     );
   }
 
+  String _getConvertedString(String rawValue, bool isUsd) {
+    if (rawValue.isEmpty) return 'N/A';
+    if (isUsd) return rawValue;
+
+    double multiplier = 83.0; // Default USD
+    String symbol = '\$';
+
+    if (rawValue.contains('£')) {
+      multiplier = 105.0;
+      symbol = '£';
+    } else if (rawValue.contains('€')) {
+      multiplier = 90.0;
+      symbol = '€';
+    } else if (rawValue.contains('A\$') ||
+        rawValue.contains('C\$') ||
+        rawValue.contains('S\$') ||
+        rawValue.contains('NZ\$')) {
+      multiplier = 60.0;
+      symbol = '\$';
+    } else if (!rawValue.contains('\$')) {
+      return rawValue; // No known currency symbol, return as is
+    }
+
+    String inrStr = rawValue.replaceAll(symbol, '').replaceAll(',', '');
+    try {
+      double val = double.parse(inrStr.replaceAll(RegExp(r'[^0-9.]'), ''));
+      return '₹ ${(val * multiplier).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
+    } catch (e) {
+      return rawValue.replaceAll(symbol, '₹ ');
+    }
+  }
+
   Widget _buildNewHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.university.programName.isNotEmpty
-              ? widget.university.programName
-              : 'Program Name',
-          style: const TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
-            height: 1.2,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                widget.university.programName.isNotEmpty
+                    ? widget.university.programName
+                    : 'Program Name',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                  height: 1.2,
+                ),
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    final String shareText =
+                        'Check out ${widget.university.name} on GradRight!\n\n'
+                        '${widget.university.programName.isNotEmpty ? 'Program: ${widget.university.programName}\n' : ''}'
+                        'Location: ${widget.university.location}, ${widget.university.country}\n'
+                        '${widget.university.websiteUrl.isNotEmpty ? 'Website: ${widget.university.websiteUrl}' : ''}';
+                    Share.share(shareText);
+                  },
+                  icon: const Icon(
+                    Icons.share_outlined,
+                    color: Color(0xFF4B5563),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  onPressed: () async {
+                    setState(() {
+                      _isSaved = !_isSaved;
+                    });
+                    await _aiService.toggleSaveUniversity(widget.university);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isSaved
+                                ? 'University saved to your profile!'
+                                : 'University removed from saved list.',
+                          ),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  icon: Icon(
+                    _isSaved ? Icons.bookmark : Icons.bookmark_outline,
+                    color: _isSaved
+                        ? const Color(0xFF6200EA)
+                        : const Color(0xFF4B5563),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Row(
@@ -207,37 +282,48 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                   ),
                   const SizedBox(height: 4),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Color(0xFF6B7280),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.university.location,
-                        style: const TextStyle(
-                          fontSize: 14,
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2.0),
+                        child: Icon(
+                          Icons.location_on,
+                          size: 14,
                           color: Color(0xFF6B7280),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      if (widget.university.country.isNotEmpty) ...[
-                        Text(
-                          widget.university.flag,
-                          style: const TextStyle(fontSize: 14),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              widget.university.location,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            if (widget.university.country.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                widget.university.flag,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                widget.university.country.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF6B7280),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.university.country.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF6B7280),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
                   ),
                 ],
@@ -250,6 +336,37 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Widget _buildLogoIcon() {
+    final logoUrl = widget.university.logoUrl.trim();
+
+    return Container(
+      width: 48,
+      height: 48,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: logoUrl.isNotEmpty
+          ? Image.network(
+              logoUrl,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                final domain = logoUrl.split('/').last.split('?').first;
+                return Image.network(
+                  "https://www.google.com/s2/favicons?sz=64&domain=$domain",
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildMonogramFallback();
+                  },
+                );
+              },
+            )
+          : _buildMonogramFallback(),
+    );
+  }
+
+  Widget _buildMonogramFallback() {
     String monogram = '';
     if (widget.university.name.isNotEmpty) {
       final parts = widget.university.name.split(' ');
@@ -259,13 +376,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         monogram = parts[0][0].toUpperCase();
       }
     }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF6200EA).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      alignment: Alignment.center,
+    return Center(
       child: monogram.isNotEmpty
           ? Text(
               monogram,
@@ -400,6 +511,20 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Widget _buildRankings() {
+    String qsRank = widget.university.rank.isNotEmpty
+        ? widget.university.rank
+        : 'N/A';
+    if (!qsRank.startsWith('#') && qsRank != 'N/A') {
+      qsRank = '#$qsRank';
+    }
+
+    String theRank = widget.university.theRank.isNotEmpty
+        ? widget.university.theRank
+        : 'N/A';
+    if (!theRank.startsWith('#') && theRank != 'N/A') {
+      theRank = '#$theRank';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -412,12 +537,9 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           ),
         ),
         const SizedBox(height: 20),
-        _buildRankingRow('#46', 'QS Ranking 2026'),
+        _buildRankingRow(qsRank, 'QS Ranking'),
         const SizedBox(height: 16),
-        _buildRankingRow(
-          '#${widget.university.theRank.isNotEmpty ? widget.university.theRank : '18'}',
-          'Times Higher Education 2026',
-        ),
+        _buildRankingRow(theRank, 'Times Higher Education'),
       ],
     );
   }
@@ -486,63 +608,6 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
               : 'Private',
           false,
         ),
-        const SizedBox(height: 16),
-        _buildUniversityGallery(),
-      ],
-    );
-  }
-
-  Widget _buildUniversityGallery() {
-    final images = widget.university.images.length >= 5
-        ? widget.university.images
-        : [
-            'https://brand.ucla.edu/sites/default/files/styles/image_width_1000/public/2022-03/ucla_campus_roycehall-1_0.jpg',
-            'https://admission.ucla.edu/sites/default/files/styles/image_width_1000/public/2021-08/ucla-campus-1.jpg',
-            'https://s3.amazonaws.com/cms.ipressroom.com/173/files/20198/5d72bd742cfac20966233ba4_UCLA_RoyceHall_Night/UCLA_RoyceHall_Night_mid.jpg',
-            'https://www.ucla.edu/img/campus-life/ucla-campus-royce-hall.jpg',
-            'https://grad.ucla.edu/wp-content/uploads/2014/08/UCLA_Powell_Library.jpg',
-            'https://admission.ucla.edu/sites/default/files/styles/image_width_1000/public/2021-08/ucla-campus-2.jpg',
-          ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'University Gallery',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1F2937),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: NetworkImage(images[index]),
-                    fit: BoxFit.cover,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
       ],
     );
   }
@@ -562,68 +627,187 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
               letterSpacing: 0.5,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isLink ? const Color(0xFF6200EA) : const Color(0xFF1F2937),
-              decoration: isLink ? TextDecoration.underline : null,
-            ),
-          ),
+          isLink
+              ? InkWell(
+                  onTap: () async {
+                    final String urlString =
+                        widget.university.websiteUrl.isNotEmpty
+                        ? widget.university.websiteUrl
+                        : 'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + ' official website')}';
+
+                    final Uri url = Uri.parse(urlString);
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not launch $urlString')),
+                      );
+                    }
+                  },
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6200EA),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                )
+              : Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
         ],
       ),
     );
   }
 
   Widget _buildImageCarousel() {
-    final images = widget.university.images.isNotEmpty
-        ? widget.university.images
-        : [
-            'https://brand.ucla.edu/sites/default/files/styles/image_width_1000/public/2022-03/ucla_campus_roycehall-1_0.jpg',
-            'https://admission.ucla.edu/sites/default/files/styles/image_width_1000/public/2021-08/ucla-campus-1.jpg',
-          ];
+    // We use a robust fallback list of high quality US/UK university campus stock images
+    // in case the AI and Wikipedia both fail to provide images.
+    final List<String> defaultImages = [
+      'https://images.unsplash.com/photo-1492538356227-3eb926ca0b51?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2086&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1525921472407-c59f2ea325f5?q=80&w=2070&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1606761568499-6d2451b23c66?q=80&w=1974&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590402494587-44b71d7772f6?q=80&w=2070&auto=format&fit=crop',
+    ];
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 220,
-          child: PageView.builder(
-            itemCount: images.length,
-            onPageChanged: (index) =>
-                setState(() => _currentImageIndex = index),
-            itemBuilder: (context, index) {
-              return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  image: DecorationImage(
-                    image: NetworkImage(images[index]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(images.length, (index) {
-            bool isSelected = _currentImageIndex == index;
-            return Container(
-              width: isSelected ? 24 : 8,
-              height: 4,
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF1F2937) : Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+    return FutureBuilder<List<String>>(
+      future: _fetchWikiImages(widget.university.name),
+      builder: (context, snapshot) {
+        List<String> images = defaultImages;
+
+        // Use AI images if valid
+        if (widget.university.images.isNotEmpty &&
+            widget.university.images.first.startsWith('http') &&
+            !widget.university.images.first.contains('unsplash.com')) {
+          images = widget.university.images;
+        }
+
+        // Use Wiki images if successfully fetched
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          images = snapshot.data!;
+        }
+
+        return Column(
+          children: [
+            SizedBox(
+              height: 260,
+              child: PageView.builder(
+                itemCount: images.length,
+                onPageChanged: (index) =>
+                    setState(() => _currentImageIndex = index),
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Image.network(
+                      images[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.network(
+                          defaultImages[index % defaultImages.length],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.account_balance,
+                                  color: Colors.grey,
+                                  size: 40,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
-            );
-          }),
-        ),
-      ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(images.length, (index) {
+                bool isSelected = _currentImageIndex == index;
+                return Container(
+                  width: isSelected ? 24 : 8,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? const Color(0xFF1F2937)
+                        : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                );
+              }),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  Future<List<String>> _fetchWikiImages(String uniName) async {
+    try {
+      final query = Uri.encodeComponent(uniName);
+      final url =
+          'https://en.wikipedia.org/w/api.php?action=query&generator=images&titles=$query&gimlimit=20&prop=imageinfo&iiprop=url&format=json';
+
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final pages = data['query']?['pages'] as Map<String, dynamic>?;
+
+        if (pages != null) {
+          List<String> validUrls = [];
+
+          for (var page in pages.values) {
+            final imageinfo = page['imageinfo'] as List<dynamic>?;
+            if (imageinfo != null && imageinfo.isNotEmpty) {
+              final String url = imageinfo[0]['url'] ?? '';
+              final lowerUrl = url.toLowerCase();
+              // Only grab actual photos, ignore icons/svgs/logos/maps
+              if ((lowerUrl.endsWith('.jpg') ||
+                      lowerUrl.endsWith('.jpeg') ||
+                      lowerUrl.endsWith('.png')) &&
+                  !lowerUrl.contains('logo') &&
+                  !lowerUrl.contains('seal') &&
+                  !lowerUrl.contains('map') &&
+                  !lowerUrl.contains('shield') &&
+                  !lowerUrl.contains('coat_of_arms')) {
+                validUrls.add(url);
+              }
+            }
+          }
+
+          if (validUrls.isNotEmpty) {
+            // Return top 5 valid campus photos
+            validUrls.shuffle();
+            return validUrls.take(5).toList();
+          }
+        }
+      }
+    } catch (e) {
+      print("Wiki fetch error: $e");
+    }
+    return [];
   }
 
   Widget _buildDemographics() {
@@ -772,7 +956,17 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'We received your request, our guidance team will contact you',
+                        ),
+                        duration: Duration(seconds: 3),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.call, size: 18),
                   label: const Text('Request a call back'),
                   style: ElevatedButton.styleFrom(
@@ -855,17 +1049,20 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Divider(),
         ),
-        if (_admissionTabIndex == 0) ...[
-          _buildCriteriaRow('GRE', '300', '0'),
+        if (widget.university.testRequirements.isNotEmpty)
+          ...widget.university.testRequirements.entries.map((entry) {
+            return Column(
+              children: [
+                _buildCriteriaRow(entry.key, entry.value, 'Not provided'),
+                const Divider(),
+              ],
+            );
+          })
+        else ...[
+          _buildCriteriaRow('GRE', 'Recommended', 'Not provided'),
           const Divider(),
-          _buildCriteriaRow('GMAT', '500', '0'),
-        ] else ...[
-          _buildCriteriaRow('IELTS', '7.0', '0'),
-          const Divider(),
-          _buildCriteriaRow('TOEFL', '100', '0'),
+          _buildCriteriaRow('IELTS', 'Recommended', 'Not provided'),
         ],
-        const SizedBox(height: 32),
-        _buildSaveProgramCard(),
       ],
     );
   }
@@ -938,75 +1135,12 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     );
   }
 
-  Widget _buildSaveProgramCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4C1D95), // Deep purple as per image
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Text(
-                      'Love what you\'re seeing? ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text('❤️', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Save this program to review and compare later.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_outline, size: 18),
-                  label: const Text('Save this program'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE5D5FA),
-                    foregroundColor: const Color(0xFF4C1D95),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.face, size: 48, color: Colors.white30),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildExpensesSection() {
+    String tuitionStr = widget.university.tuition.isNotEmpty
+        ? widget.university.tuition
+        : '\$0';
+    String inrTuitionStr = _getConvertedString(tuitionStr, false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1050,7 +1184,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          _isUsd ? '\$68,234' : '₹5,705,427',
+          _isUsd ? tuitionStr : inrTuitionStr,
           style: const TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
@@ -1086,15 +1220,26 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         ),
         const SizedBox(height: 32),
         _buildExpenseRow('BREAKDOWN', '', isHeader: true),
-        _buildExpenseRow('Tuition Fees', _isUsd ? '\$39,520' : '₹3,303,027'),
-        _buildExpenseRow('Cost of Living', _isUsd ? '\$28,745' : '₹2,402,400'),
-        const SizedBox(height: 24),
-        _buildExpenseRow('MEDIAN SALARY', '', isHeader: true),
+        _buildExpenseRow('Tuition Fees', _isUsd ? tuitionStr : inrTuitionStr),
         _buildExpenseRow(
-          'Median Package of University',
-          _isUsd ? '\$89,450' : '₹7,472,733',
-          isBold: true,
+          'Cost of Living',
+          _getConvertedString(widget.university.costOfLiving, _isUsd),
         ),
+        const SizedBox(height: 24),
+        if (widget.university.medianPackage.isNotEmpty ||
+            widget.university.avgSalary.isNotEmpty) ...[
+          _buildExpenseRow('MEDIAN SALARY', '', isHeader: true),
+          _buildExpenseRow(
+            'Median Package of University',
+            _getConvertedString(
+              widget.university.medianPackage.isNotEmpty
+                  ? widget.university.medianPackage
+                  : widget.university.avgSalary,
+              _isUsd,
+            ),
+            isBold: true,
+          ),
+        ],
         const SizedBox(height: 32),
         _buildLoanCtaCard(),
       ],
@@ -1139,7 +1284,14 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
 
   Widget _buildLoanCtaCard() {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const LoanEligibilityCheckerPage(),
+          ),
+        );
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFF6200EA),
         foregroundColor: Colors.white,
@@ -1183,7 +1335,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'UPCOMING INTAKES',
+                'UPCOMING INTAKE',
                 style: TextStyle(
                   color: Color(0xFF6B7280),
                   fontSize: 10,
@@ -1192,7 +1344,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                 ),
               ),
               Text(
-                'DEADLINES',
+                'DEADLINE',
                 style: TextStyle(
                   color: Color(0xFF6B7280),
                   fontSize: 10,
@@ -1203,32 +1355,53 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
             ],
           ),
           const SizedBox(height: 12),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Fall 2027',
-                style: TextStyle(
+                _deriveIntake(widget.university.deadline),
+                style: const TextStyle(
                   color: Color(0xFF1F2937),
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                '15 Dec \'26',
-                style: TextStyle(
-                  color: Color(0xFF1F2937),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  widget.university.deadline.isNotEmpty
+                      ? widget.university.deadline
+                      : 'Rolling',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    color: Color(0xFF1F2937),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              if (!_isFastTracked) {
+                setState(() => _isFastTracked = true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Application fast-tracked! We will notify you every month before the deadline.',
+                    ),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: _isFastTracked
+                  ? Colors.green
+                  : const Color(0xFF2563EB),
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 50),
               shape: RoundedRectangleBorder(
@@ -1236,14 +1409,46 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
               ),
               elevation: 0,
             ),
-            child: const Text(
-              'Fast-track your application',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_isFastTracked) const Icon(Icons.check, size: 20),
+                if (_isFastTracked) const SizedBox(width: 8),
+                Text(
+                  _isFastTracked
+                      ? 'Fast-tracked'
+                      : 'Fast-track your application',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _deriveIntake(String deadline) {
+    if (deadline.isEmpty) return 'Next Session';
+    String lower = deadline.toLowerCase();
+
+    String season = 'Next';
+    if (lower.contains('fall'))
+      season = 'Fall';
+    else if (lower.contains('spring'))
+      season = 'Spring';
+    else if (lower.contains('summer'))
+      season = 'Summer';
+    else if (lower.contains('winter'))
+      season = 'Winter';
+
+    RegExp yearRegex = RegExp(r'(20\d{2})');
+    Match? match = yearRegex.firstMatch(deadline);
+    if (match != null) {
+      return '$season ${match.group(1)}';
+    }
+
+    return '$season Intake';
   }
 
   Widget _buildAdmissionProcess() {
@@ -1268,8 +1473,14 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         _buildProcessStep(
           '2',
           'Write your Statement of Purpose',
-          'Get guidance on how to write SOP',
+          'on how to write SOP',
           link: 'Get guidance',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SopWriterPage()),
+            );
+          },
         ),
         _buildProcessStep(
           '3',
@@ -1284,9 +1495,20 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         _buildProcessStep(
           '5',
           'Apply to the University Website',
-          'Visit University Website',
+          '',
           link: 'Visit University Website',
           showArrow: true,
+          onTap: () async {
+            final url = widget.university.websiteUrl.isNotEmpty
+                ? widget.university.websiteUrl
+                : 'https://google.com/search?q=${widget.university.name.replaceAll(' ', '+')}';
+            final uri = Uri.parse(
+              url.startsWith('http') ? url : 'https://$url',
+            );
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
+            }
+          },
         ),
       ],
     );
@@ -1298,6 +1520,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     String subtitle, {
     String? link,
     bool showArrow = false,
+    VoidCallback? onTap,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1320,33 +1543,45 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           ),
           const SizedBox(height: 12),
           if (link != null)
-            RichText(
-              text: TextSpan(
-                style: const TextStyle(fontSize: 13, color: Colors.grey),
-                children: [
-                  TextSpan(
-                    text: subtitle.replaceFirst(link, ''),
-                    style: const TextStyle(height: 1.4),
-                  ),
-                  TextSpan(
-                    text: link,
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (subtitle.isNotEmpty)
+                  Text(
+                    subtitle,
                     style: const TextStyle(
-                      color: Color(0xFF6200EA),
-                      decoration: TextDecoration.underline,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Colors.grey,
+                      height: 1.4,
                     ),
                   ),
-                  if (showArrow)
-                    const WidgetSpan(
-                      child: Icon(
-                        Icons.north_east,
-                        size: 14,
-                        color: Color(0xFF6200EA),
+                InkWell(
+                  onTap: onTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        link,
+                        style: const TextStyle(
+                          color: Color(0xFF6200EA),
+                          decoration: TextDecoration.underline,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
-                      alignment: PlaceholderAlignment.middle,
-                    ),
-                ],
-              ),
+                      if (showArrow)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.north_east,
+                            size: 14,
+                            color: Color(0xFF6200EA),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             )
           else
             Text(
@@ -1368,17 +1603,74 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined, color: Color(0xFF4B5563)),
+          Container(
+            height: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6200EA), Color(0xFF9D50BB)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6200EA).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CustomerCareBotPage(),
+                    ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Ask VL',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () async {
+                final String urlString = widget.university.websiteUrl.isNotEmpty
+                    ? widget.university.websiteUrl
+                    : 'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + ' official website')}';
+
+                final Uri url = Uri.parse(urlString);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not launch $urlString')),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF3F4F6),
-                foregroundColor: const Color(0xFF1F2937),
+                backgroundColor: const Color(0xFF6200EA),
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -1387,27 +1679,8 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
               ),
               child: const Text(
                 'Apply to university',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6200EA),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.bookmark_outline, size: 20),
-                SizedBox(width: 8),
-                Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
-              ],
             ),
           ),
         ],

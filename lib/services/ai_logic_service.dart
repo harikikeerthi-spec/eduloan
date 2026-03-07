@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
 
 // Data Models
@@ -354,12 +355,22 @@ class UniversityRecommendation {
       acceptanceRate: json['acceptanceRate'] ?? '',
       duration: json['duration'] ?? '',
       category: json['category'] ?? '',
-      indianCommunity: json['indianCommunity'] ?? '',
+      indianCommunity:
+          json['indianCommunity'] ?? json['indian_community'] ?? '',
       theRank: json['theRank'] ?? '',
-      costOfLiving: json['costOfLiving'] ?? '',
-      medianPackage: json['medianPackage'] ?? '',
-      websiteUrl: json['websiteUrl'] ?? '',
-      universityType: json['universityType'] ?? '',
+      costOfLiving:
+          json['costOfLiving'] ??
+          json['cost_of_living'] ??
+          json['costOfLiving_usd'] ??
+          '',
+      medianPackage:
+          json['medianPackage'] ??
+          json['median_package'] ??
+          json['avgSalary'] ??
+          json['average_salary'] ??
+          '',
+      websiteUrl: json['websiteUrl'] ?? json['website_url'] ?? '',
+      universityType: json['universityType'] ?? json['university_type'] ?? '',
       genderRatio: json['genderRatio'] ?? '',
       studentTeacherRatio: json['studentTeacherRatio'] ?? '',
       raceRatio: json['raceRatio'] ?? '',
@@ -371,6 +382,43 @@ class UniversityRecommendation {
         json['testRequirements'] ?? {},
       ),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'chance': chance,
+      'type': type,
+      'rank': rank,
+      'tuition': tuition,
+      'location': location,
+      'reason': reason,
+      'avgSalary': avgSalary,
+      'deadline': deadline,
+      'flag': flag,
+      'country': country,
+      'programName': programName,
+      'logoUrl': logoUrl,
+      'description': description,
+      'roi': roi,
+      'acceptanceRate': acceptanceRate,
+      'duration': duration,
+      'category': category,
+      'indianCommunity': indianCommunity,
+      'theRank': theRank,
+      'costOfLiving': costOfLiving,
+      'medianPackage': medianPackage,
+      'websiteUrl': websiteUrl,
+      'universityType': universityType,
+      'genderRatio': genderRatio,
+      'studentTeacherRatio': studentTeacherRatio,
+      'raceRatio': raceRatio,
+      'safetyStatus': safetyStatus,
+      'academicFocus': academicFocus,
+      'images': images,
+      'admissionProcess': admissionProcess,
+      'testRequirements': testRequirements,
+    };
   }
 }
 
@@ -644,5 +692,60 @@ class AiLogicService {
 
   Future<String?> pincodeLookup(String pincode) async {
     return lookupPincode(pincode);
+  }
+
+  Future<Map<String, dynamic>> startMockInterview(String university, String program) async {
+    return await _postRequest('interview/start', {
+      'university': university,
+      'program': program,
+    });
+  }
+
+  Future<Map<String, dynamic>> sendMockInterviewMessage(String sessionId, String message) async {
+    return await _postRequest('interview/chat', {
+      'sessionId': sessionId,
+      'message': message,
+    });
+  }
+
+  Future<Map<String, dynamic>> evaluateInterview(String sessionId) async {
+    return await _postRequest('interview/evaluate', {
+      'sessionId': sessionId,
+    });
+  }
+
+  // Saved Universities Persistence
+  static const String _savedKey = 'saved_universities';
+
+  Future<List<UniversityRecommendation>> getSavedUniversities() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedJson = prefs.getString(_savedKey);
+    if (savedJson == null || savedJson.isEmpty) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(savedJson);
+      return decoded.map((item) => UniversityRecommendation.fromJson(item)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> toggleSaveUniversity(UniversityRecommendation uni) async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<UniversityRecommendation> saved = await getSavedUniversities();
+    final int index = saved.indexWhere((item) => item.name == uni.name);
+
+    if (index != -1) {
+      saved.removeAt(index);
+    } else {
+      saved.add(uni);
+    }
+
+    final String encoded = jsonEncode(saved.map((item) => item.toJson()).toList());
+    await prefs.setString(_savedKey, encoded);
+  }
+
+  Future<bool> isUniversitySaved(String name) async {
+    final List<UniversityRecommendation> saved = await getSavedUniversities();
+    return saved.any((item) => item.name == name);
   }
 }

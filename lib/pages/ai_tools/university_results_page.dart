@@ -18,6 +18,7 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   List<UniversityRecommendation> _allRecommendations = [];
   List<UniversityRecommendation> _filteredRecommendations = [];
   final Set<String> _savedUniversityNames = {};
+  final AiLogicService _aiService = AiLogicService();
 
   @override
   void initState() {
@@ -28,21 +29,17 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   }
 
   Future<void> _loadSavedStatus() async {
-    // In a real app, use SharedPreferences. For now, simulate.
+    final saved = await _aiService.getSavedUniversities();
     setState(() {
+      _savedUniversityNames.clear();
+      _savedUniversityNames.addAll(saved.map((u) => u.name));
       _filteredRecommendations = _getFilteredList();
     });
   }
 
-  void _toggleSave(UniversityRecommendation recommendation) {
-    setState(() {
-      if (_savedUniversityNames.contains(recommendation.name)) {
-        _savedUniversityNames.remove(recommendation.name);
-      } else {
-        _savedUniversityNames.add(recommendation.name);
-      }
-      _filteredRecommendations = _getFilteredList();
-    });
+  void _toggleSave(UniversityRecommendation recommendation) async {
+    await _aiService.toggleSaveUniversity(recommendation);
+    await _loadSavedStatus();
   }
 
   List<UniversityRecommendation> _getFilteredList() {

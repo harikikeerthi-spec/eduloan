@@ -18,6 +18,7 @@ export class LoanService {
         amount: number;
         tenure: number;
     }) {
+        const applicationNumber = 'APP' + Date.now() + Math.floor(Math.random() * 1000);
         const loan = await this.prisma.loanApplication.create({
             data: {
                 userId: data.userId,
@@ -26,12 +27,13 @@ export class LoanService {
                 email: data.email,
                 institute: data.institute,
                 course: data.course,
-                bank: 'Pending Assignment', // Will be assigned later
+                bank: 'Pending Assignment',
                 loanType: 'education',
                 amount: data.amount,
                 tenure: data.tenure,
                 status: 'pending',
-                progress: 10, // Initial progress
+                progress: 10,
+                applicationNumber,
             },
         });
 

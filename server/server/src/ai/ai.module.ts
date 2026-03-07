@@ -7,6 +7,7 @@ import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
 import { GroqService } from './services/groq.service';
+import { UniversityShortlistService } from './services/university-shortlist.service';
 
 @Module({
   controllers: [AiController],
@@ -18,6 +19,7 @@ import { GroqService } from './services/groq.service';
     GradeConversionService,
     UniversityComparisonService,
     AdmitPredictorService,
+    UniversityShortlistService,
   ],
   exports: [
     GroqService,
@@ -27,6 +29,7 @@ import { GroqService } from './services/groq.service';
     GradeConversionService,
     UniversityComparisonService,
     AdmitPredictorService,
+    UniversityShortlistService,
   ],
 })
 export class AiModule { }

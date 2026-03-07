@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
 import 'ai_tools/university_shortlisting_page.dart';
+import 'ai_tools/mock_interview_page.dart';
 
 class StudyAbroadPage extends StatelessWidget {
   const StudyAbroadPage({super.key});
@@ -44,6 +45,24 @@ class StudyAbroadPage extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (context) =>
                                   const UniversityShortlistingPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildMenuCard(
+                        context,
+                        title: 'AI Mock Interview',
+                        subtitle: 'Practice with our ',
+                        subtitleSuffix: 'AI Expert 🤖',
+                        icon: Icons.forum_outlined,
+                        gradientText: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const MockInterviewPage(),
                             ),
                           );
                         },

@@ -391,6 +391,10 @@ model LoanApplication {
   bank                     String
   loanType                 String
   amount                   Float
+  applicantName            String?
+  phoneNumber              String?
+  institute                String?
+  course                   String?
   purpose                  String?
   status                   String                     @default("draft")
   date                     DateTime                   @default(now())

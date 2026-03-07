@@ -1,69 +1,60 @@
-
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 @Injectable()
 export class GroqService {
-    private readonly apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-    private readonly apiKey = process.env.GROQ_API_KEY;
+    private readonly logger = new Logger(GroqService.name);
+    private readonly apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    private readonly apiKey = process.env.OPENROUTER_API_KEY;
 
-    async chat(prompt: string, model: string = 'llama-3.3-70b-versatile'): Promise<string> {
+    async chat(prompt: string, model: string = 'google/gemini-2.0-flash-001'): Promise<string> {
         if (!this.apiKey) {
-            console.warn('GROQ_API_KEY is not set. Using mock response or failing.');
-            throw new Error('GROQ_API_KEY is not configured in environment variables.');
+            this.logger.warn('OPENROUTER_API_KEY is not set');
+            throw new Error('API key is missing');
         }
-
-        const requestBody = {
-            model: model,
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-        };
-
-        const maskedKey = this.apiKey ? `${this.apiKey.slice(0,4)}...${this.apiKey.slice(-4)} (len ${this.apiKey.length})` : '[NOT SET]';
-        console.log('Groq request:', {
-            url: this.apiUrl,
-            model: requestBody.model,
-            promptLength: prompt.length,
-            groqKey: maskedKey
-        });
 
         try {
             const response = await fetch(this.apiUrl, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',
+                    Authorization: `Bearer ${this.apiKey}`,
+                    'HTTP-Referer': 'http://localhost:3000',
+                    'X-Title': 'EduLoan AI Service',
                 },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.7,
+                }),
             });
 
             if (!response.ok) {
-                const errorBody = await response.text();
-                console.error('Groq API error details:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    body: errorBody
-                });
-                throw new Error(`Groq API error: ${response.statusText} - ${errorBody}`);
+                const errorText = await response.text();
+                this.logger.error(`OpenRouter API error: ${response.status} - ${errorText}`);
+                throw new Error(`OpenRouter API failed: ${response.statusText}`);
             }
 
             const data = await response.json();
-            return data.choices?.[0]?.message?.content || '';
+            const text = data.choices?.[0]?.message?.content;
+            if (!text) throw new Error('Empty response from AI');
+
+            return text;
         } catch (error) {
-            console.error('Groq request failed:', error);
+            this.logger.error('AI Request failed:', error);
             throw error;
         }
     }
 
-    async getJson<T>(prompt: string, model: string = 'llama-3.3-70b-versatile'): Promise<T> {
+    async getJson<T>(prompt: string, model: string = 'google/gemini-2.0-flash-001'): Promise<T> {
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. Do not include markdown formatting like \`\`\`json.`;
         const content = await this.chat(jsonPrompt, model);
         try {
-            // Clean up common markdown json wrappers if present
             const cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(cleaned) as T;
         } catch (e) {
-            console.error('Failed to parse JSON response:', content);
+            this.logger.error('Failed to parse JSON response:', content);
             throw new Error('AI response was not valid JSON');
         }
     }

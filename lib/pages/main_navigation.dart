@@ -27,6 +27,7 @@ class MainNavigation extends StatefulWidget {
 class MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
 
   void openDrawer() {
     _scaffoldKey.currentState?.openDrawer();
@@ -38,11 +39,18 @@ class MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  final List<Widget> _pages = [
-    const HomeTab(),
-    const MyLoansPage(),
-    const ProfilePage(),
-  ];
+  Widget _buildBody() {
+    switch (_currentIndex) {
+      case 0:
+        return HomeTab(key: _homeTabKey);
+      case 1:
+        return const MyLoansPage();
+      case 2:
+        return const ProfilePage();
+      default:
+        return HomeTab(key: _homeTabKey);
+    }
+  }
 
   Widget _buildDrawerLink(
     BuildContext context, {
@@ -53,12 +61,16 @@ class MainNavigationState extends State<MainNavigation> {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      onTap: () {
+      onTap: () async {
         Navigator.pop(context);
-        Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => destination),
         );
+        if (mounted) {
+          _homeTabKey.currentState?.refreshData();
+          setState(() {});
+        }
       },
     );
   }
@@ -155,27 +167,33 @@ class MainNavigationState extends State<MainNavigation> {
             ListTile(
               leading: const Icon(Icons.add_circle_outline),
               title: const Text('Apply for Loan'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ApplyLoanPage(),
                   ),
                 );
+                if (mounted) {
+                  setState(() {});
+                }
               },
             ),
             ListTile(
               leading: const Icon(Icons.calculate_outlined),
               title: const Text('EMI Calculator'),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                Navigator.push(
+                await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const EmiCalculatorPage(),
                   ),
                 );
+                if (mounted) {
+                  setState(() {});
+                }
               },
             ),
             const Padding(
@@ -189,7 +207,7 @@ class MainNavigationState extends State<MainNavigation> {
           ],
         ),
       ),
-      body: _pages[_currentIndex],
+      body: _buildBody(),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [

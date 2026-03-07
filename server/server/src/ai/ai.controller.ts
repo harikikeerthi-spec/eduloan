@@ -1,13 +1,16 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Logger } from '@nestjs/common';
 import { EligibilityService } from './services/eligibility.service';
 import { LoanRecommendationService } from './services/loan-recommendation.service';
 import { SopAnalysisService } from './services/sop-analysis.service';
 import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
+import { UniversityShortlistService } from './services/university-shortlist.service';
 
 @Controller('ai')
 export class AiController {
+  private readonly logger = new Logger(AiController.name);
+
   constructor(
     private readonly eligibilityService: EligibilityService,
     private readonly loanRecommendationService: LoanRecommendationService,
@@ -15,6 +18,7 @@ export class AiController {
     private readonly gradeConversionService: GradeConversionService,
     private readonly universityComparisonService: UniversityComparisonService,
     private readonly admitPredictorService: AdmitPredictorService,
+    private readonly universityShortlistService: UniversityShortlistService,
   ) { }
 
   @Post('eligibility-check')
@@ -199,6 +203,44 @@ export class AiController {
       success: true,
       prediction: result
     };
+  }
+
+  @Post('search-countries')
+  async searchCountries(@Body('query') query: string) {
+    this.logger.log(`Received search-countries request with query: ${query}`);
+    return this.universityShortlistService.searchCountries(query || '');
+  }
+
+  @Post('search-universities')
+  async searchUniversities(
+    @Body() data: { query: string; degree?: string; country?: string },
+  ) {
+    return this.universityShortlistService.searchUniversities(
+      data.query || '',
+      data.degree,
+      data.country,
+    );
+  }
+
+  @Post('search-courses')
+  async searchCourses(
+    @Body() data: { university: string; query: string; degree: string },
+  ) {
+    return this.universityShortlistService.searchCourses(
+      data.university,
+      data.query || '',
+      data.degree,
+    );
+  }
+
+  @Post('search-fields')
+  async searchFields(@Body('query') query: string) {
+    return this.universityShortlistService.searchFields(query || '');
+  }
+
+  @Post('shortlist')
+  async shortlist(@Body() profile: any) {
+    return this.universityShortlistService.shortlist(profile);
   }
 }
 

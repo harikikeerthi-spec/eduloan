@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/kyc_modal.dart';
@@ -9,24 +11,162 @@ import 'main_navigation.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../models/loan.dart';
+import '../services/ai_logic_service.dart';
+import '../services/logo_service.dart';
+import '../services/wikipedia_service.dart';
+import 'ai_tools/university_detail_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  HomeTabState createState() => HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class HomeTabState extends State<HomeTab> {
   final LoanService _loanService = LoanService();
   List<Loan> _activeLoans = [];
+  List<UniversityRecommendation> _aiRecommendations = [];
+  List<UniversityRecommendation> _savedRecommendations = [];
+  String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
   bool _isLoadingLoans = true;
   bool _showKycNudge = true;
+  final AiLogicService _aiService = AiLogicService();
+
+  // Auto-scroll logic for recommendations
+  final ScrollController _aiScrollController = ScrollController();
+  Timer? _aiScrollTimer;
+
+  // Caches for AI recommendation images to prevent FutureBuilder recreation on scroll
+  final Map<String, String?> _logoCache = {};
+  final Map<String, String?> _bgCache = {};
 
   @override
   void initState() {
     super.initState();
     _loadActiveLoans();
+    _loadRecommendations();
+  }
+
+  @override
+  void dispose() {
+    _aiScrollTimer?.cancel();
+    _aiScrollController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    if (_aiRecommendations.length > 1) {
+      _aiScrollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (!_aiScrollController.hasClients) return;
+
+        final double maxScroll = _aiScrollController.position.maxScrollExtent;
+        final double currentScroll = _aiScrollController.position.pixels;
+        // Approximate width of a card plus padding
+        final double cardWidth = MediaQuery.of(context).size.width - 64 + 16;
+
+        if (currentScroll >= maxScroll - 10) {
+          // Jump back to start if at the end
+          _aiScrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          // Scroll one card forward
+          _aiScrollController.animateTo(
+            currentScroll + cardWidth,
+            duration: const Duration(milliseconds: 800),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
+
+  void refreshData() {
+    setState(() {
+      _bgCache.clear();
+    });
+    _loadRecommendations();
+    _loadSavedRecommendations();
+  }
+
+  Future<void> _loadSavedRecommendations() async {
+    final saved = await _aiService.getSavedUniversities();
+    if (mounted) {
+      setState(() {
+        _savedRecommendations = saved;
+      });
+    }
+  }
+
+  Future<void> _loadRecommendations() async {
+    _loadSavedRecommendations(); // Load saved in parallel
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? cachedRecs = prefs.getString('latest_ai_recommendations');
+      if (cachedRecs != null && cachedRecs.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(cachedRecs);
+        if (mounted) {
+          setState(() {
+            _aiRecommendations = decoded
+                .map(
+                  (e) => UniversityRecommendation.fromJson(
+                    e as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
+          });
+
+          // Pre-fetch images to populate cache
+          for (var uni in _aiRecommendations) {
+            _getUniversityLogo(uni).then((logo) {
+              if (mounted) {
+                setState(() {
+                  _logoCache[uni.name] = logo;
+                });
+              }
+            });
+
+            final query = uni.name;
+            // Extract city from location (e.g. "Leeds, UK" -> "Leeds")
+            String? city;
+            if (uni.location.contains(',')) {
+              city = uni.location.split(',').first.trim();
+            } else if (uni.location.isNotEmpty) {
+              city = uni.location.trim();
+            }
+
+            WikipediaService.fetchImages(query, cityName: city)
+                .then((images) {
+                  if (mounted) {
+                    if (images.isNotEmpty) {
+                      setState(() {
+                        _bgCache[uni.name] = images.first;
+                      });
+                      debugPrint(
+                        'Wiki SUCCESS for ${uni.name}: ${images.first}',
+                      );
+                    } else {
+                      debugPrint('Wiki EMPTY for ${uni.name}');
+                    }
+                  }
+                })
+                .catchError((e) {
+                  debugPrint('Wiki ERROR for ${uni.name}: $e');
+                });
+          }
+
+          // Start auto-scroll once we have the recommendations
+          if (_aiRecommendations.isNotEmpty) {
+            _startAutoScroll();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load AI recommendations: $e');
+    }
   }
 
   Future<void> _loadActiveLoans() async {
@@ -235,6 +375,12 @@ class _HomeTabState extends State<HomeTab> {
                   ],
                 ),
 
+                if (_aiRecommendations.isNotEmpty ||
+                    _savedRecommendations.isNotEmpty) ...[
+                  _buildAiRecommendations(),
+                  const SizedBox(height: 32),
+                ],
+
                 // Active Loans Section
                 if (_activeLoans.isNotEmpty)
                   Padding(
@@ -324,6 +470,9 @@ class _HomeTabState extends State<HomeTab> {
                     ],
                   ),
                 ),
+
+                // Essential Services (Value Add)
+                _buildValueAddServices(),
               ],
             ),
           ),
@@ -775,6 +924,758 @@ class _HomeTabState extends State<HomeTab> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => const InstituteSelectionModal(),
+    );
+  }
+
+  Widget _buildAiRecommendations() {
+    final bool isSavedMode = _activeRecommendationTab == 'Saved';
+    final recommendations = isSavedMode
+        ? _savedRecommendations
+        : _aiRecommendations;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Top Recommendations',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Row(
+                children: [
+                  _buildFilterChip('All', !isSavedMode),
+                  const SizedBox(width: 8),
+                  _buildFilterChip('Saved', isSavedMode),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (isSavedMode && recommendations.isEmpty)
+          _buildEmptySavedState()
+        else
+          SizedBox(
+            height: 260,
+            child: ListView.builder(
+              controller: _aiScrollController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: recommendations.length,
+              itemBuilder: (context, index) {
+                final uni = recommendations[index];
+                return _buildAiRecommendationCard(uni, context);
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _activeRecommendationTab = label;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF6200EA) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6200EA)
+                : Colors.grey.withOpacity(0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.grey[600],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySavedState() {
+    return Container(
+      width: double.infinity,
+      height: 160,
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bookmark_outline, size: 40, color: Colors.grey[300]),
+          const SizedBox(height: 12),
+          Text(
+            'Nothing saved yet',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Save universities to see them here',
+            style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _getUniversityLogo(UniversityRecommendation uni) async {
+    // Try 1: Call AutoComplete/HipoLabs API with name to hunt down the reliable clearbit logo dynamically
+    // We prioritize this because AI logoUrl strings are often hallucinated 404s!
+    final fallbackLogo = await LogoService.getLogoByName(uni.name);
+    if (fallbackLogo != null && fallbackLogo.isNotEmpty) {
+      return fallbackLogo;
+    }
+
+    // Try 2: Construct Clearbit from plain websiteUrl domain
+    if (uni.websiteUrl.isNotEmpty) {
+      String domain = uni.websiteUrl;
+      domain = domain.replaceAll(RegExp(r'^https?://'), '');
+      domain = domain.replaceAll(RegExp(r'^www\.'), '');
+      domain = domain.split('/')[0];
+      return 'https://logo.clearbit.com/$domain';
+    }
+
+    // Try 3: AI provided logo Url directly (Lowest priority fallback)
+    if (uni.logoUrl.isNotEmpty && uni.logoUrl.startsWith('http')) {
+      return uni.logoUrl;
+    }
+
+    return null;
+  }
+
+  Widget _buildAiRecommendationCard(
+    UniversityRecommendation uni,
+    BuildContext context,
+  ) {
+    // 24 padding on both sides, and 16 spacing = 64 total horizontal offset
+    double cardWidth = MediaQuery.of(context).size.width - 64;
+
+    return Container(
+      width: cardWidth,
+      margin: const EdgeInsets.only(right: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF311B92).withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UniversityDetailPage(university: uni),
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              // Background Image Fetcher
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child:
+                      _bgCache.containsKey(uni.name) &&
+                          _bgCache[uni.name] != null
+                      ? Image.network(
+                          _bgCache[uni.name]!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildDefaultBg(uni.name),
+                        )
+                      : _buildDefaultBg(uni.name), // Loading or fallback
+                ),
+              ),
+
+              // Super smooth gradient overlay (Dark bottom, transparent top)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.9),
+                        Colors.black.withOpacity(0.5),
+                        Colors.black.withOpacity(0.2),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Card Content Overlay
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // University Logo Space
+                        Container(
+                          width: 56,
+                          height: 56,
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: _buildLogoIcon(uni),
+                        ),
+                        const SizedBox(width: 16),
+                        // Top Right Pill
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.topRight,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                uni.programName.isNotEmpty
+                                    ? uni.programName
+                                    : uni.type,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+
+                    // University Details (Bottom)
+                    Text(
+                      uni.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10.0,
+                            color: Colors.black54,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.white70,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            uni.location,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                    const SizedBox(height: 16),
+
+                    // Admit Chance Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Admit Chance',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withOpacity(0.8),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              uni.chance,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(
+                                  0xFF34D399,
+                                ), // Bright emerald green for dark bg
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildValueAddServices() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            'Essential Services',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            children: [
+              _buildServiceCard(
+                title: 'US Credit Card',
+                subtitle:
+                    'Build your US credit score from day one with a student credit card',
+                primaryIcon: Icons.credit_card,
+                bgColor: const Color(0xFFEEF2FF),
+                iconColor: const Color(0xFF6366F1),
+                topTrailing: const Text(
+                  'US',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFC7D2FE),
+                  ),
+                ),
+                width: 220,
+              ),
+              const SizedBox(width: 16),
+              _buildServiceCard(
+                title: 'German BA',
+                subtitle:
+                    'Open your mandatory blocked account hassle-free for Germany',
+                primaryIcon: Icons.account_balance_wallet,
+                bgColor: const Color(0xFFFFFBEB),
+                iconColor: const Color(0xFFD97706),
+                topTrailing: const Text(
+                  'DE',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFDE68A),
+                  ),
+                ),
+                width: 220,
+              ),
+              const SizedBox(width: 16),
+              _buildServiceCard(
+                title: 'Forex Card',
+                subtitle:
+                    'Multi-currency forex card with the best exchange rates',
+                primaryIcon: Icons.currency_exchange,
+                bgColor: const Color(0xFFECFDF5),
+                iconColor: const Color(0xFF10B981),
+                topTrailing: const Icon(
+                  Icons.public,
+                  size: 36,
+                  color: Color(0xFFA7F3D0),
+                ),
+                width: 220,
+              ),
+              const SizedBox(width: 16),
+              _buildServiceCard(
+                title: 'UK Bank Account',
+                subtitle:
+                    'Pre-arrival UK bank account opening for Indian students',
+                primaryIcon: Icons.account_balance,
+                bgColor: const Color(0xFFF5F3FF),
+                iconColor: const Color(0xFF8B5CF6),
+                topTrailing: const Text(
+                  'GB',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDDD6FE),
+                  ),
+                ),
+                width: 220,
+              ),
+              const SizedBox(width: 16),
+              _buildServiceCard(
+                title: 'Visa Counselling',
+                subtitle: 'Expert guidance for visa interviews & documentation',
+                primaryIcon: Icons.assignment_turned_in,
+                bgColor: const Color(0xFFF0FDF4),
+                iconColor: const Color(0xFF22C55E),
+                topTrailing: const Icon(
+                  Icons.flight_takeoff,
+                  size: 36,
+                  color: Color(0xFFBBF7D0),
+                ),
+                width: 220,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _buildWideServiceCard(
+            title: 'Accommodation Support',
+            subtitle:
+                'Find verified student housing near your university campus',
+            primaryIcon: Icons.home,
+            bgColor: const Color(0xFFFDF2F8),
+            iconColor: const Color(0xFFEC4899),
+            trailing: const Icon(
+              Icons.maps_home_work,
+              size: 50,
+              color: Color(0xFFFBCFE8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 48),
+      ],
+    );
+  }
+
+  Widget _buildServiceCard({
+    required String title,
+    required String subtitle,
+    required IconData primaryIcon,
+    required Color bgColor,
+    required Color iconColor,
+    required Widget topTrailing,
+    required double width,
+  }) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(primaryIcon, color: iconColor, size: 24),
+              ),
+              topTrailing,
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF4B5563),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideServiceCard({
+    required String title,
+    required String subtitle,
+    required IconData primaryIcon,
+    required Color bgColor,
+    required Color iconColor,
+    required Widget trailing,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(primaryIcon, color: iconColor, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF4B5563),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultBg(String seed) {
+    final List<String> defaultImages = [
+      'https://images.unsplash.com/photo-1492538356227-3eb926ca0b51?q=80&w=2070&auto=format&fit=crop', // Ivy building
+      'https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=2086&auto=format&fit=crop', // Tech Building
+      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop', // Building facade
+      'https://images.unsplash.com/photo-1592280771190-3e2e4d571952?q=80&w=2070&auto=format&fit=crop', // Red brick university
+      'https://images.unsplash.com/photo-1541829070764-84a7d30dee70?q=80&w=1974&auto=format&fit=crop', // Modern campus
+      'https://images.unsplash.com/photo-1461354464878-ad92f492a5a0?q=80&w=2070&auto=format&fit=crop', // Library
+      'https://images.unsplash.com/photo-1519074063912-cc2f0e5ece58?q=80&w=2070&auto=format&fit=crop', // Classic Hall
+      'https://images.unsplash.com/photo-1622397333309-30b1a27bb21d?q=80&w=2070&auto=format&fit=crop', // Architecture
+      'https://images.unsplash.com/photo-1525921472407-c59f2ea325f5?q=80&w=2070&auto=format&fit=crop', // Modern Library
+      'https://images.unsplash.com/photo-1590402494587-44b71d7772f6?q=80&w=2070&auto=format&fit=crop', // Campus quad
+    ];
+    // Use hashCode for better distribution than length
+    int idx = seed.hashCode.abs() % defaultImages.length;
+    return Image.network(
+      defaultImages[idx],
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          Container(color: Colors.grey[800]),
+    );
+  }
+
+  Widget _buildLogoIcon(UniversityRecommendation uni) {
+    String logoUrl = '';
+    if (_logoCache.containsKey(uni.name) && _logoCache[uni.name] != null) {
+      logoUrl = _logoCache[uni.name]!;
+    }
+
+    if (logoUrl.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.network(
+          logoUrl,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            final domain = minExtractDomain(uni);
+            if (domain.isNotEmpty) {
+              return Image.network(
+                "https://www.google.com/s2/favicons?sz=64&domain=$domain",
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildMonogramFallback(uni),
+              );
+            }
+            return _buildMonogramFallback(uni);
+          },
+        ),
+      );
+    }
+
+    // Fallback if loading or no logo URL
+    return _buildFallbackContent(uni);
+  }
+
+  String minExtractDomain(UniversityRecommendation uni) {
+    if (uni.websiteUrl.isNotEmpty) {
+      String domain = uni.websiteUrl.replaceAll(RegExp(r'^https?://'), '');
+      return domain.split('/').first.split('?').first;
+    }
+    if (uni.logoUrl.isNotEmpty) {
+      return uni.logoUrl.split('/').last.split('?').first;
+    }
+    return "";
+  }
+
+  Widget _buildFallbackContent(UniversityRecommendation uni) {
+    if (!_logoCache.containsKey(uni.name)) {
+      // Still loading
+      return const Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    // Loaded but no logo found, try favicon directly
+    final domain = minExtractDomain(uni);
+    if (domain.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.network(
+          "https://www.google.com/s2/favicons?sz=64&domain=$domain",
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildMonogramFallback(uni),
+        ),
+      );
+    }
+
+    return _buildMonogramFallback(uni);
+  }
+
+  Widget _buildMonogramFallback(UniversityRecommendation uni) {
+    String monogram = '';
+    if (uni.name.isNotEmpty) {
+      final parts = uni.name.split(' ');
+      if (parts.length >= 2) {
+        monogram = (parts[0][0] + parts[1][0]).toUpperCase();
+      } else if (parts[0].isNotEmpty) {
+        monogram = parts[0][0].toUpperCase();
+      }
+    }
+    return Center(
+      child: monogram.isNotEmpty
+          ? Text(
+              monogram,
+              style: const TextStyle(
+                color: Color(0xFF6200EA),
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            )
+          : const Icon(
+              Icons.account_balance,
+              color: Color(0xFF6200EA),
+              size: 24,
+            ),
     );
   }
 }
