@@ -263,4 +263,81 @@ export class UniversityShortlistService {
             throw e;
         }
     }
+
+    async saveChat(userId: string, profile: any, messages: any[], recommendations: any[]) {
+        try {
+            return await this.prisma.universityShortlistChat.create({
+                data: {
+                    userId,
+                    profile,
+                    messages,
+                    recommendations,
+                },
+            });
+        } catch (error) {
+            console.error('Failed to save shortlist chat:', error);
+            // Don't throw, just log. We don't want to break the UI if saving fails.
+            return null;
+        }
+    }
+
+    async toggleFavorite(userId: string, universityName: string, universityData: any) {
+        try {
+            const existing = await this.prisma.universityFavorite.findUnique({
+                where: {
+                    userId_universityName: {
+                        userId,
+                        universityName,
+                    },
+                },
+            });
+
+            if (existing) {
+                await this.prisma.universityFavorite.delete({
+                    where: { id: existing.id },
+                });
+                return { success: true, saved: false };
+            } else {
+                await this.prisma.universityFavorite.create({
+                    data: {
+                        userId,
+                        universityName,
+                        universityData,
+                    },
+                });
+                return { success: true, saved: true };
+            }
+        } catch (error) {
+            console.error('Failed to toggle university favorite:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async getFavorites(userId: string) {
+        try {
+            return await this.prisma.universityFavorite.findMany({
+                where: { userId },
+                orderBy: { createdAt: 'desc' },
+            });
+        } catch (error) {
+            console.error('Failed to get university favorites:', error);
+            return [];
+        }
+    }
+
+    async trackView(userId: string | null, universityName: string, programName?: string, location?: string) {
+        try {
+            return await this.prisma.universityView.create({
+                data: {
+                    userId,
+                    universityName,
+                    programName: programName || null,
+                    location: location || null,
+                },
+            });
+        } catch (error) {
+            console.error('Failed to track university view:', error);
+            return null;
+        }
+    }
 }

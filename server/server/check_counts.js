@@ -1,26 +1,21 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const fs = require('fs');
+const code = fs.readFileSync('lib/pages/ai_tools/visa_interview_page.dart', 'utf-8');
+const lines = code.split('\n');
+let score = 0;
+let classStarted = false;
 
-async function checkCounts() {
-    try {
-        const blogCount = await prisma.blog.count();
-        const communityCount = await prisma.communityEvent.count();
-        const universityCount = await prisma.university.count();
-        const forumPostCount = await prisma.forumPost.count();
-        const successStoryCount = await prisma.successStory.count();
+for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes('class _VisaInterviewPageState')) classStarted = true;
+    if (!classStarted) continue;
 
-        console.log('Database Record Counts:');
-        console.log('- Blogs:', blogCount);
-        console.log('- Community Events:', communityCount);
-        console.log('- Universities:', universityCount);
-        console.log('- Forum Posts:', forumPostCount);
-        console.log('- Success Stories:', successStoryCount);
-
-    } catch (e) {
-        console.error('Error checking counts:', e);
-    } finally {
-        await prisma.$disconnect();
+    for (let j = 0; j < line.length; j++) {
+        if (line[j] === '{') score++;
+        if (line[j] === '}') score--;
+        if (score === 0 && classStarted) {
+            console.log(`Class ended prematurely at line ${i + 1}`);
+            process.exit(1);
+        }
     }
 }
-
-checkCounts();
+console.log('Class reached end of file with score:', score);

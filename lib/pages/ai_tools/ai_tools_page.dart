@@ -134,6 +134,15 @@ class AiToolsPage extends StatelessWidget {
                   ),
                   _buildGridCard(
                     context,
+                    title: 'Visa Interview\nSimulator',
+                    subtitle: 'Practice with AI Officer',
+                    icon: Icons.assignment_turned_in_outlined,
+                    color: const Color(0xFF3F51B5),
+                    onTap: () =>
+                        Navigator.pushNamed(context, '/ai/visa-simulator'),
+                  ),
+                  _buildGridCard(
+                    context,
                     title: 'AI Support\nAssistant',
                     subtitle: '24/7 student guidance',
                     icon: Icons.chat_bubble_outline,

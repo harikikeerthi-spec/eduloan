@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'pages/login_page.dart';
 import 'pages/main_navigation.dart';
+import 'pages/video_splash_screen.dart';
 import 'pages/apply_loan_page.dart';
 import 'pages/emi_calculator_page.dart';
 import 'pages/ai_tools/ai_tools_page.dart';
@@ -13,6 +14,7 @@ import 'pages/ai_tools/customer_care_bot_page.dart';
 import 'pages/university_compare_page.dart';
 import 'pages/admit_predictor_page.dart';
 import 'pages/sop_writer_page.dart';
+import 'pages/ai_tools/visa_interview_page.dart';
 import 'pages/mentors_page.dart';
 import 'pages/events_page.dart';
 import 'pages/forum_page.dart';
@@ -65,7 +67,7 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF374151)),
         ),
       ),
-      home: const AuthCheck(),
+      home: const VideoSplashScreen(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const MainNavigation(),
@@ -80,6 +82,7 @@ class MyApp extends StatelessWidget {
             const UniversityComparePage(), // Added alias for Community Page
         '/ai/admit-predictor': (context) => const AdmitPredictorPage(),
         '/ai/sop-writer': (context) => const SopWriterPage(),
+        '/ai/visa-simulator': (context) => const VisaInterviewPage(),
         '/community/mentors': (context) => const MentorsPage(),
         '/community/events': (context) => const EventsPage(),
         '/community/forum': (context) => const ForumPage(),
@@ -87,41 +90,5 @@ class MyApp extends StatelessWidget {
         '/community/forum/detail': (context) => const ForumPostDetailPage(),
       },
     );
-  }
-}
-
-class AuthCheck extends StatefulWidget {
-  const AuthCheck({super.key});
-
-  @override
-  State<AuthCheck> createState() => _AuthCheckState();
-}
-
-class _AuthCheckState extends State<AuthCheck> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-
-    // Simulate a short delay for splash effect
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    if (token != null && token.isNotEmpty) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

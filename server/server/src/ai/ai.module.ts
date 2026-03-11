@@ -8,6 +8,7 @@ import { UniversityComparisonService } from './services/university-comparison.se
 import { AdmitPredictorService } from './services/admit-predictor.service';
 import { GroqService } from './services/groq.service';
 import { UniversityShortlistService } from './services/university-shortlist.service';
+import { VisaInterviewService } from './services/visa-interview.service';
 
 @Module({
   controllers: [AiController],
@@ -20,6 +21,7 @@ import { UniversityShortlistService } from './services/university-shortlist.serv
     UniversityComparisonService,
     AdmitPredictorService,
     UniversityShortlistService,
+    VisaInterviewService,
   ],
   exports: [
     GroqService,
@@ -30,6 +32,7 @@ import { UniversityShortlistService } from './services/university-shortlist.serv
     UniversityComparisonService,
     AdmitPredictorService,
     UniversityShortlistService,
+    VisaInterviewService,
   ],
 })
 export class AiModule { }

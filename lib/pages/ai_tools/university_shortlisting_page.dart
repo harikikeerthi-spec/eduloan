@@ -244,11 +244,23 @@ class _UniversityShortlistingPageState
             : null,
       };
 
+      final prefs = await SharedPreferences.getInstance();
+      final String? userId = prefs.getString('userId');
+      final List<Map<String, String>> chatMessages = _messages.map((m) => m.toJson()).toList();
+
       ShortlistResult result;
       if (_activeFlow == 'evaluate') {
-        result = await AiLogicService().evaluateShortlist(profile);
+        result = await AiLogicService().evaluateShortlist(
+          profile,
+          userId: userId,
+          messages: chatMessages,
+        );
       } else {
-        result = await AiLogicService().shortlistUniversities(profile);
+        result = await AiLogicService().shortlistUniversities(
+          profile,
+          userId: userId,
+          messages: chatMessages,
+        );
       }
 
       if (mounted) {
@@ -1768,6 +1780,13 @@ class ShortlistMessage {
     if (isUser || isHeader) {
       isDoneAnimating = true;
     }
+  }
+
+  Map<String, String> toJson() {
+    return {
+      'role': isUser ? 'user' : 'bot',
+      'content': text,
+    };
   }
 }
 

@@ -133,13 +133,15 @@ export class AuthController {
     lastName: string;
     phoneNumber: string;
     dateOfBirth: string;
+    profileImage?: string;
   }) {
     return this.authService.updateUserDetails(
       body.email,
       body.firstName,
       body.lastName,
       body.phoneNumber,
-      body.dateOfBirth
+      body.dateOfBirth,
+      body.profileImage
     );
   }
 

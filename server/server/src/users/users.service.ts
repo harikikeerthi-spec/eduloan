@@ -67,7 +67,8 @@ export class UsersService {
     firstName: string,
     lastName: string,
     phoneNumber: string,
-    dateOfBirth: string
+    dateOfBirth: string,
+    profileImage?: string
   ) {
     // Convert DD-MM-YYYY to Date object
     let dobDate: Date | null = null;
@@ -88,6 +89,7 @@ export class UsersService {
         lastName,
         phoneNumber,
         dateOfBirth: dobDate,
+        profileImage: profileImage || undefined,
       },
     });
   }
@@ -117,11 +119,11 @@ export class UsersService {
     return this.prisma.loanApplication.create({
       data: {
         userId,
-        applicantName: data.applicantName,
-        phoneNumber: data.phoneNumber,
+        firstName: data.applicantName,
+        phone: data.phoneNumber,
         email: data.email,
-        institute: data.institute,
-        course: data.course,
+        universityName: data.institute,
+        courseName: data.course,
         bank: data.bank,
         loanType: data.loanType,
         amount: data.amount,

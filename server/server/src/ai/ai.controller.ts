@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, BadRequestException, Logger } from '@nestjs/common';
 import { EligibilityService } from './services/eligibility.service';
 import { LoanRecommendationService } from './services/loan-recommendation.service';
 import { SopAnalysisService } from './services/sop-analysis.service';
@@ -6,6 +6,7 @@ import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
 import { UniversityShortlistService } from './services/university-shortlist.service';
+import { VisaInterviewService, InterviewMessage, EvaluationResult } from './services/visa-interview.service';
 
 @Controller('ai')
 export class AiController {
@@ -19,6 +20,7 @@ export class AiController {
     private readonly universityComparisonService: UniversityComparisonService,
     private readonly admitPredictorService: AdmitPredictorService,
     private readonly universityShortlistService: UniversityShortlistService,
+    private readonly visaInterviewService: VisaInterviewService,
   ) { }
 
   @Post('eligibility-check')
@@ -239,8 +241,161 @@ export class AiController {
   }
 
   @Post('shortlist')
-  async shortlist(@Body() profile: any) {
-    return this.universityShortlistService.shortlist(profile);
+  async shortlist(
+    @Body()
+    data: {
+      profile: any;
+      userId?: string;
+      messages?: any[];
+    },
+  ) {
+    const profile = data.profile || data; // Handle both direct profile and wrapped data
+    const result = await this.universityShortlistService.shortlist(profile);
+
+    // If userId is provided, save the chat history
+    if (data.userId && result.success) {
+      // We don't await this to keep the response fast, or we can await it if we want to ensure it's saved.
+      // Given the user's request, let's just trigger it.
+      this.universityShortlistService.saveChat(
+        data.userId,
+        profile,
+        data.messages || [],
+        result.recommendations || [],
+      ).catch(err => this.logger.error(`Failed to save shortlist chat: ${err.message}`));
+    }
+
+    return result;
+  }
+
+  @Post('university/favorite')
+  async toggleFavorite(
+    @Body() data: { userId: string; universityName: string; universityData: any },
+  ) {
+    return this.universityShortlistService.toggleFavorite(
+      data.userId,
+      data.universityName,
+      data.universityData,
+    );
+  }
+
+  @Get('university/favorites/:userId')
+  async getFavorites(@Param('userId') userId: string) {
+    return this.universityShortlistService.getFavorites(userId);
+  }
+
+  @Post('university/view')
+  async trackView(
+    @Body() data: { userId?: string; universityName: string; programName?: string; location?: string },
+  ) {
+    return this.universityShortlistService.trackView(
+      data.userId || null,
+      data.universityName,
+      data.programName,
+      data.location,
+    );
+  }
+
+  // ── Visa Interview Simulator Endpoints ──
+
+  @Post('visa-interview/start')
+  async startVisaInterview(
+    @Body() data: { userProfile: Record<string, any>; visaType?: string },
+  ) {
+    try {
+      const result = await this.visaInterviewService.startInterview(
+        data.userProfile || {},
+        data.visaType || 'F1 Student Visa',
+      );
+      return {
+        success: true,
+        question: result.question,
+        currentSection: result.currentSection || 'purpose',
+        completedSections: result.completedSections || [],
+        isInterviewOver: result.isInterviewOver || false,
+        sections: this.visaInterviewService.getSections(),
+      };
+    } catch (error) {
+      console.error('Visa interview start failed:', error);
+      return { success: false, message: error.message || 'Failed to start interview' };
+    }
+  }
+
+  @Post('visa-interview/continue')
+  async continueVisaInterview(
+    @Body()
+    data: {
+      userProfile: Record<string, any>;
+      visaType?: string;
+      previousQuestion: string;
+      transcript: string;
+      currentSection: string;
+      conversationHistory?: InterviewMessage[];
+    },
+  ) {
+    try {
+      const result = await this.visaInterviewService.continueInterview(
+        data.userProfile || {},
+        data.visaType || 'F1 Student Visa',
+        data.previousQuestion,
+        data.transcript,
+        data.currentSection,
+        data.conversationHistory || [],
+      );
+      return {
+        success: true,
+        question: result.question,
+        currentSection: result.currentSection,
+        completedSections: result.completedSections,
+        isInterviewOver: result.isInterviewOver,
+      };
+    } catch (error) {
+      console.error('Visa interview continue failed:', error);
+      return { success: false, message: error.message || 'Failed to continue interview' };
+    }
+  }
+
+  @Post('visa-interview/evaluate')
+  async evaluateVisaAnswer(
+    @Body()
+    data: {
+      visaType?: string;
+      question: string;
+      transcript: string;
+    },
+  ) {
+    try {
+      const evaluation = await this.visaInterviewService.evaluateAnswer(
+        data.visaType || 'F1 Student Visa',
+        data.question,
+        data.transcript,
+      );
+      return { success: true, evaluation };
+    } catch (error) {
+      console.error('Visa answer evaluation failed:', error);
+      return { success: false, message: error.message || 'Failed to evaluate answer' };
+    }
+  }
+
+  @Post('visa-interview/final-report')
+  async getVisaFinalReport(
+    @Body()
+    data: {
+      visaType?: string;
+      conversationHistory: InterviewMessage[];
+      evaluations: EvaluationResult[];
+    },
+  ) {
+    try {
+      const report = await this.visaInterviewService.generateFinalReport(
+        data.visaType || 'F1 Student Visa',
+        data.conversationHistory || [],
+        data.evaluations || [],
+      );
+      return { success: true, report };
+    } catch (error) {
+      console.error('Final report generation failed:', error);
+      return { success: false, message: error.message || 'Failed to generate report' };
+    }
   }
 }
 

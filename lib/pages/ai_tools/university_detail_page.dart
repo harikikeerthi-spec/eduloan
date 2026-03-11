@@ -31,14 +31,46 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   void initState() {
     super.initState();
     _checkSavedStatus();
+    _aiService.trackUniversityView(widget.university);
   }
 
   Future<void> _checkSavedStatus() async {
-    final saved = await _aiService.isUniversitySaved(widget.university.name);
+    final isSaved = await _aiService.isUniversitySaved(widget.university.name);
     if (mounted) {
-      setState(() {
-        _isSaved = saved;
-      });
+      setState(() => _isSaved = isSaved);
+    }
+  }
+
+  Future<void> _launchUniversityWebsite() async {
+    String urlString = widget.university.websiteUrl.trim();
+    if (urlString.isEmpty) {
+      urlString =
+          'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + " official website")}';
+    } else {
+      // Ensure scheme
+      if (!urlString.startsWith('http://') &&
+          !urlString.startsWith('https://')) {
+        urlString = 'https://$urlString';
+      }
+    }
+
+    final Uri url = Uri.parse(urlString);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not launch $urlString')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error launching website: $e')));
+      }
     }
   }
 
@@ -629,24 +661,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           ),
           isLink
               ? InkWell(
-                  onTap: () async {
-                    final String urlString =
-                        widget.university.websiteUrl.isNotEmpty
-                        ? widget.university.websiteUrl
-                        : 'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + ' official website')}';
-
-                    final Uri url = Uri.parse(urlString);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Could not launch $urlString')),
-                      );
-                    }
-                  },
+                  onTap: _launchUniversityWebsite,
                   child: Text(
                     value,
                     style: const TextStyle(
@@ -1654,20 +1669,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton(
-              onPressed: () async {
-                final String urlString = widget.university.websiteUrl.isNotEmpty
-                    ? widget.university.websiteUrl
-                    : 'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + ' official website')}';
-
-                final Uri url = Uri.parse(urlString);
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not launch $urlString')),
-                  );
-                }
-              },
+              onPressed: _launchUniversityWebsite,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6200EA),
                 foregroundColor: Colors.white,

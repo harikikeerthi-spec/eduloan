@@ -22,11 +22,11 @@ export class LoanService {
         const loan = await this.prisma.loanApplication.create({
             data: {
                 userId: data.userId,
-                applicantName: data.applicantName,
-                phoneNumber: data.phoneNumber,
+                firstName: data.applicantName,
+                phone: data.phoneNumber,
                 email: data.email,
-                institute: data.institute,
-                course: data.course,
+                universityName: data.institute,
+                courseName: data.course,
                 bank: 'Pending Assignment',
                 loanType: 'education',
                 amount: data.amount,

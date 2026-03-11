@@ -239,6 +239,10 @@ class PostAnalysisResult {
       feedback: json['feedback'] ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'sentiment': sentiment, 'tags': tags, 'feedback': feedback};
+  }
 }
 
 class UniversityRecommendation {
@@ -521,6 +525,108 @@ class LoanRecommendationResult {
   }
 }
 
+// ── Visa Interview Data Models ──
+
+class InterviewMessage {
+  final String sender; // 'bot' or 'user'
+  final String text;
+  final DateTime timestamp;
+
+  InterviewMessage({
+    required this.sender,
+    required this.text,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  factory InterviewMessage.fromJson(Map<String, dynamic> json) {
+    return InterviewMessage(
+      sender: json['role'] == 'officer' ? 'bot' : 'user',
+      text: json['question'] ?? json['content'] ?? '',
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'])
+          : null,
+    );
+  }
+
+  Map<String, String> toJson() {
+    return {'role': sender == 'bot' ? 'officer' : 'applicant', 'content': text};
+  }
+}
+
+class VisaInterviewStartResponse {
+  final String message;
+  final String currentSection;
+
+  VisaInterviewStartResponse({
+    required this.message,
+    required this.currentSection,
+  });
+
+  factory VisaInterviewStartResponse.fromJson(Map<String, dynamic> json) {
+    return VisaInterviewStartResponse(
+      message: json['question'] ?? json['message'] ?? '',
+      currentSection: json['currentSection'] ?? 'Introduction',
+    );
+  }
+}
+
+class VisaInterviewContinueResponse {
+  final String message;
+  final String nextSection;
+
+  VisaInterviewContinueResponse({
+    required this.message,
+    required this.nextSection,
+  });
+
+  factory VisaInterviewContinueResponse.fromJson(Map<String, dynamic> json) {
+    return VisaInterviewContinueResponse(
+      message: json['question'] ?? json['message'] ?? '',
+      nextSection: json['currentSection'] ?? json['nextSection'] ?? '',
+    );
+  }
+}
+
+class EvaluationResult {
+  final String question;
+  final String answer;
+  final int score;
+  final String feedback;
+  final List<String> strengths;
+  final List<String> improvements;
+
+  EvaluationResult({
+    required this.question,
+    required this.answer,
+    required this.score,
+    required this.feedback,
+    required this.strengths,
+    required this.improvements,
+  });
+
+  factory EvaluationResult.fromJson(Map<String, dynamic> json) {
+    return EvaluationResult(
+      question: json['question'] ?? '',
+      answer: json['answer'] ?? '',
+      score: json['score'] ?? 0,
+      feedback: json['feedback'] ?? '',
+      strengths: List<String>.from(json['strengths'] ?? []),
+      improvements: List<String>.from(json['improvements'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'question': question,
+      'answer': answer,
+      'score': score,
+      'feedback': feedback,
+      'strengths': strengths,
+      'improvements': improvements,
+    };
+  }
+}
+
 class AiLogicService {
   static final AiLogicService _instance = AiLogicService._internal();
   factory AiLogicService() => _instance;
@@ -618,16 +724,30 @@ class AiLogicService {
   }
 
   Future<ShortlistResult> shortlistUniversities(
-    Map<String, dynamic> profile,
-  ) async {
-    final data = await _postRequest('shortlist', profile);
+    Map<String, dynamic> profile, {
+    String? userId,
+    List<Map<String, String>>? messages,
+  }) async {
+    final body = {
+      'profile': profile,
+      if (userId != null) 'userId': userId,
+      if (messages != null) 'messages': messages,
+    };
+    final data = await _postRequest('shortlist', body);
     return ShortlistResult.fromJson(data);
   }
 
   Future<ShortlistResult> evaluateShortlist(
-    Map<String, dynamic> profile,
-  ) async {
-    final data = await _postRequest('shortlist', profile);
+    Map<String, dynamic> profile, {
+    String? userId,
+    List<Map<String, String>>? messages,
+  }) async {
+    final body = {
+      'profile': profile,
+      if (userId != null) 'userId': userId,
+      if (messages != null) 'messages': messages,
+    };
+    final data = await _postRequest('shortlist', body);
     return ShortlistResult.fromJson(data);
   }
 
@@ -694,14 +814,20 @@ class AiLogicService {
     return lookupPincode(pincode);
   }
 
-  Future<Map<String, dynamic>> startMockInterview(String university, String program) async {
+  Future<Map<String, dynamic>> startMockInterview(
+    String university,
+    String program,
+  ) async {
     return await _postRequest('interview/start', {
       'university': university,
       'program': program,
     });
   }
 
-  Future<Map<String, dynamic>> sendMockInterviewMessage(String sessionId, String message) async {
+  Future<Map<String, dynamic>> sendMockInterviewMessage(
+    String sessionId,
+    String message,
+  ) async {
     return await _postRequest('interview/chat', {
       'sessionId': sessionId,
       'message': message,
@@ -709,9 +835,69 @@ class AiLogicService {
   }
 
   Future<Map<String, dynamic>> evaluateInterview(String sessionId) async {
-    return await _postRequest('interview/evaluate', {
-      'sessionId': sessionId,
+    return await _postRequest('interview/evaluate', {'sessionId': sessionId});
+  }
+
+  // ── Visa Interview Simulator ──
+
+  Future<VisaInterviewStartResponse> startVisaInterview(
+    Map<String, dynamic> userProfile, [
+    String visaType = 'F1 Student Visa',
+  ]) async {
+    final data = await _postRequest('visa-interview/start', {
+      'userProfile': userProfile,
+      'visaType': visaType,
     });
+    return VisaInterviewStartResponse.fromJson(data);
+  }
+
+  Future<VisaInterviewContinueResponse> continueVisaInterview({
+    required Map<String, dynamic> userProfile,
+    required String previousQuestion,
+    required String transcript,
+    required String currentSection,
+    required List<InterviewMessage> conversationHistory,
+    String visaType = 'F1 Student Visa',
+  }) async {
+    final data = await _postRequest('visa-interview/continue', {
+      'userProfile': userProfile,
+      'visaType': visaType,
+      'previousQuestion': previousQuestion,
+      'transcript': transcript,
+      'currentSection': currentSection,
+      'conversationHistory': conversationHistory
+          .map((e) => e.toJson())
+          .toList(),
+    });
+    return VisaInterviewContinueResponse.fromJson(data);
+  }
+
+  Future<EvaluationResult> evaluateVisaAnswer({
+    required String question,
+    required String transcript,
+    String visaType = 'F1 Student Visa',
+  }) async {
+    final data = await _postRequest('visa-interview/evaluate', {
+      'question': question,
+      'transcript': transcript,
+      'visaType': visaType,
+    });
+    return EvaluationResult.fromJson(data['evaluation'] ?? data);
+  }
+
+  Future<String> getVisaFinalReport({
+    required List<InterviewMessage> conversationHistory,
+    required List<EvaluationResult> evaluations,
+    String visaType = 'F1 Student Visa',
+  }) async {
+    final data = await _postRequest('visa-interview/final-report', {
+      'conversationHistory': conversationHistory
+          .map((e) => e.toJson())
+          .toList(),
+      'evaluations': evaluations.map((e) => e.toJson()).toList(),
+      'visaType': visaType,
+    });
+    return data['report'] ?? '';
   }
 
   // Saved Universities Persistence
@@ -723,7 +909,9 @@ class AiLogicService {
     if (savedJson == null || savedJson.isEmpty) return [];
     try {
       final List<dynamic> decoded = jsonDecode(savedJson);
-      return decoded.map((item) => UniversityRecommendation.fromJson(item)).toList();
+      return decoded
+          .map((item) => UniversityRecommendation.fromJson(item))
+          .toList();
     } catch (e) {
       return [];
     }
@@ -731,21 +919,87 @@ class AiLogicService {
 
   Future<void> toggleSaveUniversity(UniversityRecommendation uni) async {
     final prefs = await SharedPreferences.getInstance();
-    final List<UniversityRecommendation> saved = await getSavedUniversities();
-    final int index = saved.indexWhere((item) => item.name == uni.name);
+    final String? userId = prefs.getString('userId');
 
-    if (index != -1) {
-      saved.removeAt(index);
-    } else {
-      saved.add(uni);
+    if (userId == null) {
+      // Fallback to local if not logged in
+      final List<UniversityRecommendation> saved = await getSavedUniversities();
+      final int index = saved.indexWhere((item) => item.name == uni.name);
+
+      if (index != -1) {
+        saved.removeAt(index);
+      } else {
+        saved.add(uni);
+      }
+
+      final String encoded = jsonEncode(
+        saved.map((item) => item.toJson()).toList(),
+      );
+      await prefs.setString(_savedKey, encoded);
+      return;
     }
 
-    final String encoded = jsonEncode(saved.map((item) => item.toJson()).toList());
-    await prefs.setString(_savedKey, encoded);
+    // Sync with backend
+    try {
+      final String baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http.post(
+        Uri.parse('$baseUrl/ai/university/favorite'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'universityName': uni.name,
+          'universityData': uni.toJson(),
+        }),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        // We can still update local cache for offline/instant UI if needed,
+        // but for now, let's rely on backend as source of truth.
+        // To keep it simple, let's also update local.
+        final List<UniversityRecommendation> saved =
+            await getSavedUniversities();
+        final int index = saved.indexWhere((item) => item.name == uni.name);
+        final bool isSavedInDb = jsonDecode(response.body)['saved'] ?? false;
+
+        if (isSavedInDb) {
+          if (index == -1) saved.add(uni);
+        } else {
+          if (index != -1) saved.removeAt(index);
+        }
+
+        await prefs.setString(
+          _savedKey,
+          jsonEncode(saved.map((item) => item.toJson()).toList()),
+        );
+      }
+    } catch (e) {
+      print('Error toggling favorite on backend: $e');
+    }
   }
 
   Future<bool> isUniversitySaved(String name) async {
     final List<UniversityRecommendation> saved = await getSavedUniversities();
     return saved.any((item) => item.name == name);
+  }
+
+  Future<void> trackUniversityView(UniversityRecommendation uni) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('userId');
+
+    try {
+      final String baseUrl = await ApiConfig.getBaseUrl();
+      await http.post(
+        Uri.parse('$baseUrl/ai/university/view'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'universityName': uni.name,
+          'programName': uni.programName,
+          'location': uni.location,
+        }),
+      );
+    } catch (e) {
+      print('Error tracking university view: $e');
+    }
   }
 }

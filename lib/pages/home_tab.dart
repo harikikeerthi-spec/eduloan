@@ -15,6 +15,7 @@ import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
 import '../services/wikipedia_service.dart';
 import 'ai_tools/university_detail_page.dart';
+import 'ai_tools/visa_interview_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -1326,13 +1327,10 @@ class HomeTabState extends State<HomeTab> {
                 primaryIcon: Icons.credit_card,
                 bgColor: const Color(0xFFEEF2FF),
                 iconColor: const Color(0xFF6366F1),
-                topTrailing: const Text(
-                  'US',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFC7D2FE),
-                  ),
+                topTrailing: const Icon(
+                  Icons.credit_score,
+                  size: 36,
+                  color: Color(0xFFC7D2FE),
                 ),
                 width: 220,
               ),
@@ -1344,13 +1342,10 @@ class HomeTabState extends State<HomeTab> {
                 primaryIcon: Icons.account_balance_wallet,
                 bgColor: const Color(0xFFFFFBEB),
                 iconColor: const Color(0xFFD97706),
-                topTrailing: const Text(
-                  'DE',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFFDE68A),
-                  ),
+                topTrailing: const Icon(
+                  Icons.euro,
+                  size: 36,
+                  color: Color(0xFFFDE68A),
                 ),
                 width: 220,
               ),
@@ -1377,13 +1372,10 @@ class HomeTabState extends State<HomeTab> {
                 primaryIcon: Icons.account_balance,
                 bgColor: const Color(0xFFF5F3FF),
                 iconColor: const Color(0xFF8B5CF6),
-                topTrailing: const Text(
-                  'GB',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFDDD6FE),
-                  ),
+                topTrailing: const Icon(
+                  Icons.currency_pound,
+                  size: 36,
+                  color: Color(0xFFDDD6FE),
                 ),
                 width: 220,
               ),
@@ -1400,6 +1392,14 @@ class HomeTabState extends State<HomeTab> {
                   color: Color(0xFFBBF7D0),
                 ),
                 width: 220,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const VisaInterviewPage(),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -1434,59 +1434,63 @@ class HomeTabState extends State<HomeTab> {
     required Color iconColor,
     required Widget topTrailing,
     required double width,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: iconColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(primaryIcon, color: iconColor, size: 24),
                 ),
-                child: Icon(primaryIcon, color: iconColor, size: 24),
+                topTrailing,
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F2937),
               ),
-              topTrailing,
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF4B5563),
-              height: 1.4,
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF4B5563),
+                height: 1.4,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1498,60 +1502,64 @@ class HomeTabState extends State<HomeTab> {
     required Color bgColor,
     required Color iconColor,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(primaryIcon, color: iconColor, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF4B5563),
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(primaryIcon, color: iconColor, size: 28),
             ),
-          ),
-          const SizedBox(width: 16),
-          trailing,
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF4B5563),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            trailing,
+          ],
+        ),
       ),
     );
   }

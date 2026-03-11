@@ -29,6 +29,7 @@
     "@types/nodemailer": "^7.0.5",
     "cache-manager": "^7.2.8",
     "dotenv": "^17.2.3",
+    "jimp": "^0.22.10",
     "nodemailer": "^7.0.12",
     "prisma": "^5.22.0",
     "reflect-metadata": "^0.2.2",
