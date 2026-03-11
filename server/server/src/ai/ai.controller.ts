@@ -7,6 +7,7 @@ import { UniversityComparisonService } from './services/university-comparison.se
 import { AdmitPredictorService } from './services/admit-predictor.service';
 import { UniversityShortlistService } from './services/university-shortlist.service';
 import { VisaInterviewService, InterviewMessage, EvaluationResult } from './services/visa-interview.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('ai')
 export class AiController {
@@ -21,6 +22,7 @@ export class AiController {
     private readonly admitPredictorService: AdmitPredictorService,
     private readonly universityShortlistService: UniversityShortlistService,
     private readonly visaInterviewService: VisaInterviewService,
+    private readonly prisma: PrismaService,
   ) { }
 
   @Post('eligibility-check')
@@ -35,6 +37,7 @@ export class AiController {
       study: 'undergrad' | 'masters' | 'doctoral' | 'diploma';
       coApplicant: 'yes' | 'no';
       collateral: 'yes' | 'no';
+      userId?: string;
     },
   ) {
     const eligibilityResult = await this.eligibilityService.calculateEligibilityScore(data);
@@ -48,6 +51,28 @@ export class AiController {
       data.collateral,
       data.study,
     );
+    
+    // Save Usage
+    try {
+      await this.prisma.aiEligibilityCheck.create({
+        data: {
+          userId: data.userId || null,
+          profileData: { age: data.age, credit: data.credit, income: data.income, loan: data.loan, employment: data.employment, study: data.study, coApplicant: data.coApplicant, collateral: data.collateral },
+          eligibilityScore: eligibilityResult.score,
+          eligibilityRatio: eligibilityResult.ratio,
+        }
+      });
+      await this.prisma.aiLoanRecommendation.create({
+        data: {
+          userId: data.userId || null,
+          eligibilityScore: eligibilityResult.score,
+          requestedAmount: data.loan,
+          recommendations: loanRecommendations as any,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save AI Tracking: ${e.message}`);
+    }
 
     return {
       success: true,
@@ -62,10 +87,24 @@ export class AiController {
     data: {
       text?: string;
       sop?: string;
+      userId?: string;
     },
   ) {
     const sopText = data.text || data.sop || '';
     const result = await this.sopAnalysisService.analyzeSop(sopText);
+    
+    try {
+      await this.prisma.aiSopAnalysis.create({
+        data: {
+          userId: data.userId || null,
+          originalText: sopText,
+          analysisResult: result as any,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save SOP Tracking: ${e.message}`);
+    }
+    
     return {
       success: true,
       analysis: result,
@@ -77,9 +116,23 @@ export class AiController {
     @Body()
     data: {
       text: string;
+      userId?: string;
     },
   ) {
     const result = await this.sopAnalysisService.humanizeSop(data.text);
+    
+    try {
+      await this.prisma.aiSopAnalysis.create({
+        data: {
+          userId: data.userId || null,
+          originalText: data.text,
+          humanizedText: result.humanizedText,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save Humanize SOP Tracking: ${e.message}`);
+    }
+
     return {
       success: true,
       ...result,
@@ -95,9 +148,26 @@ export class AiController {
       totalMarks?: number;
       outputType: 'letterGrade' | 'percentage' | 'gpa' | 'cgpa';
       gradingSystem?: 'US' | 'UK' | 'India' | 'Canada' | 'Australia';
+      userId?: string;
     },
   ): Promise<any> {
     const result = await this.gradeConversionService.convertGrade(data);
+    
+    try {
+      await this.prisma.aiGradeConversion.create({
+        data: {
+          userId: data.userId || null,
+          inputType: data.inputType,
+          inputValue: data.inputValue.toString(),
+          outputType: data.outputType,
+          gradingSystem: data.gradingSystem,
+          conversionResult: result as any,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save Grade Conv Tracking: ${e.message}`);
+    }
+    
     return {
       success: true,
       gradeConversion: result,
@@ -184,6 +254,7 @@ export class AiController {
       uni2: string;
       program1?: string;
       program2?: string;
+      userId?: string;
     },
   ) {
     const result = await this.universityComparisonService.compare(
@@ -192,6 +263,22 @@ export class AiController {
       data.program1,
       data.program2
     );
+    
+    try {
+      await this.prisma.aiUniversityComparison.create({
+        data: {
+          userId: data.userId || null,
+          university1: data.uni1,
+          university2: data.uni2,
+          program1: data.program1,
+          program2: data.program2,
+          comparisonResult: result as any,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save Uni Compare Tracking: ${e.message}`);
+    }
+
     return {
       success: true,
       data: result,
@@ -200,7 +287,23 @@ export class AiController {
 
   @Post('predict-admission')
   async predictAdmission(@Body() body: any) {
+    const userId = body.userId;
+    delete body.userId; // Optionally remove so it doesn't interfere, or keep it.
+    
     const result = await this.admitPredictorService.predict(body);
+    
+    try {
+      await this.prisma.aiAdmitPrediction.create({
+        data: {
+          userId: userId || null,
+          profileData: body,
+          predictions: result as any,
+        }
+      });
+    } catch (e) {
+      this.logger.error(`Failed to save Admit Predict Tracking: ${e.message}`);
+    }
+
     return {
       success: true,
       prediction: result
@@ -380,6 +483,8 @@ export class AiController {
   async getVisaFinalReport(
     @Body()
     data: {
+      userId?: string;
+      studentProfile?: Record<string, any>;
       visaType?: string;
       conversationHistory: InterviewMessage[];
       evaluations: EvaluationResult[];
@@ -391,6 +496,22 @@ export class AiController {
         data.conversationHistory || [],
         data.evaluations || [],
       );
+      
+      try {
+        await this.prisma.aiVisaInterview.create({
+          data: {
+            userId: data.userId || null,
+            visaType: data.visaType || 'F1 Student Visa',
+            studentProfile: data.studentProfile || {},
+            transcript: data.conversationHistory as any,
+            finalScore: report.overallScore,
+            evaluation: report as any,
+          }
+        });
+      } catch (e) {
+        this.logger.error(`Failed to save Visa Interview Tracking: ${e.message}`);
+      }
+
       return { success: true, report };
     } catch (error) {
       console.error('Final report generation failed:', error);

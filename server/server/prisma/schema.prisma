@@ -58,6 +58,15 @@ model User {
   shortlistChats        UniversityShortlistChat[]
   favorites             UniversityFavorite[]
   views                 UniversityView[]
+  
+  // AI Tool Usage History
+  aiEligibilityChecks   AiEligibilityCheck[]
+  aiLoanRecommendations AiLoanRecommendation[]
+  aiSopAnalyses         AiSopAnalysis[]
+  aiGradeConversions    AiGradeConversion[]
+  aiUniversityCompares  AiUniversityComparison[]
+  aiAdmitPredictions    AiAdmitPrediction[]
+  aiVisaInterviews      AiVisaInterview[]
 }
 
 model AdminProfile {
@@ -929,5 +938,122 @@ model UniversityView {
 
   @@index([userId])
   @@index([universityName])
+  @@index([createdAt])
+}
+
+// ==================== AI TOOL USAGE TRACKING ====================
+
+model AiEligibilityCheck {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  profileData     Json     // Age, credit, income, loan amount, employment, study level, etc.
+  eligibilityScore Float
+  eligibilityRatio Float
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiLoanRecommendation {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  eligibilityScore Float
+  requestedAmount  Float?
+  recommendations Json     // Array of recommended loans
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiSopAnalysis {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  originalText    String   @db.Text
+  analysisResult  Json?    // Word count, readability, grammar issues, sentiment, suggestions
+  humanizedText   String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiGradeConversion {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  inputType       String   // letterGrade, percentage, gpa, cgpa, marks
+  inputValue      String
+  outputType      String
+  gradingSystem   String?  // US, UK, India, Canada, Australia
+  
+  conversionResult Json    // percentage, letterGrade, classification, internationalEquivalent, analysis, marksBreakdown
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiUniversityComparison {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  university1     String
+  university2     String
+  program1        String?
+  program2        String?
+  
+  comparisonResult Json    // Rankings, Tuition, Acceptance Rate, Pros/Cons, Verdict, etc.
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiAdmitPrediction {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  profileData     Json     // Target degrees, GPA, test scores, work experience, etc.
+  predictions     Json     // Array of target universities with chance of admission (Safe, Reach, etc.)
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AiVisaInterview {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  visaType        String   // F-1 USA, Tier 4 UK, etc.
+  studentProfile  Json     // Extracted profile details
+  transcript      Json     // Array of chat messages [ { role: 'ai'|'user', message: '...' } ]
+  
+  finalScore      Float?
+  evaluation      Json?    // Category scores, strengths, weaknesses, overall feedback
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
   @@index([createdAt])
 }
