@@ -8,6 +8,8 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../widgets/kyc_modal.dart';
+import '../document_vault_page.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   const UniversityShortlistingPage({super.key});
@@ -246,7 +248,9 @@ class _UniversityShortlistingPageState
 
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('userId');
-      final List<Map<String, String>> chatMessages = _messages.map((m) => m.toJson()).toList();
+      final List<Map<String, String>> chatMessages = _messages
+          .map((m) => m.toJson())
+          .toList();
 
       ShortlistResult result;
       if (_activeFlow == 'evaluate') {
@@ -1783,10 +1787,7 @@ class ShortlistMessage {
   }
 
   Map<String, String> toJson() {
-    return {
-      'role': isUser ? 'user' : 'bot',
-      'content': text,
-    };
+    return {'role': isUser ? 'user' : 'bot', 'content': text};
   }
 }
 
@@ -3747,13 +3748,15 @@ class _LoanResults extends StatelessWidget {
   Widget build(BuildContext context) {
     bool isLocked = admitStatus != 'Yet to Apply';
 
-    if (!hasBids) {
+    if (!hasBids || admitStatus != 'Yet to Apply') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "We have no bids for your education loan.",
-            style: TextStyle(fontSize: 16, color: Colors.black87),
+          Text(
+            !hasBids
+                ? "We have no bids for your education loan."
+                : "Based on your admit status, please connect with our experts.",
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
           ),
           const SizedBox(height: 24),
           RichText(
@@ -3764,8 +3767,10 @@ class _LoanResults extends StatelessWidget {
                 height: 1.5,
               ),
               children: [
-                const TextSpan(
-                  text: "But don't lose hope. You might still be eligible. ",
+                TextSpan(
+                  text: !hasBids
+                      ? "But don't lose hope. You might still be eligible. "
+                      : "To proceed further with your application, ",
                 ),
                 TextSpan(
                   text:
@@ -3904,16 +3909,76 @@ class _LoanResults extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (isLocked)
-          RichText(
-            text: const TextSpan(
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3E8FF), // Light purple
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE9D5FF)),
+            ),
+            child: Row(
               children: [
-                TextSpan(text: "Once you complete your KYC, you'll get "),
-                TextSpan(
-                  text: "50% off on loan processing fees.",
-                  style: TextStyle(
-                    color: Color(0xFF6A1B9A),
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.verified_user_outlined,
+                    color: Color(0xFF7E22CE),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Complete your KYC',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Get 50% off on processing fees',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: const Color(0xFF1F2937).withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => KycModal(
+                        onManualUpload: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DocumentVaultPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF7E22CE),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: const Text(
+                    'Verify Now',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -3935,23 +4000,25 @@ class _LoanResults extends StatelessWidget {
               ],
             ),
           ),
-        const SizedBox(height: 24),
-        ElevatedButton(
-          onPressed: onAction,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6A1B9A),
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+        if (!isLocked) ...[
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: onAction,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6A1B9A),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 54),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
             ),
-            elevation: 0,
+            child: const Text(
+              "Check your offers",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
           ),
-          child: Text(
-            isLocked ? "Complete my KYC" : "Check your offers",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ),
+        ],
       ],
     );
   }
