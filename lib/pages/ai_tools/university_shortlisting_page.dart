@@ -271,7 +271,7 @@ class _UniversityShortlistingPageState
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('userId');
       final List<Map<String, String>> chatMessages = _messages
-          .map((m) => m.toJson())
+          .map((m) => m.toApiJson())
           .toList();
 
       ShortlistResult result;
@@ -297,13 +297,18 @@ class _UniversityShortlistingPageState
             result.recommendations.map((uni) => uni.toJson()).toList(),
           );
           
+          
           // Store both in general and specific slot
           await prefs.setString('latest_ai_recommendations', recommendationsJson);
           
+          final String chatJson = jsonEncode(_messages.map((m) => m.toJson()).toList());
+          
           if (_activeFlow == 'evaluate') {
             await prefs.setString('latest_evaluate_recommendations', recommendationsJson);
+            await prefs.setString('latest_evaluate_chat', chatJson);
           } else if (_activeFlow == 'masters') {
             await prefs.setString('latest_masters_recommendations', recommendationsJson);
+            await prefs.setString('latest_masters_chat', chatJson);
           }
         } catch (e) {
           debugPrint('Failed to cache recommendations: $e');
@@ -528,9 +533,22 @@ class _UniversityShortlistingPageState
                     _addAiMessage("Loading your last Master's recommendations...");
                     final List<dynamic> data = jsonDecode(cached);
                     final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
-                    setState(() {
-                      _flow = 'completed';
-                    });
+                    
+                    // Also restore chat messages if available
+                    final String? chatCached = prefs.getString('latest_masters_chat');
+                    if (chatCached != null) {
+                      final List<dynamic> chatData = jsonDecode(chatCached);
+                      setState(() {
+                        _messages.clear();
+                        _messages.addAll(chatData.map((m) => ShortlistMessage.fromJson(m)).toList());
+                        _flow = 'completed';
+                      });
+                    } else {
+                      setState(() {
+                        _flow = 'completed';
+                      });
+                    }
+                    
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -578,9 +596,22 @@ class _UniversityShortlistingPageState
                     _addAiMessage("Loading your last evaluations...");
                     final List<dynamic> data = jsonDecode(cached);
                     final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
-                    setState(() {
-                      _flow = 'completed';
-                    });
+                    
+                    // Also restore chat messages if available
+                    final String? chatCached = prefs.getString('latest_evaluate_chat');
+                    if (chatCached != null) {
+                      final List<dynamic> chatData = jsonDecode(chatCached);
+                      setState(() {
+                        _messages.clear();
+                        _messages.addAll(chatData.map((m) => ShortlistMessage.fromJson(m)).toList());
+                        _flow = 'completed';
+                      });
+                    } else {
+                      setState(() {
+                        _flow = 'completed';
+                      });
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -1917,7 +1948,27 @@ class ShortlistMessage {
     }
   }
 
-  Map<String, String> toJson() {
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'isUser': isUser,
+      'isHeader': isHeader,
+      'flowState': flowState,
+      'isDoneAnimating': isDoneAnimating,
+    };
+  }
+
+  factory ShortlistMessage.fromJson(Map<String, dynamic> json) {
+    return ShortlistMessage(
+      text: json['text'] ?? '',
+      isUser: json['isUser'] ?? false,
+      isHeader: json['isHeader'] ?? false,
+      flowState: json['flowState'],
+      isDoneAnimating: json['isDoneAnimating'] ?? true,
+    );
+  }
+
+  Map<String, String> toApiJson() {
     return {'role': isUser ? 'user' : 'bot', 'content': text};
   }
 }
