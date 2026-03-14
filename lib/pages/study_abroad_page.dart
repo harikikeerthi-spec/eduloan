@@ -52,6 +52,26 @@ class StudyAbroadPage extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildMenuCard(
                         context,
+                        title: 'AI Recommendations',
+                        subtitle: 'Smart suggestions by ',
+                        subtitleSuffix: 'AI 🚀',
+                        icon: Icons.auto_awesome_outlined,
+                        gradientText: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const UniversityShortlistingPage(
+                                    initialFlow: 'recommendations',
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildMenuCard(
+                        context,
                         title: 'Visa Interview Simulator',
                         subtitle: 'Practice with our ',
                         subtitleSuffix: 'AI Visa Officer 🛂',

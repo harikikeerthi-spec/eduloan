@@ -12,7 +12,8 @@ import '../../widgets/kyc_modal.dart';
 import '../document_vault_page.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
-  const UniversityShortlistingPage({super.key});
+  final String? initialFlow;
+  const UniversityShortlistingPage({super.key, this.initialFlow});
 
   @override
   State<UniversityShortlistingPage> createState() =>
@@ -54,13 +55,34 @@ class _UniversityShortlistingPageState
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 500), () {
+    if (widget.initialFlow == 'recommendations') {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _startRecommendationsFlow();
+      });
+    } else {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _addAiMessage(
+          'Looking for answers to your studies abroad questions?',
+          isHeader: true,
+        );
+        Future.delayed(const Duration(milliseconds: 800), () {
+          _addAiMessage('How can we support you today?');
+        });
+      });
+    }
+  }
+
+  void _startRecommendationsFlow() {
+    _addAiMessage(
+      'Get your personal study abroad recommendations ✨',
+      isHeader: true,
+    );
+    Future.delayed(const Duration(milliseconds: 800), () {
       _addAiMessage(
-        'Looking for answers to your studies abroad questions?',
-        isHeader: true,
+        "I'd love to help you find the best path. Are you planning for a Bachelor's or a Master's degree?",
       );
-      Future.delayed(const Duration(milliseconds: 800), () {
-        _addAiMessage('How can we support you today?');
+      setState(() {
+        _flow = 'recommendations_type';
       });
     });
   }
@@ -471,7 +493,65 @@ class _UniversityShortlistingPageState
   }
 
   Widget _buildInteractionArea() {
-    if (_flow == 'initial') {
+    if (_flow == 'recommendations_type') {
+      return Row(
+        children: [
+          Expanded(
+            child: _OptionCard(
+              icon: Icons.school_outlined,
+              text: "Bachelor's degree",
+              color: Colors.blue,
+              isSmall: true,
+              onTap: () {
+                _activeFlow = 'bachelors';
+                setState(() {
+                  _messages.add(
+                    ShortlistMessage(
+                      text: "Bachelor's degree",
+                      isUser: true,
+                      flowState: 'recommendations_type',
+                    ),
+                  );
+                  _flow = 'processing';
+                });
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  _addAiMessage(
+                    "Great! Which country are you targeting for your Bachelor's?",
+                  );
+                  setState(() => _flow = 'masters_country');
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _OptionCard(
+              icon: Icons.workspace_premium_outlined,
+              text: "Master's degree",
+              color: Colors.purple,
+              isSmall: true,
+              onTap: () {
+                _activeFlow = 'masters';
+                setState(() {
+                  _messages.add(
+                    ShortlistMessage(
+                      text: "Master's degree",
+                      isUser: true,
+                      flowState: 'recommendations_type',
+                    ),
+                  );
+                  _flow = 'processing';
+                });
+                Future.delayed(const Duration(milliseconds: 1000), () {
+                  _addAiMessage("Alright! Which country do you want to study in?");
+                  setState(() => _flow = 'masters_country');
+                });
+              },
+            ),
+          ),
+        ],
+      );
+    } else if (_flow == 'initial') {
       return Column(
         children: [
           const SizedBox(height: 20),
