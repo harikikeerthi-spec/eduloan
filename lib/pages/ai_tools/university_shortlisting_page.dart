@@ -74,15 +74,15 @@ class _UniversityShortlistingPageState
 
   void _startRecommendationsFlow() {
     _addAiMessage(
-      'Get your personal study abroad recommendations ✨',
+      'AI Recommendations ✨',
       isHeader: true,
     );
     Future.delayed(const Duration(milliseconds: 800), () {
       _addAiMessage(
-        "I'd love to help you find the best path. Are you planning for a Bachelor's or a Master's degree?",
+        "Welcome back! I can show you recommendations based on our last chat. What would you like to see?",
       );
       setState(() {
-        _flow = 'recommendations_type';
+        _flow = 'recommendations_menu';
       });
     });
   }
@@ -296,10 +296,15 @@ class _UniversityShortlistingPageState
           final String recommendationsJson = jsonEncode(
             result.recommendations.map((uni) => uni.toJson()).toList(),
           );
-          await prefs.setString(
-            'latest_ai_recommendations',
-            recommendationsJson,
-          );
+          
+          // Store both in general and specific slot
+          await prefs.setString('latest_ai_recommendations', recommendationsJson);
+          
+          if (_activeFlow == 'evaluate') {
+            await prefs.setString('latest_evaluate_recommendations', recommendationsJson);
+          } else if (_activeFlow == 'masters') {
+            await prefs.setString('latest_masters_recommendations', recommendationsJson);
+          }
         } catch (e) {
           debugPrint('Failed to cache recommendations: $e');
         }
@@ -493,65 +498,111 @@ class _UniversityShortlistingPageState
   }
 
   Widget _buildInteractionArea() {
-    if (_flow == 'recommendations_type') {
+    if (_flow == 'recommendations_menu') {
       return Row(
         children: [
           Expanded(
             child: _OptionCard(
               icon: Icons.school_outlined,
-              text: "Bachelor's degree",
-              color: Colors.blue,
+              text: "Master's plan universities",
+              color: Colors.purple,
               isSmall: true,
-              onTap: () {
-                _activeFlow = 'bachelors';
+              onTap: () async {
+                _activeFlow = 'masters';
                 setState(() {
                   _messages.add(
                     ShortlistMessage(
-                      text: "Bachelor's degree",
+                      text: "Master's plan universities",
                       isUser: true,
-                      flowState: 'recommendations_type',
+                      flowState: 'recommendations_menu',
                     ),
                   );
                   _flow = 'processing';
                 });
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  _addAiMessage(
-                    "Great! Which country are you targeting for your Bachelor's?",
-                  );
-                  setState(() => _flow = 'masters_country');
-                });
+
+                final prefs = await SharedPreferences.getInstance();
+                final cached = prefs.getString('latest_masters_recommendations');
+                
+                if (cached != null) {
+                  Future.delayed(const Duration(milliseconds: 1000), () {
+                    _addAiMessage("Loading your last Master's recommendations...");
+                    final List<dynamic> data = jsonDecode(cached);
+                    final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
+                    setState(() {
+                      _flow = 'completed';
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UniversityResultsPage(recommendations: recs),
+                      ),
+                    );
+                  });
+                } else {
+                  Future.delayed(const Duration(milliseconds: 1000), () {
+                    _addAiMessage("I don't have any previous data for your Master's plan. Let's start fresh!");
+                    Future.delayed(const Duration(milliseconds: 800), () {
+                      _addAiMessage("Which country do you want to study in?");
+                      setState(() => _flow = 'masters_country');
+                    });
+                  });
+                }
               },
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: _OptionCard(
-              icon: Icons.workspace_premium_outlined,
-              text: "Master's degree",
-              color: Colors.purple,
+              icon: Icons.评估_outlined,
+              text: "Evaluate universities",
+              color: Colors.orange,
               isSmall: true,
-              onTap: () {
-                _activeFlow = 'masters';
+              onTap: () async {
+                _activeFlow = 'evaluate';
                 setState(() {
                   _messages.add(
                     ShortlistMessage(
-                      text: "Master's degree",
+                      text: "Evaluate universities",
                       isUser: true,
-                      flowState: 'recommendations_type',
+                      flowState: 'recommendations_menu',
                     ),
                   );
                   _flow = 'processing';
                 });
-                Future.delayed(const Duration(milliseconds: 1000), () {
-                  _addAiMessage("Alright! Which country do you want to study in?");
-                  setState(() => _flow = 'masters_country');
-                });
+
+                final prefs = await SharedPreferences.getInstance();
+                final cached = prefs.getString('latest_evaluate_recommendations');
+
+                if (cached != null) {
+                  Future.delayed(const Duration(milliseconds: 1000), () {
+                    _addAiMessage("Loading your last evaluations...");
+                    final List<dynamic> data = jsonDecode(cached);
+                    final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
+                    setState(() {
+                      _flow = 'completed';
+                    });
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UniversityResultsPage(recommendations: recs),
+                      ),
+                    );
+                  });
+                } else {
+                  Future.delayed(const Duration(milliseconds: 1000), () {
+                    _addAiMessage("No previous evaluations found. Let's start a new evaluation!");
+                    Future.delayed(const Duration(milliseconds: 800), () {
+                      _addAiMessage("Which university would you like to evaluate first?");
+                      setState(() => _flow = 'evaluate_uni_search');
+                    });
+                  });
+                }
               },
             ),
           ),
         ],
       );
-    } else if (_flow == 'initial') {
+    } else if (_flow == 'recommendations_type') {
       return Column(
         children: [
           const SizedBox(height: 20),
