@@ -553,7 +553,7 @@ class _UniversityShortlistingPageState
           const SizedBox(width: 12),
           Expanded(
             child: _OptionCard(
-              icon: Icons.评估_outlined,
+              icon: Icons.analytics_outlined,
               text: "Evaluate universities",
               color: Colors.orange,
               isSmall: true,
