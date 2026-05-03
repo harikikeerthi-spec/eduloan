@@ -88,6 +88,7 @@ class HomeTabState extends State<HomeTab> {
     });
     _loadRecommendations();
     _loadSavedRecommendations();
+    _loadActiveLoans();
   }
 
   Future<void> _loadSavedRecommendations() async {
@@ -103,7 +104,18 @@ class HomeTabState extends State<HomeTab> {
     _loadSavedRecommendations(); // Load saved in parallel
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? cachedRecs = prefs.getString('latest_ai_recommendations');
+      final String? userId = prefs.getString('userId');
+      String? cachedRecs = prefs.getString('latest_ai_recommendations');
+
+      if ((cachedRecs == null || cachedRecs.isEmpty) && userId != null) {
+        // Try fetching from backend
+        final backendRecs = await _aiService.getSavedAiRecommendations(userId);
+        if (backendRecs.isNotEmpty) {
+          cachedRecs = jsonEncode(backendRecs.map((e) => e.toJson()).toList());
+          await prefs.setString('latest_ai_recommendations', cachedRecs);
+        }
+      }
+
       if (cachedRecs != null && cachedRecs.isNotEmpty) {
         final List<dynamic> decoded = jsonDecode(cachedRecs);
         if (mounted) {
@@ -229,10 +241,20 @@ class HomeTabState extends State<HomeTab> {
                           Row(
                             children: [
                               const SizedBox(width: 16),
-                              const Icon(
-                                Icons.notifications_outlined,
-                                color: Colors.black54,
-                                size: 28,
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/notifications');
+                                },
+                                icon: const Badge(
+                                  label: Text('3'),
+                                  child: Icon(
+                                    Icons.notifications_outlined,
+                                    color: Colors.black54,
+                                    size: 28,
+                                  ),
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                               ),
                             ],
                           ),
@@ -324,7 +346,7 @@ class HomeTabState extends State<HomeTab> {
                       child: Row(
                         children: [
                           _buildActionCard(
-                            icon: Icons.add_circle_outline,
+                            imagePath: 'assets/icons/3d/apply_loan.png',
                             title: 'Apply for Loan',
                             description: 'New application',
                             color: const Color(0xFF10B981),
@@ -339,7 +361,7 @@ class HomeTabState extends State<HomeTab> {
                           ),
                           const SizedBox(width: 16),
                           _buildActionCard(
-                            icon: Icons.calculate_outlined,
+                            imagePath: 'assets/icons/3d/emi_calculator.png',
                             title: 'EMI Cal',
                             description: 'Check EMI',
                             color: const Color(0xFFF59E0B),
@@ -355,7 +377,7 @@ class HomeTabState extends State<HomeTab> {
                           ),
                           const SizedBox(width: 16),
                           _buildActionCard(
-                            icon: Icons.school_outlined,
+                            imagePath: 'assets/icons/3d_community/resources.png',
                             title: 'Resources',
                             description: 'Courses & Institutes',
                             color: const Color(0xFF311B92),
@@ -572,7 +594,7 @@ class HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
+    required String imagePath,
     required String title,
     required String description,
     required Color color,
@@ -599,13 +621,13 @@ class HomeTabState extends State<HomeTab> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Icon(icon, color: color, size: 28),
+              child: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.contain),
             ),
             const SizedBox(height: 16),
             Text(

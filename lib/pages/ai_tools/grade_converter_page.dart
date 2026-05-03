@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/mesh_background.dart';
 import '../../services/ai_logic_service.dart';
 import '../../widgets/primary_button.dart';
 
@@ -76,9 +77,10 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
@@ -93,148 +95,153 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            if (_result != null) _buildResultSection(),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Input Details",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildDropdown(
-                      "Input Type",
-                      _inputType,
-                      const [
-                        DropdownMenuItem(
-                          value: 'percentage',
-                          child: Text('Percentage'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'marks',
-                          child: Text('Marks (x/y)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'gpa',
-                          child: Text('GPA (4.0)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'cgpa',
-                          child: Text('CGPA (10.0)'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'letterGrade',
-                          child: Text('Letter Grade (A, B+)'),
-                        ),
-                      ],
-                      (val) => setState(() => _inputType = val!),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _valueController,
-                      decoration: InputDecoration(
-                        hintText: _inputType == 'letterGrade'
-                            ? "e.g. A+"
-                            : "e.g. 85",
-                        labelText: "Input Value",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFFF9FAFB),
-                      ),
-                      keyboardType: _inputType == 'letterGrade'
-                          ? TextInputType.text
-                          : const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                      onChanged: (val) {
-                        if (_inputType == 'letterGrade' && val.isNotEmpty) {
-                          final upper = val.toUpperCase();
-                          if (upper != val) {
-                            _valueController.value = _valueController.value
-                                .copyWith(
-                                  text: upper,
-                                  selection: TextSelection.collapsed(
-                                    offset: upper.length,
-                                  ),
-                                );
-                          }
-                        }
-                      },
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Required';
-                        if (_inputType == 'letterGrade') {
-                          if (double.tryParse(v) != null) {
-                            return 'Enter a letter grade';
-                          }
-                        } else {
-                          if (double.tryParse(v) == null) {
-                            return 'Enter a valid number';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                    if (_inputType == 'marks') ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _totalMarksController,
-                        decoration: InputDecoration(
-                          hintText: "e.g. 100",
-                          labelText: "Total Marks",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                        ),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Required';
-                          if (double.tryParse(v) == null) {
-                            return 'Enter a valid number';
-                          }
-                          return null;
-                        },
+      body: MeshBackground(
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 72, 24, 24),
+            child: Column(
+              children: [
+                if (_result != null) _buildResultSection(),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
                       ),
                     ],
-                    const SizedBox(height: 32),
-                    PrimaryButton(
-                      text: 'Analyze Grades',
-                      onPressed: _analyzeGrades,
-                      isLoading: _isLoading,
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Input Details",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildDropdown(
+                          "Input Type",
+                          _inputType,
+                          const [
+                            DropdownMenuItem(
+                              value: 'percentage',
+                              child: Text('Percentage'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'marks',
+                              child: Text('Marks (x/y)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'gpa',
+                              child: Text('GPA (4.0)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'cgpa',
+                              child: Text('CGPA (10.0)'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'letterGrade',
+                              child: Text('Letter Grade (A, B+)'),
+                            ),
+                          ],
+                          (val) => setState(() => _inputType = val!),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _valueController,
+                          decoration: InputDecoration(
+                            hintText: _inputType == 'letterGrade'
+                                ? "e.g. A+"
+                                : "e.g. 85",
+                            labelText: "Input Value",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFF9FAFB),
+                          ),
+                          keyboardType: _inputType == 'letterGrade'
+                              ? TextInputType.text
+                              : const TextInputType.numberWithOptions(
+                                  decimal: true,
+                                ),
+                          onChanged: (val) {
+                            if (_inputType == 'letterGrade' && val.isNotEmpty) {
+                              final upper = val.toUpperCase();
+                              if (upper != val) {
+                                _valueController.value = _valueController.value
+                                    .copyWith(
+                                      text: upper,
+                                      selection: TextSelection.collapsed(
+                                        offset: upper.length,
+                                      ),
+                                    );
+                              }
+                            }
+                          },
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Required';
+                            if (_inputType == 'letterGrade') {
+                              if (double.tryParse(v) != null) {
+                                return 'Enter a letter grade';
+                              }
+                            } else {
+                              if (double.tryParse(v) == null) {
+                                return 'Enter a valid number';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_inputType == 'marks') ...[
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _totalMarksController,
+                            decoration: InputDecoration(
+                              hintText: "e.g. 100",
+                              labelText: "Total Marks",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFFF9FAFB),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return 'Required';
+                              if (double.tryParse(v) == null) {
+                                return 'Enter a valid number';
+                              }
+                              return null;
+                            },
+                          ),
+                        ],
+                        const SizedBox(height: 32),
+                        PrimaryButton(
+                          text: 'Analyze Grades',
+                          onPressed: _analyzeGrades,
+                          isLoading: _isLoading,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

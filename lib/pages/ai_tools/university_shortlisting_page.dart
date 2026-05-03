@@ -67,19 +67,144 @@ class _UniversityShortlistingPageState
         );
         Future.delayed(const Duration(milliseconds: 800), () {
           _addAiMessage('How can we support you today?');
+          setState(() {
+            _flow = 'recommendations_type';
+          });
         });
       });
     }
   }
 
-  void _startRecommendationsFlow() {
-    _addAiMessage(
-      'AI Recommendations ✨',
-      isHeader: true,
-    );
+  void _startRecommendationsFlow() async {
+    _addAiMessage('AI Recommendations ✨', isHeader: true);
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('userId');
+
+    if (userId != null) {
+      _addAiMessage("Checking for previous recommendations securely...");
+      try {
+        final chatData = await AiLogicService().getLatestShortlistChat(userId);
+        if (chatData != null && mounted) {
+          final recommendationsJson = chatData['recommendations'];
+          final messagesJson = chatData['messages'];
+
+          if (recommendationsJson != null &&
+              (recommendationsJson as List).isNotEmpty) {
+            final recs = (recommendationsJson)
+                .map((json) => UniversityRecommendation.fromJson(json))
+                .toList();
+
+            _addAiMessage("Loading your last recommendations...");
+
+            if (messagesJson != null) {
+              setState(() {
+                _messages.clear();
+                _messages.addAll(
+                  (messagesJson as List)
+                      .map((m) => ShortlistMessage.fromJson(m))
+                      .toList(),
+                );
+                _flow = 'completed';
+              });
+            }
+
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        UniversityResultsPage(recommendations: recs),
+                  ),
+                );
+              }
+            });
+            return; // Exit early if loaded from DB
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to load DB recommendations: $e');
+      }
+    }
+
+    // Check for Master's recommendations first (Primary flow)
+    final mastersCached = prefs.getString('latest_masters_recommendations');
+    if (mastersCached != null && mastersCached != "[]") {
+      final List<dynamic> data = jsonDecode(mastersCached);
+      final recs = data
+          .map((json) => UniversityRecommendation.fromJson(json))
+          .toList();
+
+      if (recs.isNotEmpty) {
+        _addAiMessage("Loading your Master's recommendations...");
+        final String? chatCached = prefs.getString('latest_masters_chat');
+        if (chatCached != null) {
+          final List<dynamic> chatData = jsonDecode(chatCached);
+          setState(() {
+            _messages.clear();
+            _messages.addAll(
+              chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
+            );
+            _flow = 'completed';
+          });
+        }
+
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    UniversityResultsPage(recommendations: recs),
+              ),
+            );
+          }
+        });
+        return;
+      }
+    }
+
+    // Check for Evaluation recommendations
+    final evaluateCached = prefs.getString('latest_evaluate_recommendations');
+    if (evaluateCached != null && evaluateCached != "[]") {
+      final List<dynamic> data = jsonDecode(evaluateCached);
+      final recs = data
+          .map((json) => UniversityRecommendation.fromJson(json))
+          .toList();
+
+      if (recs.isNotEmpty) {
+        _addAiMessage("Loading your last evaluations...");
+        final String? chatCached = prefs.getString('latest_evaluate_chat');
+        if (chatCached != null) {
+          final List<dynamic> chatData = jsonDecode(chatCached);
+          setState(() {
+            _messages.clear();
+            _messages.addAll(
+              chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
+            );
+            _flow = 'completed';
+          });
+        }
+
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    UniversityResultsPage(recommendations: recs),
+              ),
+            );
+          }
+        });
+        return;
+      }
+    }
+
+    // No history found, start fresh
     Future.delayed(const Duration(milliseconds: 800), () {
       _addAiMessage(
-        "Welcome back! I can show you recommendations based on our last chat. What would you like to see?",
+        "Welcome! It looks like we haven't created a plan yet. Let's start fresh!",
       );
       setState(() {
         _flow = 'recommendations_menu';
@@ -296,18 +421,28 @@ class _UniversityShortlistingPageState
           final String recommendationsJson = jsonEncode(
             result.recommendations.map((uni) => uni.toJson()).toList(),
           );
-          
-          
+
           // Store both in general and specific slot
-          await prefs.setString('latest_ai_recommendations', recommendationsJson);
-          
-          final String chatJson = jsonEncode(_messages.map((m) => m.toJson()).toList());
-          
+          await prefs.setString(
+            'latest_ai_recommendations',
+            recommendationsJson,
+          );
+
+          final String chatJson = jsonEncode(
+            _messages.map((m) => m.toJson()).toList(),
+          );
+
           if (_activeFlow == 'evaluate') {
-            await prefs.setString('latest_evaluate_recommendations', recommendationsJson);
+            await prefs.setString(
+              'latest_evaluate_recommendations',
+              recommendationsJson,
+            );
             await prefs.setString('latest_evaluate_chat', chatJson);
           } else if (_activeFlow == 'masters') {
-            await prefs.setString('latest_masters_recommendations', recommendationsJson);
+            await prefs.setString(
+              'latest_masters_recommendations',
+              recommendationsJson,
+            );
             await prefs.setString('latest_masters_chat', chatJson);
           }
         } catch (e) {
@@ -526,21 +661,33 @@ class _UniversityShortlistingPageState
                 });
 
                 final prefs = await SharedPreferences.getInstance();
-                final cached = prefs.getString('latest_masters_recommendations');
-                
+                final cached = prefs.getString(
+                  'latest_masters_recommendations',
+                );
+
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
-                    _addAiMessage("Loading your last Master's recommendations...");
+                    _addAiMessage(
+                      "Loading your last Master's recommendations...",
+                    );
                     final List<dynamic> data = jsonDecode(cached);
-                    final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
-                    
+                    final recs = data
+                        .map((json) => UniversityRecommendation.fromJson(json))
+                        .toList();
+
                     // Also restore chat messages if available
-                    final String? chatCached = prefs.getString('latest_masters_chat');
+                    final String? chatCached = prefs.getString(
+                      'latest_masters_chat',
+                    );
                     if (chatCached != null) {
                       final List<dynamic> chatData = jsonDecode(chatCached);
                       setState(() {
                         _messages.clear();
-                        _messages.addAll(chatData.map((m) => ShortlistMessage.fromJson(m)).toList());
+                        _messages.addAll(
+                          chatData
+                              .map((m) => ShortlistMessage.fromJson(m))
+                              .toList(),
+                        );
                         _flow = 'completed';
                       });
                     } else {
@@ -548,17 +695,20 @@ class _UniversityShortlistingPageState
                         _flow = 'completed';
                       });
                     }
-                    
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => UniversityResultsPage(recommendations: recs),
+                        builder: (context) =>
+                            UniversityResultsPage(recommendations: recs),
                       ),
                     );
                   });
                 } else {
                   Future.delayed(const Duration(milliseconds: 1000), () {
-                    _addAiMessage("I don't have any previous data for your Master's plan. Let's start fresh!");
+                    _addAiMessage(
+                      "I don't have any previous data for your Master's plan. Let's start fresh!",
+                    );
                     Future.delayed(const Duration(milliseconds: 800), () {
                       _addAiMessage("Which country do you want to study in?");
                       setState(() => _flow = 'masters_country');
@@ -589,21 +739,31 @@ class _UniversityShortlistingPageState
                 });
 
                 final prefs = await SharedPreferences.getInstance();
-                final cached = prefs.getString('latest_evaluate_recommendations');
+                final cached = prefs.getString(
+                  'latest_evaluate_recommendations',
+                );
 
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
                     _addAiMessage("Loading your last evaluations...");
                     final List<dynamic> data = jsonDecode(cached);
-                    final recs = data.map((json) => UniversityRecommendation.fromJson(json)).toList();
-                    
+                    final recs = data
+                        .map((json) => UniversityRecommendation.fromJson(json))
+                        .toList();
+
                     // Also restore chat messages if available
-                    final String? chatCached = prefs.getString('latest_evaluate_chat');
+                    final String? chatCached = prefs.getString(
+                      'latest_evaluate_chat',
+                    );
                     if (chatCached != null) {
                       final List<dynamic> chatData = jsonDecode(chatCached);
                       setState(() {
                         _messages.clear();
-                        _messages.addAll(chatData.map((m) => ShortlistMessage.fromJson(m)).toList());
+                        _messages.addAll(
+                          chatData
+                              .map((m) => ShortlistMessage.fromJson(m))
+                              .toList(),
+                        );
                         _flow = 'completed';
                       });
                     } else {
@@ -615,15 +775,20 @@ class _UniversityShortlistingPageState
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => UniversityResultsPage(recommendations: recs),
+                        builder: (context) =>
+                            UniversityResultsPage(recommendations: recs),
                       ),
                     );
                   });
                 } else {
                   Future.delayed(const Duration(milliseconds: 1000), () {
-                    _addAiMessage("No previous evaluations found. Let's start a new evaluation!");
+                    _addAiMessage(
+                      "No previous evaluations found. Let's start a new evaluation!",
+                    );
                     Future.delayed(const Duration(milliseconds: 800), () {
-                      _addAiMessage("Which university would you like to evaluate first?");
+                      _addAiMessage(
+                        "Which university would you like to evaluate first?",
+                      );
                       setState(() => _flow = 'evaluate_uni_search');
                     });
                   });
@@ -835,6 +1000,7 @@ class _UniversityShortlistingPageState
         onSearch: (query) => AiLogicService().searchGlobalUniversities(
           query,
           degree: 'Master\'s',
+          country: _selectedCountry,
         ),
         onSelect: (uni) {
           setState(() {
@@ -1585,6 +1751,7 @@ class _UniversityShortlistingPageState
         onSearch: (query) => AiLogicService().searchGlobalUniversities(
           query,
           degree: _activeFlow == 'bachelors' ? 'Bachelor\'s' : 'Master\'s',
+          country: _selectedCountry,
         ),
         onSelect: (uni) {
           setState(() {
@@ -3911,7 +4078,7 @@ class _CollateralAmountSelectorState extends State<_CollateralAmountSelector> {
   }
 }
 
-class _LoanResults extends StatelessWidget {
+class _LoanResults extends StatefulWidget {
   final bool hasBids;
   final String? admitStatus;
   final String? testStatus;
@@ -3927,15 +4094,23 @@ class _LoanResults extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    bool isLocked = admitStatus != 'Yet to Apply';
+  State<_LoanResults> createState() => _LoanResultsState();
+}
 
-    if (!hasBids || admitStatus != 'Yet to Apply') {
+class _LoanResultsState extends State<_LoanResults> {
+  bool _isRequestingCallback = false;
+  bool _hasRequestedCallback = false;
+
+  @override
+  Widget build(BuildContext context) {
+    bool isLocked = widget.admitStatus != 'Yet to Apply';
+
+    if (!widget.hasBids || widget.admitStatus != 'Yet to Apply') {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            !hasBids
+            !widget.hasBids
                 ? "We have no bids for your education loan."
                 : "Based on your admit status, please connect with our experts.",
             style: const TextStyle(fontSize: 16, color: Colors.black87),
@@ -3950,7 +4125,7 @@ class _LoanResults extends StatelessWidget {
               ),
               children: [
                 TextSpan(
-                  text: !hasBids
+                  text: !widget.hasBids
                       ? "But don't lose hope. You might still be eligible. "
                       : "To proceed further with your application, ",
                 ),
@@ -3968,26 +4143,72 @@ class _LoanResults extends StatelessWidget {
           const SizedBox(height: 32),
           Center(
             child: ElevatedButton.icon(
-              onPressed: () {
-                onAction();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'We received your request, our guidance team will contact you',
+              onPressed: _hasRequestedCallback || _isRequestingCallback
+                  ? null
+                  : () async {
+                      setState(() => _isRequestingCallback = true);
+
+                      final success = await AiLogicService()
+                          .requestUniversityCallback(
+                            'General Loan Inquiry',
+                            type: 'callback',
+                          );
+
+                      if (mounted) {
+                        setState(() {
+                          _isRequestingCallback = false;
+                          if (success) _hasRequestedCallback = true;
+                        });
+                        widget.onAction();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'We received your request, our guidance team will contact you'
+                                  : 'Failed to request callback. Please try again.',
+                            ),
+                            backgroundColor: success
+                                ? Colors.green
+                                : Colors.red,
+                            duration: const Duration(seconds: 3),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+              icon: _isRequestingCallback
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      _hasRequestedCallback
+                          ? Icons.check_circle
+                          : Icons.phone_outlined,
+                      size: 20,
                     ),
-                    duration: Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.phone_outlined, size: 20),
-              label: const Text(
-                "Request a call back",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              label: Text(
+                _hasRequestedCallback
+                    ? "Callback Requested"
+                    : "Request a call back",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6A1B9A),
+                backgroundColor: _hasRequestedCallback
+                    ? Colors.green
+                    : const Color(0xFF6A1B9A),
+                disabledBackgroundColor: _hasRequestedCallback
+                    ? Colors.green.withOpacity(0.7)
+                    : Colors.grey,
                 foregroundColor: Colors.white,
+                disabledForegroundColor: Colors.white,
                 minimumSize: const Size(280, 54),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -4012,19 +4233,21 @@ class _LoanResults extends StatelessWidget {
         const SizedBox(height: 16),
         SizedBox(
           height: 180,
-          child: recommendation != null
+          child: widget.recommendation != null
               ? ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
                     _LenderCard(
                       color: const Color(0xFFE3F2FD),
-                      offer: recommendation!.primary,
+                      offer: widget.recommendation!.primary,
                       isLocked: isLocked,
                     ),
-                    ...recommendation!.alternatives.map(
+                    ...widget.recommendation!.alternatives.map(
                       (offer) => _LenderCard(
                         color:
-                            recommendation!.alternatives.indexOf(offer) % 2 == 0
+                            widget.recommendation!.alternatives.indexOf(offer) %
+                                    2 ==
+                                0
                             ? const Color(0xFFF5F5F5)
                             : const Color(0xFFFFFDE7),
                         offer: offer,
@@ -4185,7 +4408,7 @@ class _LoanResults extends StatelessWidget {
         if (!isLocked) ...[
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: onAction,
+            onPressed: widget.onAction,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6A1B9A),
               foregroundColor: Colors.white,

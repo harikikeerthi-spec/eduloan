@@ -160,16 +160,13 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   const SizedBox(height: 20),
                   // --- Header Section (Outside Card) ---
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.school_rounded,
-                      size: 48,
-                      color: primaryColor,
+                  ClipPath(
+                    clipper: TriangleClipper(),
+                    child: Image.asset(
+                      'assets/images/app_icon_foreground.png',
+                      height: 200,
+                      width: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -475,4 +472,20 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+}
+
+class TriangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    // Points adjusted to match the app_icon_foreground.png actual logo position
+    path.moveTo(size.width * 0.1, size.height * 0.22); // Top left
+    path.lineTo(size.width * 0.9, size.height * 0.22); // Top right
+    path.lineTo(size.width * 0.5, size.height * 0.88); // Bottom tip
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

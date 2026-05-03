@@ -14,14 +14,21 @@ import 'pages/ai_tools/customer_care_bot_page.dart';
 import 'pages/university_compare_page.dart';
 import 'pages/admit_predictor_page.dart';
 import 'pages/sop_writer_page.dart';
+import 'pages/ai_tools/university_shortlisting_page.dart';
 import 'pages/ai_tools/visa_interview_page.dart';
 import 'pages/mentors_page.dart';
 import 'pages/events_page.dart';
 import 'pages/forum_page.dart';
 import 'pages/forum_post_detail_page.dart';
 import 'pages/create_post_page.dart';
+import 'pages/notifications_page.dart';
+
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -82,12 +89,18 @@ class MyApp extends StatelessWidget {
             const UniversityComparePage(), // Added alias for Community Page
         '/ai/admit-predictor': (context) => const AdmitPredictorPage(),
         '/ai/sop-writer': (context) => const SopWriterPage(),
+        '/ai/university-shortlist': (context) =>
+            const UniversityShortlistingPage(),
         '/ai/visa-simulator': (context) => const VisaInterviewPage(),
+        '/master-plan': (context) => const UniversityShortlistingPage(),
+        '/ai/recommendations': (context) =>
+            const UniversityShortlistingPage(initialFlow: 'recommendations'),
         '/community/mentors': (context) => const MentorsPage(),
         '/community/events': (context) => const EventsPage(),
         '/community/forum': (context) => const ForumPage(),
         '/community/forum/create': (context) => const CreatePostPage(),
         '/community/forum/detail': (context) => const ForumPostDetailPage(),
+        '/notifications': (context) => const NotificationsPage(),
       },
     );
   }

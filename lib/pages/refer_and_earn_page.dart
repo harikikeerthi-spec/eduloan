@@ -1,14 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/mesh_background.dart';
+import '../services/auth_service.dart';
 
-class ReferAndEarnPage extends StatelessWidget {
+class ReferAndEarnPage extends StatefulWidget {
   const ReferAndEarnPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const String referralCode = "GRAD50"; // Mock referral code
+  State<ReferAndEarnPage> createState() => _ReferAndEarnPageState();
+}
 
+class _ReferAndEarnPageState extends State<ReferAndEarnPage> {
+  String _referralCode = "GRAD50";
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReferralCode();
+  }
+
+  Future<void> _fetchReferralCode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('user_email');
+      
+      if (email != null) {
+        final result = await AuthService.getUserDashboard(email);
+        if (result['success'] == true && result['user'] != null && result['user']['referralCode'] != null) {
+          setState(() {
+            _referralCode = result['user']['referralCode'];
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching referral code: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: MeshBackground(
         child: SafeArea(
@@ -22,11 +60,15 @@ class ReferAndEarnPage extends StatelessWidget {
                     children: [
                       _buildPromoBanner(),
                       const SizedBox(height: 32),
-                      _buildReferralSection(context, referralCode),
-                      const SizedBox(height: 32),
-                      _buildHowItWorks(),
-                      const SizedBox(height: 40),
-                      _buildInviteButton(context, referralCode),
+                      if (_isLoading)
+                        const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
+                      else ...[
+                        _buildReferralSection(context, _referralCode),
+                        const SizedBox(height: 32),
+                        _buildHowItWorks(),
+                        const SizedBox(height: 40),
+                        _buildInviteButton(context, _referralCode),
+                      ],
                     ],
                   ),
                 ),

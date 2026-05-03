@@ -55,7 +55,7 @@ class BlogService {
       final response = await http.post(
         Uri.parse('$baseUrl/blogs/$blogId/comments'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'content': content, 'authorName': authorName}),
+        body: json.encode({'content': content, 'author': authorName}),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -148,7 +148,7 @@ class BlogService {
       final response = await http.post(
         Uri.parse('$baseUrl/blogs/comments/$commentId/replies'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'authorName': author, 'content': content}),
+        body: jsonEncode({'author': author, 'content': content}),
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {

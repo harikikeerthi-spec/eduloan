@@ -1,0 +1,1 @@
+ C:\\flutter\\projects\\Vidhyaloan\\.dart_tool\\flutter_build\\98fcf090543b5fb362631edefaaf4730\\native_assets.json: 

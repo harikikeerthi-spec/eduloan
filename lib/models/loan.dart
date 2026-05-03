@@ -8,6 +8,7 @@ class Loan {
   final String? phone;
   final String email;
   final String? universityName;
+  final String? targetCountry;
   final String? courseName;
   final String bank;
   final String loanType;
@@ -29,6 +30,7 @@ class Loan {
     this.phone,
     required this.email,
     this.universityName,
+    this.targetCountry,
     this.courseName,
     required this.bank,
     required this.loanType,
@@ -59,6 +61,7 @@ class Loan {
       phone: json['phone'],
       email: json['email']?.toString() ?? '',
       universityName: json['universityName'],
+      targetCountry: json['targetCountry'],
       courseName: json['courseName'],
       bank: json['bank']?.toString() ?? 'Unknown Bank',
       loanType: json['loanType']?.toString() ?? 'Education Loan',
@@ -91,6 +94,7 @@ class Loan {
       'phone': phone,
       'email': email,
       'universityName': universityName,
+      'targetCountry': targetCountry,
       'courseName': courseName,
       'bank': bank,
       'loanType': loanType,

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
 import '../services/auth_service.dart';
@@ -156,28 +157,50 @@ class _ProfilePageState extends State<ProfilePage> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                             ),
-                            child: _profileImage != null
-                                ? Center(
+                            child: Builder(
+                              builder: (context) {
+                                if (_profileImage != null) {
+                                  // Check if it's a custom photo (Base64 string)
+                                  if (_profileImage!.startsWith('data:image/')) {
+                                    try {
+                                      final base64Str = _profileImage!.split(',').last;
+                                      final bytes = base64Decode(base64Str);
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(50),
+                                        child: Image.memory(
+                                          bytes,
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      );
+                                    } catch (e) {
+                                      print('Error decoding base64 image: $e');
+                                    }
+                                  }
+
+                                  // Standard predefined avatar
+                                  final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+                                    (a) => a['name'] == _profileImage,
+                                    orElse: () => AvatarSelectionDialog.avatars[0],
+                                  );
+                                  return Center(
                                     child: Icon(
-                                      AvatarSelectionDialog.avatars.firstWhere(
-                                        (a) => a['name'] == _profileImage,
-                                        orElse: () =>
-                                            AvatarSelectionDialog.avatars[0],
-                                      )['icon'],
+                                      avatarData['icon'],
                                       size: 50,
-                                      color: AvatarSelectionDialog.avatars
-                                          .firstWhere(
-                                            (a) => a['name'] == _profileImage,
-                                            orElse: () => AvatarSelectionDialog
-                                                .avatars[0],
-                                          )['color'],
+                                      color: avatarData['color'],
                                     ),
-                                  )
-                                : const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Color(0xFF311B92),
-                                  ),
+                                  );
+                                }
+
+                                // Fallback icon
+                                return const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Color(0xFF311B92),
+                                );
+                              },
+                            ),
                           ),
                           Positioned(
                             bottom: 0,

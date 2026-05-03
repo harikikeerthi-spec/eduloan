@@ -24,7 +24,24 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   void initState() {
     super.initState();
     _allRecommendations = List.from(widget.recommendations);
-    _filteredRecommendations = List.from(widget.recommendations);
+    
+    if (_allRecommendations.isNotEmpty) {
+      final aiModeList = _allRecommendations.where((u) {
+        final t = u.type.toLowerCase().trim();
+        return t.contains('safe') ||
+            t.contains('target') ||
+            t.contains('ambitious') ||
+            t.contains('recommended');
+      }).toList();
+
+      if (aiModeList.isEmpty) {
+        _activeTab = "All programs";
+      }
+    } else {
+      _activeTab = "All programs";
+    }
+    
+    _filteredRecommendations = _getFilteredList();
     _loadSavedStatus();
   }
 
@@ -46,7 +63,16 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
     List<UniversityRecommendation> list = [];
 
     if (_activeTab == "AI mode") {
-      list = _allRecommendations.where((u) => u.type != 'All').toList();
+      list = _allRecommendations.where((u) {
+        final t = u.type.toLowerCase().trim();
+        // Be inclusive: show everything in AI mode if it's the only thing we have
+        // or if it matches our categories
+        return t.contains('safe') ||
+            t.contains('target') ||
+            t.contains('ambitious') ||
+            t.contains('recommended') ||
+            _allRecommendations.length <= 10; // If small list, just show all in AI mode
+      }).toList();
     } else if (_activeTab == "All programs") {
       list = _allRecommendations;
     } else if (_activeTab == "Saved") {
@@ -55,15 +81,16 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
           .toList();
     }
 
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase().trim();
     if (query.isNotEmpty) {
-      list = list
-          .where(
-            (u) =>
-                u.name.toLowerCase().contains(query) ||
-                u.programName.toLowerCase().contains(query),
-          )
-          .toList();
+      list = list.where((u) {
+        final name = u.name.toLowerCase();
+        final program = u.programName.toLowerCase();
+        final loc = u.location.toLowerCase();
+        return name.contains(query) ||
+            program.contains(query) ||
+            loc.contains(query);
+      }).toList();
     }
 
     return list;

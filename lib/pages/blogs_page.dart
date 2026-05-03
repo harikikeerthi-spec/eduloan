@@ -285,12 +285,13 @@ class _BlogsPageState extends State<BlogsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (blog.featuredImage != null)
+            if (blog.featuredImage != null && blog.featuredImage!.isNotEmpty)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(16),
                 ),
-                child: Image.network(
+                child: blog.featuredImage!.startsWith('http')
+                  ? Image.network(
                   blog.featuredImage!,
                   height: 180,
                   width: double.infinity,
@@ -310,6 +311,45 @@ class _BlogsPageState extends State<BlogsPage> {
                       ),
                     );
                   },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 180,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF311B92).withValues(alpha: 0.1),
+                            const Color(0xFF7E57C2).withValues(alpha: 0.1),
+                          ],
+                        ),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.article_outlined,
+                              size: 48,
+                              color: Color(0xFF311B92),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Blog Image',
+                              style: TextStyle(
+                                color: Color(0xFF311B92),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                )
+                  : Image.asset(
+                  blog.featuredImage!,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       height: 180,

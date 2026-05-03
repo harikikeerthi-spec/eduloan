@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'api_config.dart';
 
 // Data Models
@@ -651,6 +652,89 @@ class AiLogicService {
     }
   }
 
+  Future<dynamic> _getRequest(String endpoint) async {
+    final String baseUrl = await ApiConfig.getBaseUrl();
+    final url = Uri.parse('$baseUrl/ai/$endpoint');
+    final response = await http.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw AiServiceException('Error from AI service: ${response.statusCode}');
+    }
+  }
+
+  // --- University Inquiry (Callback) ---
+
+  Future<bool> requestUniversityCallback(
+    String universityName, {
+    String type = 'callback',
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('name') ?? 'Student';
+      final email = prefs.getString('email') ?? '';
+      final userId = prefs.getString('userId') ?? '';
+
+      final String baseUrl = await ApiConfig.getBaseUrl();
+      final url = Uri.parse('$baseUrl/university/inquiry');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'userId': userId,
+          'mobile': 'N/A',
+          'universityName': universityName,
+          'type': type,
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return data['success'] == true || data['id'] != null;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('Callback request error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> checkUniversityCallback(
+    String universityName, {
+    String type = 'callback',
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('email') ?? '';
+      final userId = prefs.getString('userId') ?? '';
+
+      if (email.isEmpty && userId.isEmpty) return false;
+
+      final String baseUrl = await ApiConfig.getBaseUrl();
+      final url = Uri.parse(
+        '$baseUrl/university/inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
+      );
+
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['exists'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<String> sendSupportMessage(String message) async {
     final data = await _postRequest('support-chat', {'message': message});
     return data['message'] ?? '';
@@ -749,6 +833,18 @@ class AiLogicService {
     };
     final data = await _postRequest('shortlist', body);
     return ShortlistResult.fromJson(data);
+  }
+
+  Future<Map<String, dynamic>?> getLatestShortlistChat(String userId) async {
+    try {
+      final data = await _getRequest('shortlist/$userId');
+      if (data['success'] == true && data['chat'] != null) {
+        return data['chat'];
+      }
+    } catch (e) {
+      debugPrint('Error getting latest shortlist: $e');
+    }
+    return null;
   }
 
   Future<List<Map<String, String>>> searchGlobalUniversities(
@@ -905,6 +1001,34 @@ class AiLogicService {
 
   Future<List<UniversityRecommendation>> getSavedUniversities() async {
     final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('userId');
+
+    // Try fetching from backend if user is logged in
+    if (userId != null) {
+      try {
+        final data = await _getRequest('university/favorites/$userId');
+        if (data is List) {
+          final serverList = data
+              .map(
+                (json) =>
+                    UniversityRecommendation.fromJson(json['universityData']),
+              )
+              .toList();
+
+          // Update local cache to stay in sync
+          await prefs.setString(
+            _savedKey,
+            jsonEncode(serverList.map((item) => item.toJson()).toList()),
+          );
+          return serverList;
+        }
+      } catch (e) {
+        debugPrint('Error getting saved universities from backend: $e');
+        // Let it fall through to local cache
+      }
+    }
+
+    // Fallback to local cache
     final String? savedJson = prefs.getString(_savedKey);
     if (savedJson == null || savedJson.isEmpty) return [];
     try {
@@ -1001,5 +1125,20 @@ class AiLogicService {
     } catch (e) {
       print('Error tracking university view: $e');
     }
+  }
+
+  Future<List<UniversityRecommendation>> getSavedAiRecommendations(
+    String userId,
+  ) async {
+    try {
+      final data = await _getRequest('recommendations/$userId');
+      if (data['success'] == true && data['recommendations'] != null) {
+        final List<dynamic> list = data['recommendations'];
+        return list.map((e) => UniversityRecommendation.fromJson(e)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error getting saved AI recommendations: $e');
+    }
+    return [];
   }
 }

@@ -24,6 +24,7 @@ class LoanService {
     required String lastName,
     required String phoneNumber,
     required String email,
+    required String targetCountry,
     required String universityName,
     required String courseName,
     required String bank,
@@ -52,6 +53,7 @@ class LoanService {
           'lastName': lastName,
           'phone': phoneNumber,
           'email': email,
+          'targetCountry': targetCountry,
           'universityName': universityName,
           'courseName': courseName,
           'bank': bank,
@@ -123,18 +125,22 @@ class LoanService {
   }
 
   Future<void> deleteLoan(String loanId) async {
+    debugPrint('[LoanService] Attempting to delete loan: $loanId');
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
+      debugPrint('[LoanService] URL: $baseUrl/applications/$loanId');
       final response = await http.delete(
         Uri.parse('$baseUrl/applications/$loanId'),
         headers: headers,
       );
 
+      debugPrint('[LoanService] Response status: ${response.statusCode}');
       if (response.statusCode != 200 && response.statusCode != 204) {
         throw Exception('Failed to delete loan: ${response.statusCode}');
       }
     } catch (e) {
+      debugPrint('[LoanService] Error deleting loan: $e');
       throw Exception('Error deleting loan: $e');
     }
   }

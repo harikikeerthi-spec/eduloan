@@ -23,14 +23,23 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   int _currentImageIndex = 0;
   bool _isSaved = false;
   bool _isUsd = false;
-  bool _isFastTracked = false;
   int _admissionTabIndex = 0; // 0 for Mandatory, 1 for Optional
   final AiLogicService _aiService = AiLogicService();
+
+  bool _isRequestingCallback = false;
+  bool _hasRequestedCallback = false;
+  bool _isRequestingFastTrack = false;
+  bool _hasRequestedFastTrack = false;
+  bool _isRequestingApplication = false;
+  bool _hasRequestedApplication = false;
 
   @override
   void initState() {
     super.initState();
     _checkSavedStatus();
+    _checkCallbackStatus();
+    _checkFastTrackStatus();
+    _checkApplicationStatus();
     _aiService.trackUniversityView(widget.university);
   }
 
@@ -38,6 +47,135 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     final isSaved = await _aiService.isUniversitySaved(widget.university.name);
     if (mounted) {
       setState(() => _isSaved = isSaved);
+    }
+  }
+
+  Future<void> _checkCallbackStatus() async {
+    final hasRequested = await _aiService.checkUniversityCallback(
+      widget.university.name,
+    );
+    if (mounted) {
+      setState(() => _hasRequestedCallback = hasRequested);
+    }
+  }
+
+  Future<void> _checkFastTrackStatus() async {
+    final hasRequested = await _aiService.checkUniversityCallback(
+      widget.university.name,
+      type: 'fast_track',
+    );
+    if (mounted) {
+      setState(() => _hasRequestedFastTrack = hasRequested);
+    }
+  }
+
+  Future<void> _checkApplicationStatus() async {
+    final hasRequested = await _aiService.checkUniversityCallback(
+      widget.university.name,
+      type: 'application',
+    );
+    if (mounted) {
+      setState(() => _hasRequestedApplication = hasRequested);
+    }
+  }
+
+  Future<void> _requestCallback() async {
+    if (_hasRequestedCallback) return;
+
+    setState(() => _isRequestingCallback = true);
+
+    final success = await _aiService.requestUniversityCallback(
+      widget.university.name,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isRequestingCallback = false;
+        if (success) _hasRequestedCallback = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Callback requested! Our team will contact you soon.'
+                : 'Failed to request callback. Please try again.',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestFastTrack() async {
+    if (_hasRequestedFastTrack) return;
+
+    setState(() => _isRequestingFastTrack = true);
+
+    final success = await _aiService.requestUniversityCallback(
+      widget.university.name,
+      type: 'fast_track',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isRequestingFastTrack = false;
+        if (success) _hasRequestedFastTrack = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Application fast-tracked! Our team will contact you soon.'
+                : 'Failed to fast-track. Please try again.',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _applyWithVidhyaLoans() async {
+    if (_hasRequestedApplication) {
+      _launchUniversityWebsite();
+      return;
+    }
+
+    setState(() => _isRequestingApplication = true);
+
+    final success = await _aiService.requestUniversityCallback(
+      widget.university.name,
+      type: 'application',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isRequestingApplication = false;
+        if (success) _hasRequestedApplication = true;
+      });
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Application request sent! Opening university website...',
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 1), _launchUniversityWebsite);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to process application. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -946,11 +1084,12 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F3FF), // Soft purple/indigo
+        color: const Color(0xFFF5F3FF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFEDE9FE)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
@@ -969,44 +1108,107 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                   'Talk to our advisor for free.',
                   style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'We received your request, our guidance team will contact you',
-                        ),
-                        duration: Duration(seconds: 3),
-                        behavior: SnackBarBehavior.floating,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _hasRequestedCallback || _isRequestingCallback
+                          ? null
+                          : _requestCallback,
+                      icon: _isRequestingCallback
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Icon(
+                              _hasRequestedCallback
+                                  ? Icons.check_circle
+                                  : Icons.call,
+                              size: 18,
+                            ),
+                      label: Text(
+                        _hasRequestedCallback ? 'Requested' : 'Request call',
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.call, size: 18),
-                  label: const Text('Request a call back'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6200EA),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _hasRequestedCallback
+                            ? Colors.green
+                            : const Color(0xFF6200EA),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    const SizedBox(width: 8),
+                    _buildAskVLButton(),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Opacity(
+            opacity: 0.1,
+            child: Icon(
+              Icons.support_agent,
+              size: 48,
+              color: const Color(0xFF6200EA),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAskVLButton() {
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6200EA), Color(0xFF9D50BB)],
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CustomerCareBotPage(),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'Ask VL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Icon(
-            Icons.support_agent,
-            size: 64,
-            color: const Color(0xFF6200EA).withOpacity(0.2),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1400,40 +1602,50 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              if (!_isFastTracked) {
-                setState(() => _isFastTracked = true);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Application fast-tracked! We will notify you every month before the deadline.',
-                    ),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
+            onPressed: _hasRequestedFastTrack || _isRequestingFastTrack
+                ? null
+                : _requestFastTrack,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _isFastTracked
+              backgroundColor: _hasRequestedFastTrack
                   ? Colors.green
                   : const Color(0xFF2563EB),
+              disabledBackgroundColor: _hasRequestedFastTrack
+                  ? Colors.green.withOpacity(0.8)
+                  : Colors.grey,
               foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 50),
+              disabledForegroundColor: Colors.white,
+              minimumSize: const Size(double.infinity, 54),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(27),
               ),
               elevation: 0,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (_isFastTracked) const Icon(Icons.check, size: 20),
-                if (_isFastTracked) const SizedBox(width: 8),
+                if (_isRequestingFastTrack)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                else if (_hasRequestedFastTrack)
+                  const Icon(Icons.check_circle_outline, size: 20)
+                else
+                  const SizedBox.shrink(),
+                if (_isRequestingFastTrack || _hasRequestedFastTrack)
+                  const SizedBox(width: 8),
                 Text(
-                  _isFastTracked
-                      ? 'Fast-tracked'
+                  _hasRequestedFastTrack
+                      ? 'Application fast-tracked!'
                       : 'Fast-track your application',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
@@ -1616,76 +1828,40 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
       ),
-      child: Row(
-        children: [
-          Container(
-            height: double.infinity,
-            decoration: BoxDecoration(
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _isRequestingApplication ? null : _applyWithVidhyaLoans,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _hasRequestedApplication
+                ? Colors.green
+                : const Color(0xFF6200EA),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6200EA), Color(0xFF9D50BB)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6200EA).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CustomerCareBotPage(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.auto_awesome, color: Colors.white, size: 18),
-                      SizedBox(width: 8),
-                      Text(
-                        'Ask VL',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            elevation: 2,
+          ),
+          child: _isRequestingApplication
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(
+                  _hasRequestedApplication
+                      ? 'Application Sent'
+                      : 'Apply with Vidhya Loans',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _launchUniversityWebsite,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6200EA),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Apply to university',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/institutes_data.dart';
+import '../services/ai_logic_service.dart';
 
 class InstituteSelectionModal extends StatefulWidget {
-  const InstituteSelectionModal({super.key});
+  final String? selectedCountry;
+  const InstituteSelectionModal({super.key, this.selectedCountry});
 
   @override
   State<InstituteSelectionModal> createState() =>
@@ -14,23 +17,138 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
   Institute? _selectedInstitute;
   final TextEditingController _searchController = TextEditingController();
 
-  List<Institute> get _filteredInstitutes {
+  Timer? _debounce;
+  bool _isSearchingAI = false;
+  List<Institute> _aiInstitutes = [];
+  bool _isLoadingCourses = false;
+
+  List<Institute> get _combinedInstitutes {
+    List<Institute> combined = [];
     if (_searchQuery.isEmpty) {
+      if (widget.selectedCountry != null && widget.selectedCountry != 'Other') {
+        return InstitutesData.allInstitutes
+            .where((i) => i.state.toLowerCase() == widget.selectedCountry!.toLowerCase())
+            .toList();
+      }
       return InstitutesData.allInstitutes;
     }
-    return InstitutesData.allInstitutes.where((institute) {
-      return institute.name.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
+    
+    final localMatches = InstitutesData.allInstitutes.where((institute) {
+      bool matchesSearch = institute.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           institute.type.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           institute.state.toLowerCase().contains(_searchQuery.toLowerCase());
+          
+      if (widget.selectedCountry != null && widget.selectedCountry != 'Other') {
+        return matchesSearch && institute.state.toLowerCase() == widget.selectedCountry!.toLowerCase();
+      }
+      return matchesSearch;
     }).toList();
+    
+    combined.addAll(localMatches);
+    
+    // Add AI institutes that aren't already in local matches
+    for (var aiInst in _aiInstitutes) {
+      if (!combined.any((local) => local.name.toLowerCase() == aiInst.name.toLowerCase())) {
+        combined.add(aiInst);
+      }
+    }
+    
+    return combined;
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+    });
+
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    if (value.trim().length < 3) {
+      setState(() {
+        _aiInstitutes = [];
+        _isSearchingAI = false;
+      });
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 500), () async {
+      setState(() {
+        _isSearchingAI = true;
+      });
+
+      try {
+        final results = await AiLogicService().searchGlobalUniversities(
+          value,
+          country: widget.selectedCountry,
+        );
+        if (mounted) {
+          setState(() {
+            _aiInstitutes = results.map((res) {
+              return Institute(
+                name: res['name'] ?? 'Unknown University',
+                state: res['country'] ?? 'Global',
+                type: 'Global University',
+                courses: [], // Will fetch when selected
+              );
+            }).toList();
+            _isSearchingAI = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSearchingAI = false;
+          });
+        }
+      }
+    });
+  }
+
+  void _selectInstitute(Institute institute) async {
+    setState(() {
+      _selectedInstitute = institute;
+    });
+
+    if (institute.courses.isEmpty) {
+      setState(() {
+        _isLoadingCourses = true;
+      });
+      try {
+        final courses = await AiLogicService().searchUniversityCourses(institute.name, '');
+        if (mounted && _selectedInstitute?.name == institute.name) {
+          setState(() {
+            // We can't modify the const institute, we must replace it
+            _selectedInstitute = Institute(
+              name: institute.name,
+              state: institute.state,
+              type: institute.type,
+              courses: courses.map((c) => c['name'] ?? 'Unknown Course').toList(),
+            );
+            _isLoadingCourses = false;
+          });
+        }
+      } catch (e) {
+        if (mounted && _selectedInstitute?.name == institute.name) {
+          setState(() {
+             // Fallback courses if AI fails
+             _selectedInstitute = Institute(
+              name: institute.name,
+              state: institute.state,
+              type: institute.type,
+              courses: ['MS Computer Science', 'MBA', 'Data Science', 'Engineering'],
+            );
+            _isLoadingCourses = false;
+          });
+        }
+      }
+    }
   }
 
   @override
@@ -116,18 +234,35 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
+                onChanged: _onSearchChanged,
               ),
+              if (_isSearchingAI)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI is searching global universities...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF311B92).withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
         const SizedBox(height: 16),
         Expanded(
-          child: _filteredInstitutes.isEmpty
+          child: _combinedInstitutes.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -159,9 +294,9 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: _filteredInstitutes.length,
+                  itemCount: _combinedInstitutes.length,
                   itemBuilder: (context, index) {
-                    final institute = _filteredInstitutes[index];
+                    final institute = _combinedInstitutes[index];
                     return _buildInstituteCard(institute);
                   },
                 ),
@@ -261,7 +396,25 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
             ],
           ),
         ),
-        Expanded(
+        if (_isLoadingCourses)
+          const Expanded(
+            child: Center(
+              child: CircularProgressIndicator(color: Color(0xFF311B92)),
+            ),
+          )
+        else if (_selectedInstitute!.courses.isEmpty)
+          Expanded(
+            child: Center(
+              child: Text(
+                'No courses found for this university.',
+                style: TextStyle(
+                  color: Colors.black.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+          )
+        else
+          Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             itemCount: _selectedInstitute!.courses.length,
@@ -323,11 +476,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
 
   Widget _buildInstituteCard(Institute institute) {
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedInstitute = institute;
-        });
-      },
+      onTap: () => _selectInstitute(institute),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -375,7 +524,9 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${institute.courses.length} Courses Available',
+                    institute.courses.isEmpty 
+                        ? 'Explore AI Courses' 
+                        : '${institute.courses.length} Courses Available',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black.withValues(alpha: 0.6),

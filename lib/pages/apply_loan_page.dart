@@ -7,7 +7,10 @@ import '../widgets/institute_selection_modal.dart';
 import '../data/institutes_data.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'main_navigation.dart';
+import 'digilocker_auth_page.dart';
+import '../services/digilocker_service.dart';
 
 class ApplyLoanPage extends StatefulWidget {
   const ApplyLoanPage({super.key});
@@ -22,6 +25,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
   final TextEditingController _instituteController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
   final TextEditingController _bankController = TextEditingController();
@@ -42,16 +46,18 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   // Collateral & Purpose
   bool _hasCollateral = false;
   final TextEditingController _collateralController = TextEditingController();
+  final Map<TextEditingController, String?> _fieldErrors = {};
   final TextEditingController _purposeController = TextEditingController();
 
   String _amountInLakhsLabel = '';
-
+  
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _countryController.dispose();
     _instituteController.dispose();
     _courseController.dispose();
     _bankController.dispose();
@@ -102,7 +108,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => const InstituteSelectionModal(),
+      builder: (context) => InstituteSelectionModal(
+        selectedCountry: _countryController.text,
+      ),
     );
 
     if (result != null && result is Map) {
@@ -116,11 +124,264 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
   }
 
+  final List<String> _countries = [
+    'USA',
+    'UK',
+    'Canada',
+    'Australia',
+    'Germany',
+    'France',
+    'Ireland',
+    'Singapore',
+    'Other',
+  ];
+
+  Future<void> _fetchFromDigilocker() async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const DigilockerAuthPage(),
+      ),
+    );
+
+    if (result != null && result is Map) {
+      final code = result['code'];
+      final verifier = result['code_verifier'];
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF311B92)),
+        ),
+      );
+
+      try {
+        final result = await DigilockerService().verifyDigilocker(
+          code,
+          codeVerifier: verifier,
+        );
+        if (!mounted) return;
+        Navigator.pop(context); // Close loading
+
+        if (result['success'] == true && result['user'] != null) {
+          final user = result['user'];
+          setState(() {
+            if (user['name'] != null) {
+              final names = user['name'].toString().split(' ');
+              _firstNameController.text = names.first;
+              if (names.length > 1) {
+                _lastNameController.text = names.sublist(1).join(' ');
+              }
+            }
+            if (user['email'] != null) {
+              _emailController.text = user['email'];
+            }
+            if (user['mobile'] != null) {
+              _phoneController.text = user['mobile'];
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Details fetched from DigiLocker!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch: $e')),
+        );
+      }
+    }
+  }
+
+  void _showCountrySelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Select Target Country',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _countries.length,
+                itemBuilder: (context, index) {
+                  final country = _countries[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      country,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    trailing: _countryController.text == country
+                        ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                        : const Icon(Icons.chevron_right, color: Colors.grey),
+                    onTap: () {
+                      setState(() {
+                        _countryController.text = country;
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  final List<String> _lendingPartners = [
+    'HDFC Credila',
+    'Avanse Financial Services',
+    'InCred',
+    'Auxilo',
+    'SBI',
+    'ICICI Bank',
+    'Axis Bank',
+    'IDFC First Bank',
+    'Bank of Baroda',
+    'Punjab National Bank',
+  ];
+
+  void _showBankSelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Select Preferred Banks (Max 3)',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
+              ),
+            ),
+            Expanded(
+              child: StatefulBuilder(
+                builder: (context, setModalState) {
+                  final selectedBanks = _bankController.text
+                      .split(',')
+                      .where((s) => s.isNotEmpty)
+                      .toList();
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _lendingPartners.length,
+                    itemBuilder: (context, index) {
+                      final bank = _lendingPartners[index];
+                      final isSelected = selectedBanks.contains(bank);
+
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: _getBankLogo(bank),
+                        title: Text(
+                          bank,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                            : const Icon(Icons.circle_outlined, color: Colors.grey),
+                        onTap: () {
+                          setModalState(() {
+                            if (isSelected) {
+                              selectedBanks.remove(bank);
+                            } else {
+                              if (selectedBanks.length < 3) {
+                                selectedBanks.add(bank);
+                              } else {
+                                // Optional: show a mini-snack or toast if max reached
+                              }
+                            }
+                            _bankController.text = selectedBanks.join(',');
+                          });
+                          setState(() {}); // Update the main UI field
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Done'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _submitApplication() async {
     if (!_validateStep(0) ||
         !_validateStep(1) ||
         !_validateStep(2) ||
-        !_validateStep(3)) {
+        !_validateStep(3) ) {
       return;
     }
 
@@ -192,6 +453,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         lastName: _lastNameController.text,
         phoneNumber: _phoneController.text,
         email: _emailController.text,
+        targetCountry: _countryController.text,
         universityName: _instituteController.text,
         courseName: _courseController.text,
         bank: _bankController.text.isEmpty
@@ -199,7 +461,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             : _bankController.text,
         loanType: _loanTypeController.text,
         amount: double.parse(_amountController.text.replaceAll(',', '')),
-        tenure: int.tryParse(_tenureController.text) ?? 12,
+        tenure: 12, // Default tenure since field was removed
         purpose: _purposeController.text,
         fatherName: _fatherNameController.text,
         fatherPhone: _fatherPhoneController.text,
@@ -238,59 +500,87 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   bool _validateStep(int step) {
+    setState(() {
+      _fieldErrors.clear();
+    });
+
     if (step == 0) {
-      if (_firstNameController.text.trim().length < 3) {
+      if (_firstNameController.text.length < 3) {
+        setState(() => _fieldErrors[_firstNameController] = 'Enter at least 3 chars');
         _showError('First name must be at least 3 characters long');
         return false;
       }
-      if (_lastNameController.text.trim().isEmpty) {
-        _showError('Last name must be at least 1 character long');
+      if (_lastNameController.text.isEmpty) {
+        setState(() => _fieldErrors[_lastNameController] = 'Required');
+        _showError('Last name is required');
         return false;
       }
-      final phoneDigits = _phoneController.text.replaceAll(
-        RegExp(r'[^0-9]'),
-        '',
-      );
-      if (phoneDigits.length != 10) {
+      String phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (phone.length != 10) {
+        setState(() => _fieldErrors[_phoneController] = 'Enter 10 digits');
         _showError('Phone number must be exactly 10 digits');
         return false;
       }
-      if (!_emailController.text.contains('@') ||
-          !_emailController.text.contains('.')) {
+      if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+        setState(() => _fieldErrors[_emailController] = 'Enter valid email');
         _showError('Please enter a valid email address');
         return false;
       }
     } else if (step == 1) {
-      // Parents are optional but if filled, must follow rules
-      if (_fatherNameController.text.isNotEmpty &&
-          _fatherNameController.text.trim().length < 3) {
-        _showError('Father\'s name must be at least 3 characters long');
+      if (_fatherNameController.text.length < 3) {
+        setState(() => _fieldErrors[_fatherNameController] = 'Required');
+        _showError('Father\'s name is required (min 3 chars)');
         return false;
       }
-      if (_fatherPhoneController.text.isNotEmpty) {
-        final fPhoneDigits = _fatherPhoneController.text.replaceAll(
-          RegExp(r'[^0-9]'),
-          '',
-        );
-        if (fPhoneDigits.length != 10) {
-          _showError('Father\'s phone number must be exactly 10 digits');
-          return false;
-        }
-      }
-      if (_motherNameController.text.isNotEmpty &&
-          _motherNameController.text.trim().length < 3) {
-        _showError('Mother\'s name must be at least 3 characters long');
+      String fPhone = _fatherPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (fPhone.length != 10) {
+        setState(() => _fieldErrors[_fatherPhoneController] = 'Enter 10 digits');
+        _showError('Father\'s phone number must be 10 digits');
         return false;
       }
-      if (_motherPhoneController.text.isNotEmpty) {
-        final mPhoneDigits = _motherPhoneController.text.replaceAll(
-          RegExp(r'[^0-9]'),
-          '',
-        );
-        if (mPhoneDigits.length != 10) {
-          _showError('Mother\'s phone number must be exactly 10 digits');
-          return false;
-        }
+      if (_motherNameController.text.length < 3) {
+        setState(() => _fieldErrors[_motherNameController] = 'Required');
+        _showError('Mother\'s name is required (min 3 chars)');
+        return false;
+      }
+      String mPhone = _motherPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (mPhone.length != 10) {
+        setState(() => _fieldErrors[_motherPhoneController] = 'Enter 10 digits');
+        _showError('Mother\'s phone number must be 10 digits');
+        return false;
+      }
+    } else if (step == 2) {
+      final selectedBanks = _bankController.text.split(',').where((s) => s.isNotEmpty).toList();
+      if (selectedBanks.isEmpty) {
+        setState(() => _fieldErrors[_bankController] = 'Select at least 1 bank');
+        _showError('Please select at least one preferred bank');
+        return false;
+      }
+      if (selectedBanks.length > 3) {
+        setState(() => _fieldErrors[_bankController] = 'Max 3 banks allowed');
+        _showError('You can select a maximum of 3 banks');
+        return false;
+      }
+    } else if (step == 3) {
+      if (_countryController.text.isEmpty) {
+        setState(() => _fieldErrors[_countryController] = 'Required');
+        _showError('Please select your target country');
+        return false;
+      }
+      if (_instituteController.text.isEmpty) {
+        setState(() => _fieldErrors[_instituteController] = 'Required');
+        _showError('Please select your target university');
+        return false;
+      }
+      if (_courseController.text.isEmpty) {
+        setState(() => _fieldErrors[_courseController] = 'Required');
+        _showError('Please select your course');
+        return false;
+      }
+      if (_amountController.text.isEmpty) {
+        setState(() => _fieldErrors[_amountController] = 'Required');
+        _showError('Please enter the desired loan amount');
+        return false;
       }
     }
     return true;
@@ -443,16 +733,35 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         ),
                         content: _buildStepContainer(
                           children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                onPressed: _fetchFromDigilocker,
+                                icon: const Icon(Icons.cloud_download_outlined),
+                                label: const Text('Fetch from DigiLocker'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF311B92),
+                                  side: const BorderSide(color: Color(0xFF311B92)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
                             _buildTextInput(
                               hint: 'First Name',
                               icon: Icons.person_outline,
                               controller: _firstNameController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 16),
                             _buildTextInput(
                               hint: 'Last Name',
                               icon: Icons.person_outline,
                               controller: _lastNameController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 16),
                             _buildTextInput(
@@ -460,6 +769,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.phone_outlined,
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 16),
                             _buildTextInput(
@@ -467,6 +777,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.email_outlined,
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
+                              isRequired: true,
                             ),
                           ],
                         ),
@@ -498,6 +809,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               hint: 'Name',
                               icon: Icons.person_outline,
                               controller: _fatherNameController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 12),
                             _buildTextInput(
@@ -505,6 +817,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.phone_outlined,
                               controller: _fatherPhoneController,
                               keyboardType: TextInputType.phone,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 12),
                             _buildTextInput(
@@ -526,6 +839,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               hint: 'Name',
                               icon: Icons.person_outline,
                               controller: _motherNameController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 12),
                             _buildTextInput(
@@ -533,6 +847,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.phone_outlined,
                               controller: _motherPhoneController,
                               keyboardType: TextInputType.phone,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 12),
                             _buildTextInput(
@@ -559,17 +874,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         ),
                         content: _buildStepContainer(
                           children: [
-                            _buildTextInput(
-                              hint: 'Preferred Bank',
+                            _buildReadOnlyInput(
+                              hint: 'Select Preferred Banks (1-3)',
                               icon: Icons.account_balance_wallet_outlined,
                               controller: _bankController,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Loan Type',
-                              icon: Icons.layers_outlined,
-                              controller: _loanTypeController,
-                              readOnly: true,
+                              onTap: _showBankSelection,
+                              isRequired: true,
                             ),
                           ],
                         ),
@@ -624,10 +934,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             ),
                             const SizedBox(height: 8),
                             _buildReadOnlyInput(
+                              hint: 'Target Country',
+                              icon: Icons.public,
+                              onTap: _showCountrySelection,
+                              controller: _countryController,
+                              isRequired: true,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildReadOnlyInput(
                               hint: 'Target University',
                               icon: Icons.account_balance_outlined,
                               onTap: _showInstituteSelection,
                               controller: _instituteController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 16),
                             _buildReadOnlyInput(
@@ -635,6 +954,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.school_outlined,
                               onTap: _showInstituteSelection,
                               controller: _courseController,
+                              isRequired: true,
                             ),
                             const SizedBox(height: 20),
                             // Loan Requirements
@@ -651,6 +971,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               icon: Icons.currency_rupee,
                               controller: _amountController,
                               keyboardType: TextInputType.number,
+                              isRequired: true,
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 IndianCurrencyFormatter(),
@@ -697,13 +1018,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               ),
                             const SizedBox(height: 16),
                             _buildTextInput(
-                              hint: 'Tenure (Months)',
-                              icon: Icons.calendar_today_outlined,
-                              controller: _tenureController,
-                              keyboardType: TextInputType.number,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
                               hint: 'Course Details / Purpose',
                               icon: Icons.info_outline,
                               controller: _purposeController,
@@ -712,6 +1026,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                           ],
                         ),
                         isActive: _currentStep >= 3,
+                        state: _currentStep > 3
+                            ? StepState.complete
+                            : StepState.indexed,
                       ),
                     ],
                   ),
@@ -751,35 +1068,68 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
     bool readOnly = false,
+    bool isRequired = false,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF311B92).withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF311B92).withValues(alpha: 0.05),
-        ),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        readOnly: readOnly,
-        maxLines: maxLines,
-        inputFormatters: inputFormatters,
-        style: const TextStyle(color: Colors.black, fontSize: 16),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.4)),
-          border: InputBorder.none,
-          suffixIcon: Icon(
-            icon,
-            color: const Color(0xFF311B92).withValues(alpha: 0.4),
+    final errorText = _fieldErrors[controller];
+    final hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          decoration: BoxDecoration(
+            color: hasError 
+                ? Colors.red.withValues(alpha: 0.05) 
+                : const Color(0xFF311B92).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hasError 
+                  ? Colors.red 
+                  : const Color(0xFF311B92).withValues(alpha: 0.05),
+              width: hasError ? 1.5 : 1,
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            readOnly: readOnly,
+            maxLines: maxLines,
+            inputFormatters: inputFormatters,
+            onChanged: (_) {
+              if (hasError) {
+                setState(() => _fieldErrors[controller] = null);
+              }
+            },
+            style: const TextStyle(color: Colors.black, fontSize: 16),
+            decoration: InputDecoration(
+              hintText: isRequired ? '$hint *' : hint,
+              hintStyle: TextStyle(
+                color: isRequired
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : Colors.black.withValues(alpha: 0.4),
+              ),
+              border: InputBorder.none,
+              suffixIcon: Icon(
+                icon,
+                color: hasError 
+                    ? Colors.red 
+                    : const Color(0xFF311B92).withValues(alpha: 0.4),
+              ),
+            ),
           ),
         ),
-      ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
     );
   }
 
@@ -788,37 +1138,145 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     required IconData icon,
     required VoidCallback onTap,
     required TextEditingController controller,
+    bool isRequired = false,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF311B92).withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF311B92).withValues(alpha: 0.05),
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                controller.text.isEmpty ? hint : controller.text,
-                style: TextStyle(
-                  color: controller.text.isEmpty
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : Colors.black,
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    final errorText = _fieldErrors[controller];
+    final hasError = errorText != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            if (hasError) {
+              setState(() => _fieldErrors[controller] = null);
+            }
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: hasError 
+                  ? Colors.red.withValues(alpha: 0.05) 
+                  : const Color(0xFF311B92).withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: hasError 
+                    ? Colors.red 
+                    : const Color(0xFF311B92).withValues(alpha: 0.05),
+                width: hasError ? 1.5 : 1,
               ),
             ),
-            Icon(icon, color: const Color(0xFF311B92).withValues(alpha: 0.5)),
-          ],
+            child: Row(
+              children: [
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: controller.text.isEmpty ? hint : controller.text,
+                          style: TextStyle(
+                            color: controller.text.isEmpty
+                                ? Colors.black.withValues(alpha: 0.4)
+                                : Colors.black,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (isRequired && controller.text.isEmpty)
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  icon, 
+                  color: hasError 
+                      ? Colors.red 
+                      : const Color(0xFF311B92).withValues(alpha: 0.5)
+                ),
+              ],
+            ),
+          ),
         ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _getBankLogo(String bankName) {
+    String? assetPath;
+    switch (bankName) {
+      case 'HDFC Credila':
+        assetPath = 'assets/logos/hdfc_credila.svg';
+        break;
+      case 'SBI':
+        assetPath = 'assets/logos/sbi.svg';
+        break;
+      case 'ICICI Bank':
+        assetPath = 'assets/logos/icici.svg';
+        break;
+      case 'Axis Bank':
+        assetPath = 'assets/logos/axis.svg';
+        break;
+      case 'Avanse Financial Services':
+        assetPath = 'assets/logos/avanse.svg';
+        break;
+      case 'InCred':
+        assetPath = 'assets/logos/incred.svg';
+        break;
+      case 'Auxilo':
+        assetPath = 'assets/logos/auxilo.svg';
+        break;
+      case 'IDFC First Bank':
+        assetPath = 'assets/logos/idfc.svg';
+        break;
+      case 'Bank of Baroda':
+        assetPath = 'assets/logos/bob.svg';
+        break;
+      case 'Punjab National Bank':
+        assetPath = 'assets/logos/pnb.svg';
+        break;
+      default:
+        assetPath = null;
+    }
+
+    if (assetPath == null) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: const Color(0xFF311B92).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.account_balance, size: 20, color: Color(0xFF311B92)),
+      );
+    }
+
+    return SvgPicture.asset(
+      assetPath,
+      width: 32,
+      height: 32,
+      placeholderBuilder: (context) => Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.account_balance, size: 20, color: Colors.grey),
       ),
     );
   }

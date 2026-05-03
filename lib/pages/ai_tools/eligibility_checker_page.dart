@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/mesh_background.dart';
 import '../../services/ai_logic_service.dart';
 
 class EligibilityCheckerPage extends StatefulWidget {
@@ -86,7 +87,8 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           "Eligibility Checker",
@@ -95,7 +97,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -103,25 +105,28 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Find out if you qualify for a loan in seconds.",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
+      body: MeshBackground(
+        child: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 72, 24, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Find out if you qualify for a loan in seconds.",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF6B7280),
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              if (_result != null) _buildResultCard(),
-              _buildFormCard(),
-              const SizedBox(height: 40),
-            ],
+                const SizedBox(height: 32),
+                if (_result != null) _buildResultCard(),
+                _buildFormCard(),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),

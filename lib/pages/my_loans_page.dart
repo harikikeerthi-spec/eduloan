@@ -7,6 +7,8 @@ import '../models/loan.dart';
 import '../models/application_document.dart';
 import '../services/loan_service.dart';
 import 'apply_loan_page.dart';
+import 'digilocker_auth_page.dart';
+import '../services/digilocker_service.dart';
 
 class MyLoansPage extends StatefulWidget {
   const MyLoansPage({super.key});
@@ -185,6 +187,8 @@ class _MyLoansPageState extends State<MyLoansPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatisticsCards(),
+          const SizedBox(height: 20),
+          _buildDigilockerProminentCard(),
           const SizedBox(height: 24),
           ..._loans.map((loan) => _buildLoanCard(loan)),
         ],
@@ -333,64 +337,66 @@ class _MyLoansPageState extends State<MyLoansPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF9C4), // Light yellow
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.school,
-                          color: Color(0xFFFBC02D), // Darker yellow
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Education Loan',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF9C4), // Light yellow
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          Text(
-                            loan.bank,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
+                          child: const Icon(
+                            Icons.school,
+                            color: Color(0xFFFBC02D), // Darker yellow
+                            size: 24,
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.grey),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Education Loan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              loan.bank,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF9C4),
                   borderRadius: BorderRadius.circular(20),
@@ -492,6 +498,24 @@ class _MyLoansPageState extends State<MyLoansPage> {
                 ),
               ),
               const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    debugPrint('DEBUG: FETCH button tapped for loan: ${loan.id}');
+                    _verifyWithDigilocker(loanId: loan.id);
+                  },
+                  icon: const Icon(Icons.cloud_download_outlined),
+                  label: const Text('FETCH FROM DIGILOCKER', style: TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
@@ -611,7 +635,70 @@ class _MyLoansPageState extends State<MyLoansPage> {
           ),
         ),
       ),
+    ),
+  );
+}
+
+  Future<void> _verifyWithDigilocker({String? loanId}) async {
+    debugPrint('DEBUG: _verifyWithDigilocker called with loanId: $loanId');
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const DigilockerAuthPage(),
+      ),
     );
+
+    if (result != null && result is Map) {
+      final String code = result['code'];
+      final String verifier = result['code_verifier'];
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF311B92)),
+        ),
+      );
+
+      try {
+        final service = DigilockerService();
+        final result = await service.verifyDigilocker(
+          code, 
+          loanId: loanId,
+          codeVerifier: verifier,
+        );
+        
+        if (!mounted) return;
+        Navigator.pop(context); // Close loading dialog
+
+        if (result['success'] == true) {
+          final count = result['attachedCount'] ?? 0;
+          final List<dynamic> attachedDocs = result['attachedDocs'] ?? [];
+          final docsList = attachedDocs.join(', ');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(count > 0 
+                ? '$count documents successfully fetched: $docsList' 
+                : 'DigiLocker verification successful (No new documents found).'),
+              backgroundColor: const Color(0xFF10B981),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          _fetchLoans();
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Verification failed: $e'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 
   String _formatDate(DateTime date) {
@@ -977,6 +1064,95 @@ class _MyLoansPageState extends State<MyLoansPage> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+        ],
+      ),
+    );
+  }
+  Widget _buildDigilockerProminentCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF311B92),
+            const Color(0xFF311B92).withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF311B92).withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.cloud_done_rounded, color: Colors.white, size: 28),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Verify with DigiLocker',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Instant document verification',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Get your Aadhaar, PAN, and Academic certificates directly from DigiLocker for faster loan processing.',
+            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                debugPrint('DEBUG: Prominent DigiLocker card tapped');
+                _verifyWithDigilocker();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF311B92),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Fetch Documents Now',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
         ],
       ),
     );

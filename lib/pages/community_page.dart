@@ -210,6 +210,7 @@ class _CommunityPageState extends State<CommunityPage>
             'title': hub['title'] ?? hub['id'],
             'desc': hub['description'] ?? '',
             'icon': _getIconData(hub['icon']),
+            'imagePath': 'assets/icons/3d_community/${hub['id']}.png',
             'color': _getHubColor(hub['id']),
             'isExternalRoute': hub['isExternalRoute'] ?? false,
             'isSpecialRoute': hub['isSpecialRoute'] ?? false,
@@ -304,12 +305,18 @@ class _CommunityPageState extends State<CommunityPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: (category['color'] as Color).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(category['icon'], color: category['color'], size: 28),
+              child: Image.asset(
+                category['imagePath'],
+                width: 36,
+                height: 36,
+                errorBuilder: (context, error, stackTrace) =>
+                    Icon(category['icon'], color: category['color'], size: 28),
+              ),
             ),
             const SizedBox(height: 12), // Fixed spacing instead of Spacer
             Text(

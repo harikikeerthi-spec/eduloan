@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 class VideoSplashScreen extends StatefulWidget {
   const VideoSplashScreen({Key? key}) : super(key: key);
@@ -19,12 +20,16 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
     super.initState();
     _controller = VideoPlayerController.asset('assets/images/splash_video.mp4')
       ..initialize().then((_) {
+        // Remove native splash only when video is ready to draw
+        FlutterNativeSplash.remove();
+        
         setState(() {}); // Ensure the first frame is shown
         _controller.play();
         _isPlaying = true;
       }).catchError((error) {
         // Fallback if video fails to load
         print("Error loading splash video: $error");
+        FlutterNativeSplash.remove();
         _checkAuthAndNavigate();
       });
 
@@ -66,16 +71,20 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Or adapt to your brand color
+      backgroundColor: Colors.black, // Dark background for seamless transition
       body: Center(
         child: _controller.value.isInitialized
-            ? AspectRatio(
-                aspectRatio: _controller.value.aspectRatio,
-                child: VideoPlayer(_controller),
+            ? SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: _controller.value.size.width,
+                    height: _controller.value.size.height,
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
               )
-            : const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
-              ),
+            : Container(color: Colors.black),
       ),
     );
   }

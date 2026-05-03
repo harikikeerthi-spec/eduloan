@@ -19,6 +19,10 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    androidResources {
+        noCompress += "mp4"
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.vidhyaloan"
