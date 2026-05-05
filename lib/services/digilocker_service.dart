@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class DigilockerService {
   // Use the local IP for the emulator/device to reach the NestJS backend
-  static const String _baseUrl = 'http://10.0.2.2:3000/digilocker';
+  static const String _baseUrl = 'https://vidyaloans.in/api/digilocker';
 
   Future<Map<String, dynamic>> verifyDigilocker(String authCode, {String? loanId, String? codeVerifier}) async {
     final prefs = await SharedPreferences.getInstance();
