@@ -70,6 +70,7 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
               
               if (code != null) {
                 debugPrint('DEBUG: Auth code extracted: $code');
+                debugPrint('DEBUG: Code verifier being returned: $_codeVerifier');
                 // Return both code and verifier
                 Navigator.of(context).pop({
                   'code': code,

@@ -11,39 +11,58 @@ class VideoSplashScreen extends StatefulWidget {
 }
 
 class _VideoSplashScreenState extends State<VideoSplashScreen> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isPlaying = false;
   bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/images/splash_video.mp4')
-      ..initialize().then((_) {
-        // Remove native splash only when video is ready to draw
-        FlutterNativeSplash.remove();
-        
-        setState(() {}); // Ensure the first frame is shown
-        _controller.play();
-        _isPlaying = true;
-      }).catchError((error) {
-        // Fallback if video fails to load
-        print("Error loading splash video: $error");
+    // Delay initialization slightly to let the Flutter engine settle
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _initializeAndPlay();
+    });
+  }
+
+  Future<void> _initializeAndPlay() async {
+    debugPrint("VideoSplashScreen: Starting video setup...");
+    
+    try {
+      final controller = VideoPlayerController.asset('assets/images/splash_video.mp4');
+      _controller = controller;
+      
+      await controller.initialize();
+      debugPrint("VideoSplashScreen: Video initialized. Size: ${controller.value.size}");
+      
+      if (!mounted) return;
+
+      await controller.setLooping(false);
+      await controller.play();
+      _isPlaying = true;
+      
+      // Remove native splash once video starts
+      FlutterNativeSplash.remove();
+      
+      setState(() {});
+      controller.addListener(_videoListener);
+    } catch (error) {
+      debugPrint("VideoSplashScreen: Error - Could not play splash video: $error");
+      if (mounted) {
         FlutterNativeSplash.remove();
         _checkAuthAndNavigate();
-      });
-
-    _controller.addListener(_videoListener);
+      }
+    }
   }
 
   void _videoListener() {
     if (!_navigated &&
         _isPlaying &&
-        _controller.value.isInitialized &&
-        _controller.value.position >= _controller.value.duration) {
+        _controller != null &&
+        _controller!.value.isInitialized &&
+        _controller!.value.position >= _controller!.value.duration) {
       _navigated = true;
       _isPlaying = false;
-      _controller.removeListener(_videoListener);
+      _controller?.removeListener(_videoListener);
       _checkAuthAndNavigate();
     }
   }
@@ -63,8 +82,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
 
   @override
   void dispose() {
-    _controller.removeListener(_videoListener);
-    _controller.dispose();
+    _controller?.removeListener(_videoListener);
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -73,14 +92,14 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
     return Scaffold(
       backgroundColor: Colors.black, // Dark background for seamless transition
       body: Center(
-        child: _controller.value.isInitialized
+        child: (_controller != null && _controller!.value.isInitialized)
             ? SizedBox.expand(
                 child: FittedBox(
                   fit: BoxFit.cover,
                   child: SizedBox(
-                    width: _controller.value.size.width,
-                    height: _controller.value.size.height,
-                    child: VideoPlayer(_controller),
+                    width: _controller!.value.size.width,
+                    height: _controller!.value.size.height,
+                    child: VideoPlayer(_controller!),
                   ),
                 ),
               )

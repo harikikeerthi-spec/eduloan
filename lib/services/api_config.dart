@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class ApiConfig {
-  static const String _baseUrl = 'https://vidyaloans.in/api';
+  static const String _baseUrl = 'http://10.0.2.2:3000';
   static String? _cachedBaseUrl;
 
   static Future<String> getBaseUrl() async {
@@ -11,6 +11,7 @@ class ApiConfig {
     return _cachedBaseUrl!;
   }
 
+  static String get baseUrl => _cachedBaseUrl ?? _baseUrl;
   static String get authBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/auth';
   static String get aiBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/ai';
   static String get onboardingBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/onboarding';

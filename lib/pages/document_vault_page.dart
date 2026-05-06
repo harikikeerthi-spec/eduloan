@@ -27,6 +27,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       {'name': 'PAN Card', 'type': 'student_pan'},
       {'name': 'Aadhar Card', 'type': 'student_aadhar'},
       {'name': 'Passport Copy', 'type': 'student_passport'},
+      {'name': 'Driving License', 'type': 'student_driving_license'},
     ],
     'Academics': [
       {'name': '10th Marksheet', 'type': 'student_10th_marksheet'},
@@ -434,10 +435,13 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildDocCard(String name, String type, UserDocument? doc) {
-    bool isDigilockerVerified = doc?.status == 'available_in_digilocker' || 
-                                doc?.status == 'verified' || 
-                                (doc?.isDigilocker ?? false);
-    bool isUploaded = doc != null && (doc.uploaded || isDigilockerVerified);
+    bool isFromDigilocker = (doc?.isDigilocker ?? false) || doc?.status == 'available_in_digilocker';
+    bool hasFile = doc?.filePath != null && doc!.filePath!.isNotEmpty;
+    bool isVerified = doc?.status == 'verified';
+    
+    // A document is considered "available" if it's from DigiLocker or has a local file
+    bool isAvailable = doc != null && (isFromDigilocker || hasFile);
+    bool isUploaded = isAvailable;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -483,9 +487,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 ),
                 if (isUploaded)
                   Text(
-                    isDigilockerVerified 
+                    isFromDigilocker 
                         ? 'Verified via DigiLocker'
-                        : 'Uploaded on ${doc?.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
+                        : isVerified
+                           ? 'Verified'
+                           : 'Uploaded on ${doc?.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   )
                 else
@@ -500,7 +506,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isDigilockerVerified)
+                if (isFromDigilocker || isVerified)
                   const Padding(
                     padding: EdgeInsets.only(right: 8.0),
                     child: Icon(Icons.verified, color: Color(0xFF10B981), size: 20),
@@ -510,7 +516,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                   onPressed: () async {
                     final token =
                         await _getToken(); // Reuse internal helper or make UserService method
-                    final url = UserService.getDocumentViewUrl(type);
+                    final url = await UserService.getDocumentViewUrl(type);
                     final uri = Uri.parse('$url?token=$token');
 
                     if (await canLaunchUrl(uri)) {

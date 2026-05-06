@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/notification.dart';
 import '../widgets/mesh_background.dart';
 
+import '../services/notification_service.dart';
+
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
 
@@ -11,31 +13,40 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<NotificationModel> _notifications = [
-    NotificationModel(
-      id: '1',
-      title: 'Loan Application Update',
-      body: 'Your loan application for Leeds University has been moved to "Processing" stage.',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-      type: NotificationType.loanUpdate,
-    ),
-    NotificationModel(
-      id: '2',
-      title: 'New Community Message',
-      body: 'Mentor Sarah replied to your question about SOP writing.',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-      type: NotificationType.communityMessage,
-      isRead: true,
-    ),
-    NotificationModel(
-      id: '3',
-      title: 'Exclusive Offer!',
-      body: 'Get 0.5% interest rate reduction on processing today.',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-      type: NotificationType.offer,
-      isRead: true,
-    ),
-  ];
+  final NotificationService _notificationService = NotificationService();
+  List<NotificationModel> _notifications = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifications();
+  }
+
+  Future<void> _loadNotifications() async {
+    setState(() => _isLoading = true);
+    final notifications = await _notificationService.getNotifications();
+    if (mounted) {
+      setState(() {
+        _notifications = notifications;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markAsRead(String id) async {
+    final success = await _notificationService.markAsRead(id);
+    if (success) {
+      _loadNotifications();
+    }
+  }
+
+  Future<void> _clearAll() async {
+    final success = await _notificationService.markAllAsRead();
+    if (success) {
+      _loadNotifications();
+    }
+  }
 
 
   @override
@@ -47,17 +58,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
             children: [
               _buildAppBar(),
               Expanded(
-                child: _notifications.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, index) {
-                          return _buildNotificationCard(_notifications[index]);
-                        },
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : RefreshIndicator(
+                        onRefresh: _loadNotifications,
+                        child: _notifications.isEmpty
+                            ? _buildEmptyState()
+                            : ListView.builder(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                itemCount: _notifications.length,
+                                itemBuilder: (context, index) {
+                                  return GestureDetector(
+                                    onTap: () => _markAsRead(_notifications[index].id),
+                                    child: _buildNotificationCard(_notifications[index]),
+                                  );
+                                },
+                              ),
                       ),
               ),
             ],
@@ -87,12 +106,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
           const Spacer(),
           IconButton(
-            onPressed: () {
-              setState(() {
-                _notifications.clear();
-              });
-            },
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            onPressed: _clearAll,
+            icon: const Icon(Icons.done_all, color: Color(0xFF311B92)),
+            tooltip: 'Mark all as read',
           ),
         ],
       ),

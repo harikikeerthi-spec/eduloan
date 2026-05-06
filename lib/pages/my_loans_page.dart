@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,14 +31,14 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   Future<void> _fetchLoans() async {
-    setState(() {
+    if (mounted) setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
       final loans = await _loanService.getUserLoans();
-      setState(() {
+      if (mounted) setState(() {
         _loans = loans;
         _isLoading = false;
       });
@@ -49,7 +50,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
         await prefs.remove('auth_token');
       }
 
-      setState(() {
+      if (mounted) setState(() {
         _error = errorStr;
         _isLoading = false;
       });
@@ -689,11 +690,23 @@ class _MyLoansPageState extends State<MyLoansPage> {
       } catch (e) {
         if (mounted) {
           Navigator.pop(context); // Close loading dialog
+          
+          String errorMsg = e.toString();
+          if (errorMsg.contains('{')) {
+            try {
+              final jsonStart = errorMsg.indexOf('{');
+              final jsonStr = errorMsg.substring(jsonStart);
+              final errorJson = jsonDecode(jsonStr);
+              errorMsg = errorJson['detail'] ?? errorJson['message'] ?? errorMsg;
+            } catch (_) {}
+          }
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Verification failed: $e'),
+              content: Text('Verification failed: $errorMsg'),
               backgroundColor: Colors.redAccent,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
@@ -1136,7 +1149,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
             child: ElevatedButton(
               onPressed: () {
                 debugPrint('DEBUG: Prominent DigiLocker card tapped');
-                _verifyWithDigilocker();
+                _verifyWithDigilocker(loanId: _loans.isNotEmpty ? _loans[0].id : null);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,

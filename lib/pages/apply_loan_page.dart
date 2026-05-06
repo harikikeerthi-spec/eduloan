@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -136,65 +137,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     'Other',
   ];
 
-  Future<void> _fetchFromDigilocker() async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const DigilockerAuthPage(),
-      ),
-    );
-
-    if (result != null && result is Map) {
-      final code = result['code'];
-      final verifier = result['code_verifier'];
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF311B92)),
-        ),
-      );
-
-      try {
-        final result = await DigilockerService().verifyDigilocker(
-          code,
-          codeVerifier: verifier,
-        );
-        if (!mounted) return;
-        Navigator.pop(context); // Close loading
-
-        if (result['success'] == true && result['user'] != null) {
-          final user = result['user'];
-          setState(() {
-            if (user['name'] != null) {
-              final names = user['name'].toString().split(' ');
-              _firstNameController.text = names.first;
-              if (names.length > 1) {
-                _lastNameController.text = names.sublist(1).join(' ');
-              }
-            }
-            if (user['email'] != null) {
-              _emailController.text = user['email'];
-            }
-            if (user['mobile'] != null) {
-              _phoneController.text = user['mobile'];
-            }
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Details fetched from DigiLocker!'),
-              backgroundColor: Color(0xFF10B981),
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to fetch: $e')),
-        );
-      }
-    }
-  }
 
   void _showCountrySelection() {
     showModalBottomSheet(
@@ -648,7 +590,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     currentStep: _currentStep,
                     onStepContinue: () {
                       if (_validateStep(_currentStep)) {
-                        if (_currentStep < 3) {
+                        if (_currentStep < 4) {
                           setState(() => _currentStep += 1);
                         } else {
                           _submitApplication();
@@ -681,9 +623,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                                   ),
                                 ),
                                 child: Text(
-                                  _currentStep == 3
+                                  _currentStep == 4
                                       ? 'Submit Application'
-                                      : 'Continue',
+                                      : _currentStep == 3
+                                          ? 'Review Details'
+                                          : 'Continue',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -733,23 +677,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         ),
                         content: _buildStepContainer(
                           children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: _fetchFromDigilocker,
-                                icon: const Icon(Icons.cloud_download_outlined),
-                                label: const Text('Fetch from DigiLocker'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF311B92),
-                                  side: const BorderSide(color: Color(0xFF311B92)),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
                             _buildTextInput(
                               hint: 'First Name',
                               icon: Icons.person_outline,
@@ -1030,6 +957,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             ? StepState.complete
                             : StepState.indexed,
                       ),
+                      Step(
+                        title: const Text(
+                          'Review & Submit',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        content: _buildReviewStep(),
+                        isActive: _currentStep >= 4,
+                        state: _currentStep == 4
+                            ? StepState.editing
+                            : StepState.indexed,
+                      ),
                     ],
                   ),
                 ),
@@ -1037,6 +979,134 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReviewStep() {
+    return _buildStepContainer(
+      children: [
+        _buildReviewSection(
+          'Personal Details',
+          [
+            _buildReviewRow('Name', '${_firstNameController.text} ${_lastNameController.text}'),
+            _buildReviewRow('Phone', _phoneController.text),
+            _buildReviewRow('Email', _emailController.text),
+          ],
+          onEdit: () => setState(() => _currentStep = 0),
+        ),
+        const SizedBox(height: 16),
+        _buildReviewSection(
+          'Parent Details',
+          [
+            _buildReviewRow("Father's Name", _fatherNameController.text),
+            _buildReviewRow("Father's Phone", _fatherPhoneController.text),
+            _buildReviewRow("Mother's Name", _motherNameController.text),
+            _buildReviewRow("Mother's Phone", _motherPhoneController.text),
+          ],
+          onEdit: () => setState(() => _currentStep = 1),
+        ),
+        const SizedBox(height: 16),
+        _buildReviewSection(
+          'Preferred Banks',
+          [
+            _buildReviewRow('Banks', _bankController.text),
+          ],
+          onEdit: () => setState(() => _currentStep = 2),
+        ),
+        const SizedBox(height: 16),
+        _buildReviewSection(
+          'Education & Loan',
+          [
+            _buildReviewRow('Country', _countryController.text),
+            _buildReviewRow('University', _instituteController.text),
+            _buildReviewRow('Course', _courseController.text),
+            _buildReviewRow('Amount', '₹${_amountController.text}'),
+            _buildReviewRow('Collateral', _hasCollateral ? 'Yes (${_collateralController.text})' : 'No'),
+          ],
+          onEdit: () => setState(() => _currentStep = 3),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'By submitting, you agree to our terms and conditions and permit us to share your details with selected lending partners.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewSection(String title, List<Widget> children, {VoidCallback? onEdit}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
+              ),
+              if (onEdit != null)
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, size: 14),
+                  label: const Text('Edit', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF311B92),
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+            ],
+          ),
+          const Divider(height: 24),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? 'N/A' : value,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1217,68 +1287,112 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   Widget _getBankLogo(String bankName) {
-    String? assetPath;
+    String? logoUrl;
+    bool isSvg = false; // Using Clearbit/Google icons which are PNG/JPG
+
     switch (bankName) {
       case 'HDFC Credila':
-        assetPath = 'assets/logos/hdfc_credila.svg';
+        logoUrl = 'https://logo.clearbit.com/hdfccredila.com';
         break;
       case 'SBI':
-        assetPath = 'assets/logos/sbi.svg';
+        logoUrl = 'https://logo.clearbit.com/sbi.co.in';
         break;
       case 'ICICI Bank':
-        assetPath = 'assets/logos/icici.svg';
+        logoUrl = 'https://logo.clearbit.com/icicibank.com';
         break;
       case 'Axis Bank':
-        assetPath = 'assets/logos/axis.svg';
+        logoUrl = 'https://logo.clearbit.com/axisbank.com';
         break;
       case 'Avanse Financial Services':
-        assetPath = 'assets/logos/avanse.svg';
+        logoUrl = 'https://logo.clearbit.com/avanse.com';
         break;
       case 'InCred':
-        assetPath = 'assets/logos/incred.svg';
+        logoUrl = 'https://logo.clearbit.com/incred.com';
         break;
       case 'Auxilo':
-        assetPath = 'assets/logos/auxilo.svg';
+        logoUrl = 'https://logo.clearbit.com/auxilo.com';
         break;
       case 'IDFC First Bank':
-        assetPath = 'assets/logos/idfc.svg';
+        logoUrl = 'https://logo.clearbit.com/idfcfirstbank.com';
         break;
       case 'Bank of Baroda':
-        assetPath = 'assets/logos/bob.svg';
+        logoUrl = 'https://logo.clearbit.com/bankofbaroda.in';
         break;
       case 'Punjab National Bank':
-        assetPath = 'assets/logos/pnb.svg';
+        logoUrl = 'https://logo.clearbit.com/pnbindia.in';
         break;
       default:
-        assetPath = null;
+        logoUrl = null;
     }
 
-    if (assetPath == null) {
+    if (logoUrl == null) {
       return Container(
-        width: 32,
-        height: 32,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: const Color(0xFF311B92).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Icon(Icons.account_balance, size: 20, color: Color(0xFF311B92)),
+        child: const Icon(Icons.account_balance, size: 24, color: Color(0xFF311B92)),
       );
     }
 
-    return SvgPicture.asset(
-      assetPath,
-      width: 32,
-      height: 32,
-      placeholderBuilder: (context) => Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: 40,
+        height: 40,
+        color: Colors.white,
+        padding: const EdgeInsets.all(4),
+        child: Image.network(
+          logoUrl,
+          width: 40,
+          height: 40,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            // Fallback to Google Favicon service if Clearbit fails
+            final domain = _getDomainForBank(bankName);
+            return Image.network(
+              'https://www.google.com/s2/favicons?domain=$domain&sz=128',
+              width: 40,
+              height: 40,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.account_balance,
+                size: 24,
+                color: Colors.grey,
+              ),
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
         ),
-        child: const Icon(Icons.account_balance, size: 20, color: Colors.grey),
       ),
     );
+  }
+
+  String _getDomainForBank(String bankName) {
+    switch (bankName) {
+      case 'HDFC Credila': return 'hdfccredila.com';
+      case 'SBI': return 'sbi.co.in';
+      case 'ICICI Bank': return 'icicibank.com';
+      case 'Axis Bank': return 'axisbank.com';
+      case 'Avanse Financial Services': return 'avanse.com';
+      case 'InCred': return 'incred.com';
+      case 'Auxilo': return 'auxilo.com';
+      case 'IDFC First Bank': return 'idfcfirstbank.com';
+      case 'Bank of Baroda': return 'bankofbaroda.in';
+      case 'Punjab National Bank': return 'pnbindia.in';
+      default: return 'google.com';
+    }
   }
 }
 
