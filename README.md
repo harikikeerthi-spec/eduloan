@@ -1,4 +1,4 @@
-# eduloan
+# VidhyaLoan
 
 A new Flutter project.
 

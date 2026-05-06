@@ -1073,7 +1073,7 @@ Check out this blog: $blogTitle
 
 $blogExcerpt
 
-Read more on Eduloan app!
+Read more on VidhyaLoan app!
 ''';
     Share.share(shareText);
   }

@@ -36,7 +36,7 @@ export class OpenRouterService {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${this.apiKey}`,
             'HTTP-Referer': 'http://localhost:3000', // Required by OpenRouter
-            'X-Title': 'EduLoan AI Service', // Optional, helps with tracking
+            'X-Title': 'VidhyaLoan AI Service', // Optional, helps with tracking
           },
             body: JSON.stringify({
               model: 'google/gemini-2.0-flash-001',
