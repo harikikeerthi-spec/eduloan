@@ -434,7 +434,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildDocCard(String name, String type, UserDocument? doc) {
-    bool isUploaded = doc != null && doc.uploaded;
+    bool isDigilockerVerified = doc?.status == 'available_in_digilocker' || 
+                                doc?.status == 'verified' || 
+                                (doc?.isDigilocker ?? false);
+    bool isUploaded = doc != null && (doc.uploaded || isDigilockerVerified);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -480,7 +483,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 ),
                 if (isUploaded)
                   Text(
-                    'Uploaded on ${doc.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
+                    isDigilockerVerified 
+                        ? 'Verified via DigiLocker'
+                        : 'Uploaded on ${doc?.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   )
                 else
@@ -495,6 +500,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (isDigilockerVerified)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8.0),
+                    child: Icon(Icons.verified, color: Color(0xFF10B981), size: 20),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.visibility, color: Colors.blue),
                   onPressed: () async {

@@ -62,7 +62,8 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
           onWebResourceError: (WebResourceError error) => debugPrint('DEBUG: WebView Error: ${error.description}'),
           onNavigationRequest: (NavigationRequest request) {
             debugPrint('DEBUG: WebView navigating to: ${request.url}');
-            if (request.url.startsWith(widget.redirectUri)) {
+            // Intercept both the production redirectUri AND the mock callback
+            if (request.url.startsWith(widget.redirectUri) || request.url.contains('/api/digilocker/callback')) {
               debugPrint('DEBUG: Callback detected: ${request.url}');
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
