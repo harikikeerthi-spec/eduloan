@@ -1,7 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import 'api_config.dart';
 
 // Data Models
@@ -1097,7 +1097,7 @@ class AiLogicService {
         );
       }
     } catch (e) {
-      print('Error toggling favorite on backend: $e');
+      debugPrint('Error toggling favorite on backend: $e');
     }
   }
 
@@ -1123,7 +1123,7 @@ class AiLogicService {
         }),
       );
     } catch (e) {
-      print('Error tracking university view: $e');
+      debugPrint('Error tracking university view: $e');
     }
   }
 

@@ -131,7 +131,7 @@ class _EventsPageState extends State<EventsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -152,7 +152,7 @@ class _EventsPageState extends State<EventsPage> {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 160,
-                  color: const Color(0xFF311B92).withOpacity(0.1),
+                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.event,
                     size: 50,
@@ -174,7 +174,7 @@ class _EventsPageState extends State<EventsPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withOpacity(0.1),
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -253,7 +253,7 @@ class _EventsPageState extends State<EventsPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF311B92).withOpacity(0.05),
+                          color: const Color(0xFF311B92).withValues(alpha: 0.05),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -279,7 +279,7 @@ class _EventsPageState extends State<EventsPage> {
                                 event.speakerTitle!,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                 ),
                               ),
                           ],
@@ -294,7 +294,7 @@ class _EventsPageState extends State<EventsPage> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     height: 1.5,
                     fontSize: 13,
                   ),
@@ -324,7 +324,11 @@ class _EventsPageState extends State<EventsPage> {
                       height: 36,
                       child: ElevatedButton(
                         onPressed: () {
-                          // TODO: RSVP
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('RSVP functionality coming soon!'),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF311B92),

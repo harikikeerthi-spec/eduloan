@@ -22,7 +22,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
   // Dropdown Values
   String _employment = 'employed';
   String _study = 'masters';
-  String _maritalStatus = 'single';
+  final String _maritalStatus = 'single';
   bool _coApplicant = false;
   bool _collateral = false;
 
@@ -138,13 +138,13 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     Color textColor;
 
     if (_result!.status == 'eligible') {
-      badgeColor = Colors.green.withOpacity(0.1);
+      badgeColor = Colors.green.withValues(alpha: 0.1);
       textColor = Colors.green.shade700;
     } else if (_result!.status == 'borderline') {
-      badgeColor = Colors.orange.withOpacity(0.1);
+      badgeColor = Colors.orange.withValues(alpha: 0.1);
       textColor = Colors.orange.shade700;
     } else {
-      badgeColor = Colors.red.withOpacity(0.1);
+      badgeColor = Colors.red.withValues(alpha: 0.1);
       textColor = Colors.red.shade700;
     }
 
@@ -155,7 +155,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -185,7 +185,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
                 decoration: BoxDecoration(
                   color: badgeColor,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: textColor.withOpacity(0.3)),
+                  border: Border.all(color: textColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   _result!.status.toUpperCase(),
@@ -226,7 +226,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: _result!.score / 100,
-              backgroundColor: Colors.black.withOpacity(0.05),
+              backgroundColor: Colors.black.withValues(alpha: 0.05),
               color: textColor,
               minHeight: 8,
             ),
@@ -253,7 +253,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -418,10 +418,10 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.6),
+            color: Colors.white.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.white.withValues(alpha: 0.5),
               width: 1.5,
             ),
           ),
@@ -433,7 +433,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 fontSize: 14,
               ),
               border: InputBorder.none,
@@ -484,13 +484,13 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: value
-            ? const Color(0xFF6200EA).withOpacity(0.05)
-            : Colors.black.withOpacity(0.02),
+            ? const Color(0xFF6200EA).withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.02),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: value
-              ? const Color(0xFF6200EA).withOpacity(0.2)
-              : Colors.white.withOpacity(0.5),
+              ? const Color(0xFF6200EA).withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.5),
           width: 1.5,
         ),
       ),
@@ -520,7 +520,8 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
                 child: Switch(
                   value: value,
                   onChanged: onChanged,
-                  activeColor: const Color(0xFF6200EA),
+                  activeThumbColor: const Color(0xFF6200EA),
+                  activeTrackColor: const Color(0xFF6200EA).withValues(alpha: 0.5),
                 ),
               ),
             ],

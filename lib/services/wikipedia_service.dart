@@ -16,12 +16,12 @@ class WikipediaService {
     // Pass 2: Search for "[University] campus"
     if (results.isEmpty) {
       debugPrint('Wiki FETCH Pass 2: $cleanUniQuery campus');
-      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanUniQuery + " campus")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery campus")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
       
       // Pass 3: Search for "[University] building"
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 3: $cleanUniQuery building');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanUniQuery + " building")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery building")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
       }
     }
 
@@ -31,24 +31,24 @@ class WikipediaService {
       
       // Pass 4: City landmarks
       debugPrint('Wiki FETCH Pass 4: $cleanCity landmarks');
-      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity + " landmarks")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity landmarks")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
       
       // Pass 5: City bridges
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 5: $cleanCity bridges');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity + " bridge")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
+        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity bridge")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
       }
       
       // Pass 6: General City buildings
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 6: $cleanCity buildings');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity + " buildings")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity buildings")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
       }
-
+  
       // Pass 7: City skyline
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 7: $cleanCity skyline');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity + " skyline")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
+        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity skyline")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
       }
 
       // Pass 8: Just the City Name (Last resort)
@@ -166,7 +166,7 @@ class WikipediaService {
         }
       }
     } catch (e) {
-      print('Error in WikipediaService: $e');
+      debugPrint('Error in WikipediaService: $e');
     }
     return [];
   }

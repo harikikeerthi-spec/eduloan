@@ -336,7 +336,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter your last name';
                                   }
-                                  if (value.length < 1) {
+                                  if (value.isEmpty) {
                                     return 'Min 1 character';
                                   }
                                   if (value.length > 30) {
@@ -363,13 +363,15 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   hint: 'DD-MM-YYYY',
                                 ),
                                 validator: (value) {
-                                  if (value == null || value.isEmpty)
+                                  if (value == null || value.isEmpty) {
                                     return 'Required';
+                                  }
                                   // Parse and check 18+
                                   try {
                                     final parts = value.split('-');
-                                    if (parts.length != 3)
+                                    if (parts.length != 3) {
                                       return 'Invalid format';
+                                    }
                                     final day = int.parse(parts[0]);
                                     final month = int.parse(parts[1]);
                                     final year = int.parse(parts[2]);
@@ -381,8 +383,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                             today.day < dob.day)) {
                                       age--;
                                     }
-                                    if (age < 18)
+                                    if (age < 18) {
                                       return 'Must be 18+ years old';
+                                    }
                                   } catch (e) {
                                     return 'Invalid date';
                                   }
@@ -402,17 +405,28 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                 decoration: _getInputDecoration(
                                   'Mobile Number',
                                   Icons.phone_outlined,
-                                  hint: 'Enter mobile number',
+                                  hint: 'XXXXXXXXXX',
+                                ).copyWith(
+                                  prefixText: '+91 ',
+                                  prefixStyle: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 keyboardType: TextInputType.phone,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter your mobile number';
                                   }
-                                  if (value.length != 10)
+                                  if (value.length != 10) {
                                     return 'Must be 10 digits';
-                                  if (!RegExp(r'^[0-9]+$').hasMatch(value))
-                                    return 'Digits only';
+                                  }
+                                  if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                    return 'Invalid Indian mobile number';
+                                  }
+                                  if (value.split('').toSet().length < 3) {
+                                    return 'Highly repetitive number not allowed';
+                                  }
                                   return null;
                                 },
                               ),

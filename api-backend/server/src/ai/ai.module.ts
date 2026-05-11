@@ -7,6 +7,7 @@ import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
 import { OpenRouterService } from './services/open-router.service';
+import { VisaInterviewService } from './services/visa-interview.service';
 
 import { AiSupportService } from './services/ai-support.service';
 
@@ -21,6 +22,7 @@ import { AiSupportService } from './services/ai-support.service';
     AdmitPredictorService,
     OpenRouterService,
     AiSupportService,
+    VisaInterviewService,
   ],
   exports: [
     EligibilityService,
@@ -30,6 +32,7 @@ import { AiSupportService } from './services/ai-support.service';
     UniversityComparisonService,
     AdmitPredictorService,
     OpenRouterService,
+    VisaInterviewService,
   ],
 })
 export class AiModule {}

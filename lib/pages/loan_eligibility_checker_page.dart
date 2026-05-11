@@ -113,12 +113,13 @@ class _LoanEligibilityCheckerPageState
 
   Widget _buildResultCard() {
     Color color;
-    if (_result!.score >= 80)
+    if (_result!.score >= 80) {
       color = Colors.green;
-    else if (_result!.score >= 50)
+    } else if (_result!.score >= 50) {
       color = Colors.orange;
-    else
+    } else {
       color = Colors.red;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -128,12 +129,12 @@ class _LoanEligibilityCheckerPageState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -159,7 +160,7 @@ class _LoanEligibilityCheckerPageState
                 height: 60,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   border: Border.all(color: color, width: 2),
                 ),
                 child: Center(
@@ -227,7 +228,7 @@ class _LoanEligibilityCheckerPageState
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -301,7 +302,8 @@ class _LoanEligibilityCheckerPageState
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               value: _coApplicant,
-              activeColor: const Color(0xFF311B92),
+              activeThumbColor: const Color(0xFF311B92),
+              activeTrackColor: const Color(0xFF311B92).withValues(alpha: 0.5),
               onChanged: (v) => setState(() => _coApplicant = v),
             ),
             SwitchListTile(
@@ -310,7 +312,8 @@ class _LoanEligibilityCheckerPageState
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               value: _collateral,
-              activeColor: const Color(0xFF311B92),
+              activeThumbColor: const Color(0xFF311B92),
+              activeTrackColor: const Color(0xFF311B92).withValues(alpha: 0.5),
               onChanged: (v) => setState(() => _collateral = v),
             ),
             const SizedBox(height: 32),
@@ -359,7 +362,7 @@ class _LoanEligibilityCheckerPageState
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: TextFormField(
             controller: controller,
@@ -395,7 +398,7 @@ class _LoanEligibilityCheckerPageState
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(

@@ -174,7 +174,7 @@ class LoanService {
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        print('Upload failed: ${response.body}');
+        debugPrint('Upload failed: ${response.body}');
         throw Exception('Failed to upload document: ${response.statusCode}');
       }
     } catch (e) {

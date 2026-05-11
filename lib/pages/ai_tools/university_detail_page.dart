@@ -183,7 +183,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     String urlString = widget.university.websiteUrl.trim();
     if (urlString.isEmpty) {
       urlString =
-          'https://www.google.com/search?q=${Uri.encodeComponent(widget.university.name + " official website")}';
+          'https://www.google.com/search?q=${Uri.encodeComponent("${widget.university.name} official website")}';
     } else {
       // Ensure scheme
       if (!urlString.startsWith('http://') &&
@@ -418,7 +418,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -572,7 +572,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1F2937).withOpacity(0.05),
+            color: const Color(0xFF1F2937).withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -625,7 +625,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Widget _buildStatDivider() {
-    return Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.1));
+    return Container(height: 40, width: 1, color: Colors.grey.withValues(alpha: 0.1));
   }
 
   Widget _buildInfoGrid() {
@@ -958,7 +958,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         }
       }
     } catch (e) {
-      print("Wiki fetch error: $e");
+      debugPrint("Wiki fetch error: $e");
     }
     return [];
   }
@@ -1385,7 +1385,8 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                 Switch(
                   value: _isUsd,
                   onChanged: (val) => setState(() => _isUsd = val),
-                  activeColor: const Color(0xFF6200EA),
+                  activeThumbColor: const Color(0xFF6200EA),
+                  activeTrackColor: const Color(0xFF6200EA).withValues(alpha: 0.5),
                 ),
                 const Text(
                   'USD',
@@ -1540,7 +1541,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1610,7 +1611,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                   ? Colors.green
                   : const Color(0xFF2563EB),
               disabledBackgroundColor: _hasRequestedFastTrack
-                  ? Colors.green.withOpacity(0.8)
+                  ? Colors.green.withValues(alpha: 0.8)
                   : Colors.grey,
               foregroundColor: Colors.white,
               disabledForegroundColor: Colors.white,
@@ -1660,14 +1661,15 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     String lower = deadline.toLowerCase();
 
     String season = 'Next';
-    if (lower.contains('fall'))
+    if (lower.contains('fall')) {
       season = 'Fall';
-    else if (lower.contains('spring'))
+    } else if (lower.contains('spring')) {
       season = 'Spring';
-    else if (lower.contains('summer'))
+    } else if (lower.contains('summer')) {
       season = 'Summer';
-    else if (lower.contains('winter'))
+    } else if (lower.contains('winter')) {
       season = 'Winter';
+    }
 
     RegExp yearRegex = RegExp(r'(20\d{2})');
     Match? match = yearRegex.firstMatch(deadline);

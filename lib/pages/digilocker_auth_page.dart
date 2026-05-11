@@ -9,10 +9,10 @@ class DigilockerAuthPage extends StatefulWidget {
   final String redirectUri;
 
   const DigilockerAuthPage({
-    Key? key,
+    super.key,
     this.clientId = 'UN64D05F18', 
     this.redirectUri = 'https://vidhyaloan.com/callback',
-  }) : super(key: key);
+  });
 
   @override
   State<DigilockerAuthPage> createState() => _DigilockerAuthPageState();
@@ -49,6 +49,7 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
       'state': 'vidhyaloan_auth_state',
       'code_challenge': codeChallenge,
       'code_challenge_method': 'S256',
+      'scope': 'openid profile email address files.issueddocs',
     });
     final authUrl = uri.toString(); 
     debugPrint('DEBUG: Auth URL: $authUrl');

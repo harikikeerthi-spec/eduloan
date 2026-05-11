@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -8,10 +7,7 @@ import '../widgets/institute_selection_modal.dart';
 import '../data/institutes_data.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'main_navigation.dart';
-import 'digilocker_auth_page.dart';
-import '../services/digilocker_service.dart';
 
 class ApplyLoanPage extends StatefulWidget {
   const ApplyLoanPage({super.key});
@@ -376,6 +372,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       }
 
       if (userId.isEmpty) {
+        if (!mounted) return;
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -415,6 +412,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         collateralDetails: _collateralController.text,
       );
 
+      if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
       Navigator.pop(context); // Go back to main navigation
 
@@ -431,6 +429,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -463,6 +462,16 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         _showError('Phone number must be exactly 10 digits');
         return false;
       }
+      if (!RegExp(r'^[6-9]').hasMatch(phone)) {
+        setState(() => _fieldErrors[_phoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number');
+        return false;
+      }
+      if (phone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_phoneController] = 'Invalid pattern');
+        _showError('Phone number cannot be highly repetitive (e.g., 8787878787)');
+        return false;
+      }
       if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
         setState(() => _fieldErrors[_emailController] = 'Enter valid email');
         _showError('Please enter a valid email address');
@@ -480,6 +489,16 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         _showError('Father\'s phone number must be 10 digits');
         return false;
       }
+      if (!RegExp(r'^[6-9]').hasMatch(fPhone)) {
+        setState(() => _fieldErrors[_fatherPhoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number for father');
+        return false;
+      }
+      if (fPhone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_fatherPhoneController] = 'Invalid pattern');
+        _showError('Father\'s phone number cannot be highly repetitive');
+        return false;
+      }
       if (_motherNameController.text.length < 3) {
         setState(() => _fieldErrors[_motherNameController] = 'Required');
         _showError('Mother\'s name is required (min 3 chars)');
@@ -489,6 +508,16 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       if (mPhone.length != 10) {
         setState(() => _fieldErrors[_motherPhoneController] = 'Enter 10 digits');
         _showError('Mother\'s phone number must be 10 digits');
+        return false;
+      }
+      if (!RegExp(r'^[6-9]').hasMatch(mPhone)) {
+        setState(() => _fieldErrors[_motherPhoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number for mother');
+        return false;
+      }
+      if (mPhone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_motherPhoneController] = 'Invalid pattern');
+        _showError('Mother\'s phone number cannot be highly repetitive');
         return false;
       }
     } else if (step == 2) {
@@ -836,7 +865,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                                       () => _hasCollateral = val ?? false,
                                     );
                                   },
-                                  activeColor: const Color(0xFF311B92),
+                                  fillColor: WidgetStateProperty.all(const Color(0xFF311B92)),
                                 ),
                                 const Text('Do you have collateral?'),
                               ],
@@ -1182,6 +1211,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     : Colors.black.withValues(alpha: 0.4),
               ),
               border: InputBorder.none,
+              prefixText: keyboardType == TextInputType.phone ? '+91 ' : null,
+              prefixStyle: keyboardType == TextInputType.phone 
+                  ? const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+                  : null,
               suffixIcon: Icon(
                 icon,
                 color: hasError 
@@ -1288,7 +1321,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
   Widget _getBankLogo(String bankName) {
     String? logoUrl;
-    bool isSvg = false; // Using Clearbit/Google icons which are PNG/JPG
 
     switch (bankName) {
       case 'HDFC Credila':
@@ -1433,11 +1465,11 @@ class IndianCurrencyFormatter extends TextInputFormatter {
       groupedRemaining = remaining[i] + groupedRemaining;
       count++;
       if (count == 2 && i > 0) {
-        groupedRemaining = "," + groupedRemaining;
+        groupedRemaining = ",$groupedRemaining";
         count = 0;
       }
     }
 
-    return groupedRemaining + "," + lastThree;
+    return "$groupedRemaining,$lastThree";
   }
 }

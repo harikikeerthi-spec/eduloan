@@ -196,7 +196,7 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
                       child: Text(
                         f,
                         style: TextStyle(
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -222,7 +222,7 @@ class _AdmitPredictorPageState extends State<AdmitPredictorPage> {
           child: CircularProgressIndicator(
             value: percentage / 100,
             strokeWidth: 12,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             strokeCap: StrokeCap.round,
           ),

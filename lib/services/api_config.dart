@@ -1,6 +1,3 @@
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-
 class ApiConfig {
   static const String _baseUrl = 'http://10.0.2.2:3000';
   static String? _cachedBaseUrl;

@@ -7,6 +7,7 @@ import { UniversityComparisonService } from './services/university-comparison.se
 import { AdmitPredictorService } from './services/admit-predictor.service';
 
 import { AiSupportService } from './services/ai-support.service';
+import { VisaInterviewService } from './services/visa-interview.service';
 
 @Controller('ai')
 export class AiController {
@@ -18,6 +19,7 @@ export class AiController {
     private readonly universityComparisonService: UniversityComparisonService,
     private readonly admitPredictorService: AdmitPredictorService,
     private readonly aiSupportService: AiSupportService,
+    private readonly visaInterviewService: VisaInterviewService,
   ) {}
 
   @Post('eligibility-check')
@@ -207,6 +209,29 @@ export class AiController {
       success: true,
       message: response,
     };
+  }
+
+  @Post('visa-interview/start')
+  async startVisaInterview(@Body() data: { userProfile: any; visaType: string }) {
+    return await this.visaInterviewService.startInterview(
+      data.userProfile,
+      data.visaType,
+    );
+  }
+
+  @Post('visa-interview/continue')
+  async continueVisaInterview(@Body() data: any) {
+    return await this.visaInterviewService.continueInterview(data);
+  }
+
+  @Post('visa-interview/evaluate')
+  async evaluateVisaAnswer(@Body() data: any) {
+    return await this.visaInterviewService.evaluateAnswer(data);
+  }
+
+  @Post('visa-interview/final-report')
+  async generateVisaReport(@Body() data: any) {
+    return await this.visaInterviewService.generateFinalReport(data);
   }
 
   // Missing routes to prevent 404s

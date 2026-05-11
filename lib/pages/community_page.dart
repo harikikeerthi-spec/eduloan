@@ -90,7 +90,7 @@ class _CommunityPageState extends State<CommunityPage>
         });
       }
     } catch (e) {
-      print('Error loading mentor posts: $e');
+      debugPrint('Error loading mentor posts: $e');
     }
   }
 
@@ -263,7 +263,7 @@ class _CommunityPageState extends State<CommunityPage>
           'Choose a category to dive deep into discussions and resources.',
           style: TextStyle(
             fontSize: 14,
-            color: Colors.black.withOpacity(0.5),
+            color: Colors.black.withValues(alpha: 0.5),
             height: 1.5,
           ),
         ),
@@ -295,7 +295,7 @@ class _CommunityPageState extends State<CommunityPage>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF311B92).withOpacity(0.04),
+              color: const Color(0xFF311B92).withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -307,7 +307,7 @@ class _CommunityPageState extends State<CommunityPage>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (category['color'] as Color).withOpacity(0.1),
+                color: (category['color'] as Color).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Image.asset(
@@ -332,7 +332,7 @@ class _CommunityPageState extends State<CommunityPage>
               category['desc'],
               style: TextStyle(
                 fontSize: 11,
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 height: 1.3,
               ),
               maxLines: 2, // Reduced from 3 to ensure fit
@@ -465,7 +465,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -476,7 +476,7 @@ class _CommunityPageState extends State<CommunityPage>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 32),
@@ -504,14 +504,14 @@ class _CommunityPageState extends State<CommunityPage>
                     Icon(
                       Icons.download,
                       size: 15,
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '${resource.downloads} downloads',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -533,7 +533,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -546,7 +546,7 @@ class _CommunityPageState extends State<CommunityPage>
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
                 backgroundImage: mentor.imageUrl != null
                     ? NetworkImage(mentor.imageUrl!)
                     : null,
@@ -577,7 +577,7 @@ class _CommunityPageState extends State<CommunityPage>
                       mentor.role,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -589,7 +589,7 @@ class _CommunityPageState extends State<CommunityPage>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF311B92).withOpacity(0.1),
+                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -616,7 +616,7 @@ class _CommunityPageState extends State<CommunityPage>
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               height: 1.5,
             ),
           ),
@@ -632,7 +632,7 @@ class _CommunityPageState extends State<CommunityPage>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF311B92).withOpacity(0.05),
+                      color: const Color(0xFF311B92).withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -665,7 +665,7 @@ class _CommunityPageState extends State<CommunityPage>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF311B92).withOpacity(0.08),
+              color: const Color(0xFF311B92).withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -679,7 +679,7 @@ class _CommunityPageState extends State<CommunityPage>
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: Colors.green.withOpacity(0.1),
+                  backgroundColor: Colors.green.withValues(alpha: 0.1),
                   backgroundImage: story.imageUrl != null
                       ? NetworkImage(story.imageUrl!)
                       : null,
@@ -712,7 +712,7 @@ class _CommunityPageState extends State<CommunityPage>
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -736,7 +736,7 @@ class _CommunityPageState extends State<CommunityPage>
                   story.country,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -747,7 +747,7 @@ class _CommunityPageState extends State<CommunityPage>
               maxLines: isHorizontal ? 3 : 10,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 height: 1.4,
                 fontSize: 13,
               ),
@@ -761,7 +761,7 @@ class _CommunityPageState extends State<CommunityPage>
                   icon: Icon(
                     Icons.share_outlined,
                     size: 18,
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                   ),
                   constraints: const BoxConstraints(),
                   padding: EdgeInsets.zero,
@@ -806,7 +806,7 @@ class _CommunityPageState extends State<CommunityPage>
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundColor: Colors.green.withOpacity(0.1),
+                          backgroundColor: Colors.green.withValues(alpha: 0.1),
                           backgroundImage: story.imageUrl != null
                               ? NetworkImage(story.imageUrl!)
                               : null,
@@ -838,7 +838,7 @@ class _CommunityPageState extends State<CommunityPage>
                                 '${story.course} @ ${story.university}',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.black.withOpacity(0.6),
+                                  color: Colors.black.withValues(alpha: 0.6),
                                 ),
                               ),
                             ],
@@ -882,7 +882,7 @@ class _CommunityPageState extends State<CommunityPage>
                       story.content,
                       style: TextStyle(
                         fontSize: 15,
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         height: 1.6,
                       ),
                     ),
@@ -901,7 +901,7 @@ class _CommunityPageState extends State<CommunityPage>
                         story.tips!,
                         style: TextStyle(
                           fontSize: 15,
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                           height: 1.6,
                         ),
                       ),
@@ -951,7 +951,7 @@ class _CommunityPageState extends State<CommunityPage>
                           height: 56,
                           width: 56,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF311B92).withOpacity(0.05),
+                            color: const Color(0xFF311B92).withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: IconButton(
@@ -983,7 +983,7 @@ class _CommunityPageState extends State<CommunityPage>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF311B92).withOpacity(0.05),
+              color: const Color(0xFF311B92).withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 20, color: const Color(0xFF311B92)),
@@ -996,7 +996,7 @@ class _CommunityPageState extends State<CommunityPage>
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                 ),
               ),
               Text(
@@ -1084,7 +1084,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -1096,7 +1096,7 @@ class _CommunityPageState extends State<CommunityPage>
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
                 child: const Text(
                   'Q',
                   style: TextStyle(color: Color(0xFF311B92)),
@@ -1176,7 +1176,7 @@ class _CommunityPageState extends State<CommunityPage>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: InkWell(
         onTap: () {
@@ -1203,14 +1203,14 @@ class _CommunityPageState extends State<CommunityPage>
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 14,
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount} Answers',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                   ),
                 ),
                 const Spacer(),
@@ -1218,7 +1218,7 @@ class _CommunityPageState extends State<CommunityPage>
                   _formatDate(post.createdAt),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                   ),
                 ),
               ],

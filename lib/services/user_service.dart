@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
@@ -35,7 +36,7 @@ class UserService {
       }
       return [];
     } catch (e) {
-      print('Error fetching documents: $e');
+      debugPrint('Error fetching documents: $e');
       return [];
     }
   }
@@ -64,7 +65,7 @@ class UserService {
       }
       return false;
     } catch (e) {
-      print('Error uploading document: $e');
+      debugPrint('Error uploading document: $e');
       return false;
     }
   }
@@ -86,7 +87,7 @@ class UserService {
       }
       return false;
     } catch (e) {
-      print('Error deleting document: $e');
+      debugPrint('Error deleting document: $e');
       return false;
     }
   }

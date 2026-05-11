@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/blog.dart';
 import 'api_config.dart';
@@ -85,7 +86,7 @@ class BlogService {
         throw Exception('Failed to delete comment: ${response.statusCode}');
       }
     } catch (e) {
-      print(
+      debugPrint(
         'Error deleting comment: $e',
       ); // Corrected from 'Error posting comment'
       rethrow;
@@ -111,7 +112,7 @@ class BlogService {
         throw Exception('Failed to toggle like');
       }
     } catch (e) {
-      print('Error toggling like: $e');
+      debugPrint('Error toggling like: $e');
       rethrow;
     }
   }
@@ -132,7 +133,7 @@ class BlogService {
       }
       return [];
     } catch (e) {
-      print('Error fetching likes: $e');
+      debugPrint('Error fetching likes: $e');
       return [];
     }
   }
@@ -158,7 +159,7 @@ class BlogService {
         throw Exception('Failed to add reply');
       }
     } catch (e) {
-      print('Error adding reply: $e');
+      debugPrint('Error adding reply: $e');
       rethrow;
     }
   }

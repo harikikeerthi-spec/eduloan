@@ -491,7 +491,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         ? 'Verified via DigiLocker'
                         : isVerified
                            ? 'Verified'
-                           : 'Uploaded on ${doc?.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
+                           : 'Uploaded on ${doc.uploadedAt?.toIso8601String().split('T')[0] ?? 'Unknown'}',
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   )
                 else

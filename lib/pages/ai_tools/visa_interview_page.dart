@@ -212,12 +212,11 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
         _speak(response.message);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to start interview: $e')),
-        );
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start interview: $e')),
+      );
     }
   }
 
@@ -294,6 +293,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(
         context,
@@ -381,9 +381,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         border: Border(
-          top: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1),
         ),
       ),
       child: SafeArea(
@@ -575,8 +575,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF6200EE).withOpacity(0.05)
-              : Colors.white.withOpacity(0.8),
+              ? const Color(0xFF6200EE).withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
@@ -678,9 +678,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF6200EE).withOpacity(0.2)),
+        border: Border.all(color: const Color(0xFF6200EE).withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -767,7 +767,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
+        color: Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white),
       ),
@@ -830,7 +830,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                       height: 140 * scale,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF6200EE).withOpacity((0.05 / i)),
+                        color: const Color(0xFF6200EE).withValues(alpha: (0.05 / i)),
                       ),
                     );
                   },
@@ -843,7 +843,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6200EE).withOpacity(0.2),
+                      color: const Color(0xFF6200EE).withValues(alpha: 0.2),
                       blurRadius: 20,
                       spreadRadius: 5,
                     ),
@@ -879,7 +879,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -933,7 +933,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
               color: color ?? Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -966,7 +966,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF6200EE).withOpacity(0.2),
+              color: const Color(0xFF6200EE).withValues(alpha: 0.2),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -1041,7 +1041,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6200EE).withOpacity(0.3),
+                  color: const Color(0xFF6200EE).withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -1142,7 +1142,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                 ),
                 decoration: BoxDecoration(
                   color: (eval.score >= 70 ? Colors.green : Colors.orange)
-                      .withOpacity(0.1),
+                      .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

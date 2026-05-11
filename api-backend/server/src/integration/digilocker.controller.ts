@@ -30,7 +30,7 @@ export class DigilockerController {
             mockMode: process.env.DIGILOCKER_MOCK_MODE === 'true',
             clientId: process.env.DIGILOCKER_CLIENT_ID ? '✓ Set' : '✗ Missing',
             clientSecret: process.env.DIGILOCKER_CLIENT_SECRET ? '✓ Set' : '✗ Missing',
-            callbackUrl: process.env.DIGILOCKER_CALLBACK_URL || 'http://localhost:5000/api/digilocker/callback',
+            callbackUrl: process.env.DIGILOCKER_REDIRECT_URI || process.env.DIGILOCKER_CALLBACK_URL || 'http://localhost:5000/api/digilocker/callback',
             message: process.env.DIGILOCKER_MOCK_MODE === 'true'
                 ? '✓ Mock mode enabled - documents will be simulated'
                 : '✓ Real mode - DigiLocker Requestor flow ready'
@@ -60,7 +60,7 @@ export class DigilockerController {
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
         const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-        const redirectUri = process.env.DIGILOCKER_CALLBACK_URL || (backendUrl + '/api/digilocker/callback');
+        const redirectUri = process.env.DIGILOCKER_REDIRECT_URI || process.env.DIGILOCKER_CALLBACK_URL || (backendUrl + '/api/digilocker/callback');
 
         if (process.env.DIGILOCKER_MOCK_MODE === 'true') {
             return res.redirect(backendUrl + '/api/digilocker/mock-login?state=' + state);
@@ -359,7 +359,7 @@ export class DigilockerController {
             const redirectPath = source === 'portal' ? '/document-vault/digilocker' : '/document-vault';
 
             const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-            const redirectUri = process.env.DIGILOCKER_CALLBACK_URL || (backendUrl + '/api/digilocker/callback');
+            const redirectUri = process.env.DIGILOCKER_REDIRECT_URI || process.env.DIGILOCKER_CALLBACK_URL || (backendUrl + '/api/digilocker/callback');
             const mockMode = process.env.DIGILOCKER_MOCK_MODE === 'true';
 
             console.log('Mode:', mockMode ? 'MOCK' : 'REAL');
@@ -430,7 +430,7 @@ export class DigilockerController {
                 const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
                 // Note: Mobile usually uses a different redirect URI or out-of-band. 
                 // But DigiLocker requires the same redirect URI used in /authorize.
-                const redirectUri = process.env.DIGILOCKER_CALLBACK_URL || 'https://vidhyaloan.com/callback';
+                const redirectUri = process.env.DIGILOCKER_REDIRECT_URI || process.env.DIGILOCKER_CALLBACK_URL || 'https://vidhyaloan.com/callback';
                 
                 console.log('DEBUG: Exchanging code with redirectUri:', redirectUri);
                 const tokenData = await this.digilockerService.getAccessToken(code, redirectUri, code_verifier);

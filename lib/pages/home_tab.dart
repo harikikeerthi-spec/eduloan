@@ -28,7 +28,6 @@ class HomeTabState extends State<HomeTab> {
   List<UniversityRecommendation> _aiRecommendations = [];
   List<UniversityRecommendation> _savedRecommendations = [];
   String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
-  bool _isLoadingLoans = true;
   final AiLogicService _aiService = AiLogicService();
 
   // Auto-scroll logic for recommendations
@@ -193,13 +192,12 @@ class HomeTabState extends State<HomeTab> {
                     loan.status != 'rejected' && loan.status != 'completed',
               )
               .toList();
-          _isLoadingLoans = false;
         });
       } else {
-        setState(() => _isLoadingLoans = false);
+        setState(() {});
       }
     } catch (e) {
-      setState(() => _isLoadingLoans = false);
+      setState(() {});
     }
   }
 
@@ -931,7 +929,7 @@ class HomeTabState extends State<HomeTab> {
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF6200EA)
-                : Colors.grey.withOpacity(0.3),
+                : Colors.grey.withValues(alpha: 0.3),
           ),
         ),
         child: Text(
@@ -954,9 +952,9 @@ class HomeTabState extends State<HomeTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -1068,9 +1066,9 @@ class HomeTabState extends State<HomeTab> {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.9),
-                        Colors.black.withOpacity(0.5),
-                        Colors.black.withOpacity(0.2),
+                        Colors.black.withValues(alpha: 0.9),
+                        Colors.black.withValues(alpha: 0.5),
+                        Colors.black.withValues(alpha: 0.2),
                       ],
                       stops: const [0.0, 0.5, 1.0],
                     ),
@@ -1096,7 +1094,7 @@ class HomeTabState extends State<HomeTab> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               width: 2,
                             ),
                           ),
@@ -1113,10 +1111,10 @@ class HomeTabState extends State<HomeTab> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withValues(alpha: 0.3),
                                 ),
                               ),
                               child: Text(
@@ -1179,7 +1177,7 @@ class HomeTabState extends State<HomeTab> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Divider(color: Colors.white.withOpacity(0.2), height: 1),
+                    Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
                     const SizedBox(height: 16),
 
                     // Admit Chance Row
@@ -1194,7 +1192,7 @@ class HomeTabState extends State<HomeTab> {
                               'Admit Chance',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1213,7 +1211,7 @@ class HomeTabState extends State<HomeTab> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(
@@ -1382,7 +1380,7 @@ class HomeTabState extends State<HomeTab> {
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1398,7 +1396,7 @@ class HomeTabState extends State<HomeTab> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.15),
+                    color: iconColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(primaryIcon, color: iconColor, size: 24),
@@ -1450,7 +1448,7 @@ class HomeTabState extends State<HomeTab> {
           border: Border.all(color: Colors.white, width: 2),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1461,7 +1459,7 @@ class HomeTabState extends State<HomeTab> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.15),
+                color: iconColor.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(primaryIcon, color: iconColor, size: 28),

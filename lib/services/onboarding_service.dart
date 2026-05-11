@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
@@ -33,7 +34,7 @@ class OnboardingService {
         };
       }
     } catch (e) {
-      print('Error saving onboarding data: $e');
+      debugPrint('Error saving onboarding data: $e');
       return {'success': false, 'message': 'Connectivity error: $e'};
     }
   }

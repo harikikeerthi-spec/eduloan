@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification.dart';
@@ -27,7 +28,7 @@ class NotificationService {
       }
       return [];
     } catch (e) {
-      print('Error fetching notifications: $e');
+      debugPrint('Error fetching notifications: $e');
       return [];
     }
   }
@@ -39,7 +40,7 @@ class NotificationService {
       );
       return response.statusCode == 200;
     } catch (e) {
-      print('Error marking notification as read: $e');
+      debugPrint('Error marking notification as read: $e');
       return false;
     }
   }
@@ -60,7 +61,7 @@ class NotificationService {
       final data = json.decode(response.body);
       return data['success'] == true;
     } catch (e) {
-      print('Error marking all notifications as read: $e');
+      debugPrint('Error marking all notifications as read: $e');
       return false;
     }
   }

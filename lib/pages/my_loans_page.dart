@@ -31,17 +31,21 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   Future<void> _fetchLoans() async {
-    if (mounted) setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
 
     try {
       final loans = await _loanService.getUserLoans();
-      if (mounted) setState(() {
-        _loans = loans;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loans = loans;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       final errorStr = e.toString();
       if (errorStr.contains('401')) {
@@ -50,10 +54,12 @@ class _MyLoansPageState extends State<MyLoansPage> {
         await prefs.remove('auth_token');
       }
 
-      if (mounted) setState(() {
-        _error = errorStr;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = errorStr;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -492,8 +498,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                                 doc.status != 'pending' ||
                                 !doc.docName.contains('Unnamed'),
                           )
-                          .map((doc) => _buildDocumentItem(loan.id, doc))
-                          .toList(),
+                          .map((doc) => _buildDocumentItem(loan.id, doc)),
                     ],
                   ),
                 ),
@@ -566,32 +571,32 @@ class _MyLoansPageState extends State<MyLoansPage> {
                                 onPressed: () async {
                                   Navigator.pop(context);
                                   Navigator.pop(context);
-                                  try {
-                                    await _loanService.deleteLoan(loan.id);
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Application deleted successfully',
+                                    try {
+                                      await _loanService.deleteLoan(loan.id);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Application deleted successfully',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                      _fetchLoans();
+                                        );
+                                        _fetchLoans();
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
                                     }
-                                  } catch (e) {
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Error: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
-                                  }
                                 },
                                 style: TextButton.styleFrom(
                                   foregroundColor: Colors.red,
@@ -652,6 +657,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
       final String code = result['code'];
       final String verifier = result['code_verifier'];
       
+      if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,

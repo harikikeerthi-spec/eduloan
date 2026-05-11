@@ -12,22 +12,37 @@ export class UsersService {
   private parseDate(dateStr: string | null | undefined): string | null {
     if (!dateStr) return null;
 
-    // Try native parsing first (e.g., ISO, YYYY-MM-DD)
-    let d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return d.toISOString();
-
-    // Try DD-MM-YYYY or DD/MM/YYYY
+    // First try to parse DD-MM-YYYY or DD/MM/YYYY format explicitly
     const parts = dateStr.split(/[-/]/);
     if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
+      // Check if it's DD-MM-YYYY (first part has 2 digits)
+      if (parts[0].length <= 2 && parts[2].length === 4) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
 
-      // Simple validation for numbers
-      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        d = new Date(year, month, day);
-        if (!isNaN(d.getTime())) return d.toISOString();
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+          // Return as YYYY-MM-DD string with UTC zero time to avoid timezone shifts in Prisma/Postgres
+          return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`;
+        }
       }
+      
+      // Check if it's YYYY-MM-DD (first part has 4 digits)
+      if (parts[0].length === 4) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+          return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`;
+        }
+      }
+    }
+
+    // Fallback to native parsing for other formats (like ISO)
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      // For DOB, we only want the date part in UTC
+      return d.toISOString().split('T')[0];
     }
 
     return null;

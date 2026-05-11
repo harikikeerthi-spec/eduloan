@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class LogoService {
@@ -46,7 +47,7 @@ class LogoService {
         }
       }
     } catch (e) {
-      print('Error fetching logo for $name: $e');
+      debugPrint('Error fetching logo for $name: $e');
     }
     return null;
   }

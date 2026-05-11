@@ -32,6 +32,7 @@ export class DigilockerService {
             state: state,
             code_challenge: codeChallenge,
             code_challenge_method: 'S256',
+            scope: 'openid profile email address files.issueddocs'
         });
         return `${this.authUrl}?${params.toString()}`;
     }

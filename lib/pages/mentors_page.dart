@@ -202,7 +202,7 @@ class _MentorsPageState extends State<MentorsPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -214,7 +214,7 @@ class _MentorsPageState extends State<MentorsPage> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
                 child: const Text(
                   'Q',
                   style: TextStyle(color: Color(0xFF311B92)),
@@ -294,7 +294,7 @@ class _MentorsPageState extends State<MentorsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: InkWell(
         onTap: () {
@@ -321,14 +321,14 @@ class _MentorsPageState extends State<MentorsPage> {
                 Icon(
                   Icons.chat_bubble_outline,
                   size: 14,
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount} Answers',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.black.withOpacity(0.4),
+                    color: Colors.black.withValues(alpha: 0.4),
                   ),
                 ),
                 const Spacer(),
@@ -336,7 +336,7 @@ class _MentorsPageState extends State<MentorsPage> {
                   _formatDate(post.createdAt),
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                   ),
                 ),
               ],
@@ -365,7 +365,7 @@ class _MentorsPageState extends State<MentorsPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -378,7 +378,7 @@ class _MentorsPageState extends State<MentorsPage> {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
                 backgroundImage: mentor.imageUrl != null
                     ? NetworkImage(mentor.imageUrl!)
                     : null,
@@ -409,7 +409,7 @@ class _MentorsPageState extends State<MentorsPage> {
                     Text(
                       mentor.role,
                       style: TextStyle(
-                        color: const Color(0xFF311B92).withOpacity(0.8),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.8),
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
                       ),
@@ -418,7 +418,7 @@ class _MentorsPageState extends State<MentorsPage> {
                       Text(
                         mentor.university!,
                         style: TextStyle(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                           fontSize: 12,
                         ),
                       ),
@@ -428,7 +428,7 @@ class _MentorsPageState extends State<MentorsPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
+                  color: Colors.amber.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -453,7 +453,7 @@ class _MentorsPageState extends State<MentorsPage> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               height: 1.5,
               fontSize: 13,
             ),
@@ -495,14 +495,18 @@ class _MentorsPageState extends State<MentorsPage> {
                     '${mentor.studentsMentored} students',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
               ),
               ElevatedButton(
                 onPressed: () {
-                  // TODO: Book Session
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Booking functionality coming soon!'),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF311B92),
@@ -525,9 +529,9 @@ class _MentorsPageState extends State<MentorsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF311B92).withOpacity(0.05),
+        color: const Color(0xFF311B92).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF311B92).withOpacity(0.1)),
+        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.1)),
       ),
       child: Text(
         label,

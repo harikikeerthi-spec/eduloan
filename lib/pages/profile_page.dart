@@ -33,7 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('user_email');
 
-      print('DEBUG: ProfilePage fetching for email: $email');
+      debugPrint('DEBUG: ProfilePage fetching for email: $email');
 
       if (email != null && email.isNotEmpty) {
         final result = await AuthService.getUserDashboard(email);
@@ -53,24 +53,31 @@ class _ProfilePageState extends State<ProfilePage> {
               _phone = user['phoneNumber'] ?? 'Not set';
               // Check for dateOfBirth or dob
               _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
-              // If it's a full ISO string, might want to take just date part
-              if (_dob.contains('T')) {
-                _dob = _dob.split('T')[0];
+              // If it's a full ISO string (YYYY-MM-DD...), convert to DD-MM-YYYY
+              if (_dob.contains('-')) {
+                final parts = _dob.split('T')[0].split('-');
+                if (parts.length == 3) {
+                  if (parts[0].length == 4) {
+                    // YYYY-MM-DD -> DD-MM-YYYY
+                    _dob = '${parts[2]}-${parts[1]}-${parts[0]}';
+                  }
+                  // else if parts[0].length == 2, it is already DD-MM-YYYY
+                }
               }
               _profileImage = user['profileImage'];
               _isLoading = false;
             });
           } else {
-            print('DEBUG: getUserDashboard failed: ${result['message']}');
+            debugPrint('DEBUG: getUserDashboard failed: ${result['message']}');
             _handleError(result['message']);
           }
         }
       } else {
-        print('DEBUG: user_email not found in SharedPreferences');
+        debugPrint('DEBUG: user_email not found in SharedPreferences');
         _handleError('User email not found. Please log in.');
       }
     } catch (e) {
-      print('DEBUG: Error in _fetchProfile: $e');
+      debugPrint('DEBUG: Error in _fetchProfile: $e');
       _handleError('Error: $e');
     }
   }
@@ -96,12 +103,14 @@ class _ProfilePageState extends State<ProfilePage> {
       if (mounted) {
         if (updateResult['success'] == true) {
           await _fetchProfile();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Avatar updated successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Avatar updated successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         } else {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
@@ -175,7 +184,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                         ),
                                       );
                                     } catch (e) {
-                                      print('Error decoding base64 image: $e');
+                                      debugPrint('Error decoding base64 image: $e');
                                     }
                                   }
 

@@ -6,7 +6,7 @@ void main() {
   final bytes = File(inputPath).readAsBytesSync();
   final img = decodeImage(bytes);
   if (img == null) {
-    print('Failed to decode image');
+    stdout.writeln('Failed to decode image');
     return;
   }
 
@@ -24,7 +24,7 @@ void main() {
     }
   }
 
-  print('Original Bounds: $minX, $minY - $maxX, $maxY');
+  stdout.writeln('Original Bounds: $minX, $minY - $maxX, $maxY');
 
   // 2. Crop exactly
   final cropped = copyCrop(img, x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1);
@@ -67,5 +67,5 @@ void main() {
   
   File('assets/images/app_icon_square.png').writeAsBytesSync(encodePng(squareImage));
 
-  print('Logos perfectly resized, padded, and generated!');
+  stdout.writeln('Logos perfectly resized, padded, and generated!');
 }

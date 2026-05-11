@@ -72,7 +72,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         return result;
       }
     } catch (e) {
-      print('Error checking duplicate with AI: $e');
+      debugPrint('Error checking duplicate with AI: $e');
     }
     return null;
   }
@@ -114,7 +114,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6605C7).withOpacity(0.05),
+                        color: const Color(0xFF6605C7).withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

@@ -167,7 +167,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -196,8 +196,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             hint: 'John',
                             icon: Icons.person_outline,
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Required';
+                              }
                               if (value.length < 3) return 'Min 3 characters';
                               if (value.length > 30) return 'Max 30 characters';
                               return null;
@@ -214,9 +215,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             hint: 'Doe',
                             icon: Icons.person_outline,
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Required';
-                              if (value.length < 1) return 'Min 1 character';
+                              }
+                              if (value.isEmpty) return 'Min 1 character';
                               if (value.length > 30) return 'Max 30 characters';
                               return null;
                             },
@@ -233,12 +235,18 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             icon: Icons.phone_outlined,
                             inputType: TextInputType.phone,
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Required';
-                              if (value.length != 10)
+                              }
+                              if (value.length != 10) {
                                 return 'Must be 10 digits';
-                              if (!RegExp(r'^[0-9]+$').hasMatch(value))
-                                return 'Digits only';
+                              }
+                              if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                return 'Invalid Indian mobile number';
+                              }
+                              if (value.split('').toSet().length < 3) {
+                                return 'Highly repetitive number not allowed';
+                              }
                               return null;
                             },
                           ),
@@ -258,8 +266,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               Icons.calendar_today_outlined,
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty)
+                              if (value == null || value.isEmpty) {
                                 return 'Required';
+                              }
                               // Age validation is also implicitly handled by initialDate/firstDate but exact check is good
                               // Parse and check 18+
                               try {
@@ -358,7 +367,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         keyboardType: inputType,
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
-          hintText: hint,
+          hintText: inputType == TextInputType.phone ? 'XXXXXXXXXX' : hint,
           hintStyle: GoogleFonts.inter(color: Colors.grey[500]),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
@@ -366,6 +375,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
             vertical: 16,
           ),
           prefixIcon: Icon(icon, color: Colors.grey),
+          prefixText: inputType == TextInputType.phone ? '+91 ' : null,
+          prefixStyle: inputType == TextInputType.phone 
+              ? GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)
+              : null,
         ),
         validator:
             validator ??

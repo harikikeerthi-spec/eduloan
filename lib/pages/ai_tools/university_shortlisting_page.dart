@@ -667,6 +667,7 @@ class _UniversityShortlistingPageState
 
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
+                    if (!mounted) return;
                     _addAiMessage(
                       "Loading your last Master's recommendations...",
                     );
@@ -745,6 +746,7 @@ class _UniversityShortlistingPageState
 
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
+                    if (!mounted) return;
                     _addAiMessage("Loading your last evaluations...");
                     final List<dynamic> data = jsonDecode(cached);
                     final recs = data
@@ -3061,7 +3063,7 @@ class _TestScoresInputState extends State<_TestScoresInput> {
               color: const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
               border: _errors[controllerKey] != null
-                  ? Border.all(color: Colors.red.withOpacity(0.5))
+                  ? Border.all(color: Colors.red.withValues(alpha: 0.5))
                   : null,
             ),
             child: Row(
@@ -3793,7 +3795,9 @@ class _PhoneInputState extends State<_PhoneInput> {
 
   void _onTextChanged() {
     setState(() {
-      _isValid = _controller.text.length == 10;
+      _isValid = _controller.text.length == 10 &&
+          RegExp(r'^[6-9]').hasMatch(_controller.text) &&
+          _controller.text.split('').toSet().length > 2;
     });
   }
 
@@ -3821,11 +3825,16 @@ class _PhoneInputState extends State<_PhoneInput> {
               maxLength: 10,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(
-                hintText: "Enter 10-digit phone number",
+                hintText: "XXXXXXXXXX",
                 border: InputBorder.none,
                 counterText: "",
                 contentPadding: EdgeInsets.symmetric(horizontal: 8),
                 hintStyle: TextStyle(color: Colors.grey),
+                prefixText: '+91 ',
+                prefixStyle: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               onSubmitted: (value) {
                 if (_isValid) widget.onSubmit(value);
@@ -4160,20 +4169,22 @@ class _LoanResultsState extends State<_LoanResults> {
                           if (success) _hasRequestedCallback = true;
                         });
                         widget.onAction();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              success
-                                  ? 'We received your request, our guidance team will contact you'
-                                  : 'Failed to request callback. Please try again.',
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'We received your request, our guidance team will contact you'
+                                    : 'Failed to request callback. Please try again.',
+                              ),
+                              backgroundColor: success
+                                  ? Colors.green
+                                  : Colors.red,
+                              duration: const Duration(seconds: 3),
+                              behavior: SnackBarBehavior.floating,
                             ),
-                            backgroundColor: success
-                                ? Colors.green
-                                : Colors.red,
-                            duration: const Duration(seconds: 3),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                          );
+                        }
                       }
                     },
               icon: _isRequestingCallback
@@ -4205,7 +4216,7 @@ class _LoanResultsState extends State<_LoanResults> {
                     ? Colors.green
                     : const Color(0xFF6A1B9A),
                 disabledBackgroundColor: _hasRequestedCallback
-                    ? Colors.green.withOpacity(0.7)
+                    ? Colors.green.withValues(alpha: 0.7)
                     : Colors.grey,
                 foregroundColor: Colors.white,
                 disabledForegroundColor: Colors.white,
@@ -4353,7 +4364,7 @@ class _LoanResultsState extends State<_LoanResults> {
                         'Get 50% off on processing fees',
                         style: TextStyle(
                           fontSize: 13,
-                          color: const Color(0xFF1F2937).withOpacity(0.7),
+                          color: const Color(0xFF1F2937).withValues(alpha: 0.7),
                         ),
                       ),
                     ],

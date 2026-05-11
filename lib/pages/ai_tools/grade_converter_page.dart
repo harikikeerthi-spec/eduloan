@@ -109,7 +109,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 15,
                         offset: const Offset(0, 4),
                       ),
@@ -263,7 +263,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 15,
                 offset: const Offset(0, 4),
               ),
@@ -289,10 +289,10 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE0C389).withOpacity(0.1),
+                  color: const Color(0xFFE0C389).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFFE0C389).withOpacity(0.5),
+                    color: const Color(0xFFE0C389).withValues(alpha: 0.5),
                   ),
                 ),
                 child: Row(
@@ -361,7 +361,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                           rec,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             height: 1.4,
                           ),
                         ),
@@ -385,9 +385,9 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
-            border: Border.all(color: color.withOpacity(0.3), width: 2),
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
           ),
           child: Center(
             child: Text(
@@ -406,7 +406,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -430,12 +430,12 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.5)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

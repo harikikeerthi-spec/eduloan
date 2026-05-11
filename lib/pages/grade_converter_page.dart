@@ -111,7 +111,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.1),
+            color: const Color(0xFF311B92).withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -137,7 +137,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -188,7 +188,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -219,12 +219,15 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                   final val = double.tryParse(v);
                   if (val == null) return 'Invalid number';
                   // Adding client-side limits here as well
-                  if (_inputType == 'percentage' && (val < 0 || val > 100))
+                  if (_inputType == 'percentage' && (val < 0 || val > 100)) {
                     return '0-100';
-                  if (_inputType == 'gpa' && (val < 0 || val > 4.0))
+                  }
+                  if (_inputType == 'gpa' && (val < 0 || val > 4.0)) {
                     return '0-4.0';
-                  if (_inputType == 'cgpa' && (val < 0 || val > 10.0))
+                  }
+                  if (_inputType == 'cgpa' && (val < 0 || val > 10.0)) {
                     return '0-10.0';
+                  }
 
                   // Check marks vs total marks
                   if (_inputType == 'marks' &&
@@ -314,7 +317,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: TextFormField(
             controller: controller,
@@ -347,7 +350,7 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(

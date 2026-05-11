@@ -180,10 +180,11 @@ class _SopWriterPageState extends State<SopWriterPage> {
 
   Widget _buildScoreCard() {
     Color scoreColor = Colors.red;
-    if (_result!.totalScore >= 80)
+    if (_result!.totalScore >= 80) {
       scoreColor = const Color(0xFF00C853);
-    else if (_result!.totalScore >= 60)
+    } else if (_result!.totalScore >= 60) {
       scoreColor = const Color(0xFFFFAB00);
+    }
 
     return GlassCard(
       child: Column(
@@ -213,7 +214,7 @@ class _SopWriterPageState extends State<SopWriterPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: scoreColor.withOpacity(0.1),
+                  color: scoreColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -319,7 +320,7 @@ class _SopWriterPageState extends State<SopWriterPage> {
                   const SizedBox(height: 8),
                   Text(
                     area['recommendation']!,
-                    style: TextStyle(color: Colors.black.withOpacity(0.7)),
+                    style: TextStyle(color: Colors.black.withValues(alpha: 0.7)),
                   ),
                 ],
               ),

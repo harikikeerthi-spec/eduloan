@@ -8,14 +8,14 @@ class AvatarSelectionDialog extends StatefulWidget {
   const AvatarSelectionDialog({super.key, this.currentAvatar});
 
   static const List<Map<String, dynamic>> avatars = [
-    {'icon': Icons.person, 'color': Color(0xFF311B92), 'name': 'standard'},
-    {'icon': Icons.face, 'color': Color(0xFFD32F2F), 'name': 'face'},
-    {'icon': Icons.mood, 'color': Color(0xFF388E3C), 'name': 'mood'},
-    {'icon': Icons.pets, 'color': Color(0xFFF57C00), 'name': 'pets'},
-    {'icon': Icons.eco, 'color': Color(0xFF00796B), 'name': 'eco'},
-    {'icon': Icons.rocket_launch, 'color': Color(0xFF1976D2), 'name': 'rocket'},
-    {'icon': Icons.auto_awesome, 'color': Color(0xFF7B1FA2), 'name': 'sparkle'},
-    {'icon': Icons.lightbulb, 'color': Color(0xFFFBC02D), 'name': 'light'},
+    {'icon': Icons.face_6, 'color': Color(0xFF311B92), 'name': 'male_1'},
+    {'icon': Icons.face_2, 'color': Color(0xFFD32F2F), 'name': 'female_1'},
+    {'icon': Icons.face, 'color': Color(0xFF388E3C), 'name': 'male_2'},
+    {'icon': Icons.face_3, 'color': Color(0xFFF57C00), 'name': 'female_2'},
+    {'icon': Icons.person_outline, 'color': Color(0xFF00796B), 'name': 'male_3'},
+    {'icon': Icons.person_2_outlined, 'color': Color(0xFF1976D2), 'name': 'female_3'},
+    {'icon': Icons.account_circle, 'color': Color(0xFF7B1FA2), 'name': 'male_4'},
+    {'icon': Icons.account_circle_outlined, 'color': Color(0xFFFBC02D), 'name': 'female_4'},
   ];
 
   @override
@@ -38,8 +38,10 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
 
       if (image != null && mounted) {
         final bytes = await image.readAsBytes();
-        final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-        Navigator.pop(context, base64String);
+        if (mounted) {
+          final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+          Navigator.pop(context, base64String);
+        }
       } else if (mounted) {
         setState(() => _isPicking = false);
       }

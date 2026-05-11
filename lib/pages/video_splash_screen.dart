@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 class VideoSplashScreen extends StatefulWidget {
-  const VideoSplashScreen({Key? key}) : super(key: key);
+  const VideoSplashScreen({super.key});
 
   @override
   State<VideoSplashScreen> createState() => _VideoSplashScreenState();

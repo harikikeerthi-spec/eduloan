@@ -129,7 +129,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                           _formatDate(comment.createdAt),
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                           ),
                         ),
                         if (isAuthor) ...[
@@ -150,7 +150,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                       comment.content,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.black.withOpacity(0.8),
+                        color: Colors.black.withValues(alpha: 0.8),
                         height: 1.4,
                       ),
                     ),
@@ -168,7 +168,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                                 size: 14,
                                 color: comment.liked
                                     ? const Color(0xFF6605C7)
-                                    : Colors.black.withOpacity(0.4),
+                                    : Colors.black.withValues(alpha: 0.4),
                               ),
                               const SizedBox(width: 4),
                               Text(
@@ -180,7 +180,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                                       : FontWeight.normal,
                                   color: comment.liked
                                       ? const Color(0xFF6605C7)
-                                      : Colors.black.withOpacity(0.4),
+                                      : Colors.black.withValues(alpha: 0.4),
                                 ),
                               ),
                             ],
@@ -198,7 +198,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF6605C7).withOpacity(0.6),
+                              color: const Color(0xFF6605C7).withValues(alpha: 0.6),
                             ),
                           ),
                         ),
@@ -260,9 +260,11 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         _loadPost(_post!.id); // Reload to show new comment
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to post comment: $e')));
+      }
     }
   }
 
@@ -274,9 +276,11 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         _loadPost(_post!.id); // Reload to update like count
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
+      }
     }
   }
 
@@ -287,9 +291,11 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         _loadPost(_post!.id); // Reload to update like count
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to like comment: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to like comment: $e')));
+      }
     }
   }
 
@@ -334,7 +340,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -380,7 +386,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 ),
@@ -405,7 +411,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                   _post!.content,
                   style: TextStyle(
                     fontSize: 15,
-                    color: const Color(0xFF1E293B).withOpacity(0.8),
+                    color: const Color(0xFF1E293B).withValues(alpha: 0.8),
                     height: 1.6,
                   ),
                 ),
@@ -442,14 +448,14 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E293B).withOpacity(0.9),
+                  color: const Color(0xFF1E293B).withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6605C7).withOpacity(0.1),
+                  color: const Color(0xFF6605C7).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -476,7 +482,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundColor: const Color(0xFF6605C7).withOpacity(0.1),
+          backgroundColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
           child: Text(
             'U',
             style: const TextStyle(
@@ -497,7 +503,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
               _formatDate(_post!.createdAt),
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
               ),
             ),
           ],
@@ -506,7 +512,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF6605C7).withOpacity(0.05),
+            color: const Color(0xFF6605C7).withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -534,7 +540,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -623,7 +629,7 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     Color? color,
     VoidCallback? onTap,
   }) {
-    final activeColor = color ?? Colors.black.withOpacity(0.6);
+    final activeColor = color ?? Colors.black.withValues(alpha: 0.6);
     return GestureDetector(
       onTap: onTap,
       child: Row(

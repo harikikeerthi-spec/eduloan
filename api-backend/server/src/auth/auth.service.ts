@@ -149,7 +149,8 @@ export class AuthService {
         const month = parseInt(dobParts[1], 10);
         const year = parseInt(dobParts[2], 10);
 
-        const dobDate = new Date(year, month - 1, day);
+        // Use Date.UTC for consistent validation
+        const dobDate = new Date(Date.UTC(year, month - 1, day));
 
         // Check if it's a valid date
         if (
@@ -533,20 +534,24 @@ export class AuthService {
       // Format date of birth if it exists
       let formattedDob: string | null = null;
       if (user.dateOfBirth) {
-        try {
-          const date = new Date(user.dateOfBirth);
-          if (!isNaN(date.getTime())) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            formattedDob = `${day}-${month}-${year}`;
-            console.log(`[AuthService.getUserDashboard] Formatted DOB: ${formattedDob}`);
-          } else {
-            console.warn(`[AuthService.getUserDashboard] Invalid DOB in DB: ${user.dateOfBirth}`);
+        // Use toISOString() to get a predictable YYYY-MM-DD format in UTC
+        const dobStr = user.dateOfBirth instanceof Date 
+          ? user.dateOfBirth.toISOString() 
+          : String(user.dateOfBirth);
+          
+        if (dobStr.includes('-')) {
+          const parts = dobStr.split('T')[0].split('-');
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              // YYYY-MM-DD -> DD-MM-YYYY
+              formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else if (parts[0].length <= 2) {
+              // Already DD-MM-YYYY or similar
+              formattedDob = dobStr.split('T')[0];
+            }
           }
-        } catch (e) {
-          console.error('[AuthService.getUserDashboard] DOB parsing failed:', e);
         }
+        console.log(`[AuthService.getUserDashboard] Formatted DOB: ${formattedDob}`);
       }
 
       return {
@@ -644,7 +649,8 @@ export class AuthService {
     const day = parseInt(dobParts[0], 10);
     const month = parseInt(dobParts[1], 10);
     const year = parseInt(dobParts[2], 10);
-    const dobDate = new Date(year, month - 1, day);
+    // Use Date.UTC to match the parsing logic in UsersService
+    const dobDate = new Date(Date.UTC(year, month - 1, day));
 
     if (
       dobDate.getFullYear() !== year ||
@@ -690,6 +696,26 @@ export class AuthService {
         return { success: false, message: 'User not found' };
       }
 
+      // Format date of birth for consistent response
+      let formattedDob = user.dateOfBirth;
+      if (user.dateOfBirth) {
+        const dobStr = user.dateOfBirth instanceof Date 
+          ? user.dateOfBirth.toISOString() 
+          : String(user.dateOfBirth);
+          
+        if (dobStr.includes('-')) {
+          const parts = dobStr.split('T')[0].split('-');
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              // YYYY-MM-DD -> DD-MM-YYYY
+              formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else if (parts[0].length <= 2) {
+              formattedDob = dobStr.split('T')[0];
+            }
+          }
+        }
+      }
+
       return {
         success: true,
         message: 'Profile updated successfully',
@@ -698,7 +724,7 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,
-          dateOfBirth: user.dateOfBirth,
+          dateOfBirth: formattedDob,
           userId: user.id,
         },
       };

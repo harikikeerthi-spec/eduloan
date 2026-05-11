@@ -23,7 +23,6 @@ class _ForumPageState extends State<ForumPage> {
   int _discussionsCount = 0;
   String _selectedSort = 'newest';
   String? _hubDescription;
-  String? _hubIcon;
   bool _hasInitialLoaded = false;
 
   @override
@@ -83,10 +82,7 @@ class _ForumPageState extends State<ForumPage> {
           _membersCount = hub['stats']?['members'] ?? 0;
           _discussionsCount = hub['stats']?['discussions'] ?? 0;
           _hubDescription = hub['description'];
-          _hubIcon = hub['icon'];
-          if (_customTitle == null) {
-            _customTitle = hub['title'];
-          }
+          _customTitle ??= hub['title'];
           _isLoading = false;
         });
       }
@@ -107,6 +103,7 @@ class _ForumPageState extends State<ForumPage> {
         _loadPosts(); // Refresh the list
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
@@ -184,7 +181,7 @@ class _ForumPageState extends State<ForumPage> {
             Image.network(
               'https://vidhyaloan.com/assets/images/logo.png',
               height: 24,
-              errorBuilder: (_, __, ___) => const Text(
+              errorBuilder: (_, _, _) => const Text(
                 'VidhyaLoan',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -211,7 +208,7 @@ class _ForumPageState extends State<ForumPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF6605C7).withOpacity(0.1),
+              color: const Color(0xFF6605C7).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -240,7 +237,7 @@ class _ForumPageState extends State<ForumPage> {
                 'Navigate the complexities of ${_selectedCategory.toLowerCase()} and community planning.',
             style: TextStyle(
               fontSize: 14,
-              color: const Color(0xFF1E293B).withOpacity(0.6),
+              color: const Color(0xFF1E293B).withValues(alpha: 0.6),
               height: 1.5,
             ),
           ),
@@ -265,7 +262,7 @@ class _ForumPageState extends State<ForumPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -286,7 +283,7 @@ class _ForumPageState extends State<ForumPage> {
             style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E293B).withOpacity(0.4),
+              color: const Color(0xFF1E293B).withValues(alpha: 0.4),
               letterSpacing: 0.5,
             ),
           ),
@@ -363,7 +360,7 @@ class _ForumPageState extends State<ForumPage> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -426,7 +423,7 @@ class _ForumPageState extends State<ForumPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -452,7 +449,7 @@ class _ForumPageState extends State<ForumPage> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF6605C7).withOpacity(0.1),
+                      backgroundColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
                       child: const Text(
                         'U',
                         style: TextStyle(
@@ -476,7 +473,7 @@ class _ForumPageState extends State<ForumPage> {
                       _formatDate(post.createdAt),
                       style: TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF1E293B).withOpacity(0.4),
+                        color: const Color(0xFF1E293B).withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -498,7 +495,7 @@ class _ForumPageState extends State<ForumPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
-                    color: const Color(0xFF1E293B).withOpacity(0.7),
+                    color: const Color(0xFF1E293B).withValues(alpha: 0.7),
                     height: 1.5,
                   ),
                 ),
@@ -543,7 +540,7 @@ class _ForumPageState extends State<ForumPage> {
     Color? color,
     VoidCallback? onTap,
   }) {
-    final activeColor = color ?? const Color(0xFF1E293B).withOpacity(0.4);
+    final activeColor = color ?? const Color(0xFF1E293B).withValues(alpha: 0.4);
     return GestureDetector(
       onTap: onTap,
       child: Row(

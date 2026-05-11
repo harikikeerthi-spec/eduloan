@@ -159,7 +159,7 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                                       return Chip(
                                         label: Text('#$tag'),
                                         backgroundColor: Colors.deepPurple
-                                            .withOpacity(0.05),
+                                            .withValues(alpha: 0.05),
                                         labelStyle: const TextStyle(
                                           color: Colors.deepPurple,
                                           fontSize: 12,
@@ -196,8 +196,8 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
                                           '${blog.readTime} min read',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.black.withOpacity(
-                                              0.5,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
                                             ),
                                           ),
                                         ),
@@ -908,7 +908,7 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      final newComment = await _blogService.addComment(
+      await _blogService.addComment(
         blogId,
         content,
         _authorName,
