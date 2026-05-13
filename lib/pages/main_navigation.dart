@@ -185,7 +185,7 @@ class MainNavigationState extends State<MainNavigation> {
               context,
               imagePath: 'assets/icons/3d/community.png',
               title: 'Community',
-              destination: const CommunityPage(),
+              destination: const ForumPage(),
               iconColor: const Color(0xFF4CAF50),
             ),
             _buildDrawerLink(
