@@ -24,6 +24,8 @@ class _ForumPageState extends State<ForumPage> {
   String _selectedSort = 'newest';
   String? _hubDescription;
   bool _hasInitialLoaded = false;
+  List<Map<String, dynamic>> _allHubs = [];
+  bool _isLoadingHubs = true;
 
   @override
   void dispose() {
@@ -72,6 +74,7 @@ class _ForumPageState extends State<ForumPage> {
                 sort: _selectedSort,
               ),
         _communityService.getHubData(_selectedCategory),
+        _communityService.getAllHubs(),
       ]);
 
       if (mounted) {
@@ -83,7 +86,9 @@ class _ForumPageState extends State<ForumPage> {
           _discussionsCount = hub['stats']?['discussions'] ?? 0;
           _hubDescription = hub['description'];
           _customTitle ??= hub['title'];
+          _allHubs = results[2] as List<Map<String, dynamic>>;
           _isLoading = false;
+          _isLoadingHubs = false;
         });
       }
     } catch (e) {
@@ -91,6 +96,7 @@ class _ForumPageState extends State<ForumPage> {
         setState(() {
           _error = e.toString();
           _isLoading = false;
+          _isLoadingHubs = false;
         });
       }
     }
@@ -146,6 +152,7 @@ class _ForumPageState extends State<ForumPage> {
             child: Column(
               children: [
                 _buildStickyNavbar(context),
+                _buildCategorySelector(),
                 _buildHeroHeader(),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -162,6 +169,69 @@ class _ForumPageState extends State<ForumPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategorySelector() {
+    if (_isLoadingHubs && _allHubs.isEmpty) {
+      return const SizedBox(
+        height: 50,
+        child: Center(child: LinearProgressIndicator()),
+      );
+    }
+
+    // Add 'General' to the hubs list for the selector if not present
+    final List<Map<String, dynamic>> displayHubs = [
+      {'id': 'General', 'title': 'General'},
+      ..._allHubs.where((h) => h['id'] != 'General'),
+    ];
+
+    return Container(
+      height: 60,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        itemCount: displayHubs.length,
+        itemBuilder: (context, index) {
+          final hub = displayHubs[index];
+          final isSelected = _selectedCategory == hub['id'];
+          final color = isSelected ? const Color(0xFF6605C7) : Colors.grey[600];
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ChoiceChip(
+              label: Text(hub['title'] ?? hub['id']),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedCategory = hub['id'];
+                    _customTitle = hub['title'];
+                  });
+                  _loadPosts();
+                }
+              },
+              backgroundColor: Colors.white,
+              selectedColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
+              labelStyle: TextStyle(
+                color: color,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 13,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFF6605C7)
+                      : Colors.grey.withValues(alpha: 0.2),
+                ),
+              ),
+              showCheckmark: false,
+            ),
+          );
+        },
       ),
     );
   }
