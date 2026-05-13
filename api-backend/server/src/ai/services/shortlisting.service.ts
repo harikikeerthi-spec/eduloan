@@ -56,11 +56,10 @@ export class ShortlistingService {
 
   async searchUniversities(query: string, degree: string, country?: string): Promise<any[]> {
     try {
-      const systemPrompt = `You are an expert university search engine. Return a list of 10 real universities or colleges matching the query '${query}'.
-      Context: User is interested in ${degree} level studies in ${country || 'any country'}.
-      If the query is a specific name (e.g., 'Vishnu College'), ensure you find the exact match regardless of the degree level specified, as many colleges are known by their common name.
-      For Indian colleges, include the city/town name (e.g., Bhimavaram) in the location.
-      Return ONLY a JSON array of objects: [{"name": "Full Institution Name", "country": "Country", "location": "City, State", "logoUrl": ""}]`;
+      const systemPrompt = `List 10 real universities/colleges matching '${query}' for ${degree} in ${country || 'any'}.
+      Include exact matches for specific names (e.g. 'Vishnu College').
+      For Indian results, include town (e.g. Bhimavaram).
+      JSON array: [{"name": "Name", "country": "Country", "location": "City, State"}]`;
       
       const response = await this.openRouterService.generateResponse(systemPrompt, `Search: ${query}`);
       const jsonMatch = response.match(/\[[\s\S]*\]/);

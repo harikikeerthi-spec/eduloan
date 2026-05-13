@@ -45,7 +45,7 @@ export class OpenRouterService {
                 { role: 'user', content: userPrompt },
               ],
               temperature: temperature,
-              max_tokens: 1000,
+              max_tokens: 512,
             }),
         });
 
