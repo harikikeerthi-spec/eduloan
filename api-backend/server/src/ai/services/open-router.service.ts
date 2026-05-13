@@ -52,10 +52,10 @@ export class OpenRouterService {
         if (!response.ok) {
           const errorText = await response.text();
           this.logger.error(
-            `OpenRouter API error (Attempt ${attempts}): ${response.status} - ${errorText}`,
+            `OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`,
           );
           throw new Error(
-            `OpenRouter API failed: ${response.statusText} - ${errorText}`,
+            `OpenRouter API failed (${response.status}): ${errorText}`,
           );
         }
 

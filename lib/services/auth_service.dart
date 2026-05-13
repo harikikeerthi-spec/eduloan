@@ -108,18 +108,22 @@ class AuthService {
   }) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
+      final bodyMap = {
+        'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+        'phoneNumber': phoneNumber,
+        'dateOfBirth': dateOfBirth,
+      };
+      if (profileImage != null) {
+        bodyMap['profileImage'] = profileImage;
+      }
+
       final response = await http
           .post(
             Uri.parse('$baseUrl/auth/update-details'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'email': email,
-              'firstName': firstName,
-              'lastName': lastName,
-              'phoneNumber': phoneNumber,
-              'dateOfBirth': dateOfBirth,
-              'profileImage': profileImage,
-            }),
+            body: jsonEncode(bodyMap),
           )
           .timeout(const Duration(seconds: 30));
 

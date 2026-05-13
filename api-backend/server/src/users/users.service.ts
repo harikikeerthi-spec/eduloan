@@ -114,6 +114,7 @@ export class UsersService {
         mobile: data.mobile || '',
         password: data.password || '',
         role: data.role || 'user',
+        profileImage: (data as any).profileImage || null,
       })
       .select()
       .single();
@@ -138,13 +139,25 @@ export class UsersService {
     lastName: string,
     phoneNumber: string,
     dateOfBirth: string,
+    profileImage?: string,
   ) {
     const dobDate = this.parseDate(dateOfBirth);
 
+    const updateData: any = { 
+      firstName, 
+      lastName, 
+      phoneNumber, 
+      dateOfBirth: dobDate 
+    };
+
+    // Only update profileImage if it is explicitly provided (not null/undefined)
+    if (profileImage !== undefined && profileImage !== null) {
+      updateData.profileImage = profileImage;
+    }
 
     const { data, error } = await this.db
       .from('User')
-      .update({ firstName, lastName, phoneNumber, dateOfBirth: dobDate })
+      .update(updateData)
       .eq('email', email)
       .select()
       .single();

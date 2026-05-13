@@ -13,13 +13,13 @@ export interface VerificationResult {
 export class DigilockerService {
     // DigiLocker Production API base
     private readonly baseUrl = 'https://api.digitallocker.gov.in';
-    private readonly authUrl = 'https://api.digitallocker.gov.in/public/oauth2/1/authorize';
-    private readonly tokenUrl = 'https://api.digitallocker.gov.in/public/oauth2/1/token';
     // Issued documents endpoint (v2)
     private readonly issuedDocsUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/files/issued';
 
     private readonly clientId = process.env.DIGILOCKER_CLIENT_ID;
     private readonly clientSecret = process.env.DIGILOCKER_CLIENT_SECRET;
+    private readonly authUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/authorize';
+    private readonly tokenUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/token';
 
     /**
      * Generate the DigiLocker authorization URL.
@@ -32,7 +32,6 @@ export class DigilockerService {
             state: state,
             code_challenge: codeChallenge,
             code_challenge_method: 'S256',
-            scope: 'openid profile email address files.issueddocs'
         });
         return `${this.authUrl}?${params.toString()}`;
     }

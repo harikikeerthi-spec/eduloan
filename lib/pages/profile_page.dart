@@ -51,17 +51,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
               _email = user['email'] ?? email;
               _phone = user['phoneNumber'] ?? 'Not set';
-              // Check for dateOfBirth or dob
               _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
-              // If it's a full ISO string (YYYY-MM-DD...), convert to DD-MM-YYYY
+              
+              // Standardize DOB format to DD-MM-YYYY
               if (_dob.contains('-')) {
                 final parts = _dob.split('T')[0].split('-');
                 if (parts.length == 3) {
+                  // If format is YYYY-MM-DD, convert to DD-MM-YYYY
                   if (parts[0].length == 4) {
-                    // YYYY-MM-DD -> DD-MM-YYYY
                     _dob = '${parts[2]}-${parts[1]}-${parts[0]}';
-                  }
-                  // else if parts[0].length == 2, it is already DD-MM-YYYY
+                  } 
+                  // If it's already DD-MM-YYYY, keep it as is
                 }
               }
               _profileImage = user['profileImage'];

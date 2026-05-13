@@ -69,12 +69,36 @@ export class UniversityComparisonService {
       console.log('DEBUG: Raw LLM Output:', jsonResponse);
 
       // Improved JSON extraction for Array or Object
-      const jsonMatch = jsonResponse.match(/(\{|\[)[\s\S]*(\}|\])/);
-      const cleanJson = jsonMatch ? jsonMatch[0] : jsonResponse;
+      let cleanJson = jsonResponse.trim();
+      
+      // Remove markdown code blocks if present
+      if (cleanJson.includes('```')) {
+        const match = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (match) cleanJson = match[1];
+      }
+      
+      // Find the first [ or { and the last ] or }
+      const firstBracket = cleanJson.indexOf('[');
+      const firstBrace = cleanJson.indexOf('{');
+      const start = (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) ? firstBracket : firstBrace;
+      
+      const lastBracket = cleanJson.lastIndexOf(']');
+      const lastBrace = cleanJson.lastIndexOf('}');
+      const end = (lastBracket !== -1 && (lastBrace === -1 || lastBracket > lastBrace)) ? lastBracket : lastBrace;
+      
+      if (start !== -1 && end !== -1 && end > start) {
+        cleanJson = cleanJson.substring(start, end + 1);
+      }
 
       console.log('DEBUG: Cleaned JSON for parsing:', cleanJson);
 
-      const parsed = JSON.parse(cleanJson);
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanJson);
+      } catch (e) {
+        this.logger.error('Failed to parse JSON from LLM:', e);
+        throw new Error('Invalid JSON response from AI');
+      }
       console.log('DEBUG: Successfully parsed JSON');
 
       // Helper to normalize keys (handle Case formatting issues from LLM)
@@ -148,8 +172,27 @@ export class UniversityComparisonService {
             },
       };
     } catch (error) {
-      console.error('CRITICAL ERROR comparing universities:', error);
-      throw error;
+      this.logger.error('CRITICAL ERROR comparing universities:', error);
+      
+      // Fallback: return basic data with N/A if LLM fails
+      return {
+        uni1: {
+          name: uni1,
+          rank: 'N/A',
+          tuition: 'N/A',
+          rate: 'N/A',
+          salary: 'N/A',
+          loc: 'Unknown',
+        },
+        uni2: {
+          name: uni2,
+          rank: 'N/A',
+          tuition: 'N/A',
+          rate: 'N/A',
+          salary: 'N/A',
+          loc: 'Unknown',
+        },
+      };
     }
   }
 }

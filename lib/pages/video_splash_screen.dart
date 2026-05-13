@@ -18,10 +18,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Delay initialization slightly to let the Flutter engine settle
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _initializeAndPlay();
-    });
+    _initializeAndPlay();
   }
 
   Future<void> _initializeAndPlay() async {
@@ -32,18 +29,23 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
       _controller = controller;
       
       await controller.initialize();
-      debugPrint("VideoSplashScreen: Video initialized. Size: ${controller.value.size}");
+      debugPrint("VideoSplashScreen: Video initialized.");
       
       if (!mounted) return;
 
       await controller.setLooping(false);
+      await controller.setVolume(0.0); // Muted usually plays more reliably
+      
+      setState(() {});
+      
       await controller.play();
       _isPlaying = true;
       
-      // Remove native splash once video starts
-      FlutterNativeSplash.remove();
+      // Small delay before removing native splash to ensure video frame is rendered
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) FlutterNativeSplash.remove();
+      });
       
-      setState(() {});
       controller.addListener(_videoListener);
     } catch (error) {
       debugPrint("VideoSplashScreen: Error - Could not play splash video: $error");
@@ -59,7 +61,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
         _isPlaying &&
         _controller != null &&
         _controller!.value.isInitialized &&
-        _controller!.value.position >= _controller!.value.duration) {
+        (_controller!.value.position >= _controller!.value.duration || 
+         (!_controller!.value.isPlaying && _controller!.value.position > Duration.zero))) {
       _navigated = true;
       _isPlaying = false;
       _controller?.removeListener(_videoListener);

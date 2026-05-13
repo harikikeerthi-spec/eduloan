@@ -42,17 +42,16 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
     final codeChallenge = _generateCodeChallenge(_codeVerifier);
 
     // Production DigiLocker OAuth Authorize URL
-    final uri = Uri.parse('https://api.digitallocker.gov.in/public/oauth2/1/authorize').replace(queryParameters: {
+    final uri = Uri.parse('https://api.digitallocker.gov.in/public/oauth2/2/authorize').replace(queryParameters: {
       'response_type': 'code',
       'client_id': widget.clientId,
       'redirect_uri': widget.redirectUri,
       'state': 'vidhyaloan_auth_state',
       'code_challenge': codeChallenge,
       'code_challenge_method': 'S256',
-      'scope': 'openid profile email address files.issueddocs',
     });
     final authUrl = uri.toString(); 
-    debugPrint('DEBUG: Auth URL: $authUrl');
+    debugPrint('DEBUG: Auth URL (v7-NoScope): $authUrl');
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)

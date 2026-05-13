@@ -563,6 +563,7 @@ export class AuthService {
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,
           dateOfBirth: formattedDob,
+          profileImage: user.profileImage,
           createdAt: user.createdAt,
         }
       };
@@ -582,6 +583,7 @@ export class AuthService {
     lastName: string,
     phoneNumber: string,
     dateOfBirth: string,
+    profileImage?: string,
   ) {
     // First, check if user exists with the provided email
     const existingUser = await this.usersService.findOne(email);
@@ -690,6 +692,7 @@ export class AuthService {
         lastName,
         phoneNumber,
         dateOfBirth,
+        profileImage,
       );
 
       if (!user) {
@@ -725,6 +728,7 @@ export class AuthService {
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,
           dateOfBirth: formattedDob,
+          profileImage: user.profileImage,
           userId: user.id,
         },
       };

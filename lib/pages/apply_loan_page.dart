@@ -45,6 +45,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _collateralController = TextEditingController();
   final Map<TextEditingController, String?> _fieldErrors = {};
   final TextEditingController _purposeController = TextEditingController();
+  bool _isManualCountryEntry = false;
 
   String _amountInLakhsLabel = '';
   
@@ -186,7 +187,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         : const Icon(Icons.chevron_right, color: Colors.grey),
                     onTap: () {
                       setState(() {
-                        _countryController.text = country;
+                        if (country == 'Other') {
+                          _countryController.clear();
+                          _isManualCountryEntry = true;
+                        } else {
+                          _countryController.text = country;
+                          _isManualCountryEntry = false;
+                        }
                       });
                       Navigator.pop(context);
                     },
@@ -889,26 +896,31 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            _buildReadOnlyInput(
-                              hint: 'Target Country',
-                              icon: Icons.public,
-                              onTap: _showCountrySelection,
-                              controller: _countryController,
-                              isRequired: true,
-                            ),
+                            _isManualCountryEntry
+                                ? _buildTextInput(
+                                    hint: 'Enter Target Country',
+                                    icon: Icons.public,
+                                    controller: _countryController,
+                                    isRequired: true,
+                                  )
+                                : _buildReadOnlyInput(
+                                    hint: 'Target Country',
+                                    icon: Icons.public,
+                                    onTap: _showCountrySelection,
+                                    controller: _countryController,
+                                    isRequired: true,
+                                  ),
                             const SizedBox(height: 16),
-                            _buildReadOnlyInput(
+                            _buildTextInput(
                               hint: 'Target University',
                               icon: Icons.account_balance_outlined,
-                              onTap: _showInstituteSelection,
                               controller: _instituteController,
                               isRequired: true,
                             ),
                             const SizedBox(height: 16),
-                            _buildReadOnlyInput(
+                            _buildTextInput(
                               hint: 'Course Name',
                               icon: Icons.school_outlined,
-                              onTap: _showInstituteSelection,
                               controller: _courseController,
                               isRequired: true,
                             ),

@@ -1,11 +1,48 @@
-# Dependencies
-node_modules/
-
-# Production
-dist/
+# Flutter-specific
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
 build/
-.next/
-out/
+
+# Android-specific
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/local.properties
+android/key.properties
+android/Bundletool/
+*.keystore
+*.jks
+*.p12
+*.pem
+*.der
+*.crt
+
+# iOS-specific
+ios/.generated/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/App.podspec
+ios/Flutter/App.podspec.json
+ios/Pods/
+ios/.symlinks/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+ios/ServiceDefinitions.json
+ios/Runner/GoogleService-Info.plist
+
+# Node/NestJS
+node_modules/
+dist/
+api-backend/server/dist/
+api-backend/server/node_modules/
+api-backend/frontend/node_modules/
+api-backend/frontend/.next/
+api-backend/frontend/out/
 
 # Environment and Sensitive
 .env
@@ -57,4 +94,3 @@ ENV/
 uploads/
 coverage/
 .nyc_output/
-
