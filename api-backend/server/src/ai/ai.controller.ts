@@ -8,6 +8,7 @@ import { AdmitPredictorService } from './services/admit-predictor.service';
 
 import { AiSupportService } from './services/ai-support.service';
 import { VisaInterviewService } from './services/visa-interview.service';
+import { ShortlistingService } from './services/shortlisting.service';
 
 @Controller('ai')
 export class AiController {
@@ -20,7 +21,38 @@ export class AiController {
     private readonly admitPredictorService: AdmitPredictorService,
     private readonly aiSupportService: AiSupportService,
     private readonly visaInterviewService: VisaInterviewService,
+    private readonly shortlistingService: ShortlistingService,
   ) {}
+
+  @Post('search-countries')
+  async searchCountries(@Body() data: { query: string }) {
+    const countries = await this.shortlistingService.searchCountries(data.query);
+    return { success: true, countries };
+  }
+
+  @Post('search-fields')
+  async searchFields(@Body() data: { query: string }) {
+    const fields = await this.shortlistingService.searchFields(data.query);
+    return { success: true, fields };
+  }
+
+  @Post('shortlist')
+  async shortlist(@Body() data: { profile: any; messages?: any[] }) {
+    const result = await this.shortlistingService.shortlist(data.profile, data.messages);
+    return { success: true, ...result };
+  }
+
+  @Post('search-universities')
+  async searchUniversities(@Body() data: { query: string; degree: string; country?: string }) {
+    const universities = await this.shortlistingService.searchUniversities(data.query, data.degree, data.country);
+    return { success: true, universities };
+  }
+
+  @Post('search-courses')
+  async searchCourses(@Body() data: { university: string; query: string; degree: string }) {
+    const courses = await this.shortlistingService.searchCourses(data.university, data.query, data.degree);
+    return { success: true, courses };
+  }
 
   @Post('eligibility-check')
   async checkEligibility(

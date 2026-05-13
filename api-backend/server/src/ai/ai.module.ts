@@ -10,6 +10,7 @@ import { OpenRouterService } from './services/open-router.service';
 import { VisaInterviewService } from './services/visa-interview.service';
 
 import { AiSupportService } from './services/ai-support.service';
+import { ShortlistingService } from './services/shortlisting.service';
 
 @Module({
   controllers: [AiController],
@@ -23,6 +24,7 @@ import { AiSupportService } from './services/ai-support.service';
     OpenRouterService,
     AiSupportService,
     VisaInterviewService,
+    ShortlistingService,
   ],
   exports: [
     EligibilityService,
@@ -33,6 +35,7 @@ import { AiSupportService } from './services/ai-support.service';
     AdmitPredictorService,
     OpenRouterService,
     VisaInterviewService,
+    ShortlistingService,
   ],
 })
 export class AiModule {}
