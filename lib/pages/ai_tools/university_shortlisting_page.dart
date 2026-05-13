@@ -3258,11 +3258,12 @@ class _SearchableListState extends State<_SearchableList> {
 
                       if (item is Map) {
                         title = item['name'] ?? "";
+                        final location = item['location'];
                         final city = item['city'];
                         final country = item['country'];
-                        if (city != null || country != null) {
+                        if (location != null || city != null || country != null) {
                           subtitle = [
-                            city,
+                            location ?? city,
                             country,
                           ].where((e) => e != null).join(", ");
                         }

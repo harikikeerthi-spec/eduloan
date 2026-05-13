@@ -57,7 +57,7 @@ export class ShortlistingService {
   async searchUniversities(query: string, degree: string, country?: string): Promise<any[]> {
     try {
       const systemPrompt = `Return a list of 10 real universities matching the query '${query}' for ${degree} degree in ${country || 'any country'}.
-      Return ONLY a JSON array of objects: [{"name": "University Name", "country": "Country", "logoUrl": ""}]`;
+      Return ONLY a JSON array of objects: [{"name": "University Name", "country": "Country", "location": "City, State", "logoUrl": ""}]`;
       
       const response = await this.openRouterService.generateResponse(systemPrompt, `Search: ${query}`);
       const jsonMatch = response.match(/\[[\s\S]*\]/);
