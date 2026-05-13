@@ -39,7 +39,7 @@ export class OpenRouterService {
             'X-Title': 'VidhyaLoan AI Service', // Optional, helps with tracking
           },
             body: JSON.stringify({
-              model: 'meta-llama/llama-3.1-8b-instruct:free',
+              model: 'openrouter/auto',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
