@@ -82,6 +82,9 @@ class AuthService {
         if (data['lastName'] != null) {
           await prefs.setString('user_lastName', data['lastName']);
         }
+        if (data['dateOfBirth'] != null) {
+          await prefs.setString('user_dob', data['dateOfBirth']);
+        }
 
         return {
           'success': true,
@@ -183,6 +186,7 @@ class AuthService {
         await prefs.setString('user_firstName', firstName);
         await prefs.setString('user_lastName', lastName);
         await prefs.setString('user_phone', phoneNumber);
+        await prefs.setString('user_dob', dateOfBirth);
         if (profileImage != null) {
           await prefs.setString('user_profileImage', profileImage);
         }

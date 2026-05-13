@@ -35,13 +35,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
       debugPrint('DEBUG: ProfilePage fetching for email: $email');
 
-      if (email != null && email.isNotEmpty) {
+        if (email != null && email.isNotEmpty) {
         final result = await AuthService.getUserDashboard(email);
         if (mounted) {
           if (result['success'] == true) {
-            // Handle potentially nested user object
-            final data = result['user'];
-            final user = data['user'] ?? data;
+            // Extract user from nested response: result['user'] -> data -> user
+            final responseData = result['user'] ?? {};
+            final nestedData = responseData['data'] ?? {};
+            final user = nestedData['user'] ?? responseData['user'] ?? responseData;
 
             setState(() {
               final fname = user['firstName'] ?? '';

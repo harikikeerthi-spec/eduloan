@@ -41,10 +41,14 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
       await controller.play();
       _isPlaying = true;
       
-      // Small delay before removing native splash to ensure video frame is rendered
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) FlutterNativeSplash.remove();
-      });
+      // Wait for the first frame to be ready before removing native splash
+      int checkCount = 0;
+      while (checkCount < 10 && controller.value.position == Duration.zero) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        checkCount++;
+      }
+
+      if (mounted) FlutterNativeSplash.remove();
       
       controller.addListener(_videoListener);
     } catch (error) {

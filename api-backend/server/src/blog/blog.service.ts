@@ -280,16 +280,32 @@ export class BlogService {
   }
 
   async addCommentToBlog(blogId: string, data: { author: string; content: string }) {
-    const { data: blog } = await this.db.from('Blog').select('id').eq('id', blogId).single();
-    if (!blog) throw new NotFoundException('Blog not found');
+    console.log(`[BlogService] Adding comment to blog ${blogId}`, data);
+    
+    const { data: blog, error: blogError } = await this.db.from('Blog').select('id').eq('id', blogId).single();
+    if (blogError) {
+      console.error('[BlogService] Error finding blog:', blogError);
+      throw new NotFoundException('Blog not found');
+    }
 
     const { data: comment, error } = await this.db
       .from('Comment')
-      .insert({ blogId, author: data.author, content: data.content })
+      .insert({ 
+        id: require('crypto').randomUUID(), // Generate ID manually
+        blogId, 
+        author: data.author, 
+        content: data.content,
+        status: 'approved'
+      })
       .select('id, author, content, createdAt')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[BlogService] Error inserting comment:', error);
+      throw error;
+    }
+    
+    console.log('[BlogService] Comment added successfully:', comment);
     return { success: true, message: 'Comment added successfully', data: comment };
   }
 
@@ -299,7 +315,14 @@ export class BlogService {
 
     const { data: reply, error } = await this.db
       .from('Comment')
-      .insert({ blogId: parent.blogId, parentId: commentId, author: data.author, content: data.content })
+      .insert({ 
+        id: require('crypto').randomUUID(),
+        blogId: parent.blogId, 
+        parentId: commentId, 
+        author: data.author, 
+        content: data.content,
+        status: 'approved'
+      })
       .select('id, author, content, likes, createdAt')
       .single();
 
