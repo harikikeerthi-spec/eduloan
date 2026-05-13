@@ -39,7 +39,7 @@ export class OpenRouterService {
             'X-Title': 'VidhyaLoan AI Service', // Optional, helps with tracking
           },
             body: JSON.stringify({
-              model: 'google/gemini-2.0-flash-001',
+              model: 'google/gemini-2.0-flash-lite-preview-02-05',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
