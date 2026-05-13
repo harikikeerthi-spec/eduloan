@@ -10,7 +10,7 @@ import 'university_compare_page.dart';
 import 'admit_predictor_page.dart';
 import 'study_abroad_page.dart';
 import 'blogs_page.dart';
-import 'community_page.dart';
+import 'forum_page.dart';
 import 'ai_tools/ai_tools_page.dart';
 import 'ai_tools/eligibility_checker_page.dart';
 import 'ai_tools/grade_converter_page.dart';
