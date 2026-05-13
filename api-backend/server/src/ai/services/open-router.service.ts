@@ -39,13 +39,13 @@ export class OpenRouterService {
             'X-Title': 'VidhyaLoan AI Service', // Optional, helps with tracking
           },
             body: JSON.stringify({
-              model: 'openrouter/auto',
+              model: 'google/gemini-2.0-flash-001',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
               ],
               temperature: temperature,
-              max_tokens: 512,
+              max_tokens: 400,
             }),
         });
 
@@ -61,16 +61,22 @@ export class OpenRouterService {
 
         const data = await response.json();
 
+        if (data.error) {
+          throw new Error(`OpenRouter API failed (${response.status}): ${JSON.stringify(data.error)}`);
+        }
+
         if (!data.choices || data.choices.length === 0) {
-          this.logger.error(
-            'No choices returned from OpenRouter:',
-            JSON.stringify(data),
-          );
+          this.logger.error('No choices returned from OpenRouter:', JSON.stringify(data));
           throw new Error('No completion returned from OpenRouter');
         }
 
         const text = data.choices[0].message?.content;
-        if (!text) throw new Error('Empty text content from OpenRouter');
+        if (!text) {
+          this.logger.error('Empty content in message:', JSON.stringify(data.choices[0]));
+          throw new Error('Empty text content from OpenRouter');
+        }
+
+        return text;
 
         return text;
       } catch (error) {

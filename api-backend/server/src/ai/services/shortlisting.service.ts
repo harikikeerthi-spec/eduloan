@@ -86,31 +86,14 @@ export class ShortlistingService {
 
   async shortlist(profile: any, messages: any[] = []): Promise<any> {
     try {
-      const systemPrompt = `You are an expert Study Abroad Consultant. 
-      Shortlist 5-6 universities for the student based on their profile.
-      Return the response in strict JSON format:
+      const systemPrompt = `You are a Study Abroad Consultant. Shortlist 5-6 universities.
+      JSON format:
       {
         "recommendations": [
           {
-            "name": "University Name",
-            "chance": "High | Medium | Low",
-            "type": "Ambitious | Target | Safe",
-            "rank": "QS World Rank",
-            "tuition": "Approx Annual Tuition in USD",
-            "location": "City, State",
-            "country": "Country",
-            "avgSalary": "Approx Avg Salary",
-            "deadline": "Upcoming Deadline",
-            "reason": "Why this matches the student",
-            "programName": "Matching Program",
-            "logoUrl": "",
-            "description": "Short bio",
-            "acceptanceRate": "Percentage",
-            "duration": "Course length",
-            "roi": "High/Medium",
-            "theRank": "Times Higher Ed Rank",
-            "costOfLiving": "Annual in USD",
-            "websiteUrl": "official website domain"
+            "name": "Name", "chance": "High/Med/Low", "type": "Safe/Target/Ambitious", "rank": "Rank", "tuition": "USD", "location": "City, State",
+            "country": "Country", "avgSalary": "Salary", "deadline": "Date", "reason": "Why", "programName": "Program", "logoUrl": "",
+            "description": "Bio", "acceptanceRate": "%", "duration": "Years", "roi": "H/M/L", "theRank": "THE Rank", "costOfLiving": "USD", "websiteUrl": "url"
           }
         ]
       }`;
