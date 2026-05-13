@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 import 'api_config.dart';
+import 'auth_service.dart';
 
 class CommunityService {
   /// Helper to get common headers including auth token
@@ -17,7 +18,7 @@ class CommunityService {
   }
 
   /// Helper for GET requests
-  Future<dynamic> _getRequest(String endpoint) async {
+  Future<dynamic> _getRequest(String endpoint, {bool isRetry = false}) async {
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -29,10 +30,19 @@ class CommunityService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 && !isRetry) {
+        // Token expired, try refreshing
+        final refreshed = await AuthService.refreshToken();
+        if (refreshed) {
+          return _getRequest(endpoint, isRetry: true);
+        } else {
+          throw Exception('Session expired. Please log in again.');
+        }
       } else {
         throw Exception('Status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
+      if (e is Exception && e.toString().contains('Session expired')) rethrow;
       throw Exception('Connection failed to $url: $e');
     }
   }
@@ -40,8 +50,9 @@ class CommunityService {
   /// Helper for POST requests
   Future<dynamic> _postRequest(
     String endpoint,
-    Map<String, dynamic> body,
-  ) async {
+    Map<String, dynamic> body, {
+    bool isRetry = false,
+  }) async {
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -53,16 +64,25 @@ class CommunityService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 && !isRetry) {
+        // Token expired, try refreshing
+        final refreshed = await AuthService.refreshToken();
+        if (refreshed) {
+          return _postRequest(endpoint, body, isRetry: true);
+        } else {
+          throw Exception('Session expired. Please log in again.');
+        }
       } else {
         throw Exception('Status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
+      if (e is Exception && e.toString().contains('Session expired')) rethrow;
       throw Exception('Connection failed to $url: $e');
     }
   }
 
   /// Helper for DELETE requests
-  Future<dynamic> _deleteRequest(String endpoint) async {
+  Future<dynamic> _deleteRequest(String endpoint, {bool isRetry = false}) async {
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -74,10 +94,19 @@ class CommunityService {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 && !isRetry) {
+        // Token expired, try refreshing
+        final refreshed = await AuthService.refreshToken();
+        if (refreshed) {
+          return _deleteRequest(endpoint, isRetry: true);
+        } else {
+          throw Exception('Session expired. Please log in again.');
+        }
       } else {
         throw Exception('Status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
+      if (e is Exception && e.toString().contains('Session expired')) rethrow;
       throw Exception('Connection failed to $url: $e');
     }
   }

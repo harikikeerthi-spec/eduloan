@@ -58,12 +58,16 @@ class AuthService {
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           data['success'] == true) {
         final token = data['access_token'];
+        final refreshToken = data['refresh_token'];
 
-        // Save token and email
+        // Save tokens and email
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', email);
         if (token != null) {
           await prefs.setString('auth_token', token);
+        }
+        if (refreshToken != null) {
+          await prefs.setString('refresh_token', refreshToken);
         }
 
         // Save userId if available
@@ -83,6 +87,7 @@ class AuthService {
           'success': true,
           'message': data['message'] ?? 'Verification successful',
           'access_token': token,
+          'refresh_token': refreshToken,
           'userExists': data['userExists'] ?? false,
           'hasUserDetails': data['hasUserDetails'] ?? false,
           'firstName': data['firstName'],
@@ -94,6 +99,50 @@ class AuthService {
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  /// Refresh the access token using the refresh token
+  static Future<bool> refreshToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString('refresh_token');
+
+      if (refreshToken == null || refreshToken.isEmpty) {
+        return false;
+      }
+
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/refresh'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh_token': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final newToken = data['access_token'];
+        final newRefreshToken = data['refresh_token'];
+
+        if (newToken != null) {
+          await prefs.setString('auth_token', newToken);
+        }
+        if (newRefreshToken != null) {
+          await prefs.setString('refresh_token', newRefreshToken);
+        }
+        return true;
+      } else {
+        // If refresh fails, clear tokens as session is totally expired
+        await prefs.remove('auth_token');
+        await prefs.remove('refresh_token');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Error refreshing token: $e');
+      return false;
     }
   }
 
@@ -176,14 +225,16 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
-          'user':
-              data, // The backend returns the user object directly or simpler structure?
-          // Backend: return { message: 'Dashboard data', user: ... } or just user?
-          // Let's assume standard response wrapper or check backend code if verified.
-          // I'll assume data contains the user fields directly or inside 'user'.
-          // Safest is to return data.
+          'user': data,
           'data': data,
         };
+      } else if (response.statusCode == 401) {
+        final refreshed = await refreshToken();
+        if (refreshed) {
+          return getUserDashboard(email);
+        } else {
+          return {'success': false, 'message': 'Session expired. Please log in again.'};
+        }
       } else {
         return {'success': false, 'message': 'Failed to fetch dashboard data'};
       }

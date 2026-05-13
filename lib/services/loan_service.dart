@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 import 'api_config.dart';
+import 'auth_service.dart';
 
 class LoanService {
   Future<Map<String, String>> _getHeaders() async {
@@ -40,6 +41,7 @@ class LoanService {
     String? motherEmail,
     bool hasCollateral = false,
     String? collateralDetails,
+    bool isRetry = false,
   }) async {
     try {
       final headers = await _getHeaders();
@@ -75,15 +77,46 @@ class LoanService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return Loan.fromJson(data['data']);
+      } else if (response.statusCode == 401 && !isRetry) {
+        final refreshed = await AuthService.refreshToken();
+        if (refreshed) {
+          return createLoan(
+            userId: userId,
+            firstName: firstName,
+            lastName: lastName,
+            phoneNumber: phoneNumber,
+            email: email,
+            targetCountry: targetCountry,
+            universityName: universityName,
+            courseName: courseName,
+            bank: bank,
+            loanType: loanType,
+            amount: amount,
+            tenure: tenure,
+            purpose: purpose,
+            fatherName: fatherName,
+            fatherPhone: fatherPhone,
+            fatherEmail: fatherEmail,
+            motherName: motherName,
+            motherPhone: motherPhone,
+            motherEmail: motherEmail,
+            hasCollateral: hasCollateral,
+            collateralDetails: collateralDetails,
+            isRetry: true,
+          );
+        } else {
+          throw Exception('Session expired. Please log in again.');
+        }
       } else {
         throw Exception('Failed to create loan: ${response.statusCode}');
       }
     } catch (e) {
+      if (e is Exception && e.toString().contains('Session expired')) rethrow;
       throw Exception('Error creating loan: $e');
     }
   }
 
-  Future<List<Loan>> getUserLoans() async {
+  Future<List<Loan>> getUserLoans({bool isRetry = false}) async {
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
@@ -96,10 +129,18 @@ class LoanService {
         final data = json.decode(response.body);
         final List<dynamic> loansJson = data['data'];
         return loansJson.map((json) => Loan.fromJson(json)).toList();
+      } else if (response.statusCode == 401 && !isRetry) {
+        final refreshed = await AuthService.refreshToken();
+        if (refreshed) {
+          return getUserLoans(isRetry: true);
+        } else {
+          throw Exception('Session expired. Please log in again.');
+        }
       } else {
         throw Exception('Failed to fetch loans: ${response.statusCode}');
       }
     } catch (e) {
+      if (e is Exception && e.toString().contains('Session expired')) rethrow;
       throw Exception('Error fetching loans: $e');
     }
   }
