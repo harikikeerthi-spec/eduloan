@@ -48,7 +48,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
       }
     } catch (e) {
       final errorStr = e.toString();
-      if (errorStr.contains('401')) {
+      if (errorStr.contains('401') || errorStr.toLowerCase().contains('session expired')) {
         // Token expired or invalid, clear it
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('auth_token');
@@ -954,7 +954,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   Widget _buildErrorState() {
-    final bool isUnauthorized = _error?.contains('401') ?? false;
+    final bool isUnauthorized = _error?.contains('401') ?? _error?.toLowerCase().contains('session expired') ?? false;
 
     return Center(
       child: Padding(
