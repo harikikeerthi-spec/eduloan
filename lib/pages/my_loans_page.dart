@@ -954,7 +954,8 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   Widget _buildErrorState() {
-    final bool isUnauthorized = _error?.contains('401') ?? _error?.toLowerCase().contains('session expired') ?? false;
+    final bool isUnauthorized = (_error?.contains('401') ?? false) ||
+        (_error?.toLowerCase().contains('session expired') ?? false);
 
     return Center(
       child: Padding(

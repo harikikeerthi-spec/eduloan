@@ -467,6 +467,56 @@ export class AuthService {
   }
 
   /**
+   * Handle Google Login - Bypass OTP
+   */
+  async googleLoginUnified(email: string, firstName?: string, lastName?: string) {
+    try {
+      let user = await this.usersService.findOne(email);
+      const isNewUser = !user;
+
+      if (!user) {
+        // Create new user with email and names from Google
+        user = await this.usersService.create({ 
+          email, 
+          firstName: firstName || undefined, 
+          lastName: lastName || undefined 
+        });
+        console.log(`[AuthService] New user created via Google: ${email}`);
+      }
+
+      // Generate JWT tokens
+      const tokens = await this.generateTokens(user);
+
+      // Check if user has complete details
+      const hasUserDetails = !!(
+        user.firstName &&
+        user.lastName &&
+        user.phoneNumber &&
+        user.dateOfBirth
+      );
+
+      return {
+        success: true,
+        message: isNewUser ? 'Signup successful.' : 'Login successful.',
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        userId: user.id,
+        userExists: !isNewUser,
+        hasUserDetails,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+      };
+    } catch (error) {
+      console.error('[AuthService] Error in googleLoginUnified:', error);
+      return {
+        success: false,
+        message: 'Google login failed. Please try again.',
+      };
+    }
+  }
+
+  /**
    * Refresh access token using refresh token
    */
   async refreshTokens(refreshToken: string) {

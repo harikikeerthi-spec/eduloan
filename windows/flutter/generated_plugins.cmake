@@ -4,6 +4,8 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   file_selector_windows
+  firebase_auth
+  firebase_core
   flutter_tts
   share_plus
   speech_to_text_windows

@@ -81,6 +81,22 @@ export class AuthController {
   }
 
   /**
+   * Google Login (Social)
+   * POST /auth/google-login
+   * @body email: string (required), firstName: string, lastName: string
+   */
+  @Post('google-login')
+  async googleLogin(@Body() body: { email: string; firstName?: string; lastName?: string }) {
+    if (!body || !body.email) {
+      return {
+        success: false,
+        message: 'Email is required',
+      };
+    }
+    return this.authService.googleLoginUnified(body.email, body.firstName, body.lastName);
+  }
+
+  /**
    * Refresh access token using refresh token
    * POST /auth/refresh
    * @body refresh_token: string (required)

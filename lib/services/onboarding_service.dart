@@ -23,7 +23,9 @@ class OnboardingService {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('user_id', result['user']['id']);
           await prefs.setString('user_email', result['user']['email']);
-          await prefs.setString('user_name', result['user']['firstName']);
+          await prefs.setString('user_firstName', result['user']['firstName'] ?? '');
+          await prefs.setString('user_lastName', result['user']['lastName'] ?? '');
+          await prefs.setString('user_phone', result['user']['phoneNumber'] ?? result['user']['phone'] ?? '');
           await prefs.setBool('is_onboarded', true);
         }
         return result;

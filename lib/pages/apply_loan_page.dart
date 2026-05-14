@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../widgets/mesh_background.dart';
-import '../widgets/institute_selection_modal.dart';
-import '../data/institutes_data.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
 import 'main_navigation.dart';
@@ -77,6 +75,48 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   void initState() {
     super.initState();
     _amountController.addListener(_updateAmountLabel);
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // 1. First, try to load whatever we have locally
+    void updateFromLocal() {
+      setState(() {
+        _firstNameController.text = prefs.getString('user_firstName') ?? prefs.getString('user_name') ?? '';
+        _lastNameController.text = prefs.getString('user_lastName') ?? prefs.getString('user_last_name') ?? '';
+        _phoneController.text = prefs.getString('user_phone') ?? 
+                               prefs.getString('user_phoneNumber') ?? 
+                               prefs.getString('user_phone_number') ?? 
+                               prefs.getString('phone_number') ?? '';
+        _emailController.text = prefs.getString('user_email') ?? '';
+      });
+    }
+
+    updateFromLocal();
+
+    // 2. If phone number is still missing, proactively fetch from backend
+    if (_phoneController.text.isEmpty || _firstNameController.text.isEmpty) {
+      final email = prefs.getString('user_email') ?? '';
+      if (email.isNotEmpty) {
+        try {
+          final result = await AuthService.getUserDashboard(email);
+          if (result['success'] == true) {
+            final data = result['data']['user'] ?? result['user'];
+            if (data != null) {
+              await prefs.setString('user_firstName', data['firstName'] ?? '');
+              await prefs.setString('user_lastName', data['lastName'] ?? '');
+              await prefs.setString('user_phone', data['phoneNumber'] ?? data['phone'] ?? '');
+              // Refresh the UI with new data
+              updateFromLocal();
+            }
+          }
+        } catch (e) {
+          debugPrint('Error pre-filling user data from dashboard: $e');
+        }
+      }
+    }
   }
 
   void _updateAmountLabel() {
@@ -101,26 +141,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
   }
 
-  Future<void> _showInstituteSelection() async {
-    final result = await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => InstituteSelectionModal(
-        selectedCountry: _countryController.text,
-      ),
-    );
 
-    if (result != null && result is Map) {
-      final Institute institute = result['institute'];
-      final String course = result['course'];
-
-      setState(() {
-        _instituteController.text = institute.name;
-        _courseController.text = course;
-      });
-    }
-  }
 
   final List<String> _countries = [
     'USA',
@@ -369,10 +390,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         if (email.isNotEmpty && token.isNotEmpty) {
           final authResult = await AuthService.getUserDashboard(email);
           if (authResult['success'] == true) {
-            final userData = authResult['data']['user'];
-            userId = userData['id'] ?? '';
+            final data = authResult['data']['user'];
+            userId = data['id'] ?? '';
             if (userId.isNotEmpty) {
               await prefs.setString('userId', userId);
+            }
+            if (data['lastName'] != null) {
+              await prefs.setString('user_lastName', data['lastName']);
+            }
+            if (data['phoneNumber'] != null) {
+              await prefs.setString('user_phone', data['phoneNumber']);
+            }
+            if (data['dateOfBirth'] != null) {
+              await prefs.setString('user_dob', data['dateOfBirth']);
             }
           }
         }
@@ -611,415 +641,384 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   ],
                 ),
               ),
+              const SizedBox(height: 10),
+              _buildCustomProgressHeader(),
               Expanded(
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    canvasColor: Colors.transparent,
-                    colorScheme: const ColorScheme.light(
-                      primary: Color(0xFF311B92),
-                      secondary: Color(0xFF311B92),
-                      surface: Colors.white,
-                    ),
-                  ),
-                  child: Stepper(
-                    type: StepperType.vertical,
-                    currentStep: _currentStep,
-                    onStepContinue: () {
-                      if (_validateStep(_currentStep)) {
-                        if (_currentStep < 4) {
-                          setState(() => _currentStep += 1);
-                        } else {
-                          _submitApplication();
-                        }
-                      }
-                    },
-                    onStepCancel: () {
-                      if (_currentStep > 0) {
-                        setState(() => _currentStep -= 1);
-                      } else {
-                        Navigator.pop(context);
-                      }
-                    },
-                    controlsBuilder: (context, details) {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: details.onStepContinue,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF311B92),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                ),
-                                child: Text(
-                                  _currentStep == 4
-                                      ? 'Submit Application'
-                                      : _currentStep == 3
-                                          ? 'Review Details'
-                                          : 'Continue',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            if (_currentStep > 0)
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: details.onStepCancel,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFF311B92),
-                                    side: const BorderSide(
-                                      color: Color(0xFF311B92),
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Back',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                    steps: [
-                      Step(
-                        title: const Text(
-                          'Personal Details',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: _buildStepContainer(
-                          children: [
-                            _buildTextInput(
-                              hint: 'First Name',
-                              icon: Icons.person_outline,
-                              controller: _firstNameController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Last Name',
-                              icon: Icons.person_outline,
-                              controller: _lastNameController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Phone Number',
-                              icon: Icons.phone_outlined,
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Email Address',
-                              icon: Icons.email_outlined,
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              isRequired: true,
-                            ),
-                          ],
-                        ),
-                        isActive: _currentStep >= 0,
-                        state: _currentStep > 0
-                            ? StepState.complete
-                            : StepState.indexed,
-                      ),
-                      Step(
-                        title: const Text(
-                          'Parent Details',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: _buildStepContainer(
-                          children: [
-                            const Text(
-                              "Father's Details",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildTextInput(
-                              hint: 'Name',
-                              icon: Icons.person_outline,
-                              controller: _fatherNameController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextInput(
-                              hint: 'Phone',
-                              icon: Icons.phone_outlined,
-                              controller: _fatherPhoneController,
-                              keyboardType: TextInputType.phone,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextInput(
-                              hint: 'Email',
-                              icon: Icons.email_outlined,
-                              controller: _fatherEmailController,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              "Mother's Details",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildTextInput(
-                              hint: 'Name',
-                              icon: Icons.person_outline,
-                              controller: _motherNameController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextInput(
-                              hint: 'Phone',
-                              icon: Icons.phone_outlined,
-                              controller: _motherPhoneController,
-                              keyboardType: TextInputType.phone,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextInput(
-                              hint: 'Email',
-                              icon: Icons.email_outlined,
-                              controller: _motherEmailController,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                          ],
-                        ),
-                        isActive: _currentStep >= 1,
-                        state: _currentStep > 1
-                            ? StepState.complete
-                            : StepState.indexed,
-                      ),
-                      Step(
-                        title: const Text(
-                          'Loan Details',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: _buildStepContainer(
-                          children: [
-                            _buildReadOnlyInput(
-                              hint: 'Select Preferred Banks (1-3)',
-                              icon: Icons.account_balance_wallet_outlined,
-                              controller: _bankController,
-                              onTap: _showBankSelection,
-                              isRequired: true,
-                            ),
-                          ],
-                        ),
-                        isActive: _currentStep >= 2,
-                        state: _currentStep > 2
-                            ? StepState.complete
-                            : StepState.indexed,
-                      ),
-                      Step(
-                        title: const Text(
-                          'Requirements & Education',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: _buildStepContainer(
-                          children: [
-                            // Collateral Section first
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _hasCollateral,
-                                  onChanged: (val) {
-                                    setState(
-                                      () => _hasCollateral = val ?? false,
-                                    );
-                                  },
-                                  fillColor: WidgetStateProperty.all(const Color(0xFF311B92)),
-                                ),
-                                const Text('Do you have collateral?'),
-                              ],
-                            ),
-                            if (_hasCollateral) ...[
-                              const SizedBox(height: 12),
-                              _buildTextInput(
-                                hint: 'Collateral Details',
-                                icon: Icons.description_outlined,
-                                controller: _collateralController,
-                                maxLines: 3,
-                              ),
-                            ],
-                            const SizedBox(height: 20),
-                            // Target University
-                            const Text(
-                              'Education Information',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _isManualCountryEntry
-                                ? _buildTextInput(
-                                    hint: 'Enter Target Country',
-                                    icon: Icons.public,
-                                    controller: _countryController,
-                                    isRequired: true,
-                                  )
-                                : _buildReadOnlyInput(
-                                    hint: 'Target Country',
-                                    icon: Icons.public,
-                                    onTap: _showCountrySelection,
-                                    controller: _countryController,
-                                    isRequired: true,
-                                  ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Target University',
-                              icon: Icons.account_balance_outlined,
-                              controller: _instituteController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Course Name',
-                              icon: Icons.school_outlined,
-                              controller: _courseController,
-                              isRequired: true,
-                            ),
-                            const SizedBox(height: 20),
-                            // Loan Requirements
-                            const Text(
-                              'Financial Information',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _buildTextInput(
-                              hint: 'Desired Loan Amount (₹)',
-                              icon: Icons.currency_rupee,
-                              controller: _amountController,
-                              keyboardType: TextInputType.number,
-                              isRequired: true,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                IndianCurrencyFormatter(),
-                              ],
-                            ),
-                            if (_amountInLakhsLabel.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.only(top: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF311B92,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(
-                                      0xFF311B92,
-                                    ).withValues(alpha: 0.2),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.info_outline,
-                                      size: 16,
-                                      color: Color(0xFF311B92),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _amountInLakhsLabel,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF311B92),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            const SizedBox(height: 16),
-                            _buildTextInput(
-                              hint: 'Course Details / Purpose',
-                              icon: Icons.info_outline,
-                              controller: _purposeController,
-                              maxLines: 3,
-                            ),
-                          ],
-                        ),
-                        isActive: _currentStep >= 3,
-                        state: _currentStep > 3
-                            ? StepState.complete
-                            : StepState.indexed,
-                      ),
-                      Step(
-                        title: const Text(
-                          'Review & Submit',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        content: _buildReviewStep(),
-                        isActive: _currentStep >= 4,
-                        state: _currentStep == 4
-                            ? StepState.editing
-                            : StepState.indexed,
-                      ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildStepContent(_currentStep),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
+              _buildCustomControls(),
+              const SizedBox(height: 20),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  final List<String> _stepLabels = ['Personal', 'Parents', 'Banks', 'Info', 'Review'];
+
+  Widget _buildCustomProgressHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: List.generate(5, (index) {
+          bool isActive = index <= _currentStep;
+          bool isCurrent = index == _currentStep;
+          bool isPassed = index < _currentStep;
+
+          return Expanded(
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                // Connector Line (Background)
+                Positioned(
+                  top: 14, // Vertical center of circle
+                  left: index == 0 ? 0.5 : 0, // Don't extend left for first step
+                  right: index == 4 ? 0.5 : 0, // Don't extend right for last step
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color: index > 0 && isPassed || (index > 0 && isActive && index <= _currentStep)
+                              ? const Color(0xFF311B92) 
+                              : (index > 0 ? Colors.black.withValues(alpha: 0.1) : Colors.transparent),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color: index < 4 && isPassed
+                              ? const Color(0xFF311B92) 
+                              : (index < 4 ? Colors.black.withValues(alpha: 0.1) : Colors.transparent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Circle and Label (Foreground)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isCurrent 
+                            ? const Color(0xFF311B92) 
+                            : (isActive ? const Color(0xFF311B92).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.1)),
+                        shape: BoxShape.circle,
+                        boxShadow: isCurrent ? [
+                          BoxShadow(
+                            color: const Color(0xFF311B92).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          )
+                        ] : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            color: isCurrent || isActive ? Colors.white : Colors.black.withValues(alpha: 0.4),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _stepLabels[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                        color: isActive ? const Color(0xFF311B92) : Colors.black.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStepContent(int step) {
+    switch (step) {
+      case 0:
+        return _buildStepContainer(
+          children: [
+            _buildTextInput(
+              hint: 'First Name',
+              icon: Icons.person_outline,
+              controller: _firstNameController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Last Name',
+              icon: Icons.person_outline,
+              controller: _lastNameController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Phone Number',
+              icon: Icons.phone_outlined,
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Email Address',
+              icon: Icons.email_outlined,
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              isRequired: true,
+            ),
+          ],
+        );
+      case 1:
+        return _buildStepContainer(
+          children: [
+            const Text(
+              "Father's Details",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildTextInput(
+              hint: 'Name',
+              icon: Icons.person_outline,
+              controller: _fatherNameController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Phone',
+              icon: Icons.phone_outlined,
+              controller: _fatherPhoneController,
+              keyboardType: TextInputType.phone,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Email',
+              icon: Icons.email_outlined,
+              controller: _fatherEmailController,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Mother's Details",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildTextInput(
+              hint: 'Name',
+              icon: Icons.person_outline,
+              controller: _motherNameController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Phone',
+              icon: Icons.phone_outlined,
+              controller: _motherPhoneController,
+              keyboardType: TextInputType.phone,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Email',
+              icon: Icons.email_outlined,
+              controller: _motherEmailController,
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        );
+      case 2:
+        return _buildStepContainer(
+          children: [
+            _buildReadOnlyInput(
+              hint: 'Select Preferred Banks (1-3)',
+              icon: Icons.account_balance_wallet_outlined,
+              controller: _bankController,
+              onTap: _showBankSelection,
+              isRequired: true,
+            ),
+          ],
+        );
+      case 3:
+        return _buildStepContainer(
+          children: [
+            Row(
+              children: [
+                Checkbox(
+                  value: _hasCollateral,
+                  onChanged: (val) => setState(() => _hasCollateral = val ?? false),
+                  fillColor: WidgetStateProperty.all(const Color(0xFF311B92)),
+                ),
+                const Text('Do you have collateral?'),
+              ],
+            ),
+            if (_hasCollateral) ...[
+              const SizedBox(height: 12),
+              _buildTextInput(
+                hint: 'Collateral Details',
+                icon: Icons.description_outlined,
+                controller: _collateralController,
+                maxLines: 3,
+              ),
+            ],
+            const SizedBox(height: 20),
+            const Text(
+              'Education Information',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _isManualCountryEntry
+                ? _buildTextInput(
+                    hint: 'Enter Target Country',
+                    icon: Icons.public,
+                    controller: _countryController,
+                    isRequired: true,
+                  )
+                : _buildReadOnlyInput(
+                    hint: 'Target Country',
+                    icon: Icons.public,
+                    onTap: _showCountrySelection,
+                    controller: _countryController,
+                    isRequired: true,
+                  ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Target University',
+              icon: Icons.account_balance_outlined,
+              controller: _instituteController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Course Name',
+              icon: Icons.school_outlined,
+              controller: _courseController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Financial Information',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildTextInput(
+              hint: 'Desired Loan Amount (₹)',
+              icon: Icons.currency_rupee,
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                IndianCurrencyFormatter(),
+              ],
+            ),
+            if (_amountInLakhsLabel.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 16, color: Color(0xFF311B92)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_amountInLakhsLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF311B92)))),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Course Details / Purpose',
+              icon: Icons.info_outline,
+              controller: _purposeController,
+              maxLines: 3,
+            ),
+          ],
+        );
+      case 4:
+        return _buildReviewStep();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildCustomControls() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          if (_currentStep > 0) ...[
+            Expanded(
+              flex: 1,
+              child: OutlinedButton(
+                onPressed: () => setState(() => _currentStep -= 1),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF311B92),
+                  side: const BorderSide(color: Color(0xFF311B92)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Back', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              onPressed: () {
+                if (_validateStep(_currentStep)) {
+                  if (_currentStep < 4) {
+                    setState(() => _currentStep += 1);
+                  } else {
+                    _submitApplication();
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF311B92),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: Text(
+                _currentStep == 4
+                    ? 'Submit Application'
+                    : _currentStep == 3
+                        ? 'Review Details'
+                        : 'Continue',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1223,9 +1222,29 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     : Colors.black.withValues(alpha: 0.4),
               ),
               border: InputBorder.none,
-              prefixText: keyboardType == TextInputType.phone ? '+91 ' : null,
-              prefixStyle: keyboardType == TextInputType.phone 
-                  ? const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+              prefix: keyboardType == TextInputType.phone 
+                  ? Container(
+                      margin: const EdgeInsets.only(right: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            '+91',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            height: 20,
+                            width: 1.5,
+                            color: Colors.black.withValues(alpha: 0.1),
+                          ),
+                        ],
+                      ),
+                    )
                   : null,
               suffixIcon: Icon(
                 icon,
@@ -1336,34 +1355,34 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
     switch (bankName) {
       case 'HDFC Credila':
-        logoUrl = 'https://logo.clearbit.com/hdfccredila.com';
+        logoUrl = 'https://www.credila.com/images/logo.png';
         break;
       case 'SBI':
-        logoUrl = 'https://logo.clearbit.com/sbi.co.in';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
         break;
       case 'ICICI Bank':
-        logoUrl = 'https://logo.clearbit.com/icicibank.com';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
         break;
       case 'Axis Bank':
-        logoUrl = 'https://logo.clearbit.com/axisbank.com';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
         break;
       case 'Avanse Financial Services':
         logoUrl = 'https://logo.clearbit.com/avanse.com';
         break;
       case 'InCred':
-        logoUrl = 'https://logo.clearbit.com/incred.com';
+        logoUrl = 'https://www.incred.com/assets/images/logo.png';
         break;
       case 'Auxilo':
         logoUrl = 'https://logo.clearbit.com/auxilo.com';
         break;
       case 'IDFC First Bank':
-        logoUrl = 'https://logo.clearbit.com/idfcfirstbank.com';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/IDFC_First_Bank_logo.svg/1280px-IDFC_First_Bank_logo.svg.png';
         break;
       case 'Bank of Baroda':
-        logoUrl = 'https://logo.clearbit.com/bankofbaroda.in';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
         break;
       case 'Punjab National Bank':
-        logoUrl = 'https://logo.clearbit.com/pnbindia.in';
+        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/1024px-Punjab_National_Bank.svg.png';
         break;
       default:
         logoUrl = null;
@@ -1425,7 +1444,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
   String _getDomainForBank(String bankName) {
     switch (bankName) {
-      case 'HDFC Credila': return 'hdfccredila.com';
+      case 'HDFC Credila': return 'credila.com';
       case 'SBI': return 'sbi.co.in';
       case 'ICICI Bank': return 'icicibank.com';
       case 'Axis Bank': return 'axisbank.com';

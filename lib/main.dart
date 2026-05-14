@@ -24,8 +24,18 @@ import 'pages/notifications_page.dart';
 
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  
+  // Initialize GoogleSignIn for version 7.2.0 singleton pattern
+  await GoogleSignIn.instance.initialize(
+    serverClientId: '496981213875-7imkhflkb3b805bo6fga84hqpe7dapcr.apps.googleusercontent.com',
+  );
+
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
   // Set system UI overlay style

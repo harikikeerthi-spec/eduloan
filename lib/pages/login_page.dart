@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
+import '../services/google_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'complete_profile_page.dart';
 import 'main_navigation.dart';
 import '../widgets/mesh_background.dart';
@@ -49,6 +51,59 @@ class _LoginPageState extends State<LoginPage> {
         });
       }
     });
+  }
+
+  // Google Sign-In Handler
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final googleAuthService = GoogleAuthService();
+      final User? user = await googleAuthService.signInWithGoogle();
+
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return; // User cancelled
+      }
+
+      // Now sync with our backend
+      final email = user.email!;
+      final nameParts = user.displayName?.split(' ') ?? [];
+      final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      final result = await AuthService.googleLogin(
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+      );
+
+      if (!mounted) return;
+
+      if (result['success']) {
+        final bool hasUserDetails = result['hasUserDetails'] ?? false;
+
+        if (hasUserDetails) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CompleteProfilePage(email: email),
+            ),
+          );
+        }
+      } else {
+        _handleError(result['message'] ?? 'Failed to sync with VidhyaLoan server');
+      }
+    } catch (e) {
+      _handleError('Google Sign-In failed: $e');
+    }
   }
 
   // Step 1: Send OTP (Unified Flow)
@@ -159,7 +214,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  // --- Header Section (Outside Card) ---
+                  // --- Header Section ---
                   ClipPath(
                     clipper: TriangleClipper(),
                     child: Image.asset(
@@ -289,7 +344,7 @@ class _LoginPageState extends State<LoginPage> {
                                 prefixIcon: const Icon(
                                   Icons.email_outlined,
                                   color: Color(0xFF5B4DBC),
-                                ), // Icon color like image
+                                ),
                               ),
                             ),
                           ),
@@ -300,9 +355,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleEmailSubmit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(
-                                  0xFF281C9D,
-                                ), // Deep purple like image
+                                backgroundColor: const Color(0xFF281C9D),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -325,6 +378,65 @@ class _LoginPageState extends State<LoginPage> {
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: Colors.grey[300])),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: Colors.grey[400],
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: Colors.grey[300])),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            height: 56,
+                            child: OutlinedButton(
+                              onPressed: _isLoading ? null : _handleGoogleSignIn,
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey[300]!),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                foregroundColor: Colors.black,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.network(
+                                    'https://www.google.com/s2/favicons?domain=google.com&sz=128',
+                                    height: 24,
+                                    width: 24,
+                                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 24),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Flexible(
+                                    child: Text(
+                                      'Sign in with Google',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ] else ...[
@@ -402,9 +514,7 @@ class _LoginPageState extends State<LoginPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleOtpSubmit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(
-                                  0xFF281C9D,
-                                ), // Deep purple
+                                backgroundColor: const Color(0xFF281C9D),
                                 foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
@@ -446,11 +556,6 @@ class _LoginPageState extends State<LoginPage> {
                         ],
 
                         const SizedBox(height: 24),
-                        // Footer inside card as per image "Don't have an account? Sign up"
-                        // Since we unified flow, we can just say "Secure Login" or similar,
-                        // OR keep the "Don't have an account..." for familiarity even if logic is smart.
-                        // I'll put a generic message or just leave it clean.
-                        // The image has it. I'll add a dummy one or a privacy text.
                         Center(
                           child: Text(
                             'By continuing, you agree to our Terms.',
@@ -478,10 +583,9 @@ class TriangleClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     final path = Path();
-    // Points adjusted to match the app_icon_foreground.png actual logo position
-    path.moveTo(size.width * 0.1, size.height * 0.22); // Top left
-    path.lineTo(size.width * 0.9, size.height * 0.22); // Top right
-    path.lineTo(size.width * 0.5, size.height * 0.88); // Bottom tip
+    path.moveTo(size.width * 0.1, size.height * 0.22);
+    path.lineTo(size.width * 0.9, size.height * 0.22);
+    path.lineTo(size.width * 0.5, size.height * 0.88);
     path.close();
     return path;
   }

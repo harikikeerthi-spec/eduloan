@@ -109,7 +109,9 @@ class MainNavigationState extends State<MainNavigation> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
+            Container(
+              height: 260,
+              width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -117,35 +119,44 @@ class MainNavigationState extends State<MainNavigation> {
                   colors: [Color(0xFF311B92), Color(0xFF5E35B1)],
                 ),
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/app_icon.png',
-                          height: 60,
-                          width: 60,
-                          fit: BoxFit.cover,
+              child: SafeArea(
+                bottom: false,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Transform.translate(
+                              offset: const Offset(2.5, 0),
+                              child: Image.asset(
+                                'assets/images/app_icon.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Vidyaloan',
-                      style: GoogleFonts.urbanist(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+                      Text(
+                        'Vidyaloan',
+                        style: GoogleFonts.urbanist(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

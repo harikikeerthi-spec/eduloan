@@ -83,6 +83,9 @@ class AuthService {
         if (data['lastName'] != null) {
           await prefs.setString('user_lastName', data['lastName']);
         }
+        if (data['phoneNumber'] != null) {
+          await prefs.setString('user_phone', data['phoneNumber']);
+        }
         if (data['dateOfBirth'] != null) {
           await prefs.setString('user_dob', data['dateOfBirth']);
         }
@@ -100,6 +103,62 @@ class AuthService {
         };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  /// Logs in with Google (Bypasses OTP via backend)
+  static Future<Map<String, dynamic>> googleLogin({
+    required String email,
+    String? firstName,
+    String? lastName,
+  }) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/google-login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': email,
+              'firstName': firstName,
+              'lastName': lastName,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final data = jsonDecode(response.body);
+
+      if ((response.statusCode == 200 || response.statusCode == 201) &&
+          data['success'] == true) {
+        final token = data['access_token'];
+        final refreshToken = data['refresh_token'];
+
+        // Save tokens and email
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', email);
+        if (token != null) await prefs.setString('auth_token', token);
+        if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
+        if (data['userId'] != null) await prefs.setString('userId', data['userId']);
+
+        // Save details
+        if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
+        if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
+        if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
+
+        return {
+          'success': true,
+          'userExists': data['userExists'] ?? false,
+          'hasUserDetails': data['hasUserDetails'] ?? false,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Google login failed on server',
+        };
       }
     } catch (e) {
       return {'success': false, 'message': 'Connection error: $e'};
