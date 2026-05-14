@@ -121,14 +121,21 @@ class MainNavigationState extends State<MainNavigation> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/images/app_icon.png',
-                      height: 60,
-                      fit: BoxFit.contain,
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Image.asset(
+                        'assets/images/app_icon.png',
+                        height: 54,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'VidhyaLoan',
+                      'Vidyaloan',
                       style: GoogleFonts.urbanist(
                         color: Colors.white,
                         fontSize: 24,
