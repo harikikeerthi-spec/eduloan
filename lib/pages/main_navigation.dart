@@ -122,15 +122,18 @@ class MainNavigationState extends State<MainNavigation> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: Image.asset(
-                        'assets/images/app_icon.png',
-                        height: 54,
-                        fit: BoxFit.contain,
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/app_icon.png',
+                          height: 60,
+                          width: 60,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
