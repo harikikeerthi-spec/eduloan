@@ -103,7 +103,7 @@ Ensure your `api-backend/server/.env` contains:
 ---
 
 ## 📄 License
-This project is licensed under the MIT License.
+This project is UNLICENSED.
 
 ---
 *Built with ❤️ for the future of Education Financing.*
