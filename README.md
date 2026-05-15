@@ -1,73 +1,109 @@
-# VidhyaLoan - Premium Education Financing
+# VidhyaLoan - Premium Education Financing Platform
 
-VidhyaLoan is a comprehensive platform designed to simplify the education financing process for students. It combines a powerful mobile application for users with a robust backend to handle loan applications, university comparisons, and AI-driven tools.
+![VidhyaLoan](https://img.shields.io/badge/VidhyaLoan-Mobile%20%26%20Backend-blueviolet?style=for-the-badge&logo=flutter)
+![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
+![NestJS](https://img.shields.io/badge/NestJS-11+-E0234E?style=for-the-badge&logo=nestjs)
+![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?style=for-the-badge&logo=firebase)
+![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase)
 
-## 🚀 Features
+A professional-grade, multi-platform solution for education financing. VidhyaLoan provides students with AI-powered tools, university comparisons, and a seamless loan application experience, backed by a high-performance NestJS server.
 
-- **Google Sign-In Authentication**: Secure and seamless login using Firebase and Google.
-- **AI-Powered Tools**:
-  - **Eligibility Checker**: Determine your loan eligibility instantly.
-  - **Grade Converter**: Convert your grades across different international systems.
-  - **University Shortlisting**: Get AI-driven recommendations for universities.
-  - **Visa Interview Simulator**: Practice for your visa interview with an AI mentor.
-- **Loan Management**: Apply for and track your education loans in real-time.
-- **Community & Mentors**: Connect with mentors and other students through forums and events.
-- **EMI Calculator**: Calculate your monthly repayments easily.
+---
 
-## 🛠️ Tech Stack
+### 🚀 Key Features
 
-- **Frontend**: Flutter
-- **Backend**: NestJS (located in `api-backend/server`)
-- **Database**: Supabase (via Prisma)
-- **Authentication**: Firebase Auth & Google Sign-In
-- **AI Services**: Groq / OpenAI / Custom AI services
+#### 📱 Mobile App (Flutter)
+- **AI-Powered Decision Support**:
+  - **Eligibility Checker**: Instant verification of loan eligibility.
+  - **Grade Converter**: Seamless conversion between international grading systems.
+  - **University Shortlisting**: Personalized AI recommendations for your academic profile.
+  - **Visa Interview Simulator**: Interactive AI-led practice sessions.
+- **Loan Lifecycle Management**: Complete tracking from application to disbursement.
+- **Smart Tools**: Professional EMI calculators and university comparison engines.
+- **Community Hub**: Integrated forums, mentorship programs, and event tracking.
 
-## 📋 Prerequisites
+#### ⚙️ Backend (NestJS)
+- **Secure Authentication**: Combined Firebase & Google Sign-In with robust session management.
+- **Scalable Architecture**: Modular NestJS design with Prisma ORM for type-safe database access.
+- **AI Integrations**: Native support for Groq and OpenAI models.
+- **Real-time Synchronization**: Instant updates across mobile and admin interfaces.
 
-- **Flutter SDK**: [Install Flutter](https://docs.flutter.dev/get-started/install)
-- **Node.js**: [Install Node.js](https://nodejs.org/) (v16+ recommended)
-- **Firebase Account**: For Google Sign-In and Cloud messaging.
+---
 
-## ⚙️ Setup & Configuration
+### 🛠️ Tech Stack
 
-### 1. Google Sign-In (Android)
-To enable Google Sign-In on Android, you must register your debug SHA-1 fingerprint in the Firebase Console:
-1. Run `./android/gradlew signingReport` to get your SHA-1.
-2. Add the fingerprint to your Android app in the Firebase Console.
-3. Download the updated `google-services.json` and place it in `android/app/`.
+| Component | Technology | Description |
+| :--- | :--- | :--- |
+| **Mobile** | **Flutter / Dart** | Cross-platform mobile development. |
+| **Backend** | **NestJS 11** | Enterprise-grade Node.js framework. |
+| **Database** | **Supabase / PostgreSQL** | Scalable relational database. |
+| **Auth** | **Firebase & Google** | Secure, multi-provider authentication. |
+| **ORM** | **Prisma** | Modern database toolkit. |
+| **AI Engine** | **Groq / Llama 3** | High-speed LLM integration. |
 
-### 2. Backend Environment Variables
-Create a `.env` file in `api-backend/server/` based on `.env.example`:
-```env
-DATABASE_URL="your_supabase_postgresql_url"
-DIRECT_URL="your_supabase_direct_url"
-GROQ_API_KEY="your_groq_api_key"
-SUPABASE_URL="your_supabase_project_url"
-SUPABASE_KEY="your_supabase_anon_key"
+---
+
+### 📂 Project Structure
+
+```text
+Vidhyaloan/
+├── lib/                    # 📱 Flutter Frontend
+│   ├── models/             # Data structures
+│   ├── pages/              # UI screens & navigation
+│   ├── services/           # API & Business logic
+│   └── widgets/            # Reusable UI components
+├── api-backend/            # ⚙️ NestJS Backend
+│   ├── server/             # Core server logic
+│   │   ├── src/            # Business modules (Auth, AI, Loan)
+│   │   └── prisma/         # Database schema & migrations
+│   └── frontend/           # Admin/Internal Web interfaces
+├── android/                # Android-specific configuration
+└── assets/                 # App images, fonts, and icons
 ```
 
-## 🏃 Running the Project
+---
 
-### Start the Backend
+### 🚦 Quick Start
+
+#### 1. Setup Backend
 ```bash
 cd api-backend/server
 npm install
+# Configure .env with Supabase & AI keys
 npx prisma generate
 npm run start:dev
 ```
 
-### Start the Flutter App
+#### 2. Setup Flutter
 ```bash
+# Ensure you have registered your SHA-1 in Firebase Console
+# and placed the updated google-services.json in android/app/
 flutter pub get
 flutter run
 ```
 
-## 🤝 Contributing
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+---
+
+### 🔧 Configuration Guide
+
+#### Google Sign-In (Android)
+To resolve `ApiException 16`, ensure your **SHA-1 fingerprint** is correctly registered in the Firebase Console and bundled in the `google-services.json`.
+
+**Get your SHA-1:**
+```powershell
+./android/gradlew signingReport
+```
+
+#### Environment Variables
+Ensure your `api-backend/server/.env` contains:
+- `DATABASE_URL` / `DIRECT_URL` (Supabase)
+- `GROQ_API_KEY` (AI Tools)
+- `SUPABASE_URL` / `SUPABASE_KEY`
+
+---
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
+
+---
+*Built with ❤️ for the future of Education Financing.*
