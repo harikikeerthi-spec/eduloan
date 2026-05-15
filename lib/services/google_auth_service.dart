@@ -7,27 +7,47 @@ class GoogleAuthService {
   
   // Using the singleton instance for version 7.2.0
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _initialized = false;
 
   /// Handles Google Sign-In and returns the Firebase User
   Future<User?> signInWithGoogle() async {
     try {
+      // Ensure we start from a clean state to avoid "Account reauth failed" errors.
+      // We wrap this in a try-catch to avoid crashing if no user is currently signed in.
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        debugPrint('Note: Silent signOut failed (normal if no user was active): $e');
+      }
+
       // 1. Trigger the Google Authentication flow
-      // In version 7.2.0, the method is 'authenticate()'
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      // scopeHint requests permissions during the initial account selection.
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
+        scopeHint: ['email', 'profile'],
+      );
       
-      // 2. Obtain the access token via authorizeScopes
-      // We need these scopes for the access token
-      final List<String> scopes = ['email', 'profile'];
-      final GoogleSignInClientAuthorization authz = await googleUser.authorizationClient.authorizeScopes(scopes);
-      
-      // 3. Obtain the idToken from authentication
-      final auth = googleUser.authentication;
-      final GoogleSignInAuthentication googleAuth = auth is Future ? await auth : auth;
+      // 2. Obtain the idToken from authentication
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+
+      if (idToken == null) {
+        throw Exception("Failed to retrieve ID Token from Google Sign In.");
+      }
+
+      // 3. Try to get the access token, but don't fail if we can't
+      // Firebase Auth often only strictly needs the idToken.
+      String? accessToken;
+      try {
+        final GoogleSignInClientAuthorization? authz = await googleUser.authorizationClient.authorizationForScopes(['email', 'profile']);
+        accessToken = authz?.accessToken;
+      } catch (e) {
+        debugPrint('Warning: Could not fetch access token: $e');
+      }
 
       // 4. Create a new credential
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: authz.accessToken,
-        idToken: googleAuth.idToken,
+        accessToken: accessToken,
+        idToken: idToken,
       );
 
       // 5. Once signed in, return the UserCredential

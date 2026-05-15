@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "496981213875-cnnp0pkko933aocfc4d4t9u5es6uph91.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.vidhyaloan",
+            "certificate_hash": "55c8a96225441ce8a3554074f3521a7d7bc195f7"
+          }
+        },
+        {
           "client_id": "496981213875-7imkhflkb3b805bo6fga84hqpe7dapcr.apps.googleusercontent.com",
           "client_type": 3
         }
