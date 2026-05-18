@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String _baseUrl = 'http://10.0.2.2:3000';
+  static const String _baseUrl = 'https://developer.vidyaloans.in';
   static String? _cachedBaseUrl;
 
   static Future<String> getBaseUrl() async {
@@ -11,8 +11,10 @@ class ApiConfig {
   static String get baseUrl => _cachedBaseUrl ?? _baseUrl;
   static String get authBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/auth';
   static String get aiBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/ai';
-  static String get onboardingBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/onboarding';
-  static String get communityBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/community';
+  static String get onboardingBaseUrl =>
+      '${_cachedBaseUrl ?? _baseUrl}/onboarding';
+  static String get communityBaseUrl =>
+      '${_cachedBaseUrl ?? _baseUrl}/community';
   static String get blogBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/blog';
   static String get userBaseUrl => '${_cachedBaseUrl ?? _baseUrl}/users';
 }

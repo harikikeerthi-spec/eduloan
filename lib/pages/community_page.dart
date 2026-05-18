@@ -71,12 +71,12 @@ class _CommunityPageState extends State<CommunityPage>
 
   void _shareStory(SuccessStory story) {
     final String text =
-        'Check out ${story.studentName}\'s success story on VidhyaLoan!\n\n'
+        'Check out ${story.studentName}\'s success story on VidyaLoan!\n\n'
         'Student: ${story.studentName}\n'
         'University: ${story.university}\n'
         'Loan Amount: ₹${story.loanAmount}\n\n'
         'Story: ${story.content}\n\n'
-        'Join the community at VidhyaLoan!';
+        'Join the community at VidyaLoan!';
 
     Share.share(text, subject: 'Success Story: ${story.studentName}');
   }

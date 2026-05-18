@@ -20,7 +20,7 @@ interface ApplicationData {
     rejectionReason?: string;
     createdAt: string;
     submittedAt: string;
-    // Vidhyaloan Education Loan specific fields
+    // VidyaLoan Education Loan specific fields
     universityName: string;
     courseName: string;
     country: string;
@@ -289,7 +289,7 @@ const ApplicationManagementPanel = ({ app, onUpdate, onClose }: {
                                     </div>
                                 </div>
 
-                                {/* Vidhyaloan Education Details */}
+                                {/* VidyaLoan Education Details */}
                                 <div className="mt-6 pt-6 border-t border-blue-200">
                                     <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Education Details</p>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -620,3 +620,4 @@ const ApplicationManagementPanel = ({ app, onUpdate, onClose }: {
 };
 
 export default ApplicationManagementPanel;
+

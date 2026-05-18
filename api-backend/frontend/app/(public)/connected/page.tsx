@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -160,7 +160,7 @@ export default function ConnectedPage() {
                             <span className="text-xl font-black tracking-tighter text-white font-display leading-none">
                                 connect<span className="text-[#F7C600]">ED</span>
                             </span>
-                            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[#F7C600] mt-1 group-hover/logo:text-white transition-colors">Back to VidhyaLoans</span>
+                            <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[#F7C600] mt-1 group-hover/logo:text-white transition-colors">Back to VidyaLoans</span>
                         </div>
                     </Link>
 
@@ -247,7 +247,7 @@ export default function ConnectedPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                         <StatItem label="Active Aspirants" value={1000} suffix="+" />
                         <StatItem label="University Admits" value={450} suffix="+" />
-                        <StatItem label="Scholarships Won" value={1.5} suffix="Cr" prefix="₹" />
+                        <StatItem label="Scholarships Won" value={1.5} suffix="Cr" prefix="?" />
                         <StatItem label="Community Experts" value={50} suffix="+" />
                     </div>
                 </div>
@@ -352,7 +352,7 @@ export default function ConnectedPage() {
                                 <TimelineStep
                                     number="02"
                                     title="Milestone Sprints"
-                                    desc="Bi-weekly offline meetups in Delhi to smash goals—from university shortlisting to first draft SOP reviews."
+                                    desc="Bi-weekly offline meetups in Delhi to smash goals�from university shortlisting to first draft SOP reviews."
                                 />
                                 <TimelineStep
                                     number="03"
@@ -365,7 +365,7 @@ export default function ConnectedPage() {
                 </div>
             </section>
 
-            {/* Registration CTA — Dynamic Form */}
+            {/* Registration CTA � Dynamic Form */}
             <section id="apply" className="py-40 bg-black text-white relative overflow-hidden">
                 <div className="max-w-7xl mx-auto px-6">
                     <div className="grid lg:grid-cols-2 gap-24 items-center">
@@ -396,7 +396,7 @@ export default function ConnectedPage() {
                             </div>
                         </div>
 
-                        {/* ─── Dynamic Application Form ─── */}
+                        {/* --- Dynamic Application Form --- */}
                         <div className="relative z-10">
                             <CohortApplicationForm />
                         </div>
@@ -421,7 +421,7 @@ export default function ConnectedPage() {
                                 <span className="text-lg font-black tracking-tighter text-black font-display uppercase leading-none">
                                     connect<span className="text-gray-300">ED</span>
                                 </span>
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#F7C600]">Return to VidhyaLoans</span>
+                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[#F7C600]">Return to VidyaLoans</span>
                             </div>
                         </Link>
 
@@ -435,7 +435,7 @@ export default function ConnectedPage() {
 
                         <div className="text-center space-y-4">
                             <p className="text-black/20 text-[10px] uppercase font-black tracking-[0.3em]">
-                                A Subsidiary of VidhyaLoans Educational Services Pvt Ltd
+                                A Subsidiary of VidyaLoans Educational Services Pvt Ltd
                             </p>
                             <p className="text-black/50 text-[9px] font-bold uppercase tracking-[0.3em]">
                                 &copy; {new Date().getFullYear()} All Rights Reserved. Stay Hungry.
@@ -448,7 +448,7 @@ export default function ConnectedPage() {
     );
 }
 
-// ─── Dynamic Cohort Application Form ─────────────────────────────────────────
+// --- Dynamic Cohort Application Form -----------------------------------------
 
 const INTAKE_OPTIONS = ["Fall 2025", "Spring 2026", "Fall 2026", "Fall 2027"];
 const DESTINATION_OPTIONS = ["USA", "UK", "Canada", "Australia", "Germany", "Ireland", "Other"];
@@ -532,7 +532,7 @@ function CohortApplicationForm() {
                     Welcome to the waitlist, <span className="text-[#F7C600] font-black">{form.fullName.split(" ")[0]}</span>. Our team will reach you within 48 hours.
                 </p>
                 <div className="mt-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/30 text-xs font-bold uppercase tracking-widest">
-                    {form.targetIntake} Cohort · {form.destination || "Global"}
+                    {form.targetIntake} Cohort � {form.destination || "Global"}
                 </div>
                 <button
                     onClick={() => { setSubmitted(false); setForm({ fullName: "", email: "", phone: "", targetIntake: "Fall 2026", destination: "", university: "", course: "", message: "" }); }}
@@ -618,7 +618,7 @@ function CohortApplicationForm() {
                             onChange={e => handleChange("destination", e.target.value)}
                             className={formSelectClass(false)}
                         >
-                            <option value="" className="bg-[#111]">— Choose —</option>
+                            <option value="" className="bg-[#111]">� Choose �</option>
                             {DESTINATION_OPTIONS.map(o => (
                                 <option key={o} value={o} className="bg-[#111]">{o}</option>
                             ))}
@@ -678,7 +678,7 @@ function CohortApplicationForm() {
     );
 }
 
-// ─── Form helpers ──────────────────────────────────────────────────────────────
+// --- Form helpers --------------------------------------------------------------
 
 function formInputClass(hasError: boolean) {
     return `w-full bg-white/5 border ${hasError ? "border-red-500/70" : "border-white/10"} rounded-2xl px-6 py-4 text-white placeholder:text-white/20 focus:outline-none focus:bg-white/10 focus:border-[#F7C600] transition-all text-sm`;
@@ -703,7 +703,7 @@ function FormField({
         <div className="space-y-1.5">
             <label htmlFor={inputId} className="text-[10px] uppercase font-black tracking-[0.4em] text-[#F7C600] px-2 block">
                 {label}
-                {!error && <span className="text-white/20 ml-2">·</span>}
+                {!error && <span className="text-white/20 ml-2">�</span>}
                 {error && (
                     <span className="text-red-400 normal-case font-semibold tracking-normal ml-2">{error}</span>
                 )}
@@ -771,3 +771,4 @@ function TimelineStep({ number, title, desc }: { number: string; title: string; 
         </motion.div>
     );
 }
+

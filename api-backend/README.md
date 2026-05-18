@@ -1,6 +1,6 @@
-# VidhyaLoan Management System
+# VidyaLoan Management System
 
-![VidhyaLoan Banner](https://img.shields.io/badge/VidhyaLoan-Admin%20System-blueviolet?style=for-the-badge&logo=react)
+![VidyaLoan Banner](https://img.shields.io/badge/VidyaLoan-Admin%20System-blueviolet?style=for-the-badge&logo=react)
 ![Next.js](https://img.shields.io/badge/Next.js-15+-black?style=for-the-badge&logo=next.js)
 ![NestJS](https://img.shields.io/badge/NestJS-11+-E0234E?style=for-the-badge&logo=nestjs)
 ![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)

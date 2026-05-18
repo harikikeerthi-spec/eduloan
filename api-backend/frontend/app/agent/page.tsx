@@ -216,7 +216,7 @@ export default function AgentDashboardPage() {
                                                 <span className="material-symbols-outlined text-[12rem]">rocket_launch</span>
                                             </div>
                                             <div className="relative z-10 max-w-lg">
-                                                <h3 className="text-3xl font-black font-display tracking-tight mb-4">Scale Your Agency with VidhyaLoan Plus.</h3>
+                                                <h3 className="text-3xl font-black font-display tracking-tight mb-4">Scale Your Agency with VidyaLoan Plus.</h3>
                                                 <p className="text-slate-400 font-medium text-sm leading-relaxed mb-8">Get priority processing for your referrals, dedicated account managers, and up to 15% higher commissions on every disbursement.</p>
                                                 <button className="px-8 py-4 bg-white text-[#0f172a] rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all flex items-center gap-3">
                                                     Upgrade Now <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -404,3 +404,4 @@ export default function AgentDashboardPage() {
         </div>
     );
 }
+

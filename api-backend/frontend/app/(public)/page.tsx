@@ -948,7 +948,7 @@ export default async function HomePage() {
                                         </h2>
 
                                         <p className="text-white/90 text-[15px] mb-8 max-w-lg leading-relaxed font-medium">
-                                            Know someone planning to study abroad? Refer them to VidhyaLoan and earn rewards for every successful loan disbursement. Plus, unlock ₹10,000 bonus when you hit 5 referrals!
+                                            Know someone planning to study abroad? Refer them to VidyaLoan and earn rewards for every successful loan disbursement. Plus, unlock ₹10,000 bonus when you hit 5 referrals!
                                         </p>
 
                                         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -1016,3 +1016,4 @@ export default async function HomePage() {
         </div>
     );
 }
+

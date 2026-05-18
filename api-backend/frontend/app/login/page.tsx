@@ -173,7 +173,7 @@ function LoginContent() {
                         <div className="w-10 h-10 rounded-xl bg-[#6605c7] flex items-center justify-center text-white shadow-lg shadow-[#6605c7]/20 group-hover:scale-105 transition-transform">
                             <span className="material-symbols-outlined text-xl">school</span>
                         </div>
-                        <span className="font-bold text-2xl font-display text-gray-900 tracking-tight">Vidhyaloan</span>
+                        <span className="font-bold text-2xl font-display text-gray-900 tracking-tight">VidyaLoan</span>
                     </Link>
                     <h1 className="text-2xl font-bold text-gray-900 font-display mb-1.5 tracking-tight">
                         {step === "email" ? "Welcome Back" : "Check Your Email"}
@@ -289,3 +289,4 @@ export default function LoginPage() {
         </Suspense>
     );
 }
+

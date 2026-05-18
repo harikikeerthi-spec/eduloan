@@ -571,11 +571,11 @@ export default function AdminDashboardPage() {
     const handleApplyTemplate = (val: string) => {
         setSelectedTemplate(val);
         if (val === 'status_update') {
-            setEmailData(prev => ({ ...prev, subject: "Formal Communication: Application Status Progression", content: "Dear Applicant,\n\nPlease refer to your recent application docket. Your processing status has been formally updated in our registry. Kindly log in to your secure portal to view the newly authorized details.\n\nRegards,\nVidhyaLoan Operations Control" }));
+            setEmailData(prev => ({ ...prev, subject: "Formal Communication: Application Status Progression", content: "Dear Applicant,\n\nPlease refer to your recent application docket. Your processing status has been formally updated in our registry. Kindly log in to your secure portal to view the newly authorized details.\n\nRegards,\nVidyaLoan Operations Control" }));
         } else if (val === 'action_required') {
-            setEmailData(prev => ({ ...prev, subject: "Action Required: Requisite Document Verification", content: "Dear Applicant,\n\nWe noted an irregularity or missing item in the documentation submitted for your application node. Please log in immediately and provide the required verification materials via your secure dashboard to avoid compliance processing delays.\n\nRegards,\nVidhyaLoan Operations Control" }));
+            setEmailData(prev => ({ ...prev, subject: "Action Required: Requisite Document Verification", content: "Dear Applicant,\n\nWe noted an irregularity or missing item in the documentation submitted for your application node. Please log in immediately and provide the required verification materials via your secure dashboard to avoid compliance processing delays.\n\nRegards,\nVidyaLoan Operations Control" }));
         } else if (val === 'welcome_board') {
-            setEmailData(prev => ({ ...prev, subject: "Welcome: Complete Node Integration Successful", content: "Dear User,\n\nYour formal profile has been successfully integrated into our central node architecture. You now have full access to submit and securely track your applications under standardized service level agreements.\n\nRegards,\nVidhyaLoan Operations Control" }));
+            setEmailData(prev => ({ ...prev, subject: "Welcome: Complete Node Integration Successful", content: "Dear User,\n\nYour formal profile has been successfully integrated into our central node architecture. You now have full access to submit and securely track your applications under standardized service level agreements.\n\nRegards,\nVidyaLoan Operations Control" }));
         } else {
             setEmailData(prev => ({ ...prev, subject: "", content: "" }));
         }
@@ -1387,7 +1387,7 @@ export default function AdminDashboardPage() {
                                                 <option value="empty">-- Blank Message --</option>
                                                 <option value="status_update">Status Progression Update</option>
                                                 <option value="action_required">Action Required: Verify Documents</option>
-                                                <option value="welcome_board">Welcome to VidhyaLoan</option>
+                                                <option value="welcome_board">Welcome to VidyaLoan</option>
                                             </select>
                                         </div>
 
@@ -2870,3 +2870,4 @@ export default function AdminDashboardPage() {
 
 // This is a helper function defined outside the component to render detail rows in the drawer
 // Move it to be accessible to the admin component
+

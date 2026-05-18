@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
-        _handleError(result['message'] ?? 'Failed to sync with VidhyaLoan server');
+        _handleError(result['message'] ?? 'Failed to sync with VidyaLoan server');
       }
     } catch (e) {
       _handleError('Google Sign-In failed: $e');
