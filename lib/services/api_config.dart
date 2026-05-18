@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String _baseUrl = 'http://10.0.2.2:5000';
+  static const String _baseUrl = 'https://developer.vidyaloans.in';
   static String? _cachedBaseUrl;
 
   static Future<String> getBaseUrl() async {
