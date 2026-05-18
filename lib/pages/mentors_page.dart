@@ -376,22 +376,50 @@ class _MentorsPageState extends State<MentorsPage> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
-                backgroundImage: mentor.imageUrl != null
-                    ? NetworkImage(mentor.imageUrl!)
-                    : null,
-                child: mentor.imageUrl == null
-                    ? Text(
-                        mentor.name[0],
-                        style: const TextStyle(
-                          fontSize: 24,
-                          color: Color(0xFF311B92),
-                          fontWeight: FontWeight.bold,
-                        ),
+              ClipOval(
+                child: mentor.imageUrl != null && mentor.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        mentor.imageUrl!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 60,
+                            height: 60,
+                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            child: Center(
+                              child: Text(
+                                mentor.name.isNotEmpty
+                                    ? mentor.name[0].toUpperCase()
+                                    : 'M',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  color: Color(0xFF311B92),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       )
-                    : null,
+                    : Container(
+                        width: 60,
+                        height: 60,
+                        color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                        child: Center(
+                          child: Text(
+                            mentor.name.isNotEmpty
+                                ? mentor.name[0].toUpperCase()
+                                : 'M',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              color: Color(0xFF311B92),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(

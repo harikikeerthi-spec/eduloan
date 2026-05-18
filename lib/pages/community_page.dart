@@ -340,21 +340,48 @@ class _CommunityPageState extends State<CommunityPage>
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.green.withOpacity(0.1),
-                backgroundImage: story.imageUrl != null
-                    ? NetworkImage(story.imageUrl!)
-                    : null,
-                child: story.imageUrl == null
-                    ? Text(
-                        story.studentName[0],
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
+              ClipOval(
+                child: story.imageUrl != null && story.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        story.imageUrl!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 40,
+                            height: 40,
+                            color: Colors.green.withOpacity(0.1),
+                            child: Center(
+                              child: Text(
+                                story.studentName.isNotEmpty
+                                    ? story.studentName[0].toUpperCase()
+                                    : 'S',
+                                style: const TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       )
-                    : null,
+                    : Container(
+                        width: 40,
+                        height: 40,
+                        color: Colors.green.withOpacity(0.1),
+                        child: Center(
+                          child: Text(
+                            story.studentName.isNotEmpty
+                                ? story.studentName[0].toUpperCase()
+                                : 'S',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
