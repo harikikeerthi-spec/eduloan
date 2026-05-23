@@ -49,13 +49,7 @@ server/server/scripts/
 ```
 
 ### **Frontend Files**
-```
-web/assets/js/
-├── community-mentorship.js     ✅ 468 lines
-├── community-events.js         ✅ 355 lines
-├── community-success-stories.js ✅ 568 lines
-└── community-resources.js      ✅ 266 lines
-```
+*(Removed - HTML/JS frontend assets removed as the repository is now a Flutter mobile application)*
 
 ### **Documentation Files**
 ```
@@ -108,16 +102,6 @@ This creates:
 - 4 events (webinars, Q&A, networking)
 - 3 success stories
 - 4 resources
-
-### 4. **Open the Community Pages**
-Simply open any community page in your browser:
-
-```
-file:///c:/Projects/Sun%20Glade/Loan/web/community-mentorship.html
-file:///c:/Projects/Sun%20Glade/Loan/web/community-events.html
-file:///c:/Projects/Sun%20Glade/Loan/web/community-success-stories.html
-file:///c:/Projects/Sun%20Glade/Loan/web/community-resources.html
-```
 
 ---
 

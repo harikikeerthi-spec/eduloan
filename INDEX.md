@@ -75,11 +75,6 @@ Welcome! This is your complete guide to the new Admin Dashboard System.
 
 ## 💻 Code Files
 
-### Frontend
-- **web/admin-dashboard.html** - Main dashboard UI (1,200+ lines)
-- **web/assets/js/admin-dashboard.js** - Dashboard functionality (500+ lines)
-- **web/assets/css/admin-dashboard.css** - Enhanced styling (600+ lines)
-
 ### Tools
 - **setup-admin.js** - CLI tool for admin management (300+ lines)
 
@@ -98,11 +93,6 @@ Admin System Files
 │  ├─ README_ADMIN_SYSTEM.md
 │  ├─ FILE_NAVIGATION.md
 │  └─ SYSTEM_ARCHITECTURE.md
-│
-├─ Code (3 files)
-│  ├─ web/admin-dashboard.html
-│  ├─ web/assets/js/admin-dashboard.js
-│  └─ web/assets/css/admin-dashboard.css
 │
 ├─ Tools (1 file)
 │  └─ setup-admin.js
@@ -129,10 +119,7 @@ Admin System Files
 ### I'm a Developer
 1. Review [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md) (15 min)
 2. Study [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) (10 min)
-3. Review code files:
-   - web/admin-dashboard.html
-   - web/assets/js/admin-dashboard.js
-   - web/assets/css/admin-dashboard.css
+
 
 ### I Need Help / Troubleshooting
 1. Check [ADMIN_QUICK_REFERENCE.md](ADMIN_QUICK_REFERENCE.md) - Troubleshooting section
@@ -384,10 +371,7 @@ All documentation includes:
 - [Quick Reference](ADMIN_QUICK_REFERENCE.md)
 - [System Overview](ADMIN_SYSTEM_README.md)
 
-### Code
-- [Dashboard HTML](../web/admin-dashboard.html)
-- [Dashboard JS](../web/assets/js/admin-dashboard.js)
-- [Dashboard CSS](../web/assets/css/admin-dashboard.css)
+
 
 ### Tools
 - [Admin Setup](../setup-admin.js)
