@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OpenRouterService } from './open-router.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ShortlistingService {
   private readonly logger = new Logger(ShortlistingService.name);
 
-  constructor(private readonly openRouterService: OpenRouterService) {}
+  constructor(
+    private readonly openRouterService: OpenRouterService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   private readonly popularCountries = [
     { name: 'USA', flag: '🇺🇸' },
@@ -87,6 +91,7 @@ export class ShortlistingService {
   async shortlist(profile: any, messages: any[] = []): Promise<any> {
     try {
       const systemPrompt = `You are a Study Abroad Consultant. Shortlist 5-6 universities.
+      CRITICAL: Keep "reason" and "description" fields concise (1-2 sentences maximum) to avoid token truncation.
       JSON format:
       {
         "recommendations": [
@@ -101,11 +106,54 @@ export class ShortlistingService {
       const userPrompt = `Profile: ${JSON.stringify(profile)}
       Conversation History: ${JSON.stringify(messages)}`;
 
-      const response = await this.openRouterService.generateResponse(systemPrompt, userPrompt);
+      const response = await this.openRouterService.generateResponse(
+        systemPrompt,
+        userPrompt,
+        0.7,
+        4096,
+      );
       const jsonMatch = response.match(/\{[\s\S]*\}/);
-      return JSON.parse(jsonMatch ? jsonMatch[0] : response);
+      const jsonStr = jsonMatch ? jsonMatch[0] : response;
+      try {
+        return JSON.parse(jsonStr);
+      } catch (parseError) {
+        this.logger.error('Failed to parse JSON. Raw JSON string tried to parse:', jsonStr);
+        throw parseError;
+      }
     } catch (error) {
       this.logger.error('Shortlisting failed', error);
+      throw error;
+    }
+  }
+
+  async saveShortlistChat(userId: string, messages: any[], recommendations: any[]): Promise<any> {
+    try {
+      return await this.prisma.universityShortlistChat.upsert({
+        where: { userId },
+        update: {
+          messages: messages || [],
+          recommendations: recommendations || [],
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          messages: messages || [],
+          recommendations: recommendations || [],
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to save shortlist chat for user ${userId}`, error);
+      throw error;
+    }
+  }
+
+  async getLatestShortlistChat(userId: string): Promise<any> {
+    try {
+      return await this.prisma.universityShortlistChat.findUnique({
+        where: { userId },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to get shortlist chat for user ${userId}`, error);
       throw error;
     }
   }

@@ -9,6 +9,7 @@ import { AdmitPredictorService } from './services/admit-predictor.service';
 import { AiSupportService } from './services/ai-support.service';
 import { VisaInterviewService } from './services/visa-interview.service';
 import { ShortlistingService } from './services/shortlisting.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('ai')
 export class AiController {
@@ -22,6 +23,7 @@ export class AiController {
     private readonly aiSupportService: AiSupportService,
     private readonly visaInterviewService: VisaInterviewService,
     private readonly shortlistingService: ShortlistingService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('search-countries')
@@ -37,8 +39,52 @@ export class AiController {
   }
 
   @Post('shortlist')
-  async shortlist(@Body() data: { profile: any; messages?: any[] }) {
+  async shortlist(@Body() data: { profile: any; messages?: any[]; userId?: string }) {
     const result = await this.shortlistingService.shortlist(data.profile, data.messages);
+
+    if (data.userId && result.recommendations) {
+      // 1. Save shortlist chat history
+      await this.shortlistingService.saveShortlistChat(
+        data.userId,
+        data.messages || [],
+        result.recommendations,
+      );
+
+      // 2. Save/Update recommendations in RecommendedUniversity table
+      try {
+        await this.prisma.recommendedUniversity.deleteMany({
+          where: { userId: data.userId },
+        });
+
+        await this.prisma.recommendedUniversity.createMany({
+          data: result.recommendations.map((uni: any) => ({
+            userId: data.userId,
+            name: uni.name || '',
+            chance: uni.chance ?? null,
+            type: uni.type ?? null,
+            rank: uni.rank ?? null,
+            tuition: uni.tuition ?? null,
+            location: uni.location ?? null,
+            reason: uni.reason ?? null,
+            avgSalary: uni.avgSalary ?? null,
+            deadline: uni.deadline ?? null,
+            flag: uni.flag ?? null,
+            country: uni.country ?? null,
+            programName: uni.programName ?? null,
+            logoUrl: uni.logoUrl ?? null,
+            description: uni.description ?? null,
+            roi: uni.roi ?? null,
+            acceptanceRate: uni.acceptanceRate ?? null,
+            duration: uni.duration ?? null,
+            category: uni.category ?? null,
+            websiteUrl: uni.websiteUrl ?? null,
+          })),
+        });
+      } catch (dbError) {
+        console.error('Failed to save RecommendedUniversity list:', dbError);
+      }
+    }
+
     return { success: true, ...result };
   }
 
@@ -266,10 +312,63 @@ export class AiController {
     return await this.visaInterviewService.generateFinalReport(data);
   }
 
-  // Missing routes to prevent 404s
+  // Save and retrieve favorite universities and recommendations
+  @Post('university/favorite')
   @Post('university/favorites')
-  async saveFavorite() {
-    return { success: true };
+  async saveFavorite(
+    @Body()
+    data: {
+      userId: string;
+      universityName: string;
+      universityData: any;
+    },
+  ) {
+    try {
+      const existing = await this.prisma.recommendedUniversity.findFirst({
+        where: {
+          userId: data.userId,
+          name: data.universityName,
+          type: 'Saved',
+        },
+      });
+
+      if (existing) {
+        await this.prisma.recommendedUniversity.delete({
+          where: { id: existing.id },
+        });
+        return { success: true, saved: false };
+      } else {
+        const uni = data.universityData || {};
+        await this.prisma.recommendedUniversity.create({
+          data: {
+            userId: data.userId,
+            name: data.universityName,
+            chance: uni.chance ?? null,
+            type: 'Saved',
+            rank: uni.rank ?? null,
+            tuition: uni.tuition ?? null,
+            location: uni.location ?? null,
+            reason: uni.reason ?? null,
+            avgSalary: uni.avgSalary ?? null,
+            deadline: uni.deadline ?? null,
+            flag: uni.flag ?? null,
+            country: uni.country ?? null,
+            programName: uni.programName ?? null,
+            logoUrl: uni.logoUrl ?? null,
+            description: uni.description ?? null,
+            roi: uni.roi ?? null,
+            acceptanceRate: uni.acceptanceRate ?? null,
+            duration: uni.duration ?? null,
+            category: uni.category ?? null,
+            websiteUrl: uni.websiteUrl ?? null,
+          },
+        });
+        return { success: true, saved: true };
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite university:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   @Post('recommendations')
@@ -279,12 +378,74 @@ export class AiController {
 
   @Get('university/favorites/:userId')
   async getFavorites(@Param('userId') userId: string) {
-    return { success: true, data: [] };
+    try {
+      const favorites = await this.prisma.recommendedUniversity.findMany({
+        where: {
+          userId,
+          type: 'Saved',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const formatted = favorites.map((uni) => ({
+        universityData: {
+          name: uni.name,
+          chance: uni.chance,
+          type: uni.type,
+          rank: uni.rank,
+          tuition: uni.tuition,
+          location: uni.location,
+          reason: uni.reason,
+          avgSalary: uni.avgSalary,
+          deadline: uni.deadline,
+          flag: uni.flag,
+          country: uni.country,
+          programName: uni.programName,
+          logoUrl: uni.logoUrl,
+          description: uni.description,
+          roi: uni.roi,
+          acceptanceRate: uni.acceptanceRate,
+          duration: uni.duration,
+          category: uni.category,
+          websiteUrl: uni.websiteUrl,
+        },
+      }));
+
+      return formatted;
+    } catch (error) {
+      console.error('Failed to get favorites:', error);
+      return [];
+    }
   }
 
   @Get('recommendations/:userId')
   async getRecommendations(@Param('userId') userId: string) {
-    return { success: true, data: [] };
+    try {
+      const recommendations = await this.prisma.recommendedUniversity.findMany({
+        where: {
+          userId,
+          NOT: {
+            type: 'Saved',
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      return { success: true, recommendations };
+    } catch (error) {
+      console.error('Failed to get recommendations:', error);
+      return { success: false, recommendations: [] };
+    }
+  }
+
+  @Get('shortlist/:userId')
+  async getLatestShortlistChat(@Param('userId') userId: string) {
+    try {
+      const chat = await this.shortlistingService.getLatestShortlistChat(userId);
+      return { success: true, chat };
+    } catch (error) {
+      console.error('Failed to get shortlist chat:', error);
+      return { success: false, error: error.message };
+    }
   }
 
 }

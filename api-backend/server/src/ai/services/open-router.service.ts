@@ -10,6 +10,7 @@ export class OpenRouterService {
     systemPrompt: string,
     userPrompt: string,
     temperature = 0.7,
+    maxTokens = 2048,
   ): Promise<string> {
     if (!this.apiKey) {
       this.logger.warn('OPENROUTER_API_KEY is not set');
@@ -39,13 +40,13 @@ export class OpenRouterService {
             'X-Title': 'VidhyaLoan AI Service', // Optional, helps with tracking
           },
             body: JSON.stringify({
-              model: 'google/gemini-2.0-flash-001',
+              model: 'google/gemini-2.5-flash',
               messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
               ],
               temperature: temperature,
-              max_tokens: 400,
+              max_tokens: maxTokens,
             }),
         });
 
