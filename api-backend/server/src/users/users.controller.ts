@@ -1,5 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Param, Put, Query, Res, Delete } from '@nestjs/common';
-import type { Response } from 'express';
+import { Controller, Get, Post, Body, UseGuards, Param, Put, Delete, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AdminGuard } from '../auth/admin.guard';
 import { SuperAdminGuard } from '../auth/super-admin.guard';
@@ -39,6 +38,15 @@ export class UsersController {
             formattedDOB = `${day}-${month}-${year}`;
         }
 
+        const safeJsonParse = (str: string) => {
+            if (!str) return null;
+            try {
+                return JSON.parse(str);
+            } catch (e) {
+                return null;
+            }
+        };
+
         return {
             success: true,
             user: {
@@ -50,17 +58,71 @@ export class UsersController {
                 dateOfBirth: formattedDOB,
                 mobile: user.mobile,
                 role: user.role,
+                registeredAtIndia: user.registeredAtIndia || '',
+                panNumber: user.panNumber || '',
+                aadhaarNumber: user.aadhaarNumber || '',
+                fatherName: user.fatherName || '',
+                permanentAddress: user.permanentAddress || '',
+                gender: user.gender || '',
+                documentVerified: user.documentVerified || false,
+                status: user.status || 'pending',
+                rejectionReason: user.rejectionReason || '',
+                goal: user.goal || '',
+                studyDestination: user.studyDestination || '',
+                courseName: user.courseName || '',
+                targetUniversity: user.targetUniversity || '',
+                intakeSeason: user.intakeSeason || '',
+                bachelorsDegree: user.bachelorsDegree || '',
+                gpa: user.gpa || null,
+                workExp: user.workExp || null,
+                entranceTest: user.entranceTest || '',
+                entranceScore: user.entranceScore || '',
+                englishTest: user.englishTest || '',
+                englishScore: user.englishScore || '',
+                budget: user.budget || '',
+                pincode: user.pincode || '',
+                loanAmount: user.loanAmount || '',
+                admitStatus: user.admitStatus || '',
+                passport: safeJsonParse(user.passport),
+                nationality: safeJsonParse(user.nationality),
+                mailingAddress: safeJsonParse(user.mailingAddress),
+                emergencyContact: safeJsonParse(user.emergencyContact),
+                academic: safeJsonParse(user.academic),
+                workExperience: safeJsonParse(user.workExperience),
+                tests: safeJsonParse(user.tests),
+                family: safeJsonParse(user.family),
+                coApplicant: safeJsonParse(user.coApplicant),
+                createdAt: user.createdAt || user.created_at || '',
             },
         };
+    }
+
+    @Get('admin/stats')
+    @UseGuards(AdminGuard)
+    async getUserStats() {
+        return this.usersService.getUserStats();
     }
 
     // Admin: list all users (limited fields)
     @Get('admin/list')
     @UseGuards(AdminGuard)
-    async listUsers() {
+    async listUsers(
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+        @Query('search') search?: string,
+        @Query('role') role?: string,
+    ) {
+        console.log('[UsersController.listUsers] Request received', { limit, offset, search, role });
         try {
-            const users = await this.usersService.findAll();
-            if (!users) return { success: true, data: [] };
+            const l = limit ? parseInt(limit, 10) : 30;
+            const o = offset ? parseInt(offset, 10) : 0;
+            
+            console.log('[UsersController.listUsers] Calling usersService.findAll()...');
+            const result = await this.usersService.findAll(l, o, search, role);
+            const users = result.data;
+            console.log(`[UsersController.listUsers] Found ${users?.length || 0} users (Total: ${result.total})`);
+            
+            if (!users) return { success: true, data: [], total: 0 };
             
             return {
                 success: true,
@@ -69,21 +131,28 @@ export class UsersController {
                     email: u?.email || '', 
                     firstName: u?.firstName || '', 
                     lastName: u?.lastName || '', 
+                    phoneNumber: u?.phoneNumber || '',
+                    mobile: u?.mobile || '',
                     role: u?.role || 'user', 
-                    createdAt: u?.createdAt || new Date().toISOString()
-                }))
+                    createdAt: u?.createdAt || u?.created_at || new Date().toISOString(),
+                    registeredAtIndia: u?.registeredAtIndia || ''
+                })),
+                total: result.total,
+                limit: l,
+                offset: o
             };
         } catch (error) {
-            console.error('Error in listUsers:', error);
+            console.error('[UsersController.listUsers] Fatal Error:', error);
             return {
                 success: false,
                 message: error.message || 'Failed to list users',
-                data: []
+                data: [],
+                total: 0
             };
         }
     }
 
-    @UseGuards(SuperAdminGuard)
+    @UseGuards(AdminGuard)
     @Post('make-admin')
     async makeAdmin(@Body() body: { email: string; role: string }) {
         if (!body || !body.email || !body.role) {
@@ -92,7 +161,7 @@ export class UsersController {
                 message: 'Email and role are required',
             };
         }
-        const allowedRoles = ['admin', 'user', 'staff', 'super_admin', 'agent', 'bank'];
+        const allowedRoles = ['admin', 'user', 'staff', 'super_admin', 'agent', 'bank', 'student'];
         if (!allowedRoles.includes(body.role)) {
             return {
                 success: false,
@@ -140,7 +209,7 @@ export class UsersController {
         try {
             if (body.isBulk && body.role) {
                 const users = await this.usersService.findAll();
-                const filteredUsers = users.filter(u => u.role === body.role);
+                const filteredUsers = users.data.filter(u => u.role === body.role);
                 
                 for (const u of filteredUsers) {
                     await this.emailService.sendMail(
@@ -217,14 +286,14 @@ export class UsersController {
             try {
                 await this.emailService.sendMail(
                     newUser.email,
-                    `Welcome to VidhyaLoan - Your ${body.role} Account`,
+                    `Welcome to VidyaLoan - Your ${body.role} Account`,
                     `<div style="font-family: sans-serif; padding: 20px;">
                         <h2>Welcome to the Matrix, ${body.firstName}!</h2>
                         <p>Your account as an <strong>${body.role}</strong> has been created by the administrator.</p>
                         <p>You can now log in using your email: <strong>${body.email}</strong></p>
                         <p>Proceed to the dashboard to complete your profile.</p>
                     </div>`,
-                    `Welcome to VidhyaLoan! Your ${body.role} account has been created.`
+                    `Welcome to VidyaLoan! Your ${body.role} account has been created.`
                 );
             } catch (emailErr) {
                 console.warn('Email sending failed (non-blocking):', emailErr?.message);
@@ -283,73 +352,147 @@ export class UsersController {
         return { success: true, message: 'User updated successfully', user: updated };
     }
 
-    @Get('documents')
-    async getMyDocuments(@Body('userId') bodyUserId: string, @Query('userId') queryUserId: string, @Query('token') queryToken: string) {
-        // Fallback chain: Body -> Query -> Token -> Default (for backward compatibility during testing)
-        let userId = bodyUserId || queryUserId;
-        
-        if (!userId && queryToken) {
-            try {
-                const payloadBase64 = queryToken.split('.')[1];
-                const decoded = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
-                userId = decoded.sub;
-            } catch (e) {}
+    @UseGuards(AdminGuard)
+    @Post('admin/update-status')
+    async adminUpdateUserStatus(
+        @Body() body: { 
+            userId: string; 
+            status: string; 
+            rejectionReason?: string 
         }
-
-        // Final fallback if absolutely nothing provided (preserving current successful test state)
-        if (!userId) userId = 'a3accd49-0632-491b-bdf5-ed425fbe6d33'; 
-
-        const docs = await this.usersService.getUserDocuments(userId);
-        return { success: true, data: docs };
-    }
-
-    @Delete('documents/:docType')
-    async deleteMyDocument(@Param('docType') docType: string, @Body('userId') bodyUserId: string, @Query('userId') queryUserId: string) {
-        // userId should ideally come from auth guard, but using same fallback as getMyDocuments for now
-        let userId = bodyUserId || queryUserId || 'a3accd49-0632-491b-bdf5-ed425fbe6d33';
+    ) {
+        if (!body || !body.userId || !body.status) {
+            return { success: false, message: 'User ID and status are required' };
+        }
         
-        await this.usersService.deleteUserDocument(userId, docType);
-        return { success: true, message: 'Document deleted successfully' };
+        console.log(`[UsersController.adminUpdateUserStatus] Status change request for user ${body.userId} to ${body.status}`);
+        
+        const updated = await this.usersService.updateUserStatus(
+            body.userId,
+            body.status,
+            body.rejectionReason
+        );
+        
+        return { 
+            success: true, 
+            message: 'User status updated successfully', 
+            user: {
+                id: updated.id,
+                email: updated.email,
+                status: updated.status,
+                rejectionReason: updated.rejectionReason
+            } 
+        };
     }
 
-    @Get('documents/:docType/view')
-    async viewDocument(@Param('docType') docType: string, @Query('token') token: string, @Res() res: Response) {
+    @UseGuards(AdminGuard)
+    @Get('admin/:id')
+    async getUserById(@Param('id') id: string) {
+        if (!id) {
+            return {
+                success: false,
+                message: 'User ID is required',
+            };
+        }
         try {
-            if (!token) return res.status(401).send('No token provided');
+            const user = await this.usersService.findById(id);
 
-            // Manually decode the JWT to get the user ID/email
-            const payloadBase64 = token.split('.')[1];
-            if (!payloadBase64) return res.status(401).send('Invalid token');
-            
-            const decoded = JSON.parse(Buffer.from(payloadBase64, 'base64').toString());
-            const userId = decoded.sub;
-
-            if (!userId) return res.status(401).send('Invalid token payload');
-
-            const docs = await this.usersService.getUserDocuments(userId);
-            const doc = docs.find(d => d.docType === docType);
-
-            if (!doc) {
-                return res.status(404).send('Document not found');
+            if (!user) {
+                return {
+                    success: false,
+                    message: 'User not found',
+                };
             }
 
-            if (doc.filePath && doc.filePath.length > 0) {
-                let normalizedPath = doc.filePath.replace(/^[\/\\]?/, '');
-                if (normalizedPath.startsWith('./')) {
-                    normalizedPath = normalizedPath.substring(2);
+            // Format date of birth to DD-MM-YYYY if it exists
+            let formattedDOB = '';
+            if (user.dateOfBirth) {
+                const date = new Date(user.dateOfBirth);
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                formattedDOB = `${day}-${month}-${year}`;
+            }
+
+            const safeJsonParse = (str: string) => {
+                if (!str) return null;
+                try {
+                    return typeof str === 'string' ? JSON.parse(str) : str;
+                } catch (e) {
+                    return null;
                 }
-                return res.redirect('/' + normalizedPath);
-            }
+            };
 
-            if (doc.status === 'available_in_digilocker' || doc.isDigilocker) {
-                // Return a dummy PDF for mock mode DigiLocker documents
-                return res.redirect('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
-            }
+            return {
+                success: true,
+                data: {
+                    id: user.id,
+                    email: user.email,
+                    firstName: user.firstName || '',
+                    lastName: user.lastName || '',
+                    phoneNumber: user.phoneNumber || '',
+                    dateOfBirth: formattedDOB,
+                    mobile: user.mobile,
+                    role: user.role,
+                    registeredAtIndia: user.registeredAtIndia || '',
+                    panNumber: user.panNumber || '',
+                    aadhaarNumber: user.aadhaarNumber || '',
+                    fatherName: user.fatherName || '',
+                    permanentAddress: user.permanentAddress || '',
+                    gender: user.gender || '',
+                    documentVerified: user.documentVerified || false,
+                    status: user.status || 'pending',
+                    rejectionReason: user.rejectionReason || '',
+                    goal: user.goal || '',
+                    studyDestination: user.studyDestination || '',
+                    courseName: user.courseName || '',
+                    targetUniversity: user.targetUniversity || '',
+                    intakeSeason: user.intakeSeason || '',
+                    bachelorsDegree: user.bachelorsDegree || '',
+                    gpa: user.gpa || null,
+                    workExp: user.workExp || null,
+                    entranceTest: user.entranceTest || '',
+                    entranceScore: user.entranceScore || '',
+                    englishTest: user.englishTest || '',
+                    englishScore: user.englishScore || '',
+                    budget: user.budget || '',
+                    pincode: user.pincode || '',
+                    loanAmount: user.loanAmount || '',
+                    admitStatus: user.admitStatus || '',
+                    passport: safeJsonParse(user.passport),
+                    nationality: safeJsonParse(user.nationality),
+                    mailingAddress: safeJsonParse(user.mailingAddress),
+                    emergencyContact: safeJsonParse(user.emergencyContact),
+                    academic: safeJsonParse(user.academic),
+                    workExperience: safeJsonParse(user.workExperience),
+                    tests: safeJsonParse(user.tests),
+                    family: safeJsonParse(user.family),
+                    coApplicant: safeJsonParse(user.coApplicant),
+                    createdAt: user.createdAt || user.created_at || '',
+                },
+            };
+        } catch (error) {
+            console.error('Error fetching user details by ID:', error);
+            return {
+                success: false,
+                message: 'Failed to fetch user details',
+                error: error?.message,
+            };
+        }
+    }
 
-            return res.status(404).send('Document file not available');
-        } catch (e) {
-            console.error('Error viewing document:', e);
-            return res.status(500).send('Error viewing document');
+    @UseGuards(AdminGuard)
+    @Delete('admin/:id')
+    async deleteUser(@Param('id') id: string) {
+        if (!id) {
+            return { success: false, message: 'User ID is required' };
+        }
+        try {
+            await this.usersService.deleteUser(id);
+            return { success: true, message: 'User deleted successfully' };
+        } catch (error) {
+            console.error('Error deleting user by admin:', error);
+            return { success: false, message: 'Failed to delete user', error: error?.message };
         }
     }
 }

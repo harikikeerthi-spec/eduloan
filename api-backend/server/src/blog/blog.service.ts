@@ -280,32 +280,16 @@ export class BlogService {
   }
 
   async addCommentToBlog(blogId: string, data: { author: string; content: string }) {
-    console.log(`[BlogService] Adding comment to blog ${blogId}`, data);
-    
-    const { data: blog, error: blogError } = await this.db.from('Blog').select('id').eq('id', blogId).single();
-    if (blogError) {
-      console.error('[BlogService] Error finding blog:', blogError);
-      throw new NotFoundException('Blog not found');
-    }
+    const { data: blog } = await this.db.from('Blog').select('id').eq('id', blogId).single();
+    if (!blog) throw new NotFoundException('Blog not found');
 
     const { data: comment, error } = await this.db
       .from('Comment')
-      .insert({ 
-        id: require('crypto').randomUUID(), // Generate ID manually
-        blogId, 
-        author: data.author, 
-        content: data.content,
-        status: 'approved'
-      })
+      .insert({ blogId, author: data.author, content: data.content })
       .select('id, author, content, createdAt')
       .single();
 
-    if (error) {
-      console.error('[BlogService] Error inserting comment:', error);
-      throw error;
-    }
-    
-    console.log('[BlogService] Comment added successfully:', comment);
+    if (error) throw error;
     return { success: true, message: 'Comment added successfully', data: comment };
   }
 
@@ -315,14 +299,7 @@ export class BlogService {
 
     const { data: reply, error } = await this.db
       .from('Comment')
-      .insert({ 
-        id: require('crypto').randomUUID(),
-        blogId: parent.blogId, 
-        parentId: commentId, 
-        author: data.author, 
-        content: data.content,
-        status: 'approved'
-      })
+      .insert({ blogId: parent.blogId, parentId: commentId, author: data.author, content: data.content })
       .select('id, author, content, likes, createdAt')
       .single();
 
@@ -388,14 +365,32 @@ export class BlogService {
 
   // ==================== ADMIN METHODS ====================
 
-  async getAllBlogsAdmin(options?: { limit?: number; offset?: number }) {
-    const { limit = 50, offset = 0 } = options || {};
+  async getAllBlogsAdmin(options?: { limit?: number; offset?: number; status?: string; timeRange?: string }) {
+    const { limit = 50, offset = 0, status, timeRange } = options || {};
 
-    const { data: blogs, count } = await this.db
+    let query = this.db
       .from('Blog')
       .select('id, title, slug, excerpt, content, category, authorName, authorImage, authorRole, featuredImage, readTime, views, isFeatured, isPublished, publishedAt, createdAt, updatedAt, tags:BlogTag(tag:Tag(name))', { count: 'exact' })
       .order('createdAt', { ascending: false })
       .range(offset, offset + limit - 1);
+
+    if (status === 'published') query = query.eq('isPublished', true);
+    if (status === 'draft') query = query.eq('isPublished', false);
+
+    if (timeRange && timeRange !== 'all') {
+      const now = new Date();
+      let fromDate: Date;
+      if (timeRange === 'today') fromDate = new Date(now.setHours(0, 0, 0, 0));
+      else if (timeRange === 'week') fromDate = new Date(now.setDate(now.getDate() - 7));
+      else if (timeRange === 'month') fromDate = new Date(now.setMonth(now.getMonth() - 1));
+      else if (timeRange === 'year') fromDate = new Date(now.setFullYear(now.getFullYear() - 1));
+      
+      if (fromDate) {
+        query = query.gte('createdAt', fromDate.toISOString());
+      }
+    }
+
+    const { data: blogs, count } = await query;
 
     return {
       success: true,

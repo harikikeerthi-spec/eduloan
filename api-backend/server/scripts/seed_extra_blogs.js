@@ -44,7 +44,7 @@ const extraBlogs = [
     },
     {
         title: 'VidyaLoan: Revolutionizing Education Financing',
-        slug: 'VidyaLoan-revolutionizing-education-financing',
+        slug: 'vidyaloan-revolutionizing-education-financing',
         excerpt: 'How we help students achieve their dreams.',
         content: 'Full content about VidyaLoan...',
         category: 'News & Updates',
@@ -129,4 +129,3 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
-

@@ -14,23 +14,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, resolve } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { memoryStorage } from 'multer';
 import { StaffProfileService } from './staff-profile.service';
 import { StaffGuard } from '../auth/staff.guard';
 
-const uploadStorage = diskStorage({
-  destination: (_req, _file, cb) => {
-    const dir = './uploads/staff-documents';
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `staff-${unique}${extname(file.originalname)}`);
-  },
-});
+const uploadStorage = memoryStorage();
 
 @UseGuards(StaffGuard)
 @Controller('staff-profiles')
@@ -59,6 +47,13 @@ export class StaffProfileController {
     if (!body.linked_user_id) throw new BadRequestException('linked_user_id is required');
     const profile = await this.svc.createProfile(req.user, body);
     return { success: true, data: profile };
+  }
+
+  // ─── Check if a profile exists for a linked user ──────────────────────────
+  @Get('check/:userId')
+  async checkExists(@Param('userId') userId: string) {
+    const exists = await this.svc.getProfileByLinkedUserId(userId);
+    return { success: true, exists: !!exists, data: exists || null };
   }
 
   // ─── Get a single profile (with documents) ────────────────────────────────
@@ -146,10 +141,114 @@ export class StaffProfileController {
     return { success: true, data: result };
   }
 
+  // ─── Share student profile with bank (Onboarding Step 4) ───────────────────
+  @Post('share-profile/:studentId')
+  async shareProfile(
+    @Param('studentId') studentId: string,
+    @Req() req: any,
+    @Body() body: {
+      recipientType: string;
+      recipientName: string;
+      recipientEmail: string;
+      message?: string;
+      sharedBy?: string;
+      studentDetails?: any;
+    },
+  ) {
+    const result = await this.svc.shareProfile(studentId, req.user, body);
+    return { success: true, ...result };
+  }
+
   // ─── Get share history for a profile ──────────────────────────────────────
   @Get(':id/shares')
   async getShares(@Param('id') id: string) {
     const shares = await this.svc.getShareHistory(id);
     return { success: true, data: shares };
+  }
+
+  // ─── Dashboard Activity Logging ───────────────────────────────────────────
+
+  @Post('activities')
+  async logActivity(@Req() req: any, @Body() body: {
+    type: string;
+    msg: string;
+    icon: string;
+    color: string;
+  }) {
+    await this.svc.logDashboardActivity(req.user, body);
+    return { success: true };
+  }
+
+  /** Recent N activities for the sidebar widget. */
+  @Get('dashboard/activities')
+  async getActivities(@Query('limit') limit?: string) {
+    const logs = await this.svc.getDashboardActivities(limit ? parseInt(limit, 10) : 15);
+    return { success: true, data: logs };
+  }
+
+  /** Full paginated + filtered Activity Log for the Activities section. */
+  @Get('activities/all')
+  async getAllActivities(
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+  ) {
+    const result = await this.svc.getAllDashboardActivities({
+      limit: limit ? parseInt(limit, 10) : 50,
+      offset: offset ? parseInt(offset, 10) : 0,
+      type,
+      search,
+    });
+    return { success: true, data: result.items, total: result.total };
+  }
+
+  // ─── Today's Dashboard API (F29) ──────────────────────────────────────────
+  @Get('dashboard/today')
+  async getTodayDashboard(@Req() req: any) {
+    const data = await this.svc.getTodayDashboard(req.user);
+    return { success: true, data };
+  }
+
+  // ─── Dashboard Summary APIs (F13) ─────────────────────────────────────────
+  @Get('dashboard/summary')
+  async getDashboardSummary() {
+    const data = await this.svc.getDashboardSummary();
+    return { success: true, data };
+  }
+
+  // ─── Rejection Analytics API (F14) ────────────────────────────────────────
+  @Get('dashboard/rejections')
+  async getRejectionAnalytics(@Query('period') period?: string) {
+    const data = await this.svc.getRejectionAnalytics(period || 'all');
+    return { success: true, data };
+  }
+
+  // ─── SLA Tracker API (F15) ────────────────────────────────────────────────
+  @Get('dashboard/sla')
+  async getSlaTracker() {
+    const data = await this.svc.getSlaTracker();
+    return { success: true, data };
+  }
+
+  // ─── Global Search API (F30) ──────────────────────────────────────────────
+  @Get('dashboard/search')
+  async globalSearch(@Query('q') q?: string) {
+    const data = await this.svc.globalSearch(q || '');
+    return { success: true, data };
+  }
+
+  // ─── AI Underwriting & Education Abroad Detection (F47, F48) ──────────────
+  @Get('dashboard/predict/:id')
+  async getAiPredictionScore(@Param('id') id: string) {
+    const data = await this.svc.getAiPredictionScore(id);
+    return { success: true, data };
+  }
+
+  // ─── Deadline Calendar API (F44) ──────────────────────────────────────────
+  @Get('dashboard/calendar')
+  async getDeadlineCalendar() {
+    const data = await this.svc.getDeadlineCalendar();
+    return { success: true, data };
   }
 }

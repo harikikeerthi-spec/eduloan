@@ -15,7 +15,20 @@ export class OnboardingController {
      */
     @Post()
     async saveOnboardingData(@Body() body: any, @Request() req) {
-        return this.onboardingService.saveOnboardingData(body, req.user.id);
+        // If staff/admin is submitting on behalf of a user, use the provided email or id
+        const isAdminOrStaff = req.user && ['admin', 'super_admin', 'staff'].includes(req.user.role);
+        
+        let targetUserId = req.user.id;
+        
+        // If admin provides an email or explicitly asks to update another user, skip passing their own ID
+        // so the service will look up by the provided email instead.
+        if (isAdminOrStaff && body.userId) {
+            targetUserId = body.userId;
+        } else if (isAdminOrStaff && body.email) {
+            targetUserId = undefined; 
+        }
+
+        return this.onboardingService.saveOnboardingData(body, targetUserId);
     }
 
     /**
@@ -36,5 +49,19 @@ export class OnboardingController {
             isCompleted,
             user
         };
+    }
+
+    /**
+     * Share student onboarding link via email
+     * POST /onboarding/share
+     * @body { studentId, studentEmail, studentName, shareUrl }
+     */
+    @Post('share')
+    async shareOnboardingLink(@Body() body: any, @Request() req) {
+        const { studentId, studentEmail, studentName, shareUrl } = body;
+        if (!studentId || !studentEmail || !studentName || !shareUrl) {
+            return { success: false, message: 'Missing required parameters: studentId, studentEmail, studentName, shareUrl' };
+        }
+        return this.onboardingService.shareOnboardingLink(studentId, studentEmail, studentName, shareUrl, req.user);
     }
 }

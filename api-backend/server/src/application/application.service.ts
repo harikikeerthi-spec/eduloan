@@ -1,1106 +1,1217 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { SupabaseService } from '../supabase/supabase.service';
+import { DigilockerService } from '../integration/digilocker.service';
+import { DocumentVerificationService } from '../ai/services/document-verification.service';
+import { ApplicationReviewService } from '../ai/services/application-review.service';
+import { EmailService } from '../auth/email.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
-// Application stages with descriptions and order
 const APPLICATION_STAGES = {
-    application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
-    document_verification: { order: 2, label: 'Document Verification', progress: 30 },
-    credit_check: { order: 3, label: 'Credit Check', progress: 50 },
-    bank_review: { order: 4, label: 'Bank Review', progress: 70 },
-    sanction: { order: 5, label: 'Sanction', progress: 90 },
-    disbursement: { order: 6, label: 'Disbursement', progress: 100 },
+  application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
+  document_verification: { order: 2, label: 'Document Verification', progress: 30 },
+  credit_check: { order: 3, label: 'Credit Check', progress: 50 },
+  bank_review: { order: 4, label: 'Bank Review', progress: 70 },
+  sanction: { order: 5, label: 'Sanction', progress: 90 },
+  disbursement: { order: 6, label: 'Disbursement', progress: 100 },
 };
 
-// Required documents by loan type
 const REQUIRED_DOCUMENTS = {
-    education: [
-        { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/Passport)', isRequired: true },
-        { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
-        { docType: 'photo', docName: 'Passport Size Photo', isRequired: true },
-        { docType: 'admission_letter', docName: 'Admission Letter', isRequired: true },
-        { docType: 'fee_structure', docName: 'Fee Structure', isRequired: true },
-        { docType: 'academic_records', docName: '10th & 12th Marksheets', isRequired: true },
-        { docType: 'income_proof', docName: 'Co-Applicant Income Proof', isRequired: false },
-        { docType: 'bank_statement', docName: 'Bank Statements (6 months)', isRequired: false },
-    ],
-    home: [
-        { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
-        { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
-        { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
-        { docType: 'bank_statement', docName: 'Bank Statements (6 months)', isRequired: true },
-        { docType: 'property_documents', docName: 'Property Documents', isRequired: true },
-        { docType: 'salary_slips', docName: 'Salary Slips (3 months)', isRequired: true },
-    ],
-    personal: [
-        { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
-        { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
-        { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
-        { docType: 'bank_statement', docName: 'Bank Statements (3 months)', isRequired: true },
-    ],
-    business: [
-        { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
-        { docType: 'address_proof', docName: 'Business Address Proof', isRequired: true },
-        { docType: 'business_registration', docName: 'Business Registration', isRequired: true },
-        { docType: 'financial_statements', docName: 'Financial Statements', isRequired: true },
-        { docType: 'bank_statement', docName: 'Bank Statements (12 months)', isRequired: true },
-        { docType: 'itr', docName: 'ITR (3 years)', isRequired: true },
-    ],
-    vehicle: [
-        { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
-        { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
-        { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
-        { docType: 'bank_statement', docName: 'Bank Statements (3 months)', isRequired: true },
-        { docType: 'vehicle_quotation', docName: 'Vehicle Quotation', isRequired: true },
-    ],
+  education: [
+    { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/Passport)', isRequired: true },
+    { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
+    { docType: 'photo', docName: 'Passport Size Photo', isRequired: true },
+    { docType: 'admission_letter', docName: 'Admission Letter', isRequired: true },
+    { docType: 'fee_structure', docName: 'Fee Structure', isRequired: true },
+    { docType: 'academic_records', docName: '10th & 12th Marksheets', isRequired: true },
+    { docType: 'income_proof', docName: 'Co-Applicant Income Proof', isRequired: false },
+    { docType: 'bank_statement', docName: 'Bank Statements (6 months)', isRequired: false },
+  ],
+  home: [
+    { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
+    { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
+    { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
+    { docType: 'bank_statement', docName: 'Bank Statements (6 months)', isRequired: true },
+    { docType: 'property_documents', docName: 'Property Documents', isRequired: true },
+    { docType: 'salary_slips', docName: 'Salary Slips (3 months)', isRequired: true },
+  ],
+  personal: [
+    { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
+    { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
+    { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
+    { docType: 'bank_statement', docName: 'Bank Statements (3 months)', isRequired: true },
+  ],
+  business: [
+    { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
+    { docType: 'address_proof', docName: 'Business Address Proof', isRequired: true },
+    { docType: 'business_registration', docName: 'Business Registration', isRequired: true },
+    { docType: 'financial_statements', docName: 'Financial Statements', isRequired: true },
+    { docType: 'bank_statement', docName: 'Bank Statements (12 months)', isRequired: true },
+    { docType: 'itr', docName: 'ITR (3 years)', isRequired: true },
+  ],
+  vehicle: [
+    { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/PAN)', isRequired: true },
+    { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
+    { docType: 'income_proof', docName: 'Income Proof', isRequired: true },
+    { docType: 'bank_statement', docName: 'Bank Statements (3 months)', isRequired: true },
+    { docType: 'vehicle_quotation', docName: 'Vehicle Quotation', isRequired: true },
+  ],
 };
 
 @Injectable()
 export class ApplicationService {
-    constructor(private prisma: PrismaService) { }
+  private get db() {
+    return this.supabase.getClient();
+  }
 
-    // ==================== APPLICATION CRUD ====================
+  constructor(
+    private supabase: SupabaseService,
+    private digilockerService: DigilockerService,
+    private verificationService: DocumentVerificationService,
+    private applicationReviewService: ApplicationReviewService,
+    private emailService: EmailService,
+    private eventEmitter: EventEmitter2,
+  ) { }
 
-    /**
-     * Create a new loan application
-     */
-    async createApplication(userId: string, data: any) {
-        try {
-            console.log('[ApplicationService] Creating application for user:', userId);
+  private parseDate(dateStr: string | null | undefined): string | null {
+    if (!dateStr) return null;
 
-            // Validation logic
-            if (!data.firstName || data.firstName.length < 3) {
-                throw new BadRequestException('First name must be at least 3 characters long');
-            }
-            if (!data.lastName || data.lastName.length < 1) {
-                throw new BadRequestException('Last name must be at least 1 character long');
-            }
-            const phoneDigits = data.phone?.replace(/[^0-9]/g, '') || '';
-            if (phoneDigits.length !== 10) {
-                throw new BadRequestException('Phone number must be exactly 10 digits');
-            }
+    // Try native parsing first
+    let d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toISOString();
 
-            // Parent Details Validation (if provided)
-            if (data.fatherName && data.fatherName.length < 3) {
-                throw new BadRequestException('Father\'s name must be at least 3 characters long');
-            }
-            if (data.fatherPhone) {
-                const fPhoneDigits = data.fatherPhone.replace(/[^0-9]/g, '');
-                if (fPhoneDigits.length !== 10) {
-                    throw new BadRequestException('Father\'s phone number must be exactly 10 digits');
-                }
-            }
-            if (data.motherName && data.motherName.length < 3) {
-                throw new BadRequestException('Mother\'s name must be at least 3 characters long');
-            }
-            if (data.motherPhone) {
-                const mPhoneDigits = data.motherPhone.replace(/[^0-9]/g, '');
-                if (mPhoneDigits.length !== 10) {
-                    throw new BadRequestException('Mother\'s phone number must be exactly 10 digits');
-                }
-            }
+    // Try DD-MM-YYYY or DD/MM/YYYY
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
 
-            // Generate application number
-            const applicationNumber = this.generateApplicationNumber(data.loanType);
-
-            // Calculate estimated completion date (14 days from now)
-            const estimatedCompletionAt = new Date();
-            estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
-
-            const application = await this.prisma.loanApplication.create({
-                data: {
-                    applicationNumber,
-                    userId,
-                    bank: data.bank || 'HDFC Credila',
-                    loanType: data.loanType || 'education',
-                    amount: data.amount ? parseFloat(data.amount.toString()) : 0,
-                    tenure: data.tenure ? parseInt(data.tenure.toString()) : null,
-                    purpose: data.purpose,
-                    // Applicant Details
-                    firstName: data.firstName,
-                    lastName: data.lastName,
-                    email: data.email,
-                    phone: data.phone,
-                    dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-                    gender: data.gender,
-                    nationality: data.nationality,
-                    // Address
-                    address: data.address,
-                    city: data.city,
-                    state: data.state,
-                    pincode: data.pincode,
-                    country: data.country,
-                    // Employment
-                    employmentType: data.employmentType,
-                    employerName: data.employerName,
-                    jobTitle: data.jobTitle,
-                    annualIncome: data.annualIncome ? parseFloat(data.annualIncome.toString()) : null,
-                    workExperience: data.workExperience ? parseInt(data.workExperience.toString()) : null,
-                    // Education specific
-                    universityName: data.universityName,
-                    courseName: data.courseName,
-                    courseDuration: data.courseDuration ? parseInt(data.courseDuration.toString()) : null,
-                    courseStartDate: data.courseStartDate ? new Date(data.courseStartDate) : null,
-                    admissionStatus: data.admissionStatus,
-                    // Co-Applicant
-                    hasCoApplicant: data.hasCoApplicant || false,
-                    coApplicantName: data.coApplicantName,
-                    coApplicantRelation: data.coApplicantRelation,
-                    coApplicantPhone: data.coApplicantPhone,
-                    coApplicantEmail: data.coApplicantEmail,
-                    coApplicantIncome: data.coApplicantIncome ? parseFloat(data.coApplicantIncome.toString()) : null,
-                    // Parent Details
-                    fatherName: data.fatherName,
-                    fatherPhone: data.fatherPhone,
-                    fatherEmail: data.fatherEmail,
-                    motherName: data.motherName,
-                    motherPhone: data.motherPhone,
-                    motherEmail: data.motherEmail,
-                    // Collateral
-                    hasCollateral: data.hasCollateral || false,
-                    collateralType: data.collateralType,
-                    collateralValue: data.collateralValue ? parseFloat(data.collateralValue.toString()) : null,
-                    collateralDetails: data.collateralDetails,
-                    // Status
-                    status: data.status || 'draft',
-                    stage: 'application_submitted',
-                    progress: 10,
-                    estimatedCompletionAt,
-                },
-                include: {
-                    user: {
-                        select: { id: true, email: true, firstName: true, lastName: true }
-                    }
-                }
-            });
-
-            // Create initial status history
-            await this.createStatusHistory(application.id, {
-                toStatus: application.status,
-                toStage: application.stage,
-                notes: 'Application created',
-                isAutomatic: true,
-            });
-
-            // Initialize required documents based on loan type
-            await this.initializeRequiredDocuments(application.id, data.loanType || 'education');
-
-            return {
-                success: true,
-                data: application,
-                message: 'Application created successfully'
-            };
-        } catch (error) {
-            console.error('[ApplicationService] Error in createApplication:', error);
-            throw error;
-        }
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        d = new Date(year, month, day);
+        if (!isNaN(d.getTime())) return d.toISOString();
+      }
     }
 
-    /**
-     * Submit a draft application
-     */
-    async submitApplication(applicationId: string, userId: string) {
-        const application = await this.getApplicationById(applicationId);
+    return null;
+  }
 
-        if (application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to submit this application');
-        }
+  private async validateApplicationConstraints(userId: string, currentAppId: string | null, bank: string, country: string, universityName: string) {
+    const { data: existingApps, error } = await this.db
+      .from('LoanApplication')
+      .select('id, bank, country, universityName, status')
+      .eq('userId', userId)
+      .neq('status', 'cancelled');
 
-        if (application.status !== 'draft') {
-            throw new BadRequestException('Only draft applications can be submitted');
-        }
+    if (error) throw error;
 
-        const updated = await this.prisma.loanApplication.update({
-            where: { id: applicationId },
-            data: {
-                status: 'submitted',
-                submittedAt: new Date(),
-                progress: 15,
-            },
-            include: {
-                documents: true,
-                statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 }
-            }
-        });
-
-        await this.createStatusHistory(applicationId, {
-            fromStatus: 'draft',
-            toStatus: 'submitted',
-            notes: 'Application submitted for review',
-            isAutomatic: true,
-        });
-
-        return {
-            success: true,
-            data: updated,
-            message: 'Application submitted successfully'
-        };
+    // 1. Limit to 5 applications
+    if (!currentAppId && existingApps && existingApps.length >= 5) {
+      throw new BadRequestException('You cannot have more than 5 active/pending loan applications.');
     }
 
-    /**
-     * Get application by ID
-     */
-    async getApplicationById(applicationId: string) {
-        const application = await this.prisma.loanApplication.findUnique({
-            where: { id: applicationId },
-            include: {
-                user: {
-                    select: { id: true, email: true, firstName: true, lastName: true, phoneNumber: true }
-                },
-                documents: {
-                    orderBy: { uploadedAt: 'desc' }
-                },
-                statusHistory: {
-                    orderBy: { createdAt: 'desc' }
-                },
-                notes: {
-                    where: { isInternal: false },
-                    orderBy: { createdAt: 'desc' }
-                }
-            }
-        });
+    // 2. Check duplicate details for the same bank and university
+    if (bank && universityName) {
+      const duplicate = existingApps?.find(app => {
+        if (currentAppId && app.id === currentAppId) return false;
 
-        if (!application) {
-            throw new NotFoundException('Application not found');
-        }
+        const matchBank = app.bank && bank && app.bank.toLowerCase().trim() === bank.toLowerCase().trim();
+        const matchUniversity = app.universityName && universityName && app.universityName.toLowerCase().trim() === universityName.toLowerCase().trim();
 
-        return application;
+        return matchBank && matchUniversity;
+      });
+
+      if (duplicate) {
+        throw new BadRequestException(`An active application to ${bank} for ${universityName} already exists. You cannot apply to the same bank for the same university more than once.`);
+      }
+    }
+  }
+
+  async createApplication(userId: string, data: any) {
+    const targetBank = data.bank;
+    const targetCountry = data.country;
+    const targetUniversity = data.universityName || data.university;
+
+    await this.validateApplicationConstraints(userId, null, targetBank, targetCountry, targetUniversity);
+
+    const applicationNumber = await this.generateApplicationNumber();
+    const estimatedCompletionAt = new Date();
+    estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
+
+    const { data: application, error } = await this.db
+      .from('LoanApplication')
+      .insert({
+        applicationNumber,
+        userId,
+        bank: data.bank,
+        loanType: data.loanType,
+        amount: parseFloat(data.amount),
+        tenure: data.tenure ? parseInt(data.tenure) : null,
+        purpose: data.purpose,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        dateOfBirth: this.parseDate(data.dateOfBirth),
+
+        gender: data.gender,
+        nationality: data.nationality,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        country: data.country,
+        employmentType: data.employmentType,
+        employerName: data.employerName,
+        jobTitle: data.jobTitle,
+        annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : null,
+        workExperience: data.workExperience ? parseInt(data.workExperience) : null,
+        universityName: data.universityName || data.university,
+        courseName: data.courseName || data.courseType || data.course,
+        courseDuration: data.courseDuration ? parseInt(data.courseDuration) : null,
+        courseStartDate: this.parseDate(data.courseStartDate),
+
+        admissionStatus: data.admissionStatus,
+        hasCoApplicant: data.hasCoApplicant || false,
+        coApplicantName: data.coApplicantName,
+        coApplicantRelation: data.coApplicantRelation,
+        coApplicantPhone: data.coApplicantPhone,
+        coApplicantEmail: data.coApplicantEmail,
+        coApplicantIncome: data.coApplicantIncome ? parseFloat(data.coApplicantIncome) : null,
+        fatherName: data.fatherName,
+        fatherPhone: data.fatherPhone,
+        fatherEmail: data.fatherEmail,
+        motherName: data.motherName,
+        motherPhone: data.motherPhone,
+        motherEmail: data.motherEmail,
+        hasCollateral: data.hasCollateral || false,
+        collateralType: data.collateralType,
+        collateralValue: data.collateralValue ? parseFloat(data.collateralValue) : null,
+        collateralDetails: data.collateralDetails,
+        status: data.status || 'draft',
+        stage: 'application_submitted',
+        progress: 10,
+        estimatedCompletionAt: estimatedCompletionAt.toISOString(),
+      })
+      .select('*, user:User!userId(id, email, firstName, lastName)')
+      .single();
+
+    if (error) throw error;
+
+    await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
+    await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
+
+    // Emit application created event for staff notifications
+    try {
+      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+      this.eventEmitter.emit('application.created', {
+        applicationId: application.id,
+        applicationNumber: application.applicationNumber,
+        userId: application.userId,
+        candidateName: name,
+        candidateEmail: application.email,
+        bank: application.bank,
+        loanAmount: application.amount,
+        loanType: data.loanType,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit application.created event:', e);
     }
 
-    /**
-     * Get application by application number
-     */
-    async getApplicationByNumber(applicationNumber: string) {
-        const application = await this.prisma.loanApplication.findUnique({
-            where: { applicationNumber },
-            include: {
-                user: {
-                    select: { id: true, email: true, firstName: true, lastName: true }
-                },
-                documents: true,
-                statusHistory: {
-                    orderBy: { createdAt: 'desc' }
-                }
-            }
-        });
-
-        if (!application) {
-            throw new NotFoundException('Application not found');
-        }
-
-        return application;
+    // Emit live dashboard activity event for new application creation!
+    try {
+      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+      const targetUni = application.universityName || 'Target University';
+      this.eventEmitter.emit('dashboard.activity', {
+        type: 'application',
+        msg: `Student ${name} submitted a new Loan Application #${application.applicationNumber} for ${targetUni}.`,
+        icon: 'assignment',
+        color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+        actorName: name,
+        actorEmail: application.email,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit activity event for application creation:', e);
     }
 
-    /**
-     * Get all applications for a user
-     */
-    async getUserApplications(userId: string, filters?: {
-        status?: string;
-        loanType?: string;
-        limit?: number;
-        offset?: number;
-    }) {
-        const where: any = { userId };
+    return { success: true, data: application, message: 'Application created successfully' };
+  }
 
-        if (filters?.status) {
-            where.status = filters.status;
-        }
-        if (filters?.loanType) {
-            where.loanType = filters.loanType;
-        }
+  async submitApplication(applicationId: string, userId: string) {
+    const application = await this.getApplicationById(applicationId);
+    if (application.userId !== userId) throw new BadRequestException('Unauthorized to submit this application');
+    if (application.status !== 'draft') throw new BadRequestException('Only draft applications can be submitted');
 
-        const [applications, total] = await Promise.all([
-            this.prisma.loanApplication.findMany({
-                where,
-                include: {
-                    documents: true
-                },
-                orderBy: { date: 'desc' },
-                take: filters?.limit || 20,
-                skip: filters?.offset || 0,
-            }),
-            this.prisma.loanApplication.count({ where })
-        ]);
+    const { data: updated, error } = await this.db
+      .from('LoanApplication')
+      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15 })
+      .eq('id', applicationId)
+      .select()
+      .single();
 
-        return {
-            success: true,
-            data: applications,
-            pagination: {
-                total,
-                limit: filters?.limit || 20,
-                offset: filters?.offset || 0
-            }
-        };
+    if (error) throw error;
+    await this.createStatusHistory(applicationId, { fromStatus: 'draft', toStatus: 'submitted', notes: 'Application submitted for review', isAutomatic: true });
+
+    // Emit live dashboard activity event for application submission!
+    try {
+      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+      this.eventEmitter.emit('dashboard.activity', {
+        type: 'application',
+        msg: `Student ${name} submitted Application #${application.applicationNumber || application.id.slice(-4)} for review.`,
+        icon: 'rocket_launch',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        actorName: name,
+        actorEmail: application.email,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit activity event for application submission:', e);
     }
 
-    /**
-     * Update application
-     */
-    async updateApplication(applicationId: string, userId: string, data: any) {
-        const application = await this.getApplicationById(applicationId);
+    return { success: true, data: updated, message: 'Application submitted successfully' };
+  }
 
-        if (application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to update this application');
-        }
+  async getApplicationById(applicationId: string) {
+    const { data: application } = await this.db
+      .from('LoanApplication')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
+      .eq('id', applicationId)
+      .single();
 
-        if (!['draft', 'documents_pending'].includes(application.status)) {
-            throw new BadRequestException('Application cannot be modified in current status');
-        }
+    if (!application) throw new NotFoundException('Application not found');
 
-        const updated = await this.prisma.loanApplication.update({
-            where: { id: applicationId },
-            data: {
-                ...data,
-                amount: data.amount ? parseFloat(data.amount) : undefined,
-                tenure: data.tenure ? parseInt(data.tenure) : undefined,
-                annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : undefined,
-                dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
-                courseStartDate: data.courseStartDate ? new Date(data.courseStartDate) : undefined,
-            },
-            include: {
-                documents: true
-            }
-        });
+    // Sort nested arrays
+    if (application.documents) application.documents.sort((a: any, b: any) => new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime());
+    if (application.statusHistory) application.statusHistory.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (application.notes) application.notes = application.notes.filter((n: any) => !n.isInternal).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        return {
-            success: true,
-            data: updated,
-            message: 'Application updated successfully'
-        };
+    return application;
+  }
+
+  async getApplicationByNumber(applicationNumber: string) {
+    const { data: application } = await this.db
+      .from('LoanApplication')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
+      .eq('applicationNumber', applicationNumber)
+      .single();
+
+    if (!application) throw new NotFoundException('Application not found');
+    return application;
+  }
+
+  async getUserApplications(userId: string, filters?: { status?: string; loanType?: string; limit?: number; offset?: number }) {
+    let query = this.db
+      .from('LoanApplication')
+      .select('*, documents:ApplicationDocument(id, docType, status)', { count: 'exact' })
+      .eq('userId', userId)
+      .order('submittedAt', { ascending: false });
+
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.loanType) query = query.eq('loanType', filters.loanType);
+    if (filters?.limit) query = query.limit(filters.limit);
+
+    const { data: applications, count } = await query;
+    return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
+  }
+
+  async updateApplication(applicationId: string, userId: string, data: any) {
+    const application = await this.getApplicationById(applicationId);
+    if (application.userId !== userId) throw new BadRequestException('Unauthorized to update this application');
+    if (!['draft', 'documents_pending'].includes(application.status)) throw new BadRequestException('Application cannot be modified in current status');
+
+    const targetBank = data.bank !== undefined ? data.bank : application.bank;
+    const targetCountry = data.country !== undefined ? data.country : application.country;
+    const targetUniversity = (data.universityName || data.university) !== undefined ? (data.universityName || data.university) : application.universityName;
+
+    await this.validateApplicationConstraints(userId, applicationId, targetBank, targetCountry, targetUniversity);
+
+    const updatePayload: any = {
+      ...data,
+      amount: data.amount ? parseFloat(data.amount) : undefined,
+      tenure: data.tenure ? parseInt(data.tenure) : undefined,
+      annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : undefined,
+      dateOfBirth: data.dateOfBirth ? this.parseDate(data.dateOfBirth) : undefined,
+      courseStartDate: data.courseStartDate ? this.parseDate(data.courseStartDate) : undefined,
+      universityName: data.universityName || data.university || undefined,
+      courseName: data.courseName || data.courseType || data.course || undefined,
+    };
+
+    const { data: updated, error } = await this.db
+      .from('LoanApplication')
+      .update(updatePayload)
+      .eq('id', applicationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data: updated, message: 'Application updated successfully' };
+  }
+
+  async adminUpdateApplication(applicationId: string, data: any) {
+    const application = await this.getApplicationById(applicationId);
+
+    const targetBank = data.bank !== undefined ? data.bank : application.bank;
+    const targetCountry = data.country !== undefined ? data.country : application.country;
+    const targetUniversity = (data.universityName || data.university) !== undefined ? (data.universityName || data.university) : application.universityName;
+
+    await this.validateApplicationConstraints(application.userId, applicationId, targetBank, targetCountry, targetUniversity);
+
+    const updatePayload: any = { ...data };
+
+    // Convert numeric fields if present
+    if (data.amount !== undefined) updatePayload.amount = data.amount ? parseFloat(data.amount) : null;
+    if (data.tenure !== undefined) updatePayload.tenure = data.tenure ? parseInt(data.tenure) : null;
+    if (data.sanctionAmount !== undefined) updatePayload.sanctionAmount = data.sanctionAmount ? parseFloat(data.sanctionAmount) : null;
+    if (data.disbursedAmount !== undefined) updatePayload.disbursedAmount = data.disbursedAmount ? parseFloat(data.disbursedAmount) : null;
+    if (data.interestRate !== undefined) updatePayload.interestRate = data.interestRate ? parseFloat(data.interestRate) : null;
+    if (data.sanctionedInterestRate !== undefined) updatePayload.sanctionedInterestRate = data.sanctionedInterestRate ? parseFloat(data.sanctionedInterestRate) : null;
+    if (data.processingFee !== undefined) updatePayload.processingFee = data.processingFee ? parseFloat(data.processingFee) : null;
+    if (data.roiBase !== undefined) updatePayload.roiBase = data.roiBase ? parseFloat(data.roiBase) : null;
+    if (data.roiEffective !== undefined) updatePayload.roiEffective = data.roiEffective ? parseFloat(data.roiEffective) : null;
+    if (data.roiSubsidy !== undefined) updatePayload.roiSubsidy = data.roiSubsidy ? parseFloat(data.roiSubsidy) : null;
+
+    // Clean up undefined properties to avoid Supabase errors
+    Object.keys(updatePayload).forEach(key => {
+      if (updatePayload[key] === undefined) {
+        delete updatePayload[key];
+      }
+    });
+
+    const { data: updated, error } = await this.db
+      .from('LoanApplication')
+      .update(updatePayload)
+      .eq('id', applicationId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[ApplicationService.adminUpdateApplication] DB Error:', error);
+      throw error;
+    }
+    return { success: true, data: updated, message: 'Application updated successfully' };
+  }
+
+  async cancelApplication(applicationId: string, userId: string, reason?: string) {
+    const application = await this.getApplicationById(applicationId);
+    if (application.userId !== userId) throw new BadRequestException('Unauthorized to cancel this application');
+    if (['approved', 'disbursed', 'cancelled'].includes(application.status)) throw new BadRequestException('Application cannot be cancelled in current status');
+
+    const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason }).eq('id', applicationId).select().single();
+    await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: 'cancelled', notes: reason || 'Application cancelled by user', isAutomatic: false });
+    return { success: true, data: updated, message: 'Application cancelled successfully' };
+  }
+
+  async getApplicationTracking(applicationId: string, userId?: string) {
+    const { data: application } = await this.db
+      .from('LoanApplication')
+      .select('*, statusHistory:ApplicationStatusHistory(*), documents:ApplicationDocument(id, docType, docName, status)')
+      .eq('id', applicationId)
+      .single();
+
+    if (!application) throw new NotFoundException('Application not found');
+    if (userId && application.userId !== userId) throw new BadRequestException('Unauthorized to view this application');
+
+    const statusHistory = (application.statusHistory || []).sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
+      const currentStageOrder = APPLICATION_STAGES[application.stage as keyof typeof APPLICATION_STAGES]?.order || 0;
+      const isCompleted = value.order < currentStageOrder;
+      const isCurrent = key === application.stage;
+      return { key, label: value.label, order: value.order, isCompleted, isCurrent, completedAt: isCompleted ? statusHistory.find((h: any) => h.toStage === key)?.createdAt : null };
+    });
+
+    const docs = application.documents || [];
+    const documentsStatus = {
+      total: docs.length,
+      pending: docs.filter((d: any) => d.status === 'pending').length,
+      verified: docs.filter((d: any) => d.status === 'verified').length,
+      rejected: docs.filter((d: any) => d.status === 'rejected').length,
+    };
+
+    return {
+      success: true,
+      data: { applicationId: application.id, applicationNumber: application.applicationNumber, status: application.status, currentStage: application.stage, progress: application.progress, stages, timeline: statusHistory, documents: documentsStatus, estimatedCompletion: application.estimatedCompletionAt, submittedAt: application.submittedAt, lastUpdated: application.updatedAt },
+    };
+  }
+
+  async trackApplication(applicationNumber: string) {
+    const { data: application } = await this.db
+      .from('LoanApplication')
+      .select('id, applicationNumber, loanType, bank, amount, status, stage, progress, submittedAt, estimatedCompletionAt, updatedAt')
+      .eq('applicationNumber', applicationNumber)
+      .single();
+
+    if (!application) throw new NotFoundException('Application not found');
+
+    const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
+      const currentStageOrder = APPLICATION_STAGES[application.stage as keyof typeof APPLICATION_STAGES]?.order || 0;
+      return { key, label: value.label, order: value.order, isCompleted: value.order < currentStageOrder, isCurrent: key === application.stage };
+    });
+
+    return { success: true, data: { ...application, stages } };
+  }
+
+
+  private normalizeLoanType(type: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('education') || t.includes('study') || t.includes('undergraduate') || t.includes('postgraduate') || t.includes('doctoral')) return 'education';
+    if (t.includes('home') || t.includes('property')) return 'home';
+    if (t.includes('personal')) return 'personal';
+    if (t.includes('business')) return 'business';
+    if (t.includes('vehicle') || t.includes('car')) return 'vehicle';
+    return 'personal';
+  }
+
+  private async initializeRequiredDocuments(applicationId: string, userId: string, loanType: string) {
+    const normalizedType = this.normalizeLoanType(loanType);
+    const requiredDocs = REQUIRED_DOCUMENTS[normalizedType as keyof typeof REQUIRED_DOCUMENTS] || REQUIRED_DOCUMENTS.personal;
+    
+    console.log(`[DOCS] Initializing documents for application ${applicationId}, userId ${userId}, type ${loanType} (normalized: ${normalizedType})`);
+    
+    // Fetch user's existing vault documents to auto-populate if possible
+    const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', userId);
+    
+    for (const doc of requiredDocs) {
+      // Find if user already has this document in their vault
+      const matchingVaultDoc = vaultDocs?.find(vd => vd.docType === doc.docType && vd.uploaded);
+      
+      await this.db.from('ApplicationDocument').insert({ 
+        applicationId, 
+        docType: doc.docType, 
+        docName: doc.docName, 
+        fileName: matchingVaultDoc?.fileName || '', 
+        filePath: matchingVaultDoc?.filePath || '', 
+        status: matchingVaultDoc ? 'pending' : 'not_uploaded', 
+        isRequired: doc.isRequired 
+      });
+    }
+  }
+
+  async uploadDocument(applicationId: string, userId: string, documentData: { docType: string; docName: string; fileName: string; filePath: string; fileSize?: number; mimeType?: string }) {
+    const application = await this.getApplicationById(applicationId);
+    if (application.userId !== userId) throw new BadRequestException('Unauthorized to upload documents');
+
+    const { data: existingDoc } = await this.db.from('ApplicationDocument').select('id').eq('applicationId', applicationId).eq('docType', documentData.docType).single();
+
+    let document: any;
+    if (existingDoc) {
+      const { data, error } = await this.db.from('ApplicationDocument').update({ ...documentData, status: 'pending', uploadedAt: new Date().toISOString() }).eq('id', existingDoc.id).select().single();
+      if (error) throw error;
+      document = data;
+    } else {
+      const { data, error } = await this.db.from('ApplicationDocument').insert({ applicationId, ...documentData, status: 'pending' }).select().single();
+      if (error) throw error;
+      document = data;
     }
 
-    /**
-     * Cancel application
-     */
-    async cancelApplication(applicationId: string, userId: string, reason?: string) {
-        const application = await this.getApplicationById(applicationId);
-
-        if (application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to cancel this application');
-        }
-
-        if (['approved', 'disbursed', 'cancelled'].includes(application.status)) {
-            throw new BadRequestException('Application cannot be cancelled in current status');
-        }
-
-        const updated = await this.prisma.loanApplication.update({
-            where: { id: applicationId },
-            data: {
-                status: 'cancelled',
-                remarks: reason,
-            }
-        });
-
-        await this.createStatusHistory(applicationId, {
-            fromStatus: application.status,
-            toStatus: 'cancelled',
-            notes: reason || 'Application cancelled by user',
-            isAutomatic: false,
-        });
-
-        return {
-            success: true,
-            data: updated,
-            message: 'Application cancelled successfully'
-        };
+    try {
+      const verificationResult = await this.digilockerService.verifyDocument(document.filePath, document.docType);
+      let updateData: any = {};
+      if (verificationResult.isValid) {
+        updateData = { status: 'verified', digilockerTxId: verificationResult.txId, verifiedAt: new Date().toISOString(), verifiedBy: 'Digilocker System', verificationMetadata: verificationResult.details };
+      } else {
+        const explanation = await this.verificationService.explainRejection(document.docType, verificationResult.code || 'Unknown Error');
+        updateData = { status: 'rejected', aiExplanation: explanation, rejectionReason: verificationResult.code || 'Verification Failed', verificationMetadata: verificationResult.details };
+      }
+      const { data: updated } = await this.db.from('ApplicationDocument').update(updateData).eq('id', document.id).select().single();
+      document = updated;
+    } catch (error) {
+      console.error('Document verification process failed:', error);
     }
 
-    /**
-     * Delete application
-     */
-    async deleteApplication(applicationId: string, userId: string) {
-        const application = await this.getApplicationById(applicationId);
-
-        if (application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to delete this application');
-        }
-
-        // Optional: restriction on status, e.g. can only delete if draft/cancelled/rejected
-        // For now allowing deletion regardless of status as per request, but good to be mindful.
-
-        // Delete related records
-        // Prisma cascade delete might handle this if configured, but explicit deletion is safer if relationships vary
-
-        // 1. Delete documents
-        await this.prisma.applicationDocument.deleteMany({
-            where: { applicationId }
-        });
-
-        // 2. Delete notes
-        await this.prisma.applicationNote.deleteMany({
-            where: { applicationId }
-        });
-
-        // 3. Delete status history
-        await this.prisma.applicationStatusHistory.deleteMany({
-            where: { applicationId }
-        });
-
-        // 4. Delete application
-        await this.prisma.loanApplication.delete({
-            where: { id: applicationId }
-        });
-
-        return {
-            success: true,
-            message: 'Application deleted successfully'
-        };
+    // Emit document uploaded event for staff notifications
+    try {
+      const candidateName = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Candidate';
+      this.eventEmitter.emit('document.uploaded', {
+        applicationId,
+        applicationNumber: application.applicationNumber,
+        userId: application.userId,
+        candidateName,
+        candidateEmail: application.email,
+        documentType: documentData.docType,
+        documentName: documentData.docName,
+        status: document.status,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit document.uploaded event:', e);
     }
 
-    // ==================== APPLICATION TRACKING ====================
+    return { success: true, data: document, message: 'Document uploaded successfully' };
+  }
 
-    /**
-     * Get application timeline/tracking info
-     */
-    async getApplicationTracking(applicationId: string, userId?: string) {
-        const application = await this.prisma.loanApplication.findUnique({
-            where: { id: applicationId },
-            include: {
-                statusHistory: {
-                    orderBy: { createdAt: 'asc' }
-                },
-                documents: true
-            }
-        });
-
-        if (!application) {
-            throw new NotFoundException('Application not found');
-        }
-
-        // If userId provided, verify ownership
-        if (userId && application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to view this application');
-        }
-
-        // Build stages with completion status
-        const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
-            const currentStageOrder = APPLICATION_STAGES[application.stage as keyof typeof APPLICATION_STAGES]?.order || 0;
-            const isCompleted = value.order < currentStageOrder;
-            const isCurrent = key === application.stage;
-
-            return {
-                key,
-                label: value.label,
-                order: value.order,
-                isCompleted,
-                isCurrent,
-                completedAt: isCompleted
-                    ? application.statusHistory.find(h => h.toStage === key)?.createdAt
-                    : null
-            };
-        });
-
-        // Calculate documents status
-        const documentsStatus = {
-            total: application.documents.length,
-            pending: application.documents.filter(d => d.status === 'pending').length,
-            verified: application.documents.filter(d => d.status === 'verified').length,
-            rejected: application.documents.filter(d => d.status === 'rejected').length,
-        };
-
-        return {
-            success: true,
-            data: {
-                applicationId: application.id,
-                applicationNumber: application.applicationNumber,
-                status: application.status,
-                currentStage: application.stage,
-                progress: application.progress,
-                stages,
-                timeline: application.statusHistory,
-                documents: documentsStatus,
-                estimatedCompletion: application.estimatedCompletionAt,
-                submittedAt: application.submittedAt,
-                lastUpdated: application.updatedAt,
-            }
-        };
+  async getApplicationDocuments(applicationId: string, userId?: string) {
+    const application = await this.getApplicationById(applicationId);
+    if (userId && application.userId !== userId) {
+      throw new BadRequestException('Unauthorized to view documents');
     }
 
-    /**
-     * Track application by application number (public)
-     */
-    async trackApplication(applicationNumber: string) {
-        const application = await this.prisma.loanApplication.findUnique({
-            where: { applicationNumber },
-            select: {
-                id: true,
-                applicationNumber: true,
-                loanType: true,
-                bank: true,
-                amount: true,
-                status: true,
-                stage: true,
-                progress: true,
-                submittedAt: true,
-                estimatedCompletionAt: true,
-                updatedAt: true,
-            }
+    let { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId).order('isRequired', { ascending: false });
+
+    // Lazy initialization for older applications
+    if (!documents || documents.length === 0) {
+      await this.initializeRequiredDocuments(application.id, application.userId, application.loanType);
+      const { data: newDocs } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId).order('isRequired', { ascending: false });
+      documents = newDocs;
+    }
+
+    const docs = documents || [];
+    
+    // Also fetch the User's general Vault documents to show in a "Vault" section
+    const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', application.userId);
+    
+    // Merge or tag vault documents that aren't already in the application
+    const applicationDocTypes = new Set(docs.map(d => d.docType));
+    const extraVaultDocs = (vaultDocs || [])
+      .filter(vd => !applicationDocTypes.has(vd.docType) && vd.uploaded)
+      .map(vd => ({
+        ...vd,
+        id: `vault_${vd.id}`,
+        isVaultDoc: true,
+        docName: (vd.docType || '').replace(/_/g, ' ').toUpperCase(),
+        status: vd.status || 'uploaded'
+      }));
+
+    const allDocs = [...docs, ...extraVaultDocs];
+
+    const grouped = {
+      pending: allDocs.filter((d: any) => d.status === 'pending' && d.filePath),
+      verified: allDocs.filter((d: any) => d.status === 'verified' || d.status === 'approved'),
+      rejected: allDocs.filter((d: any) => d.status === 'rejected'),
+      notUploaded: allDocs.filter((d: any) => !d.filePath && !d.isVaultDoc),
+      vault: extraVaultDocs
+    };
+
+    return { 
+      success: true, 
+      data: allDocs, 
+      grouped, 
+      summary: { 
+        total: docs.length, 
+        vaultTotal: extraVaultDocs.length,
+        uploaded: docs.filter((d: any) => d.filePath).length, 
+        pending: grouped.pending.length, 
+        verified: grouped.verified.length, 
+        rejected: grouped.rejected.length, 
+        notUploaded: grouped.notUploaded.length 
+      } 
+    };
+  }
+
+  async syncApplicationDocuments(applicationId: string, adminId?: string) {
+    const application = await this.getApplicationById(applicationId);
+    
+    // Fetch user's existing vault documents
+    const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', application.userId);
+    const { data: appDocs } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
+    
+    const appDocsMap = new Map(appDocs?.map(d => [d.docType, d]) || []);
+    const normalizedType = this.normalizeLoanType(application.loanType);
+    const requiredDocs = REQUIRED_DOCUMENTS[normalizedType as keyof typeof REQUIRED_DOCUMENTS] || REQUIRED_DOCUMENTS.personal;
+    
+    let syncedCount = 0;
+    
+    for (const req of requiredDocs) {
+      const existing = appDocsMap.get(req.docType);
+      const vaultMatch = vaultDocs?.find(vd => vd.docType === req.docType && vd.uploaded);
+      
+      if (vaultMatch) {
+        if (!existing || !existing.filePath) {
+          // Update or insert
+          const updateData = {
+            applicationId,
+            docType: req.docType,
+            docName: req.docName,
+            fileName: vaultMatch.fileName || '',
+            filePath: vaultMatch.filePath || '',
+            status: 'pending',
+            isRequired: req.isRequired
+          };
+          
+          if (existing) {
+            await this.db.from('ApplicationDocument').update(updateData).eq('id', existing.id);
+          } else {
+            await this.db.from('ApplicationDocument').insert(updateData);
+          }
+          syncedCount++;
+        }
+      } else if (!existing) {
+        // Just create the requirement placeholder
+        await this.db.from('ApplicationDocument').insert({
+          applicationId,
+          docType: req.docType,
+          docName: req.docName,
+          status: 'not_uploaded',
+          isRequired: req.isRequired
         });
+      }
+    }
+    
+    return { success: true, message: `Synchronized ${syncedCount} documents from vault`, syncedCount };
+  }
 
-        if (!application) {
-            throw new NotFoundException('Application not found');
+  async deleteDocument(documentId: string, userId: string) {
+    const { data: document } = await this.db
+      .from('ApplicationDocument')
+      .select('*, application:LoanApplication!applicationId(userId)')
+      .eq('id', documentId)
+      .single();
+
+    if (!document) throw new NotFoundException('Document not found');
+    if (document.application.userId !== userId) throw new BadRequestException('Unauthorized to delete this document');
+    if (document.status === 'verified') throw new BadRequestException('Verified documents cannot be deleted');
+
+    if (document.isRequired) {
+      await this.db.from('ApplicationDocument').update({ fileName: '', filePath: '', fileSize: null, mimeType: null, status: 'pending' }).eq('id', documentId);
+    } else {
+      await this.db.from('ApplicationDocument').delete().eq('id', documentId);
+    }
+
+    return { success: true, message: 'Document deleted successfully' };
+  }
+
+  async getAllApplications(filters?: { status?: string; stage?: string; loanType?: string; bank?: string; search?: string; fromDate?: string; toDate?: string; limit?: number; offset?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; userId?: string }) {
+    try {
+      console.log('[ApplicationService.getAllApplications] Filters:', JSON.stringify(filters));
+      
+      let query = this.db
+        .from('LoanApplication')
+        .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(id, status)', { count: 'exact' });
+
+      // Apply sorting
+      const sortCol = filters?.sortBy || 'updatedAt';
+      const isAsc = filters?.sortOrder === 'asc';
+      query = query.order(sortCol, { ascending: isAsc });
+
+      if (filters?.status) query = query.eq('status', filters.status);
+      if (filters?.stage) query = query.eq('stage', filters.stage);
+      if (filters?.loanType) query = query.eq('loanType', filters.loanType);
+      if (filters?.bank) query = query.eq('bank', filters.bank);
+      
+      if (filters?.search) {
+        const search = filters.search;
+        query = query.or(`applicationNumber.ilike.%${search}%,firstName.ilike.%${search}%,lastName.ilike.%${search}%,email.ilike.%${search}%`);
+      }
+      
+      if (filters?.fromDate) query = query.gte('submittedAt', filters.fromDate);
+      if (filters?.toDate) query = query.lte('submittedAt', filters.toDate);
+      
+      const limit = filters?.limit || 20;
+      const offset = filters?.offset || 0;
+      query = query.range(offset, offset + limit - 1);
+
+      console.log(`[ApplicationService.getAllApplications] Executing query: sort=${sortCol}, limit=${limit}, offset=${offset}`);
+      
+      const { data: applications, count, error } = await query;
+
+      if (error) {
+        console.error('[ApplicationService.getAllApplications] Supabase Error:', error);
+        throw error;
+      }
+
+      console.log(`[ApplicationService.getAllApplications] Success. Count: ${count}, Data size: ${applications?.length}`);
+      
+      return { 
+        success: true, 
+        data: applications || [], 
+        pagination: { 
+          total: count || 0, 
+          limit, 
+          offset 
+        } 
+      };
+    } catch (error) {
+      console.error('[ApplicationService.getAllApplications] Fatal Exception:', error);
+      // Return empty instead of crashing to avoid 500
+      return { 
+        success: false, 
+        data: [], 
+        pagination: { total: 0, limit: 20, offset: 0 },
+        message: 'Internal server error during application retrieval'
+      };
+    }
+  }
+
+  async updateApplicationStatus(applicationId: string, adminId: string, adminName: string, data: { status?: string; stage?: string; progress?: number; remarks?: string; rejectionReason?: string }, role?: string) {
+    const application = await this.getApplicationById(applicationId);
+    const updateData: any = {};
+    const historyData: any = { changedBy: adminId, changedByName: adminName };
+
+    const isAuthorizedToChangeStatus = ['staff', 'super_admin', 'bank'].includes(role || '');
+
+    if (data.status && data.status !== application.status) {
+      if (!isAuthorizedToChangeStatus) {
+        // If not authorized to change status, we only proceed if status is actually the SAME (just saving remarks)
+        // In the frontend we pass selectedApp.status for admins.
+      } else {
+        updateData.status = data.status;
+        historyData.fromStatus = application.status;
+        historyData.toStatus = data.status;
+        if (data.status === 'rejected' && data.rejectionReason) updateData.remarks = data.rejectionReason;
+        if (data.status === 'approved') { updateData.stage = 'sanction'; updateData.progress = 90; }
+        else if (data.status === 'rejected') { updateData.progress = 0; }
+        else if (data.status === 'processing') { updateData.stage = 'document_verification'; updateData.progress = 40; }
+      }
+    }
+
+    if (data.stage && data.stage !== application.stage) {
+      if (isAuthorizedToChangeStatus) {
+        updateData.stage = data.stage;
+        updateData.progress = APPLICATION_STAGES[data.stage as keyof typeof APPLICATION_STAGES]?.progress || application.progress;
+        historyData.fromStage = application.stage;
+        historyData.toStage = data.stage;
+      }
+    }
+
+    if (data.progress !== undefined && isAuthorizedToChangeStatus) updateData.progress = data.progress;
+    if (data.remarks) {
+        // Remarks can be updated by anyone in the StaffGuard (including admin)
+        if (!updateData.remarks) updateData.remarks = data.remarks;
+    }
+
+    const { data: updated, error } = await this.db.from('LoanApplication').update(updateData).eq('id', applicationId).select().single();
+    if (error) throw error;
+
+    if (data.status || data.stage) {
+      await this.createStatusHistory(applicationId, { ...historyData, notes: data.remarks });
+
+      // Emit real-time dashboard activity event
+      if (data.status && data.status !== application.status && isAuthorizedToChangeStatus) {
+        const actorName = adminName || 'Staff';
+        const capitalizedStatus = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        
+        let msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to ${capitalizedStatus}.`;
+        let color = 'bg-blue-50 text-blue-700 border-blue-100';
+        let icon = 'sync';
+
+        if (data.status === 'approved') {
+          msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to Approved.`;
+          color = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+          icon = 'task_alt';
+        } else if (data.status === 'rejected') {
+          msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to Rejected.`;
+          color = 'bg-rose-50 text-rose-700 border-rose-100';
+          icon = 'cancel';
         }
 
-        const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
-            const currentStageOrder = APPLICATION_STAGES[application.stage as keyof typeof APPLICATION_STAGES]?.order || 0;
-            return {
-                key,
-                label: value.label,
-                order: value.order,
-                isCompleted: value.order < currentStageOrder,
-                isCurrent: key === application.stage,
-            };
+        this.eventEmitter.emit('dashboard.activity', {
+          type: data.status,
+          msg,
+          icon,
+          color,
+          actorName,
+          actorEmail: adminId || null,
+          createdAt: new Date().toISOString()
         });
-
-        return {
-            success: true,
-            data: {
-                ...application,
-                stages,
-            }
-        };
+      }
     }
 
-    // ==================== DOCUMENT MANAGEMENT ====================
+    return { success: true, data: updated, message: 'Application updated successfully' };
+  }
 
-    /**
-     * Initialize required documents for an application
-     */
-    private async initializeRequiredDocuments(applicationId: string, loanType: string) {
-        const requiredDocs = REQUIRED_DOCUMENTS[loanType as keyof typeof REQUIRED_DOCUMENTS] || REQUIRED_DOCUMENTS.personal;
-
-        // We'll create placeholder records for required documents
-        // These will be updated when user uploads actual files
-        for (const doc of requiredDocs) {
-            await this.prisma.applicationDocument.create({
-                data: {
-                    applicationId,
-                    docType: doc.docType,
-                    docName: doc.docName,
-                    fileName: '',
-                    filePath: '',
-                    status: 'pending',
-                    isRequired: doc.isRequired,
-                }
-            });
-        }
+  async verifyDocument(documentId: string, adminId: string, data: { status: 'verified' | 'rejected'; rejectionReason?: string }) {
+    if (documentId.startsWith('vault_')) {
+      const realId = documentId.replace('vault_', '');
+      const update: any = { status: data.status === 'verified' ? 'approved' : 'rejected' };
+      if (data.status === 'verified') update.updatedAt = new Date().toISOString();
+      
+      const { error } = await this.db.from('UserDocument').update(update).eq('id', realId);
+      if (error) throw error;
+      return { success: true, message: `Vault document ${data.status} successfully` };
     }
 
-    /**
-     * Upload document to application
-     */
-    async uploadDocument(applicationId: string, userId: string, documentData: {
-        docType: string;
-        docName: string;
-        fileName: string;
-        filePath: string;
-        fileSize?: number;
-        mimeType?: string;
-    }) {
-        const application = await this.getApplicationById(applicationId);
-
-        if (application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to upload documents');
-        }
-
-        // Check if document exists (was pre-initialized)
-        const existingDoc = await this.prisma.applicationDocument.findFirst({
-            where: {
-                applicationId,
-                docType: documentData.docType
-            }
-        });
-
-        let document;
-        if (existingDoc) {
-            // Update existing document
-            document = await this.prisma.applicationDocument.update({
-                where: { id: existingDoc.id },
-                data: {
-                    fileName: documentData.fileName,
-                    filePath: documentData.filePath,
-                    fileSize: documentData.fileSize,
-                    mimeType: documentData.mimeType,
-                    status: 'pending',
-                    uploadedAt: new Date(),
-                }
-            });
-        } else {
-            // Create new document
-            document = await this.prisma.applicationDocument.create({
-                data: {
-                    applicationId,
-                    ...documentData,
-                    status: 'pending',
-                }
-            });
-        }
-
-        return {
-            success: true,
-            data: document,
-            message: 'Document uploaded successfully'
-        };
+    const { data: document } = await this.db.from('ApplicationDocument').select('id').eq('id', documentId).single();
+    if (!document) {
+      const { data: userDoc } = await this.db.from('UserDocument').select('id').eq('id', documentId).single();
+      if (userDoc) {
+        const update: any = { status: data.status === 'verified' ? 'approved' : 'rejected' };
+        if (data.status === 'verified') update.updatedAt = new Date().toISOString();
+        
+        const { error } = await this.db.from('UserDocument').update(update).eq('id', documentId);
+        if (error) throw error;
+        return { success: true, message: `Vault document ${data.status} successfully` };
+      }
+      throw new NotFoundException('Document not found');
     }
 
-    /**
-     * Get documents for an application
-     */
-    async getApplicationDocuments(applicationId: string, userId?: string) {
-        if (userId) {
-            const application = await this.getApplicationById(applicationId);
-            if (application.userId !== userId) {
-                throw new BadRequestException('Unauthorized to view documents');
-            }
+    const { data: updated, error } = await this.db
+      .from('ApplicationDocument')
+      .update({ status: data.status, verifiedAt: data.status === 'verified' ? new Date().toISOString() : null, verifiedBy: adminId, rejectionReason: data.rejectionReason })
+      .eq('id', documentId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data: updated, message: `Document ${data.status} successfully` };
+  }
+
+  async addApplicationNote(applicationId: string, authorId: string, authorName: string, data: { content: string; type?: string; isInternal?: boolean }) {
+    const { data: note, error } = await this.db
+      .from('ApplicationNote')
+      .insert({ applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return { success: true, data: note, message: 'Note added successfully' };
+  }
+
+  async getApplicationNotes(applicationId: string, includeInternal = true) {
+    let query = this.db.from('ApplicationNote').select('*').eq('applicationId', applicationId).order('createdAt', { ascending: false });
+    if (!includeInternal) query = query.eq('isInternal', false);
+    const { data: notes } = await query;
+    return { success: true, data: notes || [] };
+  }
+
+  async getApplicationStats(user?: any, bankId?: string) {
+    try {
+      const now = new Date();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+      const isBank = (user?.role === 'bank' || user?.role === 'partner_bank');
+      let bankName: string | null = null;
+      if (isBank) {
+        const bId = bankId || user?.firstName;
+        if (bId) {
+          const lower = bId.toLowerCase();
+          if (lower.includes('credila')) bankName = 'HDFC Credila';
+          else if (lower.includes('poonawalla')) bankName = 'Poonawalla Fincorp';
+          else if (lower.includes('idfc')) bankName = 'IDFC First Bank';
+          else if (lower.includes('avanse')) bankName = 'Avanse Financial Services';
+          else if (lower.includes('auxilo')) bankName = 'Auxilo';
+          else bankName = bId;
         }
+      }
 
-        const documents = await this.prisma.applicationDocument.findMany({
-            where: { applicationId },
-            orderBy: { uploadedAt: 'desc' }
-        });
+      let totalQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
+      let allAppsQuery = this.db.from('LoanApplication').select('status, loanType, amount');
+      let recentAppsQuery = this.db.from('LoanApplication').select('id, applicationNumber, loanType, amount, status, submittedAt, firstName, lastName');
+      let thisMonthQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
+      let lastMonthQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
 
-        // Group by status
-        const grouped = {
-            pending: documents.filter(d => d.status === 'pending' && d.filePath),
-            verified: documents.filter(d => d.status === 'verified'),
-            rejected: documents.filter(d => d.status === 'rejected'),
-            notUploaded: documents.filter(d => !d.filePath),
-        };
+      if (isBank && bankName) {
+        totalQuery = totalQuery.ilike('bank', `%${bankName}%`);
+        allAppsQuery = allAppsQuery.ilike('bank', `%${bankName}%`);
+        recentAppsQuery = recentAppsQuery.ilike('bank', `%${bankName}%`);
+        thisMonthQuery = thisMonthQuery.ilike('bank', `%${bankName}%`);
+        lastMonthQuery = lastMonthQuery.ilike('bank', `%${bankName}%`);
+      }
 
-        return {
-            success: true,
-            data: documents,
-            grouped,
-            summary: {
-                total: documents.length,
-                uploaded: documents.filter(d => d.filePath).length,
-                pending: grouped.pending.length,
-                verified: grouped.verified.length,
-                rejected: grouped.rejected.length,
-                notUploaded: grouped.notUploaded.length,
-            }
-        };
-    }
+      console.log(`[Stats] Executing queries for ${bankName || 'all banks'}...`);
+      const [
+        totalRes,
+        allAppsRes,
+        recentAppsRes,
+        thisMonthRes,
+        lastMonthRes,
+      ] = await Promise.all([
+        Promise.resolve(totalQuery).catch(e => { console.error('Total query failed:', e); return { count: 0 } as any; }),
+        Promise.resolve(allAppsQuery).catch(e => { console.error('All apps query failed:', e); return { data: [] } as any; }),
+        Promise.resolve(recentAppsQuery.order('submittedAt', { ascending: false }).limit(5)).catch(e => { console.error('Recent apps query failed:', e); return { data: [] } as any; }),
+        Promise.resolve(thisMonthQuery.gte('submittedAt', thisMonthStart)).catch(e => { console.error('This month query failed:', e); return { count: 0 } as any; }),
+        Promise.resolve(lastMonthQuery.gte('submittedAt', lastMonthStart).lt('submittedAt', thisMonthStart)).catch(e => { console.error('Last month query failed:', e); return { count: 0 } as any; }),
+      ]);
 
-    /**
-     * Delete a document
-     */
-    async deleteDocument(documentId: string, userId: string) {
-        const document = await this.prisma.applicationDocument.findUnique({
-            where: { id: documentId },
-            include: { application: true }
-        });
+      console.log(`[Stats] Queries completed. Success: ${!!allAppsRes.data}, Count: ${allAppsRes.data?.length}`);
 
-        if (!document) {
-            throw new NotFoundException('Document not found');
+      const total = totalRes.count || 0;
+      const allApps = allAppsRes.data || [];
+      const recentApps = recentAppsRes.data || [];
+      const thisMonth = thisMonthRes.count || 0;
+      const lastMonth = lastMonthRes.count || 0;
+
+      const statusStats: Record<string, number> = {};
+      const loanTypeMap: Record<string, { count: number; totalAmount: number }> = {};
+      
+      let totalAmount = 0;
+      let disbursedAmount = 0;
+      for (const app of allApps) {
+        const amt = app.amount || 0;
+        totalAmount += amt;
+        if (app.status === 'disbursed') {
+          disbursedAmount += amt;
         }
+        statusStats[app.status] = (statusStats[app.status] || 0) + 1;
+        if (!loanTypeMap[app.loanType]) loanTypeMap[app.loanType] = { count: 0, totalAmount: 0 };
+        loanTypeMap[app.loanType].count++;
+        loanTypeMap[app.loanType].totalAmount += amt;
+      }
+      
+      const loanTypeStats = Object.entries(loanTypeMap).map(([type, stats]) => ({ 
+        type, 
+        count: stats.count, 
+        totalAmount: stats.totalAmount 
+      }));
 
-        if (document.application.userId !== userId) {
-            throw new BadRequestException('Unauthorized to delete this document');
-        }
+      const tm = thisMonth || 0;
+      const lm = lastMonth || 0;
 
-        if (document.status === 'verified') {
-            throw new BadRequestException('Verified documents cannot be deleted');
-        }
-
-        // Reset the document instead of deleting if it's a required doc
-        if (document.isRequired) {
-            await this.prisma.applicationDocument.update({
-                where: { id: documentId },
-                data: {
-                    fileName: '',
-                    filePath: '',
-                    fileSize: null,
-                    mimeType: null,
-                    status: 'pending',
-                }
-            });
-        } else {
-            await this.prisma.applicationDocument.delete({
-                where: { id: documentId }
-            });
-        }
-
-        return {
-            success: true,
-            message: 'Document deleted successfully'
-        };
-    }
-
-    // ==================== ADMIN OPERATIONS ====================
-
-    /**
-     * Get all applications (admin)
-     */
-    async getAllApplications(filters?: {
-        status?: string;
-        stage?: string;
-        loanType?: string;
-        bank?: string;
-        search?: string;
-        fromDate?: string;
-        toDate?: string;
-        limit?: number;
-        offset?: number;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    }) {
-        const where: any = {};
-
-        if (filters?.status) where.status = filters.status;
-        if (filters?.stage) where.stage = filters.stage;
-        if (filters?.loanType) where.loanType = filters.loanType;
-        if (filters?.bank) where.bank = filters.bank;
-
-        if (filters?.search) {
-            where.OR = [
-                { applicationNumber: { contains: filters.search, mode: 'insensitive' } },
-                { firstName: { contains: filters.search, mode: 'insensitive' } },
-                { lastName: { contains: filters.search, mode: 'insensitive' } },
-                { email: { contains: filters.search, mode: 'insensitive' } },
-            ];
-        }
-
-        if (filters?.fromDate || filters?.toDate) {
-            where.submittedAt = {};
-            if (filters.fromDate) where.submittedAt.gte = new Date(filters.fromDate);
-            if (filters.toDate) where.submittedAt.lte = new Date(filters.toDate);
-        }
-
-        const orderBy: any = {};
-        orderBy[filters?.sortBy || 'date'] = filters?.sortOrder || 'desc';
-
-        const [applications, total] = await Promise.all([
-            this.prisma.loanApplication.findMany({
-                where,
-                include: {
-                    user: {
-                        select: { id: true, email: true, firstName: true, lastName: true }
-                    },
-                    documents: true
-                },
-                orderBy,
-                take: filters?.limit || 20,
-                skip: filters?.offset || 0,
-            }),
-            this.prisma.loanApplication.count({ where })
-        ]);
-
-        return {
-            success: true,
-            data: applications,
-            pagination: {
-                total,
-                limit: filters?.limit || 20,
-                offset: filters?.offset || 0
-            }
-        };
-    }
-
-    /**
-     * Update application status (admin)
-     */
-    async updateApplicationStatus(
-        applicationId: string,
-        adminId: string,
-        adminName: string,
+      return {
+        success: true,
+        data: { 
+          total, 
+          totalAmount,
+          disbursedAmount,
+          statusStats, 
+          loanTypeStats, 
+          recentApplications: recentApps, 
+          monthlyComparison: { 
+            thisMonth: tm, 
+            lastMonth: lm, 
+            change: lm > 0 ? ((tm - lm) / lm * 100).toFixed(1) : (tm > 0 ? '100.0' : '0.0') 
+          } 
+        },
+      };
+    } catch (error) {
+      console.error('[ApplicationService] getApplicationStats Error:', error);
+      // Return empty stats instead of throwing to prevent 500
+      return {
+        success: true,
         data: {
-            status?: string;
-            stage?: string;
-            progress?: number;
-            remarks?: string;
-            assignedTo?: string;
-            sanctionAmount?: number;
-            sanctionedInterestRate?: number;
-            rejectionReason?: string;
+          total: 0,
+          totalAmount: 0,
+          disbursedAmount: 0,
+          statusStats: {},
+          loanTypeStats: [],
+          recentApplications: [],
+          monthlyComparison: { thisMonth: 0, lastMonth: 0, change: '0.0' }
         }
-    ) {
-        const application = await this.getApplicationById(applicationId);
-
-        const updateData: any = {};
-        const historyData: any = {
-            changedBy: adminId,
-            changedByName: adminName,
-        };
-
-        if (data.status && data.status !== application.status) {
-            updateData.status = data.status;
-            historyData.fromStatus = application.status;
-            historyData.toStatus = data.status;
-
-            // Set timestamps based on status
-            if (data.status === 'under_review') {
-                updateData.reviewStartedAt = new Date();
-            } else if (data.status === 'approved') {
-                updateData.approvedAt = new Date();
-            } else if (data.status === 'rejected') {
-                updateData.rejectedAt = new Date();
-                updateData.rejectionReason = data.rejectionReason;
-            } else if (data.status === 'disbursed') {
-                updateData.disbursedAt = new Date();
-            }
-        }
-
-        if (data.stage && data.stage !== application.stage) {
-            updateData.stage = data.stage;
-            updateData.progress = APPLICATION_STAGES[data.stage as keyof typeof APPLICATION_STAGES]?.progress || application.progress;
-            historyData.fromStage = application.stage;
-            historyData.toStage = data.stage;
-        }
-
-        if (data.progress !== undefined) updateData.progress = data.progress;
-        if (data.remarks) updateData.remarks = data.remarks;
-        if (data.assignedTo) updateData.assignedTo = data.assignedTo;
-        if (data.sanctionAmount) updateData.sanctionAmount = data.sanctionAmount;
-        if (data.sanctionedInterestRate) updateData.sanctionedInterestRate = data.sanctionedInterestRate;
-
-        const updated = await this.prisma.loanApplication.update({
-            where: { id: applicationId },
-            data: updateData,
-            include: {
-                documents: true,
-                statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 }
-            }
-        });
-
-        // Create status history entry
-        if (data.status || data.stage) {
-            await this.createStatusHistory(applicationId, {
-                ...historyData,
-                notes: data.remarks,
-            });
-        }
-
-        return {
-            success: true,
-            data: updated,
-            message: 'Application updated successfully'
-        };
+      };
     }
+  }
 
-    /**
-     * Verify document (admin)
-     */
-    async verifyDocument(
-        documentId: string,
-        adminId: string,
+  async aiReviewApplication(applicationId: string, adminId: string, adminName: string) {
+    try {
+      const application = await this.getApplicationById(applicationId);
+      const { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
+      const reviewResult = await this.applicationReviewService.reviewApplication(application, documents || []);
+
+      await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
+      await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: application.status, changedBy: adminId, changedByName: adminName, notes: `AI Review completed. Score: ${reviewResult.overallScore}/100. Recommendation: ${reviewResult.recommendation}`, isAutomatic: true });
+
+      // Emit real-time CIBIL verification activity
+      this.eventEmitter.emit('dashboard.activity', {
+        type: 'verification',
+        msg: `System auto-verified CIBIL score for Student #${application.applicationNumber || application.id.slice(-4)}.`,
+        icon: 'verified',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        actorName: 'System',
+        actorEmail: 'system@vidyaloan.in',
+        createdAt: new Date().toISOString()
+      });
+
+      return { success: true, data: reviewResult, message: 'AI review completed successfully' };
+    } catch (error) {
+      console.error(`[ApplicationService] aiReviewApplication failed for ${applicationId}:`, error);
+      throw error;
+    }
+  }
+
+  private async generateApplicationNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `VL-APP-${year}-`;
+    
+    try {
+      const { data, error } = await this.db
+        .from('LoanApplication')
+        .select('applicationNumber')
+        .like('applicationNumber', `${prefix}%`)
+        .order('applicationNumber', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[ApplicationService] Error fetching max application number:', error);
+      }
+
+      let nextSeq = 1;
+      if (data && data.applicationNumber) {
+        const parts = data.applicationNumber.split('-');
+        if (parts.length === 4) {
+          const currentSeq = parseInt(parts[3], 10);
+          if (!isNaN(currentSeq)) {
+            nextSeq = currentSeq + 1;
+          }
+        }
+      }
+      return `${prefix}${String(nextSeq).padStart(5, '0')}`;
+    } catch (err) {
+      console.error('[ApplicationService] Failed to generate sequential application number, falling back to random:', err);
+      const seq = String(Math.floor(Math.random() * 100_000)).padStart(5, '0');
+      return `${prefix}${seq}`;
+    }
+  }
+
+  private async createStatusHistory(applicationId: string, data: { fromStatus?: string; toStatus?: string; fromStage?: string; toStage?: string; changedBy?: string; changedByName?: string; changeReason?: string; notes?: string; isAutomatic?: boolean }) {
+    await this.db.from('ApplicationStatusHistory').insert({ applicationId, ...data });
+  }
+
+  async getAgentApplications(agentId: string) {
+    try {
+      // 1. Get all referees referred by this agent
+      const { data: referrals } = await this.db.from('Referral').select('refereeId').eq('referrerId', agentId);
+      if (!referrals || referrals.length === 0) return { success: true, data: [] };
+
+      const refereeIds = referrals.map(r => r.refereeId);
+
+      // 2. Get applications for these students
+      const { data: applications } = await this.db
+        .from('LoanApplication')
+        .select('*, user:User!userId(id, email, firstName, lastName)')
+        .in('userId', refereeIds)
+        .order('submittedAt', { ascending: false });
+
+      return { success: true, data: applications || [] };
+    } catch (error) {
+      console.error('[ApplicationService] getAgentApplications Error:', error);
+      return { success: false, data: [] };
+    }
+  }
+
+  async getAgentStats(agentId: string) {
+    try {
+      // 1. Get all referees referred by this agent
+      const { data: referrals } = await this.db.from('Referral').select('refereeId').eq('referrerId', agentId);
+      if (!referrals || referrals.length === 0) {
+        return { success: true, data: { total: 0, totalAmount: 0, revenue: 0, disbursedAmount: 0, recentApplications: [] } };
+      }
+
+      const refereeIds = referrals.map(r => r.refereeId);
+
+      // 2. Get applications for these students
+      const { data: applications } = await this.db
+        .from('LoanApplication')
+        .select('*')
+        .in('userId', refereeIds);
+
+      let totalAmount = 0;
+      let disbursedAmount = 0;
+
+      for (const app of applications || []) {
+        const amt = parseFloat(app.amount) || 0;
+        totalAmount += amt;
+        if (app.status === 'disbursed' || app.status === 'approved') {
+          disbursedAmount += amt;
+        }
+      }
+
+      // Revenue generation logic (e.g., 0.5% commission on disbursed amount)
+      const revenue = disbursedAmount * 0.005;
+
+      return {
+        success: true,
         data: {
-            status: 'verified' | 'rejected';
-            rejectionReason?: string;
+          total: (applications || []).length,
+          totalAmount,
+          revenue,
+          disbursedAmount,
+          recentApplications: (applications || []).slice(0, 5)
         }
-    ) {
-        const document = await this.prisma.applicationDocument.findUnique({
-            where: { id: documentId }
-        });
-
-        if (!document) {
-            throw new NotFoundException('Document not found');
-        }
-
-        const updated = await this.prisma.applicationDocument.update({
-            where: { id: documentId },
-            data: {
-                status: data.status,
-                verifiedAt: data.status === 'verified' ? new Date() : null,
-                verifiedBy: adminId,
-                rejectionReason: data.rejectionReason,
-            }
-        });
-
-        return {
-            success: true,
-            data: updated,
-            message: `Document ${data.status} successfully`
-        };
+      };
+    } catch (error) {
+      console.error('[ApplicationService] getAgentStats Error:', error);
+      return {
+        success: true,
+        data: { total: 0, totalAmount: 0, revenue: 0, disbursedAmount: 0, recentApplications: [] }
+      };
     }
+  }
 
-    /**
-     * Add note to application (admin)
-     */
-    async addApplicationNote(
-        applicationId: string,
-        authorId: string,
-        authorName: string,
-        data: {
-            content: string;
-            type?: string;
-            isInternal?: boolean;
-        }
-    ) {
-        const note = await this.prisma.applicationNote.create({
-            data: {
-                applicationId,
-                authorId,
-                authorName,
-                content: data.content,
-                type: data.type || 'general',
-                isInternal: data.isInternal || false,
-            }
-        });
+  async shareApplication(applicationId: string, adminId: string, adminName: string) {
+    try {
+      const application = await this.getApplicationById(applicationId);
+      if (!application) throw new Error('Application not found');
 
-        return {
-            success: true,
-            data: note,
-            message: 'Note added successfully'
-        };
+      const userEmail = application.email || (application.user as any)?.email;
+      if (!userEmail) throw new Error('Recipient email not found');
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const statusColor = application.status === 'approved' ? '#10b981' : application.status === 'rejected' ? '#ef4444' : '#6366f1';
+
+      const emailHtml = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #334155; background-color: #f8fafc;">
+          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%); padding: 40px; border-radius: 24px 24px 0 0; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Vidyaloan</h1>
+            <p style="margin: 10px 0 0; font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 2px;">Application Details Shared</p>
+          </div>
+          
+          <div style="background: white; padding: 40px; border-radius: 0 0 24px 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #1e1b4b; font-size: 20px; margin-bottom: 24px;">Hi ${application.firstName || 'Student'},</h2>
+            <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 30px;">
+              Details for your education loan application <strong>${application.applicationNumber}</strong> are summarized below. You can track your progress anytime on our dashboard.
+            </p>
+
+            <div style="background-color: #f1f5f9; padding: 24px; border-radius: 16px; margin-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Status</td>
+                  <td style="padding-bottom: 12px; text-align: right;">
+                    <span style="background-color: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+                      ${application.status?.toUpperCase() || 'IN REVIEW'}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Current Stage</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">${application.stage?.replace(/_/g, ' ').toUpperCase() || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Loan Amount</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">₹${Number(application.amount || 0).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Bank Partner</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">${application.bank || 'Pending Assignment'}</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Progress</td>
+                  <td style="text-align: right; font-weight: 700; color: #1e1b4b;">${application.progress}%</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 30px;">
+              <a href="${frontendUrl}/dashboard" style="display: inline-block; background-color: #4338ca; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.4);">
+                Track My Application
+              </a>
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; margin-top: 24px;">
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.6;">
+                This information was shared by ${adminName} from the Vidyaloan Staff Dashboard.<br>
+                If you have any questions, please contact our support team.
+              </p>
+            </div>
+          </div>
+          
+          <div style="padding: 24px; text-align: center; font-size: 11px; color: #94a3b8;">
+            © ${new Date().getFullYear()} Vidyaloan. All rights reserved.
+          </div>
+        </div>
+      `;
+
+      await this.emailService.sendMail(
+        userEmail,
+        `Application Details: ${application.applicationNumber} - Vidyaloan`,
+        emailHtml
+      );
+
+      // Log the share action as a note
+      await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: adminName, content: `Application details shared to registered email: ${userEmail}`, type: 'share', isInternal: true });
+
+      return { success: true, message: 'Application details shared successfully' };
+    } catch (error) {
+      console.error('[ApplicationService] shareApplication Error:', error);
+      throw new Error(`Failed to share application: ${error.message}`);
     }
+  }
 
-    /**
-     * Get application notes (admin)
-     */
-    async getApplicationNotes(applicationId: string, includeInternal = true) {
-        const where: any = { applicationId };
-        if (!includeInternal) {
-            where.isInternal = false;
-        }
+  getRequiredDocuments(loanType: string) {
+    return { success: true, data: REQUIRED_DOCUMENTS[loanType as keyof typeof REQUIRED_DOCUMENTS] || REQUIRED_DOCUMENTS.personal };
+  }
 
-        const notes = await this.prisma.applicationNote.findMany({
-            where,
-            orderBy: { createdAt: 'desc' }
-        });
-
-        return {
-            success: true,
-            data: notes
-        };
-    }
-
-    /**
-     * Get application statistics (admin dashboard)
-     */
-    async getApplicationStats() {
-        const [
-            total,
-            byStatus,
-            byLoanType,
-            recentApplications,
-            thisMonth,
-            lastMonth
-        ] = await Promise.all([
-            this.prisma.loanApplication.count(),
-            this.prisma.loanApplication.groupBy({
-                by: ['status'],
-                _count: true
-            }),
-            this.prisma.loanApplication.groupBy({
-                by: ['loanType'],
-                _count: true,
-                _sum: { amount: true }
-            }),
-            this.prisma.loanApplication.findMany({
-                take: 5,
-                orderBy: { date: 'desc' },
-                select: {
-                    id: true,
-                    applicationNumber: true,
-                    loanType: true,
-                    amount: true,
-                    status: true,
-                    date: true,
-                    firstName: true,
-                    lastName: true,
-                }
-            }),
-            this.prisma.loanApplication.count({
-                where: {
-                    date: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-                }
-            }),
-            this.prisma.loanApplication.count({
-                where: {
-                    date: {
-                        gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-                        lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-                    }
-                }
-            }),
-        ]);
-
-        const statusStats = byStatus.reduce((acc, curr) => {
-            acc[curr.status] = curr._count;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const loanTypeStats = byLoanType.map(lt => ({
-            type: lt.loanType,
-            count: lt._count,
-            totalAmount: lt._sum.amount
-        }));
-
-        return {
-            success: true,
-            data: {
-                total,
-                statusStats,
-                loanTypeStats,
-                recentApplications,
-                monthlyComparison: {
-                    thisMonth,
-                    lastMonth,
-                    change: lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth * 100).toFixed(1) : 0
-                }
-            }
-        };
-    }
-
-    // ==================== HELPER METHODS ====================
-
-    /**
-     * Generate application number
-     */
-    private generateApplicationNumber(loanType: string): string {
-        const prefix = {
-            education: 'EDU',
-            home: 'HME',
-            personal: 'PRS',
-            business: 'BUS',
-            vehicle: 'VEH',
-        }[loanType] || 'APP';
-
-        const timestamp = Date.now().toString(36).toUpperCase();
-        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-
-        return `${prefix}${timestamp}${random}`;
-    }
-
-    /**
-     * Create status history entry
-     */
-    private async createStatusHistory(applicationId: string, data: {
-        fromStatus?: string;
-        toStatus: string;
-        fromStage?: string;
-        toStage?: string;
-        changedBy?: string;
-        changedByName?: string;
-        changeReason?: string;
-        notes?: string;
-        isAutomatic?: boolean;
-    }) {
-        return this.prisma.applicationStatusHistory.create({
-            data: {
-                applicationId,
-                ...data,
-            }
-        });
-    }
-
-    /**
-     * Get required documents list for a loan type
-     */
-    getRequiredDocuments(loanType: string) {
-        return {
-            success: true,
-            data: REQUIRED_DOCUMENTS[loanType as keyof typeof REQUIRED_DOCUMENTS] || REQUIRED_DOCUMENTS.personal
-        };
-    }
-
-    /**
-     * Get application stages
-     */
-    getApplicationStages() {
-        return {
-            success: true,
-            data: APPLICATION_STAGES
-        };
-    }
+  getApplicationStages() {
+    return { success: true, data: APPLICATION_STAGES };
+  }
 }

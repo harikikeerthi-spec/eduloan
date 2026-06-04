@@ -6,36 +6,43 @@ import { SopAnalysisService } from './services/sop-analysis.service';
 import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
-import { OpenRouterService } from './services/open-router.service';
+import { DocumentVerificationService } from './services/document-verification.service';
+import { ApplicationReviewService } from './services/application-review.service';
+import { OpenRouterService } from './services/openrouter.service';
+import { UniversitySearchService } from './services/university-search.service';
 import { VisaInterviewService } from './services/visa-interview.service';
-
-import { AiSupportService } from './services/ai-support.service';
-import { ShortlistingService } from './services/shortlisting.service';
+import { KycService } from './services/kyc.service';
 
 @Module({
+  imports: [],
   controllers: [AiController],
   providers: [
+    OpenRouterService,
     EligibilityService,
     LoanRecommendationService,
     SopAnalysisService,
     GradeConversionService,
     UniversityComparisonService,
     AdmitPredictorService,
-    OpenRouterService,
-    AiSupportService,
+    DocumentVerificationService,
+    ApplicationReviewService,
+    UniversitySearchService,
     VisaInterviewService,
-    ShortlistingService,
+    KycService,
   ],
   exports: [
+    OpenRouterService,
     EligibilityService,
     LoanRecommendationService,
     SopAnalysisService,
     GradeConversionService,
     UniversityComparisonService,
     AdmitPredictorService,
-    OpenRouterService,
+    DocumentVerificationService,
+    ApplicationReviewService,
+    UniversitySearchService,
     VisaInterviewService,
-    ShortlistingService,
+    KycService,
   ],
 })
-export class AiModule {}
+export class AiModule { }

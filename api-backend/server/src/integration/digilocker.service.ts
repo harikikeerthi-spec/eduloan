@@ -1,6 +1,5 @@
 
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
 
 export interface VerificationResult {
     isValid: boolean;
@@ -13,13 +12,13 @@ export interface VerificationResult {
 export class DigilockerService {
     // DigiLocker Production API base
     private readonly baseUrl = 'https://api.digitallocker.gov.in';
+    private readonly authUrl = 'https://api.digitallocker.gov.in/public/oauth2/1/authorize';
+    private readonly tokenUrl = 'https://api.digitallocker.gov.in/public/oauth2/1/token';
     // Issued documents endpoint (v2)
     private readonly issuedDocsUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/files/issued';
 
     private readonly clientId = process.env.DIGILOCKER_CLIENT_ID;
     private readonly clientSecret = process.env.DIGILOCKER_CLIENT_SECRET;
-    private readonly authUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/authorize';
-    private readonly tokenUrl = 'https://api.digitallocker.gov.in/public/oauth2/2/token';
 
     /**
      * Generate the DigiLocker authorization URL.
@@ -57,7 +56,6 @@ export class DigilockerService {
         const body = new URLSearchParams(bodyParams).toString();
         console.log('DIGILOCKER_DEBUG: Token Request to:', this.tokenUrl);
         console.log('DIGILOCKER_DEBUG: redirect_uri used:', redirectUri);
-        console.log('DIGILOCKER_DEBUG: bodyParams:', { ...bodyParams, client_secret: '***' });
 
         const response = await fetch(this.tokenUrl, {
             method: 'POST',
@@ -83,103 +81,42 @@ export class DigilockerService {
      * Real API response: { items: [{ uri, name, doctype, issuerid, date, description, ... }] }
      */
     async listDocuments(token: string): Promise<any[]> {
-        const endpoints = [
-            'https://api.digitallocker.gov.in/public/oauth2/1/user',
-            'https://api.digitallocker.gov.in/public/oauth2/1/profile',
-            'https://api.digitallocker.gov.in/public/oauth2/1/xml/adhar',
-            'https://api.digitallocker.gov.in/public/oauth2/1/xml/issued',
-            'https://api.digitallocker.gov.in/public/oauth2/2/files/issued',
-            'https://api.digitallocker.gov.in/public/oauth2/1/files/issued',
-            'https://api.digitallocker.gov.in/public/oauth2/2/files/pulled',
-            'https://api.digitallocker.gov.in/public/oauth2/1/files/pulled'
-        ];
+        console.log('DIGILOCKER_DEBUG: Fetching issued documents from:', this.issuedDocsUrl);
 
-        let allMergedDocs: any[] = [];
-        const debugData: any = {};
-
-        for (const url of endpoints) {
-            console.log(`DIGILOCKER_DEBUG: Fetching documents from: ${url}`);
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json',
-                    }
-                });
-
-                if (response.ok) {
-                    const contentType = response.headers.get('content-type') || '';
-                    let data: any;
-                    
-                    if (contentType.includes('application/json')) {
-                        data = await response.json();
-                    } else {
-                        const text = await response.text();
-                        data = { rawText: text, isXml: text.includes('<?xml') };
-                    }
-                    
-                    debugData[url] = data;
-                    
-                    const extractArray = (resp: any): any[] => {
-                        if (Array.isArray(resp)) return resp;
-                        if (Array.isArray(resp?.items)) return resp.items;
-                        if (Array.isArray(resp?.documents)) return resp.documents;
-                        if (Array.isArray(resp?.issued_documents)) return resp.issued_documents;
-                        if (Array.isArray(resp?.issued)) return resp.issued;
-                        if (Array.isArray(resp?.pulled)) return resp.pulled;
-                        if (Array.isArray(resp?.uploaded)) return resp.uploaded;
-                        if (Array.isArray(resp?.result?.items)) return resp.result.items;
-                        
-                        // Aggressive Aadhaar/Identity detection from profile/user data
-                        if (resp?.aadhaar_number || resp?.uid || (resp?.name && (resp?.dob || resp?.gender))) {
-                            console.log(`DIGILOCKER_DEBUG: Detected identity/aadhaar data in response at ${url}`);
-                            return [{
-                                name: resp.aadhaar_number ? 'Aadhaar Card (Linked)' : 'Aadhaar / Identity Profile',
-                                doctype: 'ADHAR',
-                                uri: resp.uri || 'PROFILE_IDENTITY_' + (resp.aadhaar_number || resp.uid || 'USER'),
-                                description: 'Identity data from DigiLocker Profile',
-                                ...resp
-                            }];
-                        }
-
-                        if (resp?.isXml && (resp?.rawText?.includes('UidData') || resp?.rawText?.includes('Certificate') || resp?.rawText?.includes('Aadhaar'))) {
-                            const isAadhaar = resp.rawText.includes('UidData') || resp.rawText.includes('Aadhaar');
-                            console.log(`DIGILOCKER_DEBUG: Detected ${isAadhaar ? 'Aadhaar' : 'XML'} document in raw text`);
-                            return [{
-                                name: isAadhaar ? 'Aadhaar Card (Verified XML)' : 'Identity Document (XML)',
-                                doctype: isAadhaar ? 'ADHAR' : 'XML_DOC',
-                                uri: 'XML_DOC_' + Math.random().toString(36).substring(7),
-                                description: 'Fetched via XML API'
-                            }];
-                        }
-
-                        if (resp?.uri || resp?.doctype || resp?.docType) return [resp];
-                        return [];
-                    };
-
-                    const docs = extractArray(data);
-                    console.log(`DIGILOCKER_DEBUG: Found ${docs.length} documents at ${url}`);
-                    allMergedDocs = [...allMergedDocs, ...docs];
-                } else {
-                    console.error(`DIGILOCKER_DEBUG: Failed at ${url}:`, await response.text());
-                }
-            } catch (e) {
-                console.error(`DIGILOCKER_DEBUG: Error fetching from ${url}:`, e.message);
+        const response = await fetch(this.issuedDocsUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
             }
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            console.error('DIGILOCKER_DEBUG: Failed to fetch documents:', err);
+            throw new Error(`DigiLocker Documents Error: ${err}`);
         }
 
-        // Dump the raw response to a file for debugging
-        try {
-            fs.writeFileSync('digilocker_debug.json', JSON.stringify({ debugData, allDocs: allMergedDocs }, null, 2));
-        } catch (e) {
-            console.error('Failed to write debug file', e);
-        }
+        const data: any = await response.json();
+        console.log('DIGILOCKER_DEBUG: Raw documents response:', JSON.stringify(data, null, 2));
 
-        allMergedDocs.forEach((d, i) => {
+        // Real API returns: { items: [{ uri, name, doctype, issuerid, ... }] }
+        const extractArray = (resp: any): any[] => {
+            if (Array.isArray(resp)) return resp;
+            if (Array.isArray(resp?.items)) return resp.items;
+            if (Array.isArray(resp?.documents)) return resp.documents;
+            if (Array.isArray(resp?.issued_documents)) return resp.issued_documents;
+            if (Array.isArray(resp?.issuedDocuments)) return resp.issuedDocuments;
+            if (Array.isArray(resp?.result?.items)) return resp.result.items;
+            return [];
+        };
+
+        const allDocs = extractArray(data);
+        console.log(`DIGILOCKER_DEBUG: Total issued documents: ${allDocs.length}`);
+        allDocs.forEach((d, i) => {
             console.log(`  [${i}] doctype="${d.doctype || d.type}" name="${d.name}" uri="${d.uri}"`);
         });
-        return allMergedDocs;
+        return allDocs;
     }
 
     /**
@@ -209,18 +146,20 @@ export class DigilockerService {
 
             // Map internal doc types to DigiLocker doctype field values
             const typeMap: Record<string, string> = {
-                'student_pan': 'PANCR',
-                'coapp_pan': 'PANCR',
-                'father_pan': 'PANCR',
-                'mother_pan': 'PANCR',
-                'student_aadhar': 'ADHAR',
-                'coapp_aadhar': 'ADHAR',
-                'father_aadhar': 'ADHAR',
-                'mother_aadhar': 'ADHAR',
-                'student_10th_marksheet': '10TH',
-                'student_12th_marksheet': '12TH',
-                'student_passport': 'PASPT',
-                'student_degree_marksheet': 'DGCTR',
+                'pan_student': 'PANCR',
+                'pan_coapp': 'PANCR',
+                'pan_father': 'PANCR',
+                'pan_mother': 'PANCR',
+                'aadhar_student': 'ADHAR',
+                'aadhar_coapp': 'ADHAR',
+                'aadhar_father': 'ADHAR',
+                'aadhar_mother': 'ADHAR',
+                'marksheet_10th': 'HSCER',
+                'marksheet_12th': 'HSCER',
+                'passport': 'PASPT',
+                'marksheet_degree': 'DGCTR',
+                'btech_degree': 'DGCTR',
+                'graduation_marksheet': 'MKST',
             };
 
             const targetDlType = typeMap[docType] || docType.toUpperCase();

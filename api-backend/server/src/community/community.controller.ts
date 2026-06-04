@@ -9,9 +9,12 @@ import {
     Query,
     UseGuards,
     Request,
+    HttpException,
+    HttpStatus,
 } from '@nestjs/common';
 import { CommunityService } from './community.service';
 import { AdminGuard } from '../auth/admin.guard';
+import { StaffGuard } from '../auth/staff.guard';
 import { UserGuard } from '../auth/user.guard';
 import { JwtService } from '@nestjs/jwt';
 
@@ -128,6 +131,15 @@ export class CommunityController {
     @Get('mentors/stats')
     async getMentorStats() {
         return this.communityService.getMentorStats();
+    }
+
+    /**
+     * Get overall community statistics
+     * GET /community/stats
+     */
+    @Get('stats')
+    async getStats() {
+        return this.communityService.getCommunityStats();
     }
 
     // ==================== EVENTS ENDPOINTS ====================
@@ -493,6 +505,36 @@ export class CommunityController {
     }
 
     /**
+     * Create success story (Admin)
+     * POST /community/admin/stories
+     */
+    @Post('admin/stories')
+    @UseGuards(AdminGuard)
+    async createStory(@Body() body: any) {
+        return this.communityService.createStory(body);
+    }
+
+    /**
+     * Update success story (Admin)
+     * PUT /community/admin/stories/:id
+     */
+    @Put('admin/stories/:id')
+    @UseGuards(AdminGuard)
+    async updateStory(@Param('id') id: string, @Body() body: any) {
+        return this.communityService.updateStory(id, body);
+    }
+
+    /**
+     * Delete success story (Admin)
+     * DELETE /community/admin/stories/:id
+     */
+    @Delete('admin/stories/:id')
+    @UseGuards(AdminGuard)
+    async deleteStory(@Param('id') id: string) {
+        return this.communityService.deleteStory(id);
+    }
+
+    /**
      * Approve/Reject success story (Admin)
      * PUT /community/admin/stories/:id/approve
      */
@@ -548,43 +590,58 @@ export class CommunityController {
      * GET /community/admin/stats
      */
     @Get('admin/stats')
-    @UseGuards(AdminGuard)
+    @UseGuards(StaffGuard)
     async getCommunityStats() {
         return this.communityService.getCommunityStats();
     }
 
     // ==================== FORUM ENDPOINTS ====================
 
-    @Get('forum')
-    async getAllForumPosts(
+    // ==================== FORUM ENDPOINTS ====================
+
+    // ==================== ADMIN FORUM ENDPOINTS ====================
+
+    /**
+     * Get all forum posts (Admin)
+     * GET /community/admin/forum/posts
+     */
+    @Get('admin/forum/posts')
+    @UseGuards(StaffGuard)
+    async getAllForumPostsAdmin(
         @Query('category') category?: string,
-        @Query('tag') tag?: string,
         @Query('limit') limit?: string,
         @Query('offset') offset?: string,
         @Query('sort') sort?: string,
-        @Request() req?,
     ) {
-        let userId: string | undefined;
-        try {
-            const authHeader = req?.headers?.authorization;
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                const token = authHeader.split(' ')[1];
-                const decoded = this.jwtService.decode(token) as any;
-                if (decoded && decoded.id) {
-                    userId = decoded.id;
-                }
-            }
-        } catch (e) {
-            // ignore token errors
-        }
-
-        return this.communityService.getForumPosts({
+        return this.communityService.getAllForumPostsAdmin({
             category,
-            tag,
-            limit: limit ? parseInt(limit, 10) : 10,
+            limit: limit ? parseInt(limit, 10) : 20,
             offset: offset ? parseInt(offset, 10) : 0,
             sort,
-        }, userId);
+        });
+    }
+
+    /**
+     * Pin/Unpin a forum post (Admin)
+     * PUT /community/admin/forum/posts/:id/pin
+     */
+    @Put('admin/forum/posts/:id/pin')
+    @UseGuards(AdminGuard)
+    async togglePinForumPost(
+        @Param('id') id: string,
+        @Body() body: { isPinned: boolean }
+    ) {
+        return this.communityService.togglePinForumPost(id, body.isPinned);
+    }
+
+    /**
+     * Search for similar/duplicate forum posts (pre-post duplicate check)
+     * GET /community/forum/search?q=my+question+title
+     * IMPORTANT: Must be declared BEFORE forum/:id to avoid being captured by the dynamic param route.
+     */
+    @Get('forum/search')
+    async searchForumPosts(@Query('q') q?: string) {
+        return this.communityService.searchSimilarPosts(q || '');
     }
 
     @Get('forum/:id')
@@ -605,24 +662,159 @@ export class CommunityController {
         return this.communityService.getForumPostById(id, userId);
     }
 
-    @Post('forum')
-    @UseGuards(UserGuard)
-    async createForumPost(
-        @Request() req,
-        @Body() body: { title: string; content: string; category: string; tags?: string[] },
+    /**
+     * Get all forum posts (Admin/Public)
+     * GET /community/forum
+     */
+    @Get('forum')
+    async getForumPosts(
+        @Query('category') category?: string,
+        @Query('tag') tag?: string,
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+        @Query('sort') sort?: string,
+        @Request() req?,
     ) {
+        let userId: string | undefined;
+        // Try to get user ID if token present
+        try {
+            if (req.headers.authorization) {
+                const token = req.headers.authorization.split(' ')[1];
+                const decoded = this.jwtService.decode(token) as any;
+                userId = decoded?.id;
+            }
+        } catch (e) { }
+
+        return this.communityService.getForumPosts({
+            category,
+            tag,
+            limit: limit ? parseInt(limit, 10) : 20,
+            offset: offset ? parseInt(offset, 10) : 0,
+            sort
+        }, userId);
+    }
+
+    /**
+     * Compatibility: GET /community/posts (alias for /community/forum)
+     */
+    @Get('posts')
+    async getPostsAlias(
+        @Query('topic') topic?: string,
+        @Query('page') page?: string,
+        @Request() req?,
+    ) {
+        // Map topic/page to category/offset
+        const category = topic;
+        const offset = page ? (parseInt(page, 10) - 1) * 20 : 0;
+        let userId: string | undefined;
+        try {
+            if (req?.headers?.authorization) {
+                const token = req.headers.authorization.split(' ')[1];
+                const decoded = this.jwtService.decode(token) as any;
+                userId = decoded?.id;
+            }
+        } catch (e) { }
+
+        return this.communityService.getForumPosts({ category, limit: 20, offset }, userId);
+    }
+
+
+
+    /**
+     * GET /community/hubs - list of available hub categories
+     */
+    @Get('hubs')
+    async getHubs() {
+        return this.communityService.getHubs();
+    }
+
+    /**
+     * Compatibility: GET /community/posts/:id -> fetch single forum post by id
+     */
+    @Get('posts/:id')
+    async getPostByIdAlias(@Param('id') id: string, @Request() req) {
+        let userId: string | undefined;
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const token = authHeader.split(' ')[1];
+                const decoded = this.jwtService.decode(token) as any;
+                if (decoded && decoded.id) {
+                    userId = decoded.id;
+                }
+            }
+        } catch (e) { }
+
+        return this.communityService.getForumPostById(id, userId);
+    }
+
+    /**
+     * Compatibility: POST /community/posts to create a new forum post (requires auth)
+     */
+    @Post('posts')
+    @UseGuards(UserGuard)
+    async createPostAlias(@Request() req, @Body() body: any) {
+        // Enforce allowed categories server-side to prevent off-topic posts
+        const allowedCategories = [
+            'Education Loans',
+            'Universities',
+            'Courses',
+            'Exams',
+            'GRE / GMAT',
+            'IELTS / TOEFL',
+            'Scholarship',
+            'Visa & Immigration',
+            'Career & Jobs',
+            'General'
+        ];
+
+        const providedCategory = (body && body.category) ? String(body.category).trim() : '';
+        const isAllowed = allowedCategories.some(c => c.toLowerCase() === providedCategory.toLowerCase());
+        if (!providedCategory || !isAllowed) {
+            throw new HttpException({
+                success: false,
+                message: 'Category not allowed. Please choose one of: ' + allowedCategories.join(', '),
+                allowedCategories,
+            }, HttpStatus.BAD_REQUEST);
+        }
+
+        // If the client did not explicitly force posting, run AI duplicate-check first
+        const force = body && body.force === true;
+        if (!force) {
+            try {
+                const dup = await this.communityService.checkDuplicateQuestion({
+                    title: body.title || '',
+                    content: body.content || '',
+                    category: body.category || 'General'
+                });
+
+                if (dup && dup.isDuplicate) {
+                    // Respond with 409 Conflict and include similar questions for client to show UI
+                    throw new HttpException({
+                        success: false,
+                        message: 'Similar questions found',
+                        isDuplicate: true,
+                        similarQuestions: dup.similarQuestions || []
+                    }, HttpStatus.CONFLICT);
+                }
+            } catch (err) {
+                // If the duplicate check threw an HttpException (e.g., to indicate duplicates), rethrow
+                if (err instanceof HttpException) throw err;
+                // Otherwise, log and continue to allow posting (fail-open)
+                console.error('[CommunityController] duplicate check failed, continuing to create post', err);
+            }
+        }
+
         return this.communityService.createForumPost(req.user.id, body);
     }
 
-    @Post('forum/:id/comments')
+    @Post('forum/:id/comment')
     @UseGuards(UserGuard)
     async createForumComment(
         @Request() req,
         @Param('id') id: string,
         @Body() body: { content: string; parentId?: string },
     ) {
-        console.log(`[CommunityController] createForumComment for post ${id} by user ${req.user.id}`);
-        console.log(`[CommunityController] body:`, body);
         return this.communityService.createForumComment(
             req.user.id,
             id,
@@ -653,6 +845,56 @@ export class CommunityController {
     @UseGuards(UserGuard)
     async shareForumPost(@Param('id') id: string) {
         return this.communityService.shareForumPost(id);
+    }
+
+    /**
+     * Delete a forum post (Admin only)
+     * DELETE /community/forum/:id
+     */
+    @Delete('forum/:id')
+    @UseGuards(UserGuard)
+    async deleteForumPost(
+        @Request() req,
+        @Param('id') id: string
+    ) {
+        // Only admins can delete posts
+        if (req.user.role !== 'admin') {
+            throw new HttpException('Only admins can delete posts', HttpStatus.FORBIDDEN);
+        }
+        return this.communityService.deleteForumPost(id);
+    }
+
+    /**
+     * Delete a forum comment (Comment author or Admin)
+     * DELETE /community/forum/comments/:id
+     */
+    @Delete('forum/comments/:id')
+    @UseGuards(UserGuard)
+    async deleteForumComment(
+        @Request() req,
+        @Param('id') id: string
+    ) {
+        return this.communityService.deleteForumComment(req.user.id, req.user.role, id);
+    }
+
+    /**
+     * Check for duplicate questions using AI
+     * POST /community/forum/check-duplicate
+     * @body title, content, category
+     */
+    @Post('forum/check-duplicate')
+    async checkDuplicateQuestion(
+        @Body() body: {
+            title: string;
+            content: string;
+            category: string;
+        }
+    ) {
+        const result = await this.communityService.checkDuplicateQuestion(body);
+        return {
+            success: true,
+            ...result
+        };
     }
 
     // ==================== MENTOR DASHBOARD ENDPOINTS ====================

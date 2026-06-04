@@ -81,19 +81,20 @@ export class AuthController {
   }
 
   /**
-   * Google Login (Social)
-   * POST /auth/google-login
-   * @body email: string (required), firstName: string, lastName: string
+   * Firebase Authentication
+   * POST /auth/firebase
+   * @body idToken: string (required)
+   * @returns Internal JWT tokens and user profile
    */
-  @Post('google-login')
-  async googleLogin(@Body() body: { email: string; firstName?: string; lastName?: string }) {
-    if (!body || !body.email) {
+  @Post('firebase')
+  async firebaseLogin(@Body() body: { idToken: string }) {
+    if (!body || !body.idToken) {
       return {
         success: false,
-        message: 'Email is required',
+        message: 'Firebase ID Token is required',
       };
     }
-    return this.authService.googleLoginUnified(body.email, body.firstName, body.lastName);
+    return this.authService.authenticateFirebaseUser(body.idToken);
   }
 
   /**
@@ -201,7 +202,6 @@ export class AuthController {
     lastName: string;
     phoneNumber: string;
     dateOfBirth: string;
-    profileImage?: string;
   }) {
     if (!body || !body.email) {
       return {
@@ -214,8 +214,7 @@ export class AuthController {
       body.firstName,
       body.lastName,
       body.phoneNumber,
-      body.dateOfBirth,
-      body.profileImage
+      body.dateOfBirth
     );
   }
 
@@ -235,8 +234,13 @@ export class AuthController {
     amount: number;
     purpose?: string;
     courseType?: string;
+    courseName?: string;
+    program?: string;
+    programFocus?: string;
     country?: string;
     university?: string;
+    universityName?: string;
+    targetUniversity?: string;
     annualFee?: string;
     livingCost?: string;
     coApplicant?: string;
@@ -274,8 +278,13 @@ export class AuthController {
         amount: amountVal,
         purpose: body.purpose,
         courseType: body.courseType,
+        courseName: body.courseName,
+        program: body.program,
+        programFocus: body.programFocus,
         country: body.country,
         university: body.university,
+        universityName: body.universityName,
+        targetUniversity: body.targetUniversity,
         annualFee: body.annualFee,
         livingCost: body.livingCost,
         coApplicant: body.coApplicant,
@@ -295,10 +304,7 @@ export class AuthController {
       };
     } catch (error) {
       console.error('Create application error:', error);
-      return {
-        success: false,
-        message: 'Failed to create application',
-      };
+      throw error;
     }
   }
 

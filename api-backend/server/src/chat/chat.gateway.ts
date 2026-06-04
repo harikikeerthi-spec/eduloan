@@ -26,6 +26,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
+  private onlineUsers = new Map<string, string>(); // client.id -> email
 
   constructor(
     private readonly chatService: ChatService,
@@ -61,10 +62,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Client connected: ${client.id} (User: ${payload.email}, Role: ${payload.role})`);
       
       // Join general room based on role
-      if (payload.role === 'admin' || payload.role === 'staff') {
+      if (payload.role === 'admin' || payload.role === 'staff' || payload.role === 'super_admin') {
         client.join('room_staff');
-      } else if (payload.role === 'bank') {
+      } else if (payload.role === 'bank' || payload.role === 'partner_bank') {
         client.join('room_bank');
+      }
+
+      // Join direct user room for personal notifications
+      const userId = payload.id || payload.uid || payload.sub;
+      if (userId) {
+        client.join(`user_${userId}`);
+      }
+
+      // Track online presence if email is available
+      if (payload.email) {
+        this.onlineUsers.set(client.id, payload.email.toLowerCase());
+        this.server.to('room_staff').emit('presence_update', Array.from(new Set(this.onlineUsers.values())));
       }
 
     } catch (error) {
@@ -75,6 +88,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+    const email = this.onlineUsers.get(client.id);
+    if (email) {
+      this.onlineUsers.delete(client.id);
+      this.server.to('room_staff').emit('presence_update', Array.from(new Set(this.onlineUsers.values())));
+    }
+  }
+
+  @SubscribeMessage('joinRoom')
+  handleJoinRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() room: string
+  ) {
+    // Only allow joining rooms the user's role is permitted to access
+    const user = client.data.user;
+    const isStaff = user?.role === 'admin' || user?.role === 'staff' || user?.role === 'super_admin';
+    const isBank = user?.role === 'bank' || user?.role === 'partner_bank';
+    if ((room === 'room_staff' && isStaff) || (room === 'room_bank' && isBank)) {
+      client.join(room);
+      this.logger.log(`Client ${client.id} explicitly joined ${room}`);
+    }
+    return { success: true };
+  }
+
+  @SubscribeMessage('request_presence')
+  handleRequestPresence(@ConnectedSocket() client: Socket) {
+    client.emit('presence_update', Array.from(new Set(this.onlineUsers.values())));
+    return { success: true };
   }
 
   @SubscribeMessage('join_conversation')
@@ -192,15 +232,56 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @OnEvent('user.login')
   handleUserLogin(payload: any) {
     this.logger.log(`Broadcasting login alert for ${payload.email} to staff`);
-    this.server.to('room_staff').emit('user_activity', {
-      type: payload.isNewUser ? 'registration' : 'login',
-      user: {
-        email: payload.email,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        phoneNumber: payload.phoneNumber
-      },
-      timestamp: new Date().toISOString()
-    });
+    if (this.server) {
+      this.server.to('room_staff').emit('user_activity', {
+        id: Date.now(),
+        type: payload.isNewUser ? 'registration' : 'login',
+        msg: `${payload.firstName || 'Student'} ${payload.lastName || ''} logged in.`,
+        time: 'Just now',
+        color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+        icon: 'login',
+        actorName: `${payload.firstName || 'Student'} ${payload.lastName || ''}`.trim() || payload.email,
+        actorEmail: payload.email,
+        createdAt: new Date().toISOString()
+      });
+    } else {
+      this.logger.warn(`WS server not initialized. Skipping user.login broadcast.`);
+    }
+  }
+
+  @OnEvent('dashboard.activity')
+  handleDashboardActivity(payload: any) {
+    this.logger.log(`Broadcasting dashboard activity: ${payload.msg}`);
+    if (this.server) {
+      this.server.to('room_staff').emit('user_activity', {
+        id: payload.id || Date.now(),
+        type: payload.type || 'info',
+        msg: payload.msg,
+        time: payload.time || 'Just now',
+        icon: payload.icon || 'history',
+        color: payload.color || 'bg-slate-50 text-slate-600 border-slate-100',
+        actorName: payload.actorName || 'System',
+        actorEmail: payload.actorEmail || null,
+        createdAt: payload.createdAt || new Date().toISOString()
+      });
+    } else {
+      this.logger.warn(`WS server not initialized. Skipping dashboard.activity broadcast.`);
+    }
+  }
+
+  @OnEvent('notification.created')
+  handleNotificationCreated(payload: any) {
+    this.logger.log(`Broadcasting notification alert: ${payload.title} to User ID: ${payload.userId}`);
+    if (this.server) {
+      if (payload.userId === 'staff' || payload.userId === 'system') {
+        this.server.to('room_staff').emit('notification_received', payload);
+      } else if (payload.userId === 'bank') {
+        this.server.to('room_bank').emit('notification_received', payload);
+      } else {
+        this.server.to(`user_${payload.userId}`).emit('notification_received', payload);
+      }
+    } else {
+      this.logger.warn(`WS server not initialized. Skipping notification broadcast.`);
+    }
   }
 }

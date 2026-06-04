@@ -21,9 +21,9 @@ import { ConnectedModule } from './connected/connected.module';
 import { UniversityModule } from './university/university.module';
 import { ChatModule } from './chat/chat.module';
 import { StaffProfileModule } from './staff-profile/staff-profile.module';
+import { BankModule } from './bank/bank.module';
 import { NotificationModule } from './notification/notification.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { PrismaModule } from './prisma/prisma.module';
 import { join } from 'path';
 
 @Module({
@@ -34,7 +34,6 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    PrismaModule,
     SupabaseModule,
     AuthModule,
     UsersModule,
@@ -53,6 +52,7 @@ import { join } from 'path';
     UniversityModule,
     ChatModule,
     StaffProfileModule,
+    BankModule,
     NotificationModule,
   ],
   controllers: [AppController],

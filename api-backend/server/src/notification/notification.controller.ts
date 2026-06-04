@@ -1,44 +1,52 @@
-import { Controller, Get, Post, Body, Query, Put, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { NotificationService } from './notification.service';
+import { UserGuard } from '../auth/user.guard';
 
+@UseGuards(UserGuard)
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
-  async getNotifications(@Query('userId') userId: string) {
-    if (!userId) {
-      return { success: false, message: 'User ID is required' };
-    }
-    const notifications = await this.notificationService.getUserNotifications(userId);
-    return { success: true, data: notifications };
-  }
-
-  @Put(':id/read')
-  async markAsRead(@Param('id') id: string) {
-    const notification = await this.notificationService.markAsRead(id);
-    return { success: !!notification, data: notification };
-  }
-
-  @Post('read-all')
-  async markAllAsRead(@Body('userId') userId: string) {
-    if (!userId) {
-      return { success: false, message: 'User ID is required' };
-    }
-    const success = await this.notificationService.markAllAsRead(userId);
-    return { success };
-  }
-
-  @Post('create')
-  async createNotification(
-    @Body() body: { userId: string; title: string; body: string; type?: string },
+  async getNotifications(
+    @Req() req: any,
+    @Query('type') type?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
   ) {
-    const notification = await this.notificationService.create(
-      body.userId,
-      body.title,
-      body.body,
-      body.type,
+    const limitNum = limit ? parseInt(limit, 10) : 30;
+    const offsetNum = offset ? parseInt(offset, 10) : 0;
+    
+    const result = await this.notificationService.getNotificationsForUser(
+      req.user,
+      type,
+      limitNum,
+      offsetNum,
     );
-    return { success: !!notification, data: notification };
+    return { success: true, ...result };
+  }
+
+  @Put(':id/mark-read')
+  @HttpCode(HttpStatus.OK)
+  async markRead(@Param('id') id: string, @Req() req: any) {
+    const data = await this.notificationService.markAsRead(id, req.user);
+    return { success: true, data };
+  }
+
+  @Put('mark-all-read')
+  @HttpCode(HttpStatus.OK)
+  async markAllRead(@Req() req: any) {
+    const result = await this.notificationService.markAllAsRead(req.user);
+    return result;
   }
 }

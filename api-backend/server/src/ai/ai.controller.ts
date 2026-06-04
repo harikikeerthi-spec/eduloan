@@ -1,15 +1,14 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Get, Param } from '@nestjs/common';
 import { EligibilityService } from './services/eligibility.service';
 import { LoanRecommendationService } from './services/loan-recommendation.service';
 import { SopAnalysisService } from './services/sop-analysis.service';
 import { GradeConversionService } from './services/grade-conversion.service';
 import { UniversityComparisonService } from './services/university-comparison.service';
 import { AdmitPredictorService } from './services/admit-predictor.service';
-
-import { AiSupportService } from './services/ai-support.service';
-import { VisaInterviewService } from './services/visa-interview.service';
-import { ShortlistingService } from './services/shortlisting.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { OpenRouterService } from './services/openrouter.service';
+import { UniversitySearchService, University, UniversityDetails } from './services/university-search.service';
+import { VisaInterviewService, InterviewMessage, EvaluationResult } from './services/visa-interview.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Controller('ai')
 export class AiController {
@@ -20,108 +19,20 @@ export class AiController {
     private readonly gradeConversionService: GradeConversionService,
     private readonly universityComparisonService: UniversityComparisonService,
     private readonly admitPredictorService: AdmitPredictorService,
-    private readonly aiSupportService: AiSupportService,
+    private readonly openRouterService: OpenRouterService,
+    private readonly universitySearchService: UniversitySearchService,
     private readonly visaInterviewService: VisaInterviewService,
-    private readonly shortlistingService: ShortlistingService,
-    private readonly prisma: PrismaService,
-  ) {}
-
-  @Post('search-countries')
-  async searchCountries(@Body() data: { query: string }) {
-    const countries = await this.shortlistingService.searchCountries(data.query);
-    return { success: true, countries };
-  }
-
-  @Post('search-fields')
-  async searchFields(@Body() data: { query: string }) {
-    const fields = await this.shortlistingService.searchFields(data.query);
-    return { success: true, fields };
-  }
-
-  @Post('shortlist')
-  async shortlist(@Body() data: { profile: any; messages?: any[]; userId?: string }) {
-    const result = await this.shortlistingService.shortlist(data.profile, data.messages);
-
-    if (data.userId && result.recommendations) {
-      // 1. Save shortlist chat history
-      await this.shortlistingService.saveShortlistChat(
-        data.userId,
-        data.messages || [],
-        result.recommendations,
-      );
-
-      // 2. Save/Update recommendations in RecommendedUniversity table
-      try {
-        await this.prisma.recommendedUniversity.deleteMany({
-          where: { userId: data.userId },
-        });
-
-        await this.prisma.recommendedUniversity.createMany({
-          data: result.recommendations.map((uni: any) => ({
-            userId: data.userId,
-            name: uni.name || '',
-            chance: uni.chance ?? null,
-            type: uni.type ?? null,
-            rank: uni.rank ?? null,
-            tuition: uni.tuition ?? null,
-            location: uni.location ?? null,
-            reason: uni.reason ?? null,
-            avgSalary: uni.avgSalary ?? null,
-            deadline: uni.deadline ?? null,
-            flag: uni.flag ?? null,
-            country: uni.country ?? null,
-            programName: uni.programName ?? null,
-            logoUrl: uni.logoUrl ?? null,
-            description: uni.description ?? null,
-            roi: uni.roi ?? null,
-            acceptanceRate: uni.acceptanceRate ?? null,
-            duration: uni.duration ?? null,
-            category: uni.category ?? null,
-            websiteUrl: uni.websiteUrl ?? null,
-          })),
-        });
-      } catch (dbError) {
-        console.error('Failed to save RecommendedUniversity list:', dbError);
-      }
-    }
-
-    return { success: true, ...result };
-  }
-
-  @Post('search-universities')
-  async searchUniversities(@Body() data: { query: string; degree: string; country?: string }) {
-    const universities = await this.shortlistingService.searchUniversities(data.query, data.degree, data.country);
-    return { success: true, universities };
-  }
-
-  @Post('search-courses')
-  async searchCourses(@Body() data: { university: string; query: string; degree: string }) {
-    const courses = await this.shortlistingService.searchCourses(data.university, data.query, data.degree);
-    return { success: true, courses };
-  }
+    private readonly supabase: SupabaseService,
+  ) { }
 
   @Post('eligibility-check')
   async checkEligibility(
     @Body()
-    data: {
-      age: number;
-      credit: number;
-      income: number;
-      loan: number;
-      employment: 'employed' | 'self' | 'student' | 'unemployed';
-      study: 'undergrad' | 'masters' | 'doctoral' | 'diploma';
-      maritalStatus: 'single' | 'married';
-      coApplicant: 'yes' | 'no';
-      collateral: 'yes' | 'no';
-    },
+    data: any,
   ) {
-    // Await the async eligibility check
-    const eligibilityResult =
-      await this.eligibilityService.calculateEligibilityScore(data);
+    const eligibilityResult = await this.eligibilityService.calculateEligibilityScore(data);
 
-    // Note: LoanRecommendationService is still synchronous/local logic for now vs LLM,
-    // but the controller doesn't need to change for that unless we refactor it too.
-    const loanRecommendations = this.loanRecommendationService.recommendLoans(
+    const loanRecommendations = await this.loanRecommendationService.recommendLoans(
       eligibilityResult.score,
       data.credit,
       eligibilityResult.ratio,
@@ -130,6 +41,27 @@ export class AiController {
       data.collateral,
       data.study,
     );
+
+    try {
+      await this.eligibilityService.saveLog({
+        age: Number(data.age) || 0,
+        credit: Number(data.credit) || 0,
+        income: Number(data.income) || 0,
+        loan: Number(data.loan) || 0,
+        employment: String(data.employment || 'unknown'),
+        study: String(data.study || 'unknown'),
+        coApplicant: String(data.coApplicant || 'no'),
+        collateral: String(data.collateral || 'no'),
+        score: eligibilityResult.score,
+        status: eligibilityResult.status,
+        rateRange: eligibilityResult.rateRange,
+        coverage: eligibilityResult.coverage,
+        recommendations: loanRecommendations,
+        userId: data.userId || null,
+      });
+    } catch (e) {
+      console.error('Failed to save loan eligibility record:', e);
+    }
 
     return {
       success: true,
@@ -142,20 +74,30 @@ export class AiController {
   async analyzeSop(
     @Body()
     data: {
-      sop: string;
+      text?: string;
+      sop?: string;
     },
   ) {
-    console.log('Analyzing SOP:', data.sop?.substring(0, 50) + '...');
-    try {
-      const result = await this.sopAnalysisService.analyzeSop(data.sop);
-      return {
-        success: true,
-        analysis: result,
-      };
-    } catch (error) {
-      console.error('SOP Analysis Error:', error);
-      throw error;
-    }
+    const sopText = data.text || data.sop || '';
+    const result = await this.sopAnalysisService.analyzeSop(sopText);
+    return {
+      success: true,
+      analysis: result,
+    };
+  }
+
+  @Post('humanize-sop')
+  async humanizeSop(
+    @Body()
+    data: {
+      text: string;
+    },
+  ) {
+    const result = await this.sopAnalysisService.humanizeSop(data.text);
+    return {
+      success: true,
+      ...result,
+    };
   }
 
   @Post('convert-grades')
@@ -187,30 +129,41 @@ export class AiController {
       percentage?: number;
     },
   ): Promise<any> {
-    // Construct the input for conversion service
+    // Validate marks if provided and compute overall percentage safely
+    const marks = data.marks || [];
+    const totalPerSubject = data.totalMarks || 100;
+
+    if (marks.length > 0) {
+      for (const m of marks) {
+        if (typeof m !== 'number' || isNaN(m) || m < 0 || m > totalPerSubject) {
+          throw new BadRequestException(`Each mark must be a number between 0 and ${totalPerSubject}`);
+        }
+      }
+    }
+
+    const percentage = marks.length
+      ? (marks.reduce((a, b) => a + b, 0) / (marks.length * totalPerSubject)) * 100
+      : (data.percentage ?? 0);
+
     const result = await this.gradeConversionService.convertGrade({
-      inputType: data.percentage ? 'percentage' : 'marks',
-      inputValue:
-        data.percentage || data.marks?.reduce((a, b) => a + b, 0) || 0,
-      totalMarks: data.totalMarks || 100,
+      inputType: 'percentage',
+      inputValue: percentage,
       outputType: 'percentage',
-      // gradingSystem: 'Standard', // Default (Removed to fix type error)
     });
 
-    // We can reuse the result structure directly or adapt it
+    // Enhanced analysis with marks breakdown
     const analysisData = {
       percentage: result.percentage,
       letterGrade: result.letterGrade,
       classification: result.classification,
       internationalEquivalent: result.internationalEquivalent,
       analysis: result.analysis,
-      // Pass through marks breakdown if available
       marksBreakdown: data.subjects
         ? data.subjects.map((subject, index) => ({
-            subject,
-            marks: data.marks?.[index] || 0,
-            outOf: (data.totalMarks || 100) / (data.marks?.length || 1),
-          }))
+          subject,
+          marks: data.marks?.[index] || 0,
+          outOf: totalPerSubject,
+        }))
         : null,
     };
 
@@ -230,9 +183,7 @@ export class AiController {
       }>;
     },
   ): Promise<any> {
-    const result = await this.gradeConversionService.comparePerformance(
-      data.assessments,
-    );
+    const result = await this.gradeConversionService.comparePerformance(data.assessments);
     return {
       success: true,
       comparison: result,
@@ -245,11 +196,33 @@ export class AiController {
     data: {
       uni1: string;
       uni2: string;
+      program1?: string;
+      program2?: string;
     },
   ) {
     const result = await this.universityComparisonService.compare(
       data.uni1,
       data.uni2,
+      data.program1,
+      data.program2
+    );
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Post('compare-shortlist')
+  async compareShortlist(
+    @Body()
+    data: {
+      shortlist: Array<{ name: string; course: string }>;
+      profile: { bachelors?: string; workExp?: string; gpa?: string };
+    },
+  ) {
+    const result = await this.universityComparisonService.compareShortlist(
+      data.shortlist,
+      data.profile
     );
     return {
       success: true,
@@ -258,194 +231,356 @@ export class AiController {
   }
 
   @Post('predict-admission')
-  async predictAdmission(
+  async predictAdmission(@Body() body: any) {
+    const result = await this.admitPredictorService.predict(body);
+    return {
+      success: true,
+      prediction: result
+    };
+  }
+
+  @Post('check-relevance')
+  async checkRelevance(@Body() data: { topic?: string; title?: string; content: string }) {
+    const topicContext = data.topic || data.title || 'General Discussion';
+    const contentToVerify = data.content || data.title || '';
+
+    const prompt = `You are an AI moderator for a student community focused on international education and loans.
+    Your goal is to ALLOW any content that is HELPFUL, RELEVANT, or EVEN LOOSELY RELATED to the following topics:
+    - Education Loans (Eligibility, Application, Benefits, Interest Rates, EMI, Banks, NBFCs, etc.)
+    - Study Abroad (Planning, Countries, Universities, Life as a student, Accommodation, etc.)
+    - Admission Processes and Applications (SOP, LOR, Transcripts, GPA, etc.)
+    - **Standardized Tests & Exam Preparation** (GRE, GMAT, SAT, IELTS, TOEFL, PTE, Duolingo, etc.)
+      - This INCLUDES: exam eligibility, requirements, scores, preparation tips, study plans, coaching, mock tests, exam schedules, registration, cutoffs, percentiles, retakes, verbal/quant/analytical sections, test centers, etc.
+      - Questions like "What are the requirements for GRE?" or "How to prepare for GMAT?" are ABSOLUTELY ALLOWED.
+    - Visa Processes and Immigration (F1, H1B, OPT, CPT, DS-160, Embassy, etc.)
+    - Scholarships, Financial Aid, and Funding
+    - Career Discussions for Students (Internships, Placements, Work Permits, etc.)
+    - Student Life, Housing, and Practical Tips for Study Abroad
+
+    IMPORTANT: When in doubt, ALLOW the content. Only reject if the content is completely unrelated to education, student life, or careers (e.g., recipes, sports scores, entertainment gossip, politics).
+
+    Context: "${topicContext}"
+    Title/Content: "${contentToVerify}"
+
+    Does this content belong in an education/loan/student community?
+
+    Respond with strictly valid JSON:
+    {
+       "relevant": boolean,
+       "reason": "Short explanation if rejected (optional)"
+    }`;
+
+    try {
+      const result = await this.openRouterService.getJson<{ relevant: boolean; reason?: string }>(prompt);
+      return {
+        success: true,
+        relevant: result.relevant,
+        isRelevant: result.relevant,
+        reason: result.reason
+      };
+    } catch (error) {
+      console.error("AI Check Failed", error);
+      // Fail permissive if AI is down
+      return { success: true, relevant: true, isRelevant: true, reason: "AI Check Skipped due to error" };
+    }
+  }
+
+  @Post('search')
+  async search(@Body() data: any) {
+    try {
+      const type = data.type || 'university';
+      const query = data.query || '';
+      const country = data.country || data.context?.country;
+      const course = data.course || data.context?.course;
+
+      console.log(`AI Search requested: type=${type}, query="${query}", country=${country}`);
+
+      // Case 1: Fetching top universities for a country (Initial load in onboarding)
+      if (type === 'university' && !query && country) {
+        const universities = await this.universitySearchService.searchUniversitiesByCountry([country], 12);
+        return { success: true, universities };
+      }
+
+      // Case 2: General advice/search for universities or courses
+      const results = await this.openRouterService.searchAdvice(query, type, data.context || data);
+
+      if (type === 'university') {
+        return { success: true, universities: results };
+      }
+
+      return { success: true, results };
+    } catch (error) {
+      console.error("AI Unified Search Failed", error);
+      return { success: false, message: "Search failed", results: [], universities: [] };
+    }
+  }
+
+  @Post('search-advice')
+  async searchAdvice(@Body() data: { query: string; type: 'university' | 'course' | 'ug_university'; context?: any }) {
+    try {
+      const results = await this.openRouterService.searchAdvice(data.query, data.type, data.context);
+      return { success: true, results };
+    } catch (error) {
+      console.error("AI Search Failed", error);
+      return { success: false, message: "Search failed", results: [] };
+    }
+  }
+
+  @Post('suggest-tags')
+  async suggestTags(@Body() data: { title: string }) {
+    const prompt = `Based on the following forum post title, suggest up to 5 relevant tags that would help categorize this post in a student education and loan community. Focus on specific topics like universities, loans, visas, tests, etc.
+
+    Title: "${data.title}"
+
+    Respond with strictly valid JSON:
+    {
+       "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+    }`;
+
+    try {
+      const result = await this.openRouterService.getJson<{ tags: string[] }>(prompt);
+      return { success: true, tags: result.tags || [] };
+    } catch (error) {
+      console.error("AI Tag Suggestion Failed", error);
+      return { success: false, tags: ['education', 'loan'] };
+    }
+  }
+
+  @Post('search-universities')
+  async searchUniversities(
     @Body()
     data: {
-      targetUniversity: string;
-      gpa: number;
-      gpaScale: 4 | 10;
-      testScoreType: 'GRE' | 'GMAT' | 'SAT' | 'ACT' | 'None';
-      testScore: number;
-      englishTestType: 'IELTS' | 'TOEFL' | 'PTE' | 'None';
-      englishTestScore: number;
-      experienceYears: number;
-      researchPapers: number;
-      programLevel: 'Undergraduate' | 'Masters' | 'PhD' | 'MBA';
+      countries: string[];
+      limit?: number;
     },
-  ) {
-    const result = await this.admitPredictorService.predict(data);
-    return {
-      success: true,
-      prediction: result,
-    };
+  ): Promise<{ success: boolean; universities: University[]; totalCount: number; source: string; message?: string }> {
+    try {
+      if (!data.countries || data.countries.length === 0) {
+        throw new BadRequestException('At least one country is required');
+      }
+
+      const universities = await this.universitySearchService.searchUniversitiesByCountry(
+        data.countries,
+        data.limit || 10,
+      );
+
+      const validUniversities = await this.universitySearchService.validateUniversityRealness(universities);
+
+      return {
+        success: true,
+        universities: validUniversities,
+        totalCount: validUniversities.length,
+        source: 'ai',
+      };
+    } catch (error) {
+      console.error('University search failed:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to search universities',
+        universities: [],
+        totalCount: 0,
+        source: 'ai',
+      };
+    }
   }
 
-  @Post('support-chat')
-  async chat(@Body() data: { message: string }) {
-    const response = await this.aiSupportService.getResponse(data.message);
-    return {
-      success: true,
-      message: response,
-    };
+  @Get('university-details/:name/:country')
+  async getUniversityDetails(
+    @Param('name') name: string,
+    @Param('country') country: string,
+  ): Promise<{ success: boolean; details?: UniversityDetails | null; message?: string }> {
+    try {
+      if (!name || !country) {
+        throw new BadRequestException('University name and country are required');
+      }
+
+      const details = await this.universitySearchService.getUniversityDetailsFull(name, country);
+
+      return {
+        success: true,
+        details,
+      };
+    } catch (error) {
+      console.error('Failed to fetch university details:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch university details',
+        details: null,
+      };
+    }
   }
+
+  @Get('popular-countries')
+  async getPopularCountries() {
+    try {
+      const countries = await this.universitySearchService.getPopularCountries();
+      return {
+        success: true,
+        countries,
+      };
+    } catch (error) {
+      console.error('Failed to fetch popular countries:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch popular countries',
+        countries: [],
+      };
+    }
+  }
+
+  // ── Visa Interview Simulator Endpoints ──
 
   @Post('visa-interview/start')
-  async startVisaInterview(@Body() data: { userProfile: any; visaType: string }) {
-    return await this.visaInterviewService.startInterview(
-      data.userProfile,
-      data.visaType,
-    );
+  async startVisaInterview(
+    @Body() data: { userProfile: Record<string, any>; visaType?: string; agentType?: string },
+  ) {
+    try {
+      const result = await this.visaInterviewService.startInterview(
+        data.userProfile || {},
+        data.visaType || 'F1 Student Visa',
+        data.agentType || 'agent_michael'
+      );
+      return {
+        success: true,
+        question: result.question,
+        currentSection: result.currentSection || 'purpose',
+        completedSections: result.completedSections || [],
+        isInterviewOver: result.isInterviewOver || false,
+        sections: this.visaInterviewService.getSections(),
+      };
+    } catch (error) {
+      console.error('Visa interview start failed:', error);
+      return { success: false, message: error.message || 'Failed to start interview' };
+    }
   }
 
   @Post('visa-interview/continue')
-  async continueVisaInterview(@Body() data: any) {
-    return await this.visaInterviewService.continueInterview(data);
-  }
-
-  @Post('visa-interview/evaluate')
-  async evaluateVisaAnswer(@Body() data: any) {
-    return await this.visaInterviewService.evaluateAnswer(data);
-  }
-
-  @Post('visa-interview/final-report')
-  async generateVisaReport(@Body() data: any) {
-    return await this.visaInterviewService.generateFinalReport(data);
-  }
-
-  // Save and retrieve favorite universities and recommendations
-  @Post('university/favorite')
-  @Post('university/favorites')
-  async saveFavorite(
+  async continueVisaInterview(
     @Body()
     data: {
-      userId: string;
-      universityName: string;
-      universityData: any;
+      userProfile: Record<string, any>;
+      visaType?: string;
+      agentType?: string;
+      previousQuestion: string;
+      transcript: string;
+      currentSection: string;
+      conversationHistory?: InterviewMessage[];
     },
   ) {
     try {
-      const existing = await this.prisma.recommendedUniversity.findFirst({
-        where: {
-          userId: data.userId,
-          name: data.universityName,
-          type: 'Saved',
-        },
-      });
-
-      if (existing) {
-        await this.prisma.recommendedUniversity.delete({
-          where: { id: existing.id },
-        });
-        return { success: true, saved: false };
-      } else {
-        const uni = data.universityData || {};
-        await this.prisma.recommendedUniversity.create({
-          data: {
-            userId: data.userId,
-            name: data.universityName,
-            chance: uni.chance ?? null,
-            type: 'Saved',
-            rank: uni.rank ?? null,
-            tuition: uni.tuition ?? null,
-            location: uni.location ?? null,
-            reason: uni.reason ?? null,
-            avgSalary: uni.avgSalary ?? null,
-            deadline: uni.deadline ?? null,
-            flag: uni.flag ?? null,
-            country: uni.country ?? null,
-            programName: uni.programName ?? null,
-            logoUrl: uni.logoUrl ?? null,
-            description: uni.description ?? null,
-            roi: uni.roi ?? null,
-            acceptanceRate: uni.acceptanceRate ?? null,
-            duration: uni.duration ?? null,
-            category: uni.category ?? null,
-            websiteUrl: uni.websiteUrl ?? null,
-          },
-        });
-        return { success: true, saved: true };
-      }
+      const result = await this.visaInterviewService.continueInterview(
+        data.userProfile || {},
+        data.visaType || 'F1 Student Visa',
+        data.previousQuestion,
+        data.transcript,
+        data.currentSection,
+        data.conversationHistory || [],
+        data.agentType || 'agent_michael',
+      );
+      return {
+        success: true,
+        question: result.question,
+        currentSection: result.currentSection,
+        completedSections: result.completedSections,
+        isInterviewOver: result.isInterviewOver,
+      };
     } catch (error) {
-      console.error('Failed to toggle favorite university:', error);
-      return { success: false, error: error.message };
+      console.error('Visa interview continue failed:', error);
+      return { success: false, message: error.message || 'Failed to continue interview' };
     }
   }
 
-  @Post('recommendations')
-  async saveRecommendation() {
-    return { success: true };
-  }
-
-  @Get('university/favorites/:userId')
-  async getFavorites(@Param('userId') userId: string) {
+  @Post('visa-interview/evaluate')
+  async evaluateVisaAnswer(
+    @Body()
+    data: {
+      visaType?: string;
+      question: string;
+      transcript: string;
+    },
+  ) {
     try {
-      const favorites = await this.prisma.recommendedUniversity.findMany({
-        where: {
-          userId,
-          type: 'Saved',
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      const formatted = favorites.map((uni) => ({
-        universityData: {
-          name: uni.name,
-          chance: uni.chance,
-          type: uni.type,
-          rank: uni.rank,
-          tuition: uni.tuition,
-          location: uni.location,
-          reason: uni.reason,
-          avgSalary: uni.avgSalary,
-          deadline: uni.deadline,
-          flag: uni.flag,
-          country: uni.country,
-          programName: uni.programName,
-          logoUrl: uni.logoUrl,
-          description: uni.description,
-          roi: uni.roi,
-          acceptanceRate: uni.acceptanceRate,
-          duration: uni.duration,
-          category: uni.category,
-          websiteUrl: uni.websiteUrl,
-        },
-      }));
-
-      return formatted;
+      const evaluation = await this.visaInterviewService.evaluateAnswer(
+        data.visaType || 'F1 Student Visa',
+        data.question,
+        data.transcript,
+      );
+      return { success: true, evaluation };
     } catch (error) {
-      console.error('Failed to get favorites:', error);
-      return [];
+      console.error('Visa answer evaluation failed:', error);
+      return { success: false, message: error.message || 'Failed to evaluate answer' };
     }
   }
 
-  @Get('recommendations/:userId')
-  async getRecommendations(@Param('userId') userId: string) {
+  @Post('visa-interview/final-report')
+  async getVisaFinalReport(
+    @Body()
+    data: {
+      visaType?: string;
+      conversationHistory: InterviewMessage[];
+      evaluations: EvaluationResult[];
+    },
+  ) {
     try {
-      const recommendations = await this.prisma.recommendedUniversity.findMany({
-        where: {
-          userId,
-          NOT: {
-            type: 'Saved',
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-      return { success: true, recommendations };
+      const report = await this.visaInterviewService.generateFinalReport(
+        data.visaType || 'F1 Student Visa',
+        data.conversationHistory || [],
+        data.evaluations || [],
+      );
+      return { success: true, report };
     } catch (error) {
-      console.error('Failed to get recommendations:', error);
-      return { success: false, recommendations: [] };
+      console.error('Final report generation failed:', error);
+      return { success: false, message: error.message || 'Failed to generate report' };
     }
   }
 
-  @Get('shortlist/:userId')
-  async getLatestShortlistChat(@Param('userId') userId: string) {
+  @Post('visa-interview/save-report')
+  async saveVisaReport(
+    @Body()
+    data: {
+      userId?: string;
+      visaType: string;
+      agentType?: string;
+      userProfile?: any;
+      overallScore: number;
+      overallRisk: string;
+      approvalLikelihood: string;
+      sectionScores: any;
+      strengths: string[];
+      weaknesses: string[];
+      criticalIssues: string[];
+      ds160Inconsistencies: string[];
+      tips: string[];
+      verdict: string;
+      messages: any;
+      evaluations: any;
+    },
+  ) {
     try {
-      const chat = await this.shortlistingService.getLatestShortlistChat(userId);
-      return { success: true, chat };
+      const { data: result, error } = await this.supabase.getClient().from('VisaMockInterviewResult').insert({
+          userId: data.userId || null,
+          visaType: data.visaType,
+          agentType: data.agentType || null,
+          userProfile: data.userProfile || null,
+          overallScore: data.overallScore,
+          overallRisk: data.overallRisk,
+          approvalLikelihood: data.approvalLikelihood,
+          sectionScores: data.sectionScores || {},
+          strengths: data.strengths || [],
+          weaknesses: data.weaknesses || [],
+          criticalIssues: data.criticalIssues || [],
+          ds160Inconsistencies: data.ds160Inconsistencies || [],
+          tips: data.tips || [],
+          verdict: data.verdict || '',
+          messages: data.messages || [],
+          evaluations: data.evaluations || [],
+      }).select().single();
+      if (error) throw error;
+      return { success: true, result };
     } catch (error) {
-      console.error('Failed to get shortlist chat:', error);
-      return { success: false, error: error.message };
+      console.error('Failed to save visa interview result:', error);
+      return { success: false, message: 'Failed to save result' };
     }
   }
-
 }
+

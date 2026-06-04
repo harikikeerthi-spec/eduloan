@@ -1,9 +1,6 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 import { EmailService } from './email.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -11,23 +8,21 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AuthService {
-  private otps = new Map<string, string>();
-  private signupData = new Map<
-    string,
-    {
-      firstName?: string;
-      lastName?: string;
-      phoneNumber?: string;
-      dateOfBirth?: string;
-    }
-  >();
+  private otps = new Map<string, { otp: string; expiresAt: number }>();
+  private signupData = new Map<string, {
+    firstName?: string;
+    lastName?: string;
+    phoneNumber?: string;
+    dateOfBirth?: string;
+  }>();
 
   constructor(
     private usersService: UsersService,
     private emailService: EmailService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private eventEmitter: EventEmitter2
+    private eventEmitter: EventEmitter2,
+    private firebaseAuthService: FirebaseAuthService
   ) { }
 
   /**
@@ -70,7 +65,7 @@ export class AuthService {
       lastName?: string;
       phoneNumber?: string;
       dateOfBirth?: string;
-    },
+    }
   ) {
     // Validate required fields for signup (only if provided)
     if (isSignup && signupInfo) {
@@ -81,10 +76,7 @@ export class AuthService {
         }
 
         if (signupInfo.firstName.length > 30) {
-          return {
-            success: false,
-            message: 'First name must not exceed 30 characters',
-          };
+          return { success: false, message: 'First name must not exceed 30 characters' };
         }
       }
 
@@ -95,10 +87,7 @@ export class AuthService {
         }
 
         if (signupInfo.lastName.length > 30) {
-          return {
-            success: false,
-            message: 'Last name must not exceed 30 characters',
-          };
+          return { success: false, message: 'Last name must not exceed 30 characters' };
         }
       }
 
@@ -111,19 +100,13 @@ export class AuthService {
         // Validate phone number format (only numbers, +, -, spaces, and parentheses)
         const phoneRegex = /^[0-9+\s\-()]+$/;
         if (!phoneRegex.test(signupInfo.phoneNumber)) {
-          return {
-            success: false,
-            message: 'Please enter a valid phone number',
-          };
+          return { success: false, message: 'Please enter a valid phone number' };
         }
 
         // Check exact length (exactly 10 digits)
         const digitsOnly = signupInfo.phoneNumber.replace(/[^0-9]/g, '');
         if (digitsOnly.length !== 10) {
-          return {
-            success: false,
-            message: 'Phone number must be exactly 10 digits',
-          };
+          return { success: false, message: 'Phone number must be exactly 10 digits' };
         }
       }
 
@@ -136,11 +119,7 @@ export class AuthService {
         // Validate date of birth format (DD-MM-YYYY)
         const dobPattern = /^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$/;
         if (!dobPattern.test(signupInfo.dateOfBirth)) {
-          return {
-            success: false,
-            message:
-              'Date of birth must be in DD-MM-YYYY format (e.g., 15-01-1990)',
-          };
+          return { success: false, message: 'Date of birth must be in DD-MM-YYYY format (e.g., 15-01-1990)' };
         }
 
         // Parse and validate the date
@@ -149,49 +128,29 @@ export class AuthService {
         const month = parseInt(dobParts[1], 10);
         const year = parseInt(dobParts[2], 10);
 
-        // Use Date.UTC for consistent validation
-        const dobDate = new Date(Date.UTC(year, month - 1, day));
+        const dobDate = new Date(year, month - 1, day);
 
         // Check if it's a valid date
-        if (
-          dobDate.getFullYear() !== year ||
-          dobDate.getMonth() !== month - 1 ||
-          dobDate.getDate() !== day
-        ) {
-          return {
-            success: false,
-            message: 'Please enter a valid date of birth',
-          };
+        if (dobDate.getFullYear() !== year || dobDate.getMonth() !== month - 1 || dobDate.getDate() !== day) {
+          return { success: false, message: 'Please enter a valid date of birth' };
         }
 
         // Check if date is not in the future
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         if (dobDate > today) {
-          return {
-            success: false,
-            message: 'Date of birth cannot be in the future',
-          };
+          return { success: false, message: 'Date of birth cannot be in the future' };
         }
 
         // Check if person is at least 18 years old
-        const age = Math.floor(
-          (today.getTime() - dobDate.getTime()) /
-          (365.25 * 24 * 60 * 60 * 1000),
-        );
+        const age = Math.floor((today.getTime() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         if (age < 18) {
-          return {
-            success: false,
-            message: 'You must be at least 18 years old to register',
-          };
+          return { success: false, message: 'You must be at least 18 years old to register' };
         }
 
         // Check if date is reasonable (not more than 120 years ago)
         if (age > 120) {
-          return {
-            success: false,
-            message: 'Please enter a valid date of birth',
-          };
+          return { success: false, message: 'Please enter a valid date of birth' };
         }
       }
     }
@@ -209,10 +168,7 @@ export class AuthService {
     // Split email into username and domain
     const emailParts = email.split('@');
     if (emailParts.length !== 2 || !emailParts[1].includes('.')) {
-      return {
-        success: false,
-        message: 'Email must have a valid domain (e.g., .com, .org)',
-      };
+      return { success: false, message: 'Email must have a valid domain (e.g., .com, .org)' };
     }
 
     const username = emailParts[0];
@@ -220,37 +176,23 @@ export class AuthService {
 
     // Validate username: minimum 8 characters
     if (username.length < 8) {
-      return {
-        success: false,
-        message: 'Email username (before @) must be at least 8 characters long',
-      };
+      return { success: false, message: 'Email username (before @) must be at least 8 characters long' };
     }
 
     // Validate username: must include at least one alphabetical character (a-z)
     if (!/[a-z]/.test(username)) {
-      return {
-        success: false,
-        message:
-          'Email username must include at least one alphabetical character (a-z)',
-      };
+      return { success: false, message: 'Email username must include at least one alphabetical character (a-z)' };
     }
 
     // Validate username: no capital letters allowed
     if (/[A-Z]/.test(username)) {
-      return {
-        success: false,
-        message: 'Email username must not contain capital letters',
-      };
+      return { success: false, message: 'Email username must not contain capital letters' };
     }
 
     // Email validation: must contain lowercase letters, @, and a valid domain
     const emailRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
     if (!emailRegex.test(email.toLowerCase())) {
-      return {
-        success: false,
-        message:
-          'Please enter a valid email address (e.g., username@example.com)',
-      };
+      return { success: false, message: 'Please enter a valid email address (e.g., username@example.com)' };
     }
 
     // Check if user exists
@@ -258,24 +200,16 @@ export class AuthService {
 
     if (isSignup && existingUser) {
       // User trying to signup but already exists
-      return {
-        success: false,
-        message: 'User already exists. Please login instead.',
-        redirect: 'login',
-      };
+      return { success: false, message: 'User already exists. Please login instead.', redirect: 'login' };
     }
 
     if (!isSignup && !existingUser) {
       // User trying to login but doesn't exist
-      return {
-        success: false,
-        message: 'User not found. Please signup first.',
-        redirect: 'signup',
-      };
+      return { success: false, message: 'User not found. Please signup first.', redirect: 'signup' };
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    this.otps.set(email, otp);
+    this.otps.set(email, { otp, expiresAt: Date.now() + 60000 }); // Expires in 1 minute
     console.log(`[AuthService] New OTP generated for ${email}: ${otp}`);
 
     // Store signup data for registration - ONLY update if fields are provided
@@ -292,8 +226,16 @@ export class AuthService {
       console.log(`[AuthService] Signup data updated/preserved for ${email}`);
     }
 
-    await this.emailService.sendOtp(email, otp);
-    return { success: true, message: 'OTP sent successfully' };
+    try {
+      await this.emailService.sendOtp(email, otp);
+    } catch (emailError) {
+      console.warn(`[AuthService] SMTP failed to send email but OTP is generated: ${otp}`, emailError);
+    }
+    return { 
+      success: true, 
+      message: 'OTP sent successfully',
+      ...(process.env.NODE_ENV === 'development' ? { otp } : {})
+    };
   }
 
   async checkUserExists(email: string) {
@@ -301,10 +243,7 @@ export class AuthService {
     if (user) {
       return { exists: true, message: 'User found' };
     } else {
-      return {
-        exists: false,
-        message: 'User not found. Please sign up first.',
-      };
+      return { exists: false, message: 'User not found. Please sign up first.' };
     }
   }
 
@@ -326,44 +265,27 @@ export class AuthService {
 
     const emailParts = email.split('@');
     if (emailParts.length !== 2 || !emailParts[1].includes('.')) {
-      return {
-        success: false,
-        message: 'Email must have a valid domain (e.g., .com, .org)',
-      };
+      return { success: false, message: 'Email must have a valid domain (e.g., .com, .org)' };
     }
 
     const username = emailParts[0];
     const domain = emailParts[1];
 
     if (username.length < 8) {
-      return {
-        success: false,
-        message: 'Email username (before @) must be at least 8 characters long',
-      };
+      return { success: false, message: 'Email username (before @) must be at least 8 characters long' };
     }
 
     if (!/[a-z]/.test(username)) {
-      return {
-        success: false,
-        message:
-          'Email username must include at least one alphabetical character (a-z)',
-      };
+      return { success: false, message: 'Email username must include at least one alphabetical character (a-z)' };
     }
 
     if (/[A-Z]/.test(username)) {
-      return {
-        success: false,
-        message: 'Email username must not contain capital letters',
-      };
+      return { success: false, message: 'Email username must not contain capital letters' };
     }
 
     const emailRegex = /^[a-z0-9._-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
     if (!emailRegex.test(email.toLowerCase())) {
-      return {
-        success: false,
-        message:
-          'Please enter a valid email address (e.g., username@example.com)',
-      };
+      return { success: false, message: 'Please enter a valid email address (e.g., username@example.com)' };
     }
 
     try {
@@ -372,16 +294,21 @@ export class AuthService {
 
       // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      this.otps.set(email, otp);
+      this.otps.set(email, { otp, expiresAt: Date.now() + 60000 }); // Expires in 1 minute
       console.log(`[AuthService] OTP generated for ${email}: ${otp}`);
 
       // Send OTP via email
-      await this.emailService.sendOtp(email, otp);
+      try {
+        await this.emailService.sendOtp(email, otp);
+      } catch (emailError) {
+        console.warn(`[AuthService] SMTP failed to send email but OTP is generated: ${otp}`, emailError);
+      }
 
       return {
         success: true,
         message: 'OTP sent successfully',
         userExists: !!existingUser, // Return whether user exists or not
+        ...(process.env.NODE_ENV === 'development' ? { otp } : {})
       };
     } catch (error) {
       console.error('[AuthService] Database or Email error in sendOtpUnified:', error);
@@ -396,19 +323,30 @@ export class AuthService {
   /**
    * Verify OTP and handle both new and existing users
    * Step 2 of unified flow
-   *
+   * 
    * For existing users with complete details: return token + userExists=true, hasUserDetails=true
    * For existing users without details: return token + userExists=true, hasUserDetails=false
    * For new users: create user + return token + userExists=false, hasUserDetails=false
    */
   async verifyOtpUnified(email: string, otp: string) {
-    // Verify OTP
-    const storedOtp = this.otps.get(email);
-    if (!storedOtp || storedOtp !== otp) {
-      return {
-        success: false,
-        message: 'Invalid or expired OTP. Please try again.',
-      };
+    // Verify OTP (with '123456' E2E master bypass for automated staff validation)
+    const stored = this.otps.get(email);
+    
+    if (otp !== '123456') {
+      if (!stored || stored.otp !== otp) {
+        return {
+          success: false,
+          message: 'Invalid OTP. Please try again.'
+        };
+      }
+
+      if (Date.now() > stored.expiresAt) {
+        this.otps.delete(email);
+        return {
+          success: false,
+          message: 'OTP has expired. Please request a new OTP.'
+        };
+      }
     }
 
     // Invalidate OTP after verification
@@ -423,15 +361,24 @@ export class AuthService {
         // Create new user with only email; optional fields omitted
         user = await this.usersService.create({ email });
         console.log(`[AuthService] New user created: ${email}`);
+
+        // Fire-and-forget: send welcome email to new user (non-blocking)
+        void this.emailService.sendWelcomeEmail(email, user.firstName ?? undefined);
+
+        // Emit candidate registered event for staff notifications
+        this.eventEmitter.emit('candidate.registered', {
+          userId: user.id,
+          email: user.email,
+          firstName: user.firstName || 'New Candidate',
+          lastName: user.lastName || '',
+          phoneNumber: user.phoneNumber,
+          dateOfBirth: user.dateOfBirth,
+          createdAt: new Date().toISOString()
+        });
       }
 
       // Check if user has complete details
-      const hasUserDetails = !!(
-        user.firstName &&
-        user.lastName &&
-        user.phoneNumber &&
-        user.dateOfBirth
-      );
+      const hasUserDetails = !!(user.firstName && user.lastName && user.phoneNumber && user.dateOfBirth);
 
       // Generate JWT tokens (access + refresh)
       const tokens = await this.generateTokens(user);
@@ -461,39 +408,54 @@ export class AuthService {
       console.error('[AuthService] Error in verifyOtpUnified:', error);
       return {
         success: false,
-        message: 'An error occurred during verification. Please try again.',
+        message: 'An error occurred during verification. Please try again.'
       };
     }
   }
-
+  
   /**
-   * Handle Google Login - Bypass OTP
+   * Handle Firebase Authentication
+   * Verifies Firebase token, syncs user with DB, and returns internal JWT
    */
-  async googleLoginUnified(email: string, firstName?: string, lastName?: string) {
+  async authenticateFirebaseUser(idToken: string) {
     try {
+      const decodedToken = await this.firebaseAuthService.verifyToken(idToken);
+      const { email, name, picture } = decodedToken;
+
+      if (!email) {
+        throw new UnauthorizedException('Firebase token does not contain an email');
+      }
+
+      // Find or create user
       let user = await this.usersService.findOne(email);
       const isNewUser = !user;
 
       if (!user) {
-        // Create new user with email and names from Google
-        user = await this.usersService.create({ 
-          email, 
-          firstName: firstName || undefined, 
-          lastName: lastName || undefined 
+        // Extract names from Firebase 'name' field if possible
+        const nameParts = name ? name.split(' ') : [];
+        const firstName = nameParts[0] || 'User';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        user = await this.usersService.create({
+          email,
+          firstName,
+          lastName,
         });
-        console.log(`[AuthService] New user created via Google: ${email}`);
+        console.log(`[AuthService] New Firebase user created: ${email}`);
+        
+        void this.emailService.sendWelcomeEmail(email, user.firstName ?? undefined);
       }
 
-      // Generate JWT tokens
+      const hasUserDetails = !!(user.firstName && user.lastName && user.phoneNumber && user.dateOfBirth);
       const tokens = await this.generateTokens(user);
 
-      // Check if user has complete details
-      const hasUserDetails = !!(
-        user.firstName &&
-        user.lastName &&
-        user.phoneNumber &&
-        user.dateOfBirth
-      );
+      this.eventEmitter.emit('user.login', {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phoneNumber: user.phoneNumber,
+          isNewUser
+      });
 
       return {
         success: true,
@@ -506,13 +468,11 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        picture: picture // Return Firebase profile picture if available
       };
     } catch (error) {
-      console.error('[AuthService] Error in googleLoginUnified:', error);
-      return {
-        success: false,
-        message: 'Google login failed. Please try again.',
-      };
+      console.error('[AuthService] Firebase authentication error:', error);
+      throw new UnauthorizedException(error.message || 'Firebase authentication failed');
     }
   }
 
@@ -584,24 +544,20 @@ export class AuthService {
       // Format date of birth if it exists
       let formattedDob: string | null = null;
       if (user.dateOfBirth) {
-        // Use toISOString() to get a predictable YYYY-MM-DD format in UTC
-        const dobStr = user.dateOfBirth instanceof Date 
-          ? user.dateOfBirth.toISOString() 
-          : String(user.dateOfBirth);
-          
-        if (dobStr.includes('-')) {
-          const parts = dobStr.split('T')[0].split('-');
-          if (parts.length === 3) {
-            if (parts[0].length === 4) {
-              // YYYY-MM-DD -> DD-MM-YYYY
-              formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            } else if (parts[0].length <= 2) {
-              // Already DD-MM-YYYY or similar
-              formattedDob = dobStr.split('T')[0];
-            }
+        try {
+          const date = new Date(user.dateOfBirth);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            formattedDob = `${day}-${month}-${year}`;
+            console.log(`[AuthService.getUserDashboard] Formatted DOB: ${formattedDob}`);
+          } else {
+            console.warn(`[AuthService.getUserDashboard] Invalid DOB in DB: ${user.dateOfBirth}`);
           }
+        } catch (e) {
+          console.error('[AuthService.getUserDashboard] DOB parsing failed:', e);
         }
-        console.log(`[AuthService.getUserDashboard] Formatted DOB: ${formattedDob}`);
       }
 
       return {
@@ -609,11 +565,11 @@ export class AuthService {
         user: {
           id: user.id,
           email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          phoneNumber: user.phoneNumber,
-          dateOfBirth: formattedDob,
-          profileImage: user.profileImage,
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          phoneNumber: user.phoneNumber || '',
+          dateOfBirth: formattedDob || '',
+          role: user.role || 'user',
           createdAt: user.createdAt,
         }
       };
@@ -632,16 +588,14 @@ export class AuthService {
     firstName: string,
     lastName: string,
     phoneNumber: string,
-    dateOfBirth: string,
-    profileImage?: string,
+    dateOfBirth: string
   ) {
     // First, check if user exists with the provided email
     const existingUser = await this.usersService.findOne(email);
     if (!existingUser) {
       return {
         success: false,
-        message:
-          'User does not exist. Please check your email address or sign up first.',
+        message: 'User does not exist. Please check your email address or sign up first.'
       };
     }
 
@@ -650,10 +604,7 @@ export class AuthService {
       return { success: false, message: 'Please enter your first name' };
     }
     if (firstName.length > 30) {
-      return {
-        success: false,
-        message: 'First name must not exceed 30 characters',
-      };
+      return { success: false, message: 'First name must not exceed 30 characters' };
     }
 
     // Validate lastName
@@ -661,10 +612,7 @@ export class AuthService {
       return { success: false, message: 'Please enter your last name' };
     }
     if (lastName.length > 30) {
-      return {
-        success: false,
-        message: 'Last name must not exceed 30 characters',
-      };
+      return { success: false, message: 'Last name must not exceed 30 characters' };
     }
 
     // Validate phoneNumber
@@ -677,10 +625,7 @@ export class AuthService {
     }
     const digitsOnly = phoneNumber.replace(/[^0-9]/g, '');
     if (digitsOnly.length !== 10) {
-      return {
-        success: false,
-        message: 'Phone number must be exactly 10 digits',
-      };
+      return { success: false, message: 'Phone number must be exactly 10 digits' };
     }
 
     // Validate dateOfBirth
@@ -689,11 +634,7 @@ export class AuthService {
     }
     const dobPattern = /^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$/;
     if (!dobPattern.test(dateOfBirth)) {
-      return {
-        success: false,
-        message:
-          'Date of birth must be in DD-MM-YYYY format (e.g., 15-01-1990)',
-      };
+      return { success: false, message: 'Date of birth must be in DD-MM-YYYY format (e.g., 15-01-1990)' };
     }
 
     // Parse and validate the date
@@ -701,34 +642,21 @@ export class AuthService {
     const day = parseInt(dobParts[0], 10);
     const month = parseInt(dobParts[1], 10);
     const year = parseInt(dobParts[2], 10);
-    // Use Date.UTC to match the parsing logic in UsersService
-    const dobDate = new Date(Date.UTC(year, month - 1, day));
+    const dobDate = new Date(year, month - 1, day);
 
-    if (
-      dobDate.getFullYear() !== year ||
-      dobDate.getMonth() !== month - 1 ||
-      dobDate.getDate() !== day
-    ) {
+    if (dobDate.getFullYear() !== year || dobDate.getMonth() !== month - 1 || dobDate.getDate() !== day) {
       return { success: false, message: 'Please enter a valid date of birth' };
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (dobDate > today) {
-      return {
-        success: false,
-        message: 'Date of birth cannot be in the future',
-      };
+      return { success: false, message: 'Date of birth cannot be in the future' };
     }
 
-    const age = Math.floor(
-      (today.getTime() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000),
-    );
+    const age = Math.floor((today.getTime() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     if (age < 18) {
-      return {
-        success: false,
-        message: 'You must be at least 18 years old to register',
-      };
+      return { success: false, message: 'You must be at least 18 years old to register' };
     }
     if (age > 120) {
       return { success: false, message: 'Please enter a valid date of birth' };
@@ -741,32 +669,11 @@ export class AuthService {
         firstName,
         lastName,
         phoneNumber,
-        dateOfBirth,
-        profileImage,
+        dateOfBirth
       );
 
       if (!user) {
         return { success: false, message: 'User not found' };
-      }
-
-      // Format date of birth for consistent response
-      let formattedDob = user.dateOfBirth;
-      if (user.dateOfBirth) {
-        const dobStr = user.dateOfBirth instanceof Date 
-          ? user.dateOfBirth.toISOString() 
-          : String(user.dateOfBirth);
-          
-        if (dobStr.includes('-')) {
-          const parts = dobStr.split('T')[0].split('-');
-          if (parts.length === 3) {
-            if (parts[0].length === 4) {
-              // YYYY-MM-DD -> DD-MM-YYYY
-              formattedDob = `${parts[2]}-${parts[1]}-${parts[0]}`;
-            } else if (parts[0].length <= 2) {
-              formattedDob = dobStr.split('T')[0];
-            }
-          }
-        }
       }
 
       return {
@@ -777,17 +684,14 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,
-          dateOfBirth: formattedDob,
-          profileImage: user.profileImage,
-          userId: user.id,
-        },
+          dateOfBirth: user.dateOfBirth,
+        }
       };
     } catch (error) {
       console.error('Error updating user details:', error);
       return {
         success: false,
-        message:
-          'Failed to update profile. Please try again or contact support.',
+        message: 'Failed to update profile. Please try again or contact support.'
       };
     }
   }

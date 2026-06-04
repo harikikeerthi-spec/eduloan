@@ -1,198 +1,128 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { OpenRouterService } from './open-router.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { OpenRouterService } from './openrouter.service';
 
 export interface UniversityData {
-  name: string;
-  rank: string;
-  tuition: string;
-  rate: string;
-  salary: string;
-  loc: string;
+    name: string;
+    rank: string;
+    tuition: string;
+    rate: string;
+    salary: string;
+    loc: string;
 }
 
 @Injectable()
 export class UniversityComparisonService {
-  private readonly logger = new Logger(UniversityComparisonService.name);
+    constructor(private readonly openRouter: OpenRouterService) { }
 
-  constructor(private readonly openRouterService: OpenRouterService) {}
+    async compare(
+        uni1: string,
+        uni2: string,
+        program1?: string,
+        program2?: string
+    ): Promise<{ uni1: UniversityData; uni2: UniversityData }> {
 
-  async compare(
-    uni1: string,
-    uni2: string,
-  ): Promise<{ uni1: UniversityData; uni2: UniversityData }> {
-    try {
-      const systemPrompt = `You are an expert educational consultant. 
-            Compare the two universities provided. 
-            Return the response in strict JSON format as an array of two objects:
-            [
-                {
-                    "name": "University Name",
-                    "rank": "Global Rank",
-                    "tuition": "Annual Tuition (in local currency, e.g., £15,000)",
-                    "rate": "Acceptance Rate",
-                    "salary": "Avg Graduate Salary (in local currency)",
-                    "loc": "City, Country"
-                },
-                {
-                    "name": "University Name",
-                    "rank": "Global Rank",
-                    "tuition": "Annual Tuition (in local currency, e.g., $20,000)",
-                    "rate": "Acceptance Rate",
-                    "salary": "Avg Graduate Salary (in local currency)",
-                    "loc": "City, Country"
-                }
-            ]
-            Provide realistic, up-to-date estimates.
-            CRITICAL: Verify if the university is a real institution.
-            - Be smart about names (e.g., "University of Law" -> "The University of Law, UK").
-            - Only return "Not Available" if the name is completely fictional (like "Hogwarts") or gibberish.
-            - If a university exists but data is limited, provide best estimates.
-            - If a university does not exist, return strict JSON object with "name": "Not Available".
-            
-            Ensure strict valid JSON output only. No markdown formatting.
-            CRITICAL: Verify if the university is a real institution.
-            - Be smart about names (e.g., "University of Law" -> "The University of Law, UK").
-            - For specialized or multi-campus institutions without a single global QS/THE rank (like "The University of Law"), return "Specialized" or "N/A" for the rank. DO NOT GUESS a number.
-            - Only return "Not Available" if the name is completely fictional (like "Hogwarts") or gibberish.
-            - If a university exists but data is limited, provide best estimates.
-            - If a university does not exist, return strict JSON object with "name": "Not Available".`;
+        const programContext = (program1 && program2)
+            ? `The comparison should focus on the "${program1}" program at ${uni1} and the "${program2}" program at ${uni2}.`
+            : '';
 
-      const userPrompt = `Compare ${uni1} and ${uni2}`;
-
-      const jsonResponse = await this.openRouterService.generateResponse(
-        systemPrompt,
-        userPrompt,
-        0.1,
-      );
-      // Improved JSON extraction
-      console.log('DEBUG: Received response from LLM');
-      console.log('DEBUG: Raw LLM Output:', jsonResponse);
-
-      // Improved JSON extraction for Array or Object
-      let cleanJson = jsonResponse.trim();
-      
-      // Remove markdown code blocks if present
-      if (cleanJson.includes('```')) {
-        const match = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (match) cleanJson = match[1];
-      }
-      
-      // Find the first [ or { and the last ] or }
-      const firstBracket = cleanJson.indexOf('[');
-      const firstBrace = cleanJson.indexOf('{');
-      const start = (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) ? firstBracket : firstBrace;
-      
-      const lastBracket = cleanJson.lastIndexOf(']');
-      const lastBrace = cleanJson.lastIndexOf('}');
-      const end = (lastBracket !== -1 && (lastBrace === -1 || lastBracket > lastBrace)) ? lastBracket : lastBrace;
-      
-      if (start !== -1 && end !== -1 && end > start) {
-        cleanJson = cleanJson.substring(start, end + 1);
-      }
-
-      console.log('DEBUG: Cleaned JSON for parsing:', cleanJson);
-
-      let parsed;
-      try {
-        parsed = JSON.parse(cleanJson);
-      } catch (e) {
-        this.logger.error('Failed to parse JSON from LLM:', e);
-        throw new Error('Invalid JSON response from AI');
-      }
-      console.log('DEBUG: Successfully parsed JSON');
-
-      // Helper to normalize keys (handle Case formatting issues from LLM)
-      const normalize = (obj: any): UniversityData => {
-        if (!obj)
-          return {
-            name: 'Unknown',
-            rank: 'N/A',
-            tuition: 'N/A',
-            rate: 'N/A',
-            salary: 'N/A',
-            loc: 'Unknown',
-          };
-        const get = (k: string) =>
-          obj[k] ||
-          obj[k.toLowerCase()] ||
-          obj[k.charAt(0).toUpperCase() + k.slice(1)] ||
-          'N/A';
-
-        return {
-          name: get('name'),
-          rank: get('rank'),
-          tuition: get('tuition'),
-          rate: get('rate'),
-          salary: get('salary'),
-          loc: get('loc') || get('location'), // Common alias
-        };
-      };
-
-      let u1Raw, u2Raw;
-
-      // Handle Array response [ {uni1}, {uni2} ]
-      if (Array.isArray(parsed) && parsed.length >= 2) {
-        u1Raw = parsed[0];
-        u2Raw = parsed[1];
-      } else if (parsed && typeof parsed === 'object') {
-        if (
-          parsed.universities &&
-          Array.isArray(parsed.universities) &&
-          parsed.universities.length >= 2
-        ) {
-          u1Raw = parsed.universities[0];
-          u2Raw = parsed.universities[1];
-        } else {
-          // Handle Object response { uni1: {...}, uni2: {...} }
-          u1Raw = parsed.uni1 || parsed.result?.uni1 || parsed.comparison?.uni1;
-          u2Raw = parsed.uni2 || parsed.result?.uni2 || parsed.comparison?.uni2;
+        const prompt = `
+        Compare the following two universities for their specific programs: 
+        - "${uni1}" ${program1 ? `(${program1} program)` : ''}
+        - "${uni2}" ${program2 ? `(${program2} program)` : ''}
+        
+        ${programContext}
+        
+        IMPORTANT: For the "rank" field, use the Webometrics Ranking (https://webometricsranking.com/) 
+        which provides the most comprehensive world universities ranking based on web presence and impact.
+        Format the rank as "#123" (e.g. #5, #42, #150).
+        
+        If specific program rankings are available (e.g. QS subject rankings, US News program rankings), 
+        include them in parentheses like "#42 (CS: #15)" where CS is the program ranking.
+        
+        Provide program-specific data where applicable:
+        - Tuition should be specific to the mentioned program if different
+        - Acceptance rate for the specific program
+        - Average salary for graduates of that specific program
+        - Include any program-specific strengths or specializations
+        
+        Provide the comparison data in the following JSON format:
+        {
+            "uni1": {
+                "name": "Full Name of ${uni1}",
+                "rank": "Webometrics Rank (e.g. #5 or #42 (${program1}: #15))",
+                "tuition": "Annual Tuition for ${program1 || 'this program'} (in USD or local currency)",
+                "rate": "Acceptance Rate for ${program1 || 'this program'} (e.g. 5%)",
+                "salary": "Avg Graduate Salary for ${program1 || 'this program'} graduates (e.g. $120,000/year)",
+                "loc": "City, Country"
+            },
+            "uni2": {
+                "name": "Full Name of ${uni2}",
+                "rank": "Webometrics Rank (e.g. #8 or #55 (${program2}: #20))",
+                "tuition": "Annual Tuition for ${program2 || 'this program'}",
+                "rate": "Acceptance Rate for ${program2 || 'this program'}",
+                "salary": "Avg Graduate Salary for ${program2 || 'this program'} graduates",
+                "loc": "City, Country"
+            }
         }
-      }
+        
+        Be accurate with latest available data. Use Webometrics (https://webometricsranking.com/) for world rankings.
+        If program-specific data is not available, provide university-wide data but note it in the response.
+        `;
 
-      return {
-        uni1: u1Raw
-          ? normalize(u1Raw)
-          : {
-              name: uni1,
-              rank: 'N/A',
-              tuition: 'N/A',
-              rate: 'N/A',
-              salary: 'N/A',
-              loc: 'Unknown',
-            },
-        uni2: u2Raw
-          ? normalize(u2Raw)
-          : {
-              name: uni2,
-              rank: 'N/A',
-              tuition: 'N/A',
-              rate: 'N/A',
-              salary: 'N/A',
-              loc: 'Unknown',
-            },
-      };
-    } catch (error) {
-      this.logger.error('CRITICAL ERROR comparing universities:', error);
-      
-      // Fallback: return basic data with N/A if LLM fails
-      return {
-        uni1: {
-          name: uni1,
-          rank: 'N/A',
-          tuition: 'N/A',
-          rate: 'N/A',
-          salary: 'N/A',
-          loc: 'Unknown',
-        },
-        uni2: {
-          name: uni2,
-          rank: 'N/A',
-          tuition: 'N/A',
-          rate: 'N/A',
-          salary: 'N/A',
-          loc: 'Unknown',
-        },
-      };
+        try {
+            return await this.openRouter.getJson(prompt);
+        } catch (error) {
+            console.error('University comparison failed', error);
+            throw new NotFoundException('Could not compare universities at this time.');
+        }
     }
-  }
+
+    async compareShortlist(
+        shortlist: Array<{ name: string; course: string }>,
+        profile: { bachelors?: string; workExp?: string; gpa?: string }
+    ): Promise<any> {
+        const shortlistText = shortlist.map((u, i) => `${i + 1}. ${u.name} (Program: ${u.course})`).join('\n');
+        const profileText = `Bachelor's: ${profile.bachelors || 'N/A'}, Work Exp: ${profile.workExp || '0'} months, GPA: ${profile.gpa || 'N/A'}`;
+
+        const prompt = `
+        As an AI Education Consultant, provide a Deep Comparative Analysis for a student with the following profile:
+        ${profileText}
+
+        The student has shortlisted these universities:
+        ${shortlistText}
+
+        For each university, evaluate:
+        1. Admissions Probability (based on profile)
+        2. Program Quality (specifically for the chosen course)
+        3. ROI & Career Outlook
+        4. Profile Fit (How well the student's background matches the university's typical intake)
+
+        Respond in a structured JSON format:
+        {
+            "summary": "Overall expert advice based on the profile and shortlist",
+            "universities": [
+                {
+                    "name": "Full Name",
+                    "course": "Program Name",
+                    "admissionChance": "High/Medium/Low (with % estimate)",
+                    "pros": ["Pro 1", "Pro 2"],
+                    "cons": ["Con 1", "Con 2"],
+                    "profileAnalysis": "Specific feedback on how the student's background fits this uni",
+                    "roiScore": "Score out of 10",
+                    "rank": "World Rank"
+                }
+            ],
+            "recommendation": "Which one is the best fit and why?"
+        }
+        
+        Provide accurate, data-driven insights. Focus on the comparability of these specific data points.
+        `;
+
+        try {
+            return await this.openRouter.getJson(prompt);
+        } catch (error) {
+            console.error('Shortlist comparison failed', error);
+            throw new Error('Could not compare shortlist at this time.');
+        }
+    }
 }
