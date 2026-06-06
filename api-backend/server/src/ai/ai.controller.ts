@@ -350,11 +350,127 @@ export class AiController {
   async searchUniversities(
     @Body()
     data: {
-      countries: string[];
+      countries?: string[];
       limit?: number;
+      query?: string;
+      degree?: string;
+      country?: string;
     },
-  ): Promise<{ success: boolean; universities: University[]; totalCount: number; source: string; message?: string }> {
+  ) {
     try {
+      const allowIndia = (data.country || '').toLowerCase() === 'india' || 
+                         (data.countries || []).some(c => c.toLowerCase() === 'india');
+
+      if (data.query !== undefined || data.country !== undefined) {
+        const query = data.query || '';
+        const country = data.country || '';
+        const degree = data.degree || 'masters';
+
+        // Check Supabase first
+        try {
+          const db = this.supabase.getClient();
+          let dbQuery = db.from('University').select('*');
+          if (country) {
+            dbQuery = dbQuery.ilike('country', `%${country}%`);
+          }
+          if (query) {
+            dbQuery = dbQuery.ilike('name', `%${query}%`);
+          }
+          const { data: dbUnis } = await dbQuery.limit(15);
+          if (dbUnis && dbUnis.length > 0) {
+            const formatted = dbUnis
+              .filter(u => {
+                if (allowIndia) return true;
+                const c = (u.country || '').toLowerCase();
+                return c !== 'india' && c !== 'in';
+              })
+              .map(u => ({
+                name: String(u.name || ''),
+                location: String(u.loc || (u.city || u.country ? `${u.city || ''}, ${u.country || ''}` : 'N/A')),
+                city: String(u.city || ''),
+                country: String(u.country || ''),
+                rank: String(u.ranking || u.worldRanking || 'N/A'),
+                tuition: String(u.tuition || u.averageFees || 'N/A'),
+                rate: String(u.accept || u.acceptanceRate || 'N/A'),
+                salary: String(u.averageSalary || 'N/A'),
+                slug: String(u.slug || (u.name ? u.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : ''))
+              }));
+            return {
+              success: true,
+              universities: formatted
+            };
+          }
+        } catch (e) {
+          console.error('Failed to search universities in DB', e);
+        }
+
+        // Fallback: AI Search via OpenRouter
+        const prompt = allowIndia
+          ? `Search for REAL, ACCREDITED colleges, undergraduate degree institutions, or universities located in India, matching or relevant to "${query}".
+          
+          Return a JSON object with a "universities" key.
+          The "universities" key should be an array of up to 12 objects.
+          For each university, provide:
+          - name (string)
+          - location (string, format "City, State, India")
+          - city (string)
+          - country (string, must be "India")
+          - rank (string/number, local or world rank)
+          - accept (string/number, acceptance rate or N/A)
+          - tuition (string/number, tuition fees in INR/USD or N/A)
+          - avgSalary (string/number, average placement package or N/A)
+          - slug (string)
+          
+          MUST respond ONLY with JSON.`
+          : `Search for REAL, ACCREDITED universities ${query ? `matching or relevant to "${query}"` : 'that are popular'} for international students.
+          ${country ? `Focus primarily on universities located in "${country}".` : ''}
+          CRITICAL: Do NOT include any universities located in India. This is strictly for study abroad.
+          
+          Return a JSON object with a "universities" key.
+          The "universities" key should be an array of up to 12 objects.
+          For each university, provide:
+          - name (string)
+          - location (string, format "City, Country" or "City, State, Country")
+          - city (string)
+          - country (string)
+          - rank (string/number)
+          - accept (string/number)
+          - tuition (string/number)
+          - avgSalary (string/number)
+          - slug (string)
+          
+          MUST respond ONLY with JSON.`;
+
+        const aiRes = await this.openRouterService.getJson<any>(prompt);
+        const list = aiRes?.universities || [];
+        
+        const formatted = list
+          .filter((u: any) => {
+            if (!u) return false;
+            if (allowIndia) return true;
+            const cStr = (u.country || country || '').toLowerCase();
+            const locStr = (u.location || u.loc || '').toLowerCase();
+            return cStr !== 'india' && cStr !== 'in' && locStr.indexOf('india') === -1;
+          })
+          .map((u: any) => ({
+            name: String(u.name || ''),
+            location: String(u.location || u.loc || (u.city || u.country ? `${u.city || ''}, ${u.country || ''}` : 'N/A')),
+            city: String(u.city || ''),
+            country: String(u.country || country || ''),
+            rank: String(u.rank || u.ranking || 'N/A'),
+            tuition: String(u.tuition || u.averageFees || 'N/A'),
+            rate: String(u.accept || u.acceptanceRate || 'N/A'),
+            salary: String(u.avgSalary || u.averageSalary || 'N/A'),
+            slug: String(u.slug || (u.name ? u.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : ''))
+          }));
+
+        return {
+          success: true,
+          universities: formatted
+        };
+      }
+
+      // Existing schema
       if (!data.countries || data.countries.length === 0) {
         throw new BadRequestException('At least one country is required');
       }
@@ -366,10 +482,27 @@ export class AiController {
 
       const validUniversities = await this.universitySearchService.validateUniversityRealness(universities);
 
+      const filteredUnis = validUniversities
+        .filter(u => {
+          if (allowIndia) return true;
+          return (u.country || '').toLowerCase() !== 'india';
+        })
+        .map((u: any) => ({
+          name: String(u.name || ''),
+          location: String(u.loc || (u.city || u.country ? `${u.city || ''}, ${u.country || ''}` : 'N/A')),
+          city: String(u.city || ''),
+          country: String(u.country || ''),
+          rank: String(u.rank || u.ranking || u.worldRanking || 'N/A'),
+          tuition: String(u.tuition || u.averageFees || 'N/A'),
+          rate: String(u.accept || u.acceptanceRate || 'N/A'),
+          salary: 'N/A',
+          slug: String(u.slug || (u.name ? u.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : ''))
+        }));
+
       return {
         success: true,
-        universities: validUniversities,
-        totalCount: validUniversities.length,
+        universities: filteredUnis,
+        totalCount: filteredUnis.length,
         source: 'ai',
       };
     } catch (error) {
@@ -416,7 +549,7 @@ export class AiController {
       const countries = await this.universitySearchService.getPopularCountries();
       return {
         success: true,
-        countries,
+        countries: countries.filter(c => c.toLowerCase() !== 'india'),
       };
     } catch (error) {
       console.error('Failed to fetch popular countries:', error);
@@ -428,7 +561,423 @@ export class AiController {
     }
   }
 
+  @Post('search-countries')
+  async searchCountries(@Body() body: { query?: string }) {
+    const getCountryFlag = (name: string, fallbackFlag?: string): string => {
+      const flags: Record<string, string> = {
+        'united states': '🇺🇸',
+        'united states of america': '🇺🇸',
+        'usa': '🇺🇸',
+        'united kingdom': '🇬🇧',
+        'uk': '🇬🇧',
+        'canada': '🇨🇦',
+        'australia': '🇦🇺',
+        'germany': '🇩🇪',
+        'france': '🇫🇷',
+        'singapore': '🇸🇬',
+        'ireland': '🇮🇪',
+        'new zealand': '🇳🇿',
+        'netherlands': '🇳🇱',
+        'switzerland': '🇨🇭',
+        'sweden': '🇸🇪',
+        'spain': '🇪🇸',
+        'italy': '🇮🇹',
+        'india': '🇮🇳'
+      };
+      const key = name.trim().toLowerCase();
+      return flags[key] || fallbackFlag || '🌐';
+    };
+
+    const query = body.query || '';
+    try {
+      const db = this.supabase.getClient();
+      let res;
+      if (query.trim()) {
+        res = await db.from('Country').select('*').ilike('name', `%${query}%`).neq('name', 'India').limit(15);
+      } else {
+        res = await db.from('Country').select('*').eq('popularForStudy', true).neq('name', 'India').order('name', { ascending: true });
+      }
+      if (res.data && res.data.length > 0) {
+        return {
+          success: true,
+          countries: res.data
+            .filter(c => (c.name || '').toLowerCase() !== 'india')
+            .map(c => ({
+              name: String(c.name || ''),
+              code: String(c.code || ''),
+              flag: getCountryFlag(c.name, c.flag || '')
+            }))
+        };
+      }
+    } catch (e) {
+      console.error('Failed to query countries from DB, falling back to static/AI', e);
+    }
+
+    const popularCountries = [
+      { name: 'United States', code: 'US', flag: '🇺🇸' },
+      { name: 'United Kingdom', code: 'GB', flag: '🇬🇧' },
+      { name: 'Canada', code: 'CA', flag: '🇨🇦' },
+      { name: 'Australia', code: 'AU', flag: '🇦🇺' },
+      { name: 'Germany', code: 'DE', flag: '🇩🇪' },
+      { name: 'France', code: 'FR', flag: '🇫🇷' },
+      { name: 'Singapore', code: 'SG', flag: '🇸🇬' },
+      { name: 'Ireland', code: 'IE', flag: '🇮🇪' },
+      { name: 'New Zealand', code: 'NZ', flag: '🇳🇿' },
+      { name: 'Netherlands', code: 'NL', flag: '🇳🇱' },
+      { name: 'Switzerland', code: 'CH', flag: '🇨🇭' },
+      { name: 'Sweden', code: 'SE', flag: '🇸🇪' },
+      { name: 'Spain', code: 'ES', flag: '🇪🇸' },
+      { name: 'Italy', code: 'IT', flag: '🇮🇹' }
+    ];
+
+    let filtered = popularCountries;
+    if (query.trim()) {
+      const lower = query.toLowerCase();
+      filtered = popularCountries.filter(
+        c => c.name.toLowerCase().includes(lower) && c.name.toLowerCase() !== 'india'
+      );
+      
+      if (filtered.length === 0) {
+        try {
+          const prompt = `List up to 5 real countries that match or are closely related to the query "${query}". Return a JSON object with a "countries" key. Each country must have "name", "code" (uppercase 2 letter country code), and "flag" (the flag emoji). E.g. {"countries": [{"name": "Germany", "code": "DE", "flag": "🇩🇪"}]}. CRITICAL: Do NOT include India under any circumstances.`;
+          const aiRes = await this.openRouterService.getJson<any>(prompt);
+          if (aiRes && aiRes.countries) {
+            const normalized = aiRes.countries
+              .filter((c: any) => (c.name || '').toLowerCase() !== 'india' && (c.code || '').toLowerCase() !== 'in')
+              .map((c: any) => ({
+                name: String(c.name || ''),
+                code: String(c.code || ''),
+                flag: getCountryFlag(c.name, c.flag || '')
+              }));
+            return { success: true, countries: normalized };
+          }
+        } catch (e) {
+          console.error('AI country search failed', e);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      countries: filtered
+    };
+  }
+
+  @Post('search-fields')
+  async searchFields(@Body() body: { query?: string }) {
+    const query = body.query || '';
+    try {
+      const db = this.supabase.getClient();
+      const { data } = await db.from('Course').select('field');
+      if (data && data.length > 0) {
+        const uniqueFields = Array.from(new Set(data.map(item => item.field).filter(Boolean))) as string[];
+        let filtered = uniqueFields;
+        if (query.trim()) {
+          const lower = query.toLowerCase();
+          filtered = uniqueFields.filter(f => f.toLowerCase().includes(lower));
+        }
+        return {
+          success: true,
+          fields: filtered.slice(0, 15)
+        };
+      }
+    } catch (e) {
+      console.error('Failed to query unique fields from DB', e);
+    }
+
+    const defaultFields = [
+      'Computer Science',
+      'Data Science',
+      'Information Technology',
+      'Business Administration',
+      'Finance',
+      'Mechanical Engineering',
+      'Electrical Engineering',
+      'Civil Engineering',
+      'Biotechnology',
+      'Medicine',
+      'Public Health',
+      'Data Analytics',
+      'Artificial Intelligence',
+      'Cybersecurity'
+    ];
+
+    let filtered = defaultFields;
+    if (query.trim()) {
+      const lower = query.toLowerCase();
+      filtered = defaultFields.filter(f => f.toLowerCase().includes(lower));
+      
+      if (filtered.length === 0) {
+        try {
+          const prompt = `List up to 8 real academic fields of study (e.g. Computer Science, Mechanical Engineering) matching or related to the query "${query}". Return a JSON object with a "fields" key. E.g. {"fields": ["Computer Science", "Artificial Intelligence"]}`;
+          const aiRes = await this.openRouterService.getJson<any>(prompt);
+          if (aiRes && aiRes.fields) {
+            return { success: true, fields: aiRes.fields };
+          }
+        } catch (e) {
+          console.error('AI fields search failed', e);
+        }
+      }
+    }
+
+    return {
+      success: true,
+      fields: filtered
+    };
+  }
+
+  @Post('search-courses')
+  async searchCourses(@Body() body: { university?: string; query?: string; degree?: string }) {
+    const university = body.university || '';
+    const query = body.query || '';
+    const degree = body.degree || 'masters';
+
+    try {
+      const prompt = `List up to 10 real academic courses or programs (e.g. Master of Science in Computer Science, MBA) offered at the university "${university}" ${query ? `matching or relevant to "${query}"` : ''} for a ${degree} degree.
+      
+      Return a JSON object with a "courses" key. The value should be an array of objects, each with a "name" key.
+      E.g.
+      {
+        "courses": [
+          { "name": "M.S. in Computer Science" },
+          { "name": "Master of Business Administration (MBA)" }
+        ]
+      }
+      
+      MUST respond ONLY with JSON.`;
+
+      const aiRes = await this.openRouterService.getJson<any>(prompt);
+      if (aiRes && aiRes.courses) {
+        const formatted = (Array.isArray(aiRes.courses) ? aiRes.courses : [])
+          .filter((c: any) => c && typeof c === 'object')
+          .map((c: any) => ({
+            name: String(c.name || '')
+          }));
+        return { success: true, courses: formatted };
+      }
+    } catch (e) {
+      console.error('AI course search failed, falling back', e);
+    }
+
+    const defaultCourses = [
+      { name: `M.S. in Computer Science` },
+      { name: `M.S. in Data Science` },
+      { name: `Master of Business Administration (MBA)` },
+      { name: `M.S. in Mechanical Engineering` },
+      { name: `M.S. in Electrical Engineering` },
+      { name: `M.S. in Business Analytics` },
+      { name: `M.S. in Information Systems` }
+    ];
+    return {
+      success: true,
+      courses: defaultCourses
+    };
+  }
+
   // ── Visa Interview Simulator Endpoints ──
+
+  @Post('shortlist')
+  async shortlistUniversities(
+    @Body() data: { profile: Record<string, any>; userId?: string; messages?: any[] },
+  ) {
+    try {
+      const profile = data.profile || {};
+      const degree = profile.degree || "Master's";
+      const country = profile.country || 'USA';
+      const major = profile.major || 'Computer Science';
+      const gpa = profile.gpa || '8.0';
+      const backlogs = profile.backlogs || 'No';
+      const tests = profile.tests || 'Not taken';
+      const experience = profile.experience || 'Fresher';
+      const selectedUniversities = profile.selectedUniversities as Array<{ name: string; course: string }> | null;
+      const isEvaluate = selectedUniversities && selectedUniversities.length > 0;
+
+      let prompt: string;
+      if (isEvaluate) {
+        const uniList = selectedUniversities.map((u, i) => `${i + 1}. ${u.name} (Program: ${u.course})`).join('\n');
+        prompt = `You are an expert university counselor. Evaluate the following shortlisted universities for an Indian student applying for ${degree} programs.
+
+Student Profile:
+- Current Degree/Background: ${profile.bachelorCourse || 'Engineering'}
+- GPA/CGPA: ${gpa}
+- Backlogs: ${backlogs}
+- Test Scores: ${tests}
+- Work Experience: ${experience}
+
+Shortlisted Universities:
+${uniList}
+
+For each university, provide:
+1. Admission chance (High / Medium / Low)
+2. Category (Safe / Moderate / Ambitious)
+3. Key reason for the assessment
+4. Estimated tuition (annual, in USD)
+5. World rank
+6. Location
+7. Average salary post-graduation (USD)
+8. Acceptance rate (%)
+9. Application deadline (typical)
+10. Flag emoji for the country
+11. Country name
+12. Program name (as provided)
+13. University website domain (e.g. mit.edu)
+14. Brief description (1-2 sentences)
+15. ROI (e.g. "High – 80% placement")
+16. Duration (e.g. "2 years")
+17. Indian student community size (Small/Medium/Large)
+18. Cost of living (e.g. "$1200-1800/month")
+19. University type (Public/Private)
+
+Return ONLY a JSON object like:
+{
+  "recommendations": [
+    {
+      "name": "...",
+      "chance": "High|Medium|Low",
+      "type": "Safe|Moderate|Ambitious",
+      "rank": "...",
+      "tuition": "...",
+      "location": "...",
+      "reason": "...",
+      "avgSalary": "...",
+      "deadline": "...",
+      "flag": "...",
+      "country": "...",
+      "programName": "...",
+      "websiteUrl": "...",
+      "description": "...",
+      "roi": "...",
+      "acceptanceRate": "...",
+      "duration": "...",
+      "indianCommunity": "...",
+      "costOfLiving": "...",
+      "universityType": "..."
+    }
+  ]
+}`;
+      } else {
+        prompt = `You are an expert university counselor specializing in international admissions. Recommend the best ${degree} universities in ${country} for an Indian student.
+
+Student Profile:
+- Target Degree: ${degree}
+- Target Country: ${country}
+- Field of Study: ${major}
+- Bachelor's Background: ${profile.bachelorCourse || 'Engineering'}
+- GPA/CGPA: ${gpa} / 10
+- Backlogs: ${backlogs}
+- Test Scores: ${tests}
+- Work Experience: ${experience}
+
+Recommend exactly 8 universities split across 3 tiers: 3 Safe, 3 Moderate (Target), 2 Ambitious.
+
+For each university, provide:
+1. University name (real, accredited)
+2. Admission chance (High / Medium / Low)
+3. Category (Safe / Moderate / Ambitious)
+4. World ranking
+5. Annual tuition in USD
+6. Location (City, Country)
+7. Key reason why it suits this student
+8. Average post-graduation salary (USD)
+9. Typical application deadline
+10. Country flag emoji
+11. Country name
+12. Recommended program name
+13. University website domain
+14. Brief description (1-2 sentences)
+15. ROI assessment
+16. Acceptance rate (%)
+17. Program duration (e.g. "2 years")
+18. Indian student community (Small/Medium/Large)
+19. Cost of living per month (USD)
+20. University type (Public/Private)
+
+Return ONLY valid JSON:
+{
+  "recommendations": [
+    {
+      "name": "...",
+      "chance": "High|Medium|Low",
+      "type": "Safe|Moderate|Ambitious",
+      "rank": "...",
+      "tuition": "...",
+      "location": "...",
+      "reason": "...",
+      "avgSalary": "...",
+      "deadline": "...",
+      "flag": "...",
+      "country": "...",
+      "programName": "...",
+      "websiteUrl": "...",
+      "description": "...",
+      "roi": "...",
+      "acceptanceRate": "...",
+      "duration": "...",
+      "indianCommunity": "...",
+      "costOfLiving": "...",
+      "universityType": "..."
+    }
+  ]
+}`;
+      }
+
+      const result = await this.openRouterService.getJson<{ recommendations: any[] }>(prompt);
+      const recommendations = result?.recommendations || [];
+
+      // Persist to Supabase if userId provided
+      if (data.userId && recommendations.length > 0) {
+        try {
+          await this.supabase.getClient()
+            .from('ShortlistChat')
+            .upsert({
+              userId: data.userId,
+              recommendations,
+              messages: data.messages || [],
+              updatedAt: new Date().toISOString(),
+            }, { onConflict: 'userId' });
+        } catch (e) {
+          console.warn('Failed to save shortlist chat to DB (non-fatal):', e);
+        }
+      }
+
+      return {
+        success: true,
+        recommendations,
+        data: { recommendations },
+      };
+    } catch (error) {
+      console.error('Shortlist generation failed:', error);
+      throw error;
+    }
+  }
+
+  @Get('shortlist/:userId')
+  async getLatestShortlistChat(@Param('userId') userId: string) {
+    try {
+      const { data, error } = await this.supabase.getClient()
+        .from('ShortlistChat')
+        .select('*')
+        .eq('userId', userId)
+        .order('updatedAt', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        return { success: false, chat: null };
+      }
+
+      return {
+        success: true,
+        chat: {
+          recommendations: data.recommendations || [],
+          messages: data.messages || [],
+        },
+      };
+    } catch (e) {
+      console.warn('Failed to load shortlist from DB:', e);
+      return { success: false, chat: null };
+    }
+  }
 
   @Post('visa-interview/start')
   async startVisaInterview(

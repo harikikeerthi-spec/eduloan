@@ -632,9 +632,9 @@ class _UniversityCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: _buildKV("TUITION", recommendation.tuition)),
+                Expanded(child: _buildKV("TUITION", _formatUSD(recommendation.tuition))),
                 Expanded(
-                  child: _buildKV("AVG. SALARY", recommendation.avgSalary),
+                  child: _buildKV("AVG. SALARY", _formatUSD(recommendation.avgSalary)),
                 ),
                 Expanded(child: _buildKV("DEADLINE", recommendation.deadline)),
                 Expanded(
@@ -650,6 +650,29 @@ class _UniversityCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatUSD(String rawValue) {
+    if (rawValue.isEmpty || rawValue == '-') return 'N/A';
+    
+    // Check if it already has a symbol
+    if (rawValue.contains('\$') || rawValue.contains('£') || rawValue.contains('€') || rawValue.contains('₹')) {
+      return rawValue;
+    }
+    
+    // Extract digits and try to format as USD
+    String digitsOnly = rawValue.replaceAll(RegExp(r'[^0-9.]'), '');
+    double? val = double.tryParse(digitsOnly);
+    if (val != null) {
+      String valStr = val.toStringAsFixed(0);
+      String formatted = valStr.replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+      return '\$$formatted';
+    }
+    
+    return rawValue;
   }
 
   Widget _buildKV(String label, String value) {

@@ -302,35 +302,104 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     );
   }
 
+  String _formatIndianCurrency(double value) {
+    String valStr = value.toStringAsFixed(0);
+    if (valStr.length <= 3) return valStr;
+    String lastThree = valStr.substring(valStr.length - 3);
+    String otherNumbers = valStr.substring(0, valStr.length - 3);
+    otherNumbers = otherNumbers.replaceAllMapped(
+      RegExp(r'(\d{1,2})(?=(\d{2})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    return '$otherNumbers,$lastThree';
+  }
+
+  String _formatStandardCurrency(double value) {
+    String valStr = value.toStringAsFixed(0);
+    return valStr.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
+
   String _getConvertedString(String rawValue, bool isUsd) {
-    if (rawValue.isEmpty) return 'N/A';
-    if (isUsd) return rawValue;
+    if (rawValue.isEmpty || rawValue == '-') return 'N/A';
 
-    double multiplier = 83.0; // Default USD
-    String symbol = '\$';
+    // 1. Determine base currency and multiplier to INR.
+    double toInrMultiplier = 83.0; // Default: assume USD
+    String inputSymbol = '\$';
 
-    if (rawValue.contains('£')) {
-      multiplier = 105.0;
-      symbol = '£';
-    } else if (rawValue.contains('€')) {
-      multiplier = 90.0;
-      symbol = '€';
-    } else if (rawValue.contains('A\$') ||
-        rawValue.contains('C\$') ||
-        rawValue.contains('S\$') ||
-        rawValue.contains('NZ\$')) {
-      multiplier = 60.0;
-      symbol = '\$';
-    } else if (!rawValue.contains('\$')) {
-      return rawValue; // No known currency symbol, return as is
+    if (rawValue.contains('£') || rawValue.toLowerCase().contains('gbp') || rawValue.toLowerCase().contains('pound')) {
+      toInrMultiplier = 105.0;
+      inputSymbol = '£';
+    } else if (rawValue.contains('€') || rawValue.toLowerCase().contains('eur')) {
+      toInrMultiplier = 90.0;
+      inputSymbol = '€';
+    } else if (rawValue.contains('A\$') || rawValue.toLowerCase().contains('aud')) {
+      toInrMultiplier = 55.0;
+      inputSymbol = 'A\$';
+    } else if (rawValue.contains('C\$') || rawValue.toLowerCase().contains('cad')) {
+      toInrMultiplier = 60.0;
+      inputSymbol = 'C\$';
+    } else if (rawValue.contains('S\$') || rawValue.toLowerCase().contains('sgd')) {
+      toInrMultiplier = 62.0;
+      inputSymbol = 'S\$';
+    } else if (rawValue.contains('NZ\$') || rawValue.toLowerCase().contains('nzd')) {
+      toInrMultiplier = 51.0;
+      inputSymbol = 'NZ\$';
+    } else if (rawValue.contains('\$') || rawValue.toLowerCase().contains('usd')) {
+      toInrMultiplier = 83.0;
+      inputSymbol = '\$';
     }
 
-    String inrStr = rawValue.replaceAll(symbol, '').replaceAll(',', '');
-    try {
-      double val = double.parse(inrStr.replaceAll(RegExp(r'[^0-9.]'), ''));
-      return '₹ ${(val * multiplier).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
-    } catch (e) {
-      return rawValue.replaceAll(symbol, '₹ ');
+    // 2. Extract numeric part.
+    String cleanString = rawValue;
+    if (cleanString.contains('-')) {
+      cleanString = cleanString.split('-').first;
+    } else if (cleanString.toLowerCase().contains(' to ')) {
+      cleanString = cleanString.toLowerCase().split(' to ').first;
+    }
+
+    // Extract digits and dot
+    String digitsOnly = cleanString.replaceAll(RegExp(r'[^0-9.]'), '');
+    double? numericValue = double.tryParse(digitsOnly);
+
+    if (numericValue == null) {
+      return rawValue;
+    }
+
+    // 3. Format value based on isUsd (meaning USD/original currency vs INR)
+    if (isUsd) {
+      String symbol = rawValue.contains('£')
+          ? '£'
+          : rawValue.contains('€')
+              ? '€'
+              : rawValue.contains('A\$')
+                  ? 'A\$'
+                  : rawValue.contains('C\$')
+                      ? 'C\$'
+                      : rawValue.contains('S\$')
+                          ? 'S\$'
+                          : rawValue.contains('NZ\$')
+                              ? 'NZ\$'
+                              : '\$';
+      
+      String suffix = '';
+      if (rawValue.toLowerCase().contains('/month') || rawValue.toLowerCase().contains('month')) {
+        suffix = '/mo';
+      }
+
+      String formattedNum = _formatStandardCurrency(numericValue);
+      return '$symbol$formattedNum$suffix';
+    } else {
+      double inrValue = numericValue * toInrMultiplier;
+      String formattedInr = _formatIndianCurrency(inrValue);
+      
+      String suffix = '';
+      if (rawValue.toLowerCase().contains('/month') || rawValue.toLowerCase().contains('month')) {
+        suffix = '/mo';
+      }
+      return '₹ $formattedInr$suffix';
     }
   }
 
@@ -581,18 +650,24 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem('ROI', widget.university.roi, const Color(0xFF4ADE80)),
-          _buildStatDivider(),
-          _buildStatItem(
-            'ACCEPTANCE RATE',
-            widget.university.acceptanceRate,
-            const Color(0xFFF87171),
+          Flexible(
+            child: _buildStatItem('ROI', widget.university.roi, const Color(0xFF4ADE80)),
           ),
           _buildStatDivider(),
-          _buildStatItem(
-            'ADMIT CHANCES',
-            widget.university.chance,
-            const Color(0xFF94A3B8),
+          Flexible(
+            child: _buildStatItem(
+              'ACCEPTANCE RATE',
+              widget.university.acceptanceRate,
+              const Color(0xFFF87171),
+            ),
+          ),
+          _buildStatDivider(),
+          Flexible(
+            child: _buildStatItem(
+              'ADMIT CHANCES',
+              widget.university.chance,
+              const Color(0xFF94A3B8),
+            ),
           ),
         ],
       ),
@@ -601,11 +676,15 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
 
   Widget _buildStatItem(String label, String value, Color valueColor) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           value.isEmpty ? '-' : value,
+          textAlign: TextAlign.center,
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: value.length > 12 ? 14 : 20,
             fontWeight: FontWeight.bold,
             color: valueColor,
           ),
@@ -613,6 +692,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         const SizedBox(height: 4),
         Text(
           label,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.bold,
@@ -627,6 +707,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   Widget _buildStatDivider() {
     return Container(height: 40, width: 1, color: Colors.grey.withValues(alpha: 0.1));
   }
+
 
   Widget _buildInfoGrid() {
     return Row(
@@ -1356,7 +1437,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     String tuitionStr = widget.university.tuition.isNotEmpty
         ? widget.university.tuition
         : '\$0';
-    String inrTuitionStr = _getConvertedString(tuitionStr, false);
+    String formattedTuition = _getConvertedString(tuitionStr, _isUsd);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1402,7 +1483,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          _isUsd ? tuitionStr : inrTuitionStr,
+          formattedTuition,
           style: const TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
@@ -1438,7 +1519,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         ),
         const SizedBox(height: 32),
         _buildExpenseRow('BREAKDOWN', '', isHeader: true),
-        _buildExpenseRow('Tuition Fees', _isUsd ? tuitionStr : inrTuitionStr),
+        _buildExpenseRow('Tuition Fees', formattedTuition),
         _buildExpenseRow(
           'Cost of Living',
           _getConvertedString(widget.university.costOfLiving, _isUsd),

@@ -12,8 +12,11 @@ class VideoSplashScreen extends StatefulWidget {
 
 class _VideoSplashScreenState extends State<VideoSplashScreen> {
   VideoPlayerController? _controller;
-  bool _isPlaying = false;
   bool _navigated = false;
+
+  // The splash video is 4K (2160x3840) which overloads the emulator.
+  // Set to false on a real device or after replacing with a lower-res video.
+  static const bool skipVideoSplash = false;
 
   @override
   void initState() {
@@ -22,68 +25,90 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
   }
 
   Future<void> _initializeAndPlay() async {
-    debugPrint("VideoSplashScreen: Starting video setup...");
-    
+    // Skip the video on emulators — the 4K video blocks the main thread
+    if (skipVideoSplash) {
+      FlutterNativeSplash.remove();
+      _navigate();
+      return;
+    }
+
+    // Always navigate after 4 seconds max — safety net
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted && !_navigated) {
+        debugPrint('VideoSplashScreen: Timeout reached, forcing navigation.');
+        FlutterNativeSplash.remove();
+        _navigate();
+      }
+    });
+
     try {
       final controller = VideoPlayerController.asset('assets/images/splash_video.mp4');
       _controller = controller;
-      
-      await controller.initialize();
-      debugPrint("VideoSplashScreen: Video initialized.");
-      
-      if (!mounted) return;
+
+      // Add listener BEFORE initializing so we never miss the end event
+      controller.addListener(_videoListener);
+
+      // Timeout the initialize itself to 3 seconds
+      await controller.initialize().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          throw Exception('Video initialization timed out');
+        },
+      );
+
+      if (!mounted || _navigated) return;
 
       await controller.setLooping(false);
-      await controller.setVolume(0.0); // Muted usually plays more reliably
-      
-      setState(() {});
-      
-      await controller.play();
-      _isPlaying = true;
-      
-      // Wait for the first frame to be ready before removing native splash
-      int checkCount = 0;
-      while (checkCount < 10 && controller.value.position == Duration.zero) {
-        await Future.delayed(const Duration(milliseconds: 100));
-        checkCount++;
-      }
+      await controller.setVolume(0.0);
 
-      if (mounted) FlutterNativeSplash.remove();
-      
-      controller.addListener(_videoListener);
+      setState(() {}); // Show video frame
+
+      FlutterNativeSplash.remove();
+
+      await controller.play();
     } catch (error) {
-      debugPrint("VideoSplashScreen: Error - Could not play splash video: $error");
-      if (mounted) {
+      debugPrint('VideoSplashScreen: Skipping video splash — $error');
+      if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
-        _checkAuthAndNavigate();
+        _navigate();
       }
     }
   }
 
   void _videoListener() {
-    if (!_navigated &&
-        _isPlaying &&
-        _controller != null &&
-        _controller!.value.isInitialized &&
-        (_controller!.value.position >= _controller!.value.duration || 
-         (!_controller!.value.isPlaying && _controller!.value.position > Duration.zero))) {
+    if (_navigated) return;
+    final ctrl = _controller;
+    if (ctrl == null || !ctrl.value.isInitialized) return;
+
+    final isFinished = ctrl.value.position >= ctrl.value.duration &&
+        ctrl.value.duration > Duration.zero;
+    final isStoppedAfterStart = !ctrl.value.isPlaying &&
+        ctrl.value.position > Duration.zero &&
+        ctrl.value.duration > Duration.zero;
+
+    if (isFinished || isStoppedAfterStart) {
       _navigated = true;
-      _isPlaying = false;
-      _controller?.removeListener(_videoListener);
-      _checkAuthAndNavigate();
+      ctrl.removeListener(_videoListener);
+      if (mounted) _navigate();
     }
   }
 
-  Future<void> _checkAuthAndNavigate() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-
-    if (!mounted) return;
-
-    if (token != null && token.isNotEmpty) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
+  Future<void> _navigate() async {
+    _navigated = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (!mounted) return;
+      if (token != null && token.isNotEmpty) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      debugPrint('VideoSplashScreen: Navigation error — $e');
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 
@@ -96,22 +121,23 @@ class _VideoSplashScreenState extends State<VideoSplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ctrl = _controller;
+    final videoReady = ctrl != null && ctrl.value.isInitialized;
+
     return Scaffold(
-      backgroundColor: Colors.black, // Dark background for seamless transition
-      body: Center(
-        child: (_controller != null && _controller!.value.isInitialized)
-            ? SizedBox.expand(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: _controller!.value.size.width,
-                    height: _controller!.value.size.height,
-                    child: VideoPlayer(_controller!),
-                  ),
+      backgroundColor: Colors.black,
+      body: videoReady
+          ? SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: ctrl.value.size.width,
+                  height: ctrl.value.size.height,
+                  child: VideoPlayer(ctrl),
                 ),
-              )
-            : Container(color: Colors.black),
-      ),
+              ),
+            )
+          : const SizedBox.shrink(), // transparent until video is ready (theme is now white)
     );
   }
 }

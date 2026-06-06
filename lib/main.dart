@@ -61,7 +61,7 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         colorSchemeSeed: const Color(0xFF311B92), // Deep Purple
         fontFamily: GoogleFonts.outfit().fontFamily,
-        scaffoldBackgroundColor: Colors.transparent,
+        scaffoldBackgroundColor: Colors.white,
         cardColor: Colors.white,
         cardTheme: CardThemeData(
           elevation: 2,

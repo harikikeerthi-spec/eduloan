@@ -381,11 +381,11 @@ class UniversityRecommendation {
       raceRatio: json['raceRatio'] ?? '',
       safetyStatus: json['safetyStatus'] ?? '',
       academicFocus: json['academicFocus'] ?? '',
-      images: List<String>.from(json['images'] ?? []),
-      admissionProcess: List<String>.from(json['admissionProcess'] ?? []),
-      testRequirements: Map<String, String>.from(
-        json['testRequirements'] ?? {},
-      ),
+      images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      admissionProcess: (json['admissionProcess'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      testRequirements: (json['testRequirements'] as Map?)?.map(
+            (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
+          ) ?? {},
     );
   }
 
@@ -858,7 +858,12 @@ class AiLogicService {
       'country': country,
     });
     final list = data['universities'] as List? ?? [];
-    return list.map((e) => Map<String, String>.from(e)).toList();
+    return list.map((e) {
+      if (e is Map) {
+        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+      }
+      return {'name': e.toString()};
+    }).toList();
   }
 
   Future<List<Map<String, String>>> searchUniversityCourses(
@@ -873,7 +878,9 @@ class AiLogicService {
     });
     final list = data['courses'] as List? ?? [];
     return list.map((e) {
-      if (e is Map) return Map<String, String>.from(e);
+      if (e is Map) {
+        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+      }
       return {'name': e.toString()};
     }).toList();
   }
@@ -881,7 +888,12 @@ class AiLogicService {
   Future<List<Map<String, String>>> searchCountries(String query) async {
     final data = await _postRequest('search-countries', {'query': query});
     final list = data['countries'] as List? ?? [];
-    return list.map((e) => Map<String, String>.from(e as Map)).toList();
+    return list.map((e) {
+      if (e is Map) {
+        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+      }
+      return {'name': e.toString()};
+    }).toList();
   }
 
   Future<List<String>> searchFields(String query) async {

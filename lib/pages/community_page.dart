@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/community.dart';
 import '../services/community_service.dart';
-import '../widgets/institute_selection_modal.dart';
 import '../widgets/mesh_background.dart';
 
 class CommunityPage extends StatefulWidget {
@@ -224,7 +223,7 @@ class _CommunityPageState extends State<CommunityPage>
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF311B92).withOpacity(0.08),
+              color: const Color(0xFF311B92).withValues(alpha: 0.08),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),
@@ -235,7 +234,7 @@ class _CommunityPageState extends State<CommunityPage>
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(icon, color: color, size: 32),
@@ -259,7 +258,7 @@ class _CommunityPageState extends State<CommunityPage>
                     subtitle,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -329,7 +328,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -351,7 +350,7 @@ class _CommunityPageState extends State<CommunityPage>
                           return Container(
                             width: 40,
                             height: 40,
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             child: Center(
                               child: Text(
                                 story.studentName.isNotEmpty
@@ -369,7 +368,7 @@ class _CommunityPageState extends State<CommunityPage>
                     : Container(
                         width: 40,
                         height: 40,
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         child: Center(
                           child: Text(
                             story.studentName.isNotEmpty
@@ -402,7 +401,7 @@ class _CommunityPageState extends State<CommunityPage>
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -417,7 +416,7 @@ class _CommunityPageState extends State<CommunityPage>
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 height: 1.5,
                 fontSize: 13,
               ),
@@ -493,7 +492,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -505,13 +504,13 @@ class _CommunityPageState extends State<CommunityPage>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: const Color(0xFF311B92).withOpacity(0.15),
+                color: const Color(0xFF311B92).withValues(alpha: 0.15),
                 width: 2,
               ),
             ),
             child: CircleAvatar(
               radius: 28,
-              backgroundColor: const Color(0xFF311B92).withOpacity(0.1),
+              backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
               child: Text(
                 mentor.name.substring(0, 1).toUpperCase(),
                 style: const TextStyle(
@@ -543,7 +542,7 @@ class _CommunityPageState extends State<CommunityPage>
                   mentor.role,
                   style: TextStyle(
                     fontSize: 12,
-                    color: const Color(0xFF311B92).withOpacity(0.7),
+                    color: const Color(0xFF311B92).withValues(alpha: 0.7),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -564,7 +563,7 @@ class _CommunityPageState extends State<CommunityPage>
                       '(${mentor.studentsMentored})',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -631,7 +630,7 @@ class _CommunityPageState extends State<CommunityPage>
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF311B92).withOpacity(0.08),
+            color: const Color(0xFF311B92).withValues(alpha: 0.08),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -642,7 +641,7 @@ class _CommunityPageState extends State<CommunityPage>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: color, size: 32),
@@ -669,14 +668,14 @@ class _CommunityPageState extends State<CommunityPage>
                     Icon(
                       Icons.download,
                       size: 15,
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       '${resource.downloads} downloads',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                       ),
                     ),
                   ],

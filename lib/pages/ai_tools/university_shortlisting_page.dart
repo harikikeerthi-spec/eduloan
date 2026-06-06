@@ -130,74 +130,82 @@ class _UniversityShortlistingPageState
     // Check for Master's recommendations first (Primary flow)
     final mastersCached = prefs.getString('latest_masters_recommendations');
     if (mastersCached != null && mastersCached != "[]") {
-      final List<dynamic> data = jsonDecode(mastersCached);
-      final recs = data
-          .map((json) => UniversityRecommendation.fromJson(json))
-          .toList();
+      try {
+        final List<dynamic> data = jsonDecode(mastersCached);
+        final recs = data
+            .map((json) => UniversityRecommendation.fromJson(json))
+            .toList();
 
-      if (recs.isNotEmpty) {
-        _addAiMessage("Loading your Master's recommendations...");
-        final String? chatCached = prefs.getString('latest_masters_chat');
-        if (chatCached != null) {
-          final List<dynamic> chatData = jsonDecode(chatCached);
-          setState(() {
-            _messages.clear();
-            _messages.addAll(
-              chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
-            );
-            _flow = 'completed';
-          });
-        }
-
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    UniversityResultsPage(recommendations: recs),
-              ),
-            );
+        if (recs.isNotEmpty) {
+          _addAiMessage("Loading your Master's recommendations...");
+          final String? chatCached = prefs.getString('latest_masters_chat');
+          if (chatCached != null) {
+            final List<dynamic> chatData = jsonDecode(chatCached);
+            setState(() {
+              _messages.clear();
+              _messages.addAll(
+                chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
+              );
+              _flow = 'completed';
+            });
           }
-        });
-        return;
+
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      UniversityResultsPage(recommendations: recs),
+                ),
+              );
+            }
+          });
+          return;
+        }
+      } catch (e) {
+        debugPrint('Failed to load Master\'s recommendations from cache: $e');
       }
     }
 
     // Check for Evaluation recommendations
     final evaluateCached = prefs.getString('latest_evaluate_recommendations');
     if (evaluateCached != null && evaluateCached != "[]") {
-      final List<dynamic> data = jsonDecode(evaluateCached);
-      final recs = data
-          .map((json) => UniversityRecommendation.fromJson(json))
-          .toList();
+      try {
+        final List<dynamic> data = jsonDecode(evaluateCached);
+        final recs = data
+            .map((json) => UniversityRecommendation.fromJson(json))
+            .toList();
 
-      if (recs.isNotEmpty) {
-        _addAiMessage("Loading your last evaluations...");
-        final String? chatCached = prefs.getString('latest_evaluate_chat');
-        if (chatCached != null) {
-          final List<dynamic> chatData = jsonDecode(chatCached);
-          setState(() {
-            _messages.clear();
-            _messages.addAll(
-              chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
-            );
-            _flow = 'completed';
-          });
-        }
-
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    UniversityResultsPage(recommendations: recs),
-              ),
-            );
+        if (recs.isNotEmpty) {
+          _addAiMessage("Loading your last evaluations...");
+          final String? chatCached = prefs.getString('latest_evaluate_chat');
+          if (chatCached != null) {
+            final List<dynamic> chatData = jsonDecode(chatCached);
+            setState(() {
+              _messages.clear();
+              _messages.addAll(
+                chatData.map((m) => ShortlistMessage.fromJson(m)).toList(),
+              );
+              _flow = 'completed';
+            });
           }
-        });
-        return;
+
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      UniversityResultsPage(recommendations: recs),
+                ),
+              );
+            }
+          });
+          return;
+        }
+      } catch (e) {
+        debugPrint('Failed to load Evaluation recommendations from cache: $e');
       }
     }
 
@@ -668,42 +676,57 @@ class _UniversityShortlistingPageState
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
                     if (!mounted) return;
-                    _addAiMessage(
-                      "Loading your last Master's recommendations...",
-                    );
-                    final List<dynamic> data = jsonDecode(cached);
-                    final recs = data
-                        .map((json) => UniversityRecommendation.fromJson(json))
-                        .toList();
+                    try {
+                      _addAiMessage(
+                        "Loading your last Master's recommendations...",
+                      );
+                      final List<dynamic> data = jsonDecode(cached);
+                      final recs = data
+                          .map(
+                            (json) => UniversityRecommendation.fromJson(json),
+                          )
+                          .toList();
 
-                    // Also restore chat messages if available
-                    final String? chatCached = prefs.getString(
-                      'latest_masters_chat',
-                    );
-                    if (chatCached != null) {
-                      final List<dynamic> chatData = jsonDecode(chatCached);
-                      setState(() {
-                        _messages.clear();
-                        _messages.addAll(
-                          chatData
-                              .map((m) => ShortlistMessage.fromJson(m))
-                              .toList(),
-                        );
-                        _flow = 'completed';
-                      });
-                    } else {
-                      setState(() {
-                        _flow = 'completed';
+                      // Also restore chat messages if available
+                      final String? chatCached = prefs.getString(
+                        'latest_masters_chat',
+                      );
+                      if (chatCached != null) {
+                        final List<dynamic> chatData = jsonDecode(chatCached);
+                        setState(() {
+                          _messages.clear();
+                          _messages.addAll(
+                            chatData
+                                .map((m) => ShortlistMessage.fromJson(m))
+                                .toList(),
+                          );
+                          _flow = 'completed';
+                        });
+                      } else {
+                        setState(() {
+                          _flow = 'completed';
+                        });
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              UniversityResultsPage(recommendations: recs),
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint(
+                        'Failed to load Master\'s recommendations from cache: $e',
+                      );
+                      _addAiMessage(
+                        "Failed to load cached recommendations. Let's start fresh!",
+                      );
+                      Future.delayed(const Duration(milliseconds: 800), () {
+                        _addAiMessage("Which country do you want to study in?");
+                        setState(() => _flow = 'masters_country');
                       });
                     }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            UniversityResultsPage(recommendations: recs),
-                      ),
-                    );
                   });
                 } else {
                   Future.delayed(const Duration(milliseconds: 1000), () {
@@ -747,40 +770,57 @@ class _UniversityShortlistingPageState
                 if (cached != null) {
                   Future.delayed(const Duration(milliseconds: 1000), () {
                     if (!mounted) return;
-                    _addAiMessage("Loading your last evaluations...");
-                    final List<dynamic> data = jsonDecode(cached);
-                    final recs = data
-                        .map((json) => UniversityRecommendation.fromJson(json))
-                        .toList();
+                    try {
+                      _addAiMessage("Loading your last evaluations...");
+                      final List<dynamic> data = jsonDecode(cached);
+                      final recs = data
+                          .map(
+                            (json) => UniversityRecommendation.fromJson(json),
+                          )
+                          .toList();
 
-                    // Also restore chat messages if available
-                    final String? chatCached = prefs.getString(
-                      'latest_evaluate_chat',
-                    );
-                    if (chatCached != null) {
-                      final List<dynamic> chatData = jsonDecode(chatCached);
-                      setState(() {
-                        _messages.clear();
-                        _messages.addAll(
-                          chatData
-                              .map((m) => ShortlistMessage.fromJson(m))
-                              .toList(),
+                      // Also restore chat messages if available
+                      final String? chatCached = prefs.getString(
+                        'latest_evaluate_chat',
+                      );
+                      if (chatCached != null) {
+                        final List<dynamic> chatData = jsonDecode(chatCached);
+                        setState(() {
+                          _messages.clear();
+                          _messages.addAll(
+                            chatData
+                                .map((m) => ShortlistMessage.fromJson(m))
+                                .toList(),
+                          );
+                          _flow = 'completed';
+                        });
+                      } else {
+                        setState(() {
+                          _flow = 'completed';
+                        });
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              UniversityResultsPage(recommendations: recs),
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint(
+                        'Failed to load Evaluation recommendations from cache: $e',
+                      );
+                      _addAiMessage(
+                        "Failed to load cached evaluations. Let's start a new evaluation!",
+                      );
+                      Future.delayed(const Duration(milliseconds: 800), () {
+                        _addAiMessage(
+                          "Which university would you like to evaluate first?",
                         );
-                        _flow = 'completed';
-                      });
-                    } else {
-                      setState(() {
-                        _flow = 'completed';
+                        setState(() => _flow = 'evaluate_uni_search');
                       });
                     }
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            UniversityResultsPage(recommendations: recs),
-                      ),
-                    );
                   });
                 } else {
                   Future.delayed(const Duration(milliseconds: 1000), () {
@@ -1436,6 +1476,7 @@ class _UniversityShortlistingPageState
         },
         onSelect: (course) {
           setState(() {
+            _bachelorCourse = course;
             _messages.add(
               ShortlistMessage(
                 text: course,
@@ -2362,8 +2403,10 @@ class _DynamicCountrySelectorState extends State<_DynamicCountrySelector> {
                 spacing: 12,
                 runSpacing: 12,
                 children: _countries.map((country) {
+                  final countryName = country['name'] ?? 'Unknown';
+                  final countryFlag = country['flag'] ?? '🌐';
                   return GestureDetector(
-                    onTap: () => widget.onSelect(country['name']!),
+                    onTap: () => widget.onSelect(countryName),
                     child: Container(
                       width:
                           (MediaQuery.of(context).size.width - 64) /
@@ -2380,12 +2423,12 @@ class _DynamicCountrySelectorState extends State<_DynamicCountrySelector> {
                       child: Column(
                         children: [
                           Text(
-                            country['flag']!,
+                            countryFlag,
                             style: const TextStyle(fontSize: 32),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            country['name']!,
+                            countryName,
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -2556,44 +2599,98 @@ class _StartDateSelector extends StatelessWidget {
     this.isIndividualMonths = false,
   });
 
+  List<String> _getActiveItems(int year) {
+    final now = DateTime.now();
+    if (year > now.year) {
+      return isIndividualMonths
+          ? [
+              'Jan',
+              'Feb',
+              'Mar',
+              'Apr',
+              'May',
+              'Jun',
+              'Jul',
+              'Aug',
+              'Sep',
+              'Oct',
+              'Nov',
+              'Dec',
+            ]
+          : ['Jan to Mar', 'Apr to Jun', 'Jul to Sep', 'Oct to Dec'];
+    }
+
+    if (isIndividualMonths) {
+      final months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      if (now.month <= months.length) {
+        return months.sublist(now.month - 1);
+      }
+      return [];
+    } else {
+      final quarters = <String>[];
+      final currentMonth = now.month;
+      if (currentMonth <= 3) quarters.add('Jan to Mar');
+      if (currentMonth <= 6) quarters.add('Apr to Jun');
+      if (currentMonth <= 9) quarters.add('Jul to Sep');
+      if (currentMonth <= 12) quarters.add('Oct to Dec');
+      return quarters;
+    }
+  }
+
+  String _getYearTitle(int year) {
+    final currentYear = DateTime.now().year;
+    if (year == currentYear) {
+      return isIndividualMonths ? 'THIS YEAR-$year' : 'IN $year';
+    } else if (year == currentYear + 1) {
+      return isIndividualMonths ? 'NEXT YEAR-$year' : 'IN $year';
+    } else {
+      return 'IN $year';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final currentYear = DateTime.now().year;
+    final now = DateTime.now();
+    int startYear = now.year;
+
+    // Shift start year to next year if no active intakes are left in the current year
+    if (_getActiveItems(startYear).isEmpty) {
+      startYear += 1;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildYearSection(
-          isIndividualMonths ? 'THIS YEAR-$currentYear' : 'IN $currentYear',
-          currentYear,
+          _getYearTitle(startYear),
+          startYear,
+          _getActiveItems(startYear),
         ),
         const SizedBox(height: 16),
         _buildYearSection(
-          isIndividualMonths
-              ? 'NEXT YEAR-${currentYear + 1}'
-              : 'IN ${currentYear + 1}',
-          currentYear + 1,
+          _getYearTitle(startYear + 1),
+          startYear + 1,
+          _getActiveItems(startYear + 1),
         ),
       ],
     );
   }
 
-  Widget _buildYearSection(String title, int year) {
-    final items = isIndividualMonths
-        ? [
-            'Jan',
-            'Feb',
-            'Mar',
-            'Apr',
-            'May',
-            'Jun',
-            'Jul',
-            'Aug',
-            'Sep',
-            'Oct',
-            'Nov',
-            'Dec',
-          ]
-        : ['Jan to Mar', 'Apr to Jun', 'Jul to Sep', 'Oct to Dec'];
+  Widget _buildYearSection(String title, int year, List<String> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3261,7 +3358,9 @@ class _SearchableListState extends State<_SearchableList> {
                         final location = item['location'];
                         final city = item['city'];
                         final country = item['country'];
-                        if (location != null || city != null || country != null) {
+                        if (location != null ||
+                            city != null ||
+                            country != null) {
                           subtitle = [
                             location ?? city,
                             country,
@@ -3796,7 +3895,8 @@ class _PhoneInputState extends State<_PhoneInput> {
 
   void _onTextChanged() {
     setState(() {
-      _isValid = _controller.text.length == 10 &&
+      _isValid =
+          _controller.text.length == 10 &&
           RegExp(r'^[6-9]').hasMatch(_controller.text) &&
           _controller.text.split('').toSet().length > 2;
     });
@@ -4578,11 +4678,11 @@ class _EvaluationList extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      uni['name']!,
+                      uni['name'] ?? 'Unknown University',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      uni['course']!,
+                      uni['course'] ?? 'Unknown Course',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],

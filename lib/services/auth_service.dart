@@ -109,22 +109,19 @@ class AuthService {
     }
   }
 
-  /// Logs in with Google (Bypasses OTP via backend)
+  /// Logs in with Google (via Firebase ID Token)
   static Future<Map<String, dynamic>> googleLogin({
+    required String idToken,
     required String email,
-    String? firstName,
-    String? lastName,
   }) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$baseUrl/auth/google-login'),
+            Uri.parse('$baseUrl/auth/firebase'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              'email': email,
-              'firstName': firstName,
-              'lastName': lastName,
+              'idToken': idToken,
             }),
           )
           .timeout(const Duration(seconds: 30));

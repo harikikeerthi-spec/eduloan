@@ -71,14 +71,14 @@ class _LoginPageState extends State<LoginPage> {
 
       // Now sync with our backend
       final email = user.email!;
-      final nameParts = user.displayName?.split(' ') ?? [];
-      final firstName = nameParts.isNotEmpty ? nameParts[0] : '';
-      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        throw Exception("Failed to retrieve Firebase ID Token");
+      }
 
       final result = await AuthService.googleLogin(
+        idToken: idToken,
         email: email,
-        firstName: firstName,
-        lastName: lastName,
       );
 
       if (!mounted) return;
