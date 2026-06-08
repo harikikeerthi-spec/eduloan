@@ -25,6 +25,19 @@ export class AiController {
     private readonly supabase: SupabaseService,
   ) { }
 
+  @Post('loan-recommendations')
+  async getLoanRecommendations(
+    @Body()
+    profile: any,
+  ) {
+    const result = await this.loanRecommendationService.recommendChatLoans(profile);
+    return {
+      success: true,
+      data: result,
+      ...result,
+    };
+  }
+
   @Post('eligibility-check')
   async checkEligibility(
     @Body()

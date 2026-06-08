@@ -5,6 +5,7 @@ import { DocumentVerificationService } from '../ai/services/document-verificatio
 import { ApplicationReviewService } from '../ai/services/application-review.service';
 import { EmailService } from '../auth/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { randomUUID } from 'crypto';
 
 const APPLICATION_STAGES = {
   application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
@@ -140,6 +141,7 @@ export class ApplicationService {
     const { data: application, error } = await this.db
       .from('LoanApplication')
       .insert({
+        id: randomUUID(),
         applicationNumber,
         userId,
         bank: data.bank,
@@ -187,10 +189,11 @@ export class ApplicationService {
         collateralType: data.collateralType,
         collateralValue: data.collateralValue ? parseFloat(data.collateralValue) : null,
         collateralDetails: data.collateralDetails,
-        status: data.status || 'draft',
+                status: data.status || 'draft',
         stage: 'application_submitted',
         progress: 10,
         estimatedCompletionAt: estimatedCompletionAt.toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select('*, user:User!userId(id, email, firstName, lastName)')
       .single();
@@ -476,6 +479,7 @@ export class ApplicationService {
       const matchingVaultDoc = vaultDocs?.find(vd => vd.docType === doc.docType && vd.uploaded);
       
       await this.db.from('ApplicationDocument').insert({ 
+        id: randomUUID(),
         applicationId, 
         docType: doc.docType, 
         docName: doc.docName, 
@@ -499,7 +503,7 @@ export class ApplicationService {
       if (error) throw error;
       document = data;
     } else {
-      const { data, error } = await this.db.from('ApplicationDocument').insert({ applicationId, ...documentData, status: 'pending' }).select().single();
+      const { data, error } = await this.db.from('ApplicationDocument').insert({ id: randomUUID(), applicationId, ...documentData, status: 'pending' }).select().single();
       if (error) throw error;
       document = data;
     }
@@ -631,13 +635,14 @@ export class ApplicationService {
           if (existing) {
             await this.db.from('ApplicationDocument').update(updateData).eq('id', existing.id);
           } else {
-            await this.db.from('ApplicationDocument').insert(updateData);
+            await this.db.from('ApplicationDocument').insert({ id: randomUUID(), ...updateData });
           }
           syncedCount++;
         }
       } else if (!existing) {
         // Just create the requirement placeholder
         await this.db.from('ApplicationDocument').insert({
+          id: randomUUID(),
           applicationId,
           docType: req.docType,
           docName: req.docName,
@@ -848,7 +853,7 @@ export class ApplicationService {
   async addApplicationNote(applicationId: string, authorId: string, authorName: string, data: { content: string; type?: string; isInternal?: boolean }) {
     const { data: note, error } = await this.db
       .from('ApplicationNote')
-      .insert({ applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
+      .insert({ id: randomUUID(), applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
       .select()
       .single();
 
@@ -987,7 +992,7 @@ export class ApplicationService {
       const { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
       const reviewResult = await this.applicationReviewService.reviewApplication(application, documents || []);
 
-      await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
+      await this.db.from('ApplicationNote').insert({ id: randomUUID(), applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
       await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: application.status, changedBy: adminId, changedByName: adminName, notes: `AI Review completed. Score: ${reviewResult.overallScore}/100. Recommendation: ${reviewResult.recommendation}`, isAutomatic: true });
 
       // Emit real-time CIBIL verification activity
@@ -1044,7 +1049,7 @@ export class ApplicationService {
   }
 
   private async createStatusHistory(applicationId: string, data: { fromStatus?: string; toStatus?: string; fromStage?: string; toStage?: string; changedBy?: string; changedByName?: string; changeReason?: string; notes?: string; isAutomatic?: boolean }) {
-    await this.db.from('ApplicationStatusHistory').insert({ applicationId, ...data });
+    await this.db.from('ApplicationStatusHistory').insert({ id: randomUUID(), applicationId, ...data });
   }
 
   async getAgentApplications(agentId: string) {

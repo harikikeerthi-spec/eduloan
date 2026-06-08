@@ -14,6 +14,9 @@ import '../services/logo_service.dart';
 import '../services/wikipedia_service.dart';
 import 'ai_tools/university_detail_page.dart';
 import 'ai_tools/visa_interview_page.dart';
+import '../services/blog_service.dart';
+import '../models/blog.dart';
+import 'blog_detail_page.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -416,6 +419,10 @@ class HomeTabState extends State<HomeTab> {
                     ),
                   ),
 
+                // ── Featured Blogs ──────────────────────────────────────
+                _buildFeaturedBlogsSection(),
+                const SizedBox(height: 32),
+
                 // Lending Partners
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -486,6 +493,7 @@ class HomeTabState extends State<HomeTab> {
 
                 // Essential Services (Value Add)
                 _buildValueAddServices(),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -861,6 +869,266 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
+  // ── Featured Blogs Section ───────────────────────────────────────────────
+
+  Widget _buildFeaturedBlogsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Blogs & Insights',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(context, '/blogs'),
+                child: const Text(
+                  'See All',
+                  style: TextStyle(
+                    color: Color(0xFF311B92),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Banner card that leads to blogs
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/blogs'),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF311B92), Color(0xFF6605C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'LATEST INSIGHTS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Education Loan Tips, Study Abroad Guides & More',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text(
+                              'Read Now',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.arrow_forward,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Icon(
+                      Icons.article_rounded,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Scrollable mini blog cards
+        FutureBuilder<List<Blog>>(
+          future: BlogService().getFeaturedBlogs(limit: 5),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            final blogs = snapshot.data!;
+            return SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                itemCount: blogs.length,
+                itemBuilder: (context, index) {
+                  final blog = blogs[index];
+                  return _buildMiniBlogCard(blog);
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMiniBlogCard(Blog blog) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => BlogDetailPage(blog: blog)),
+        );
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF311B92).withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                blog.category.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              blog.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+                height: 1.3,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 10,
+                  backgroundColor:
+                      const Color(0xFF311B92).withValues(alpha: 0.1),
+                  child: const Icon(
+                    Icons.person,
+                    size: 12,
+                    color: Color(0xFF311B92),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    blog.authorName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${blog.readTime}m',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.black38,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAiRecommendations() {
     final bool isSavedMode = _activeRecommendationTab == 'Saved';
     final recommendations = isSavedMode
@@ -988,18 +1256,21 @@ class HomeTabState extends State<HomeTab> {
       return fallbackLogo;
     }
 
-    // Try 2: Construct Clearbit from plain websiteUrl domain
+    // Try 2: Construct validated logo from plain websiteUrl domain
     if (uni.websiteUrl.isNotEmpty) {
       String domain = uni.websiteUrl;
       domain = domain.replaceAll(RegExp(r'^https?://'), '');
       domain = domain.replaceAll(RegExp(r'^www\.'), '');
       domain = domain.split('/')[0];
-      return 'https://logo.clearbit.com/$domain';
+      final logo = await LogoService.getValidLogoForDomain(domain);
+      if (logo != null) return logo;
     }
 
-    // Try 3: AI provided logo Url directly (Lowest priority fallback)
+    // Try 3: AI provided logo Url directly (Lowest priority fallback) with verification
     if (uni.logoUrl.isNotEmpty && uni.logoUrl.startsWith('http')) {
-      return uni.logoUrl;
+      if (await LogoService.isUrlValid(uni.logoUrl)) {
+        return uni.logoUrl;
+      }
     }
 
     return null;

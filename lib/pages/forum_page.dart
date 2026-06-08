@@ -118,9 +118,9 @@ class _ForumPageState extends State<ForumPage> {
 
   void _sharePost(ForumPost post) {
     final String text =
-        'Check out this discussion on VidhyaLoan: ${post.title}\n\n'
+        'Check out this discussion on Vidya Loan: ${post.title}\n\n'
         '${post.content}\n\n'
-        'Join the community at VidhyaLoan!';
+        'Join the community at Vidya Loan!';
 
     Share.share(text, subject: post.title);
   }
@@ -252,7 +252,7 @@ class _ForumPageState extends State<ForumPage> {
               'https://vidhyaloan.com/assets/images/logo.png',
               height: 24,
               errorBuilder: (_, _, _) => const Text(
-                'VidhyaLoan',
+                'Vidya Loan',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,

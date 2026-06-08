@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/community.dart';
 import '../services/community_service.dart';
 import '../widgets/mesh_background.dart';
+import 'blogs_page.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -190,6 +191,18 @@ class _CommunityPageState extends State<CommunityPage>
             icon: Icons.people,
             color: const Color(0xFFF59E0B),
             onTap: () => Navigator.pushNamed(context, '/community/mentors'),
+          ),
+          const SizedBox(width: 16),
+          _buildCategoryCard(
+            context,
+            title: 'Blogs',
+            subtitle: 'Tips & Insights',
+            icon: Icons.article_rounded,
+            color: const Color(0xFF3F51B5),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BlogsPage()),
+            ),
           ),
           const SizedBox(width: 16),
           _buildCategoryCard(

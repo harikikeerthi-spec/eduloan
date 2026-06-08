@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../services/ai_logic_service.dart';
 import '../../widgets/mesh_background.dart';
+import '../apply_loan_page.dart';
 import '../loan_eligibility_checker_page.dart';
 import '../sop_writer_page.dart';
 import 'customer_care_bot_page.dart';
@@ -30,7 +31,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   bool _hasRequestedCallback = false;
   bool _isRequestingFastTrack = false;
   bool _hasRequestedFastTrack = false;
-  bool _isRequestingApplication = false;
+  final bool _isRequestingApplication = false;
   bool _hasRequestedApplication = false;
 
   @override
@@ -139,44 +140,25 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Future<void> _applyWithVidhyaLoans() async {
-    if (_hasRequestedApplication) {
-      _launchUniversityWebsite();
-      return;
-    }
+    setState(() => _hasRequestedApplication = true);
 
-    setState(() => _isRequestingApplication = true);
-
-    final success = await _aiService.requestUniversityCallback(
+    // Trigger backend request in background
+    _aiService.requestUniversityCallback(
       widget.university.name,
       type: 'application',
     );
 
-    if (mounted) {
-      setState(() {
-        _isRequestingApplication = false;
-        if (success) _hasRequestedApplication = true;
-      });
-
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Application request sent! Opening university website...',
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        Future.delayed(const Duration(seconds: 1), _launchUniversityWebsite);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to process application. Please try again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    // Navigate to ApplyLoanPage with autofill details
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ApplyLoanPage(
+          initialUniversity: widget.university.name,
+          initialCourse: widget.university.programName,
+          initialCountry: widget.university.country,
+        ),
+      ),
+    );
   }
 
   Future<void> _launchUniversityWebsite() async {
@@ -370,27 +352,13 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
 
     // 3. Format value based on isUsd (meaning USD/original currency vs INR)
     if (isUsd) {
-      String symbol = rawValue.contains('£')
-          ? '£'
-          : rawValue.contains('€')
-              ? '€'
-              : rawValue.contains('A\$')
-                  ? 'A\$'
-                  : rawValue.contains('C\$')
-                      ? 'C\$'
-                      : rawValue.contains('S\$')
-                          ? 'S\$'
-                          : rawValue.contains('NZ\$')
-                              ? 'NZ\$'
-                              : '\$';
-      
       String suffix = '';
       if (rawValue.toLowerCase().contains('/month') || rawValue.toLowerCase().contains('month')) {
         suffix = '/mo';
       }
 
       String formattedNum = _formatStandardCurrency(numericValue);
-      return '$symbol$formattedNum$suffix';
+      return '$inputSymbol$formattedNum$suffix';
     } else {
       double inrValue = numericValue * toInrMultiplier;
       String formattedInr = _formatIndianCurrency(inrValue);
@@ -1938,7 +1906,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
               : Text(
                   _hasRequestedApplication
                       ? 'Application Sent'
-                      : 'Apply with Vidhya Loans',
+                      : 'Apply with Vidya Loans',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

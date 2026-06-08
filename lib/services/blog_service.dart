@@ -26,6 +26,34 @@ class BlogService {
     }
   }
 
+  Future<List<Blog>> getFeaturedBlogs({int limit = 5}) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http.get(
+        Uri.parse('$baseUrl/blogs?featured=true&limit=$limit'),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final List<dynamic> data = responseData['data'];
+          final blogs = data.map((json) => Blog.fromJson(json)).toList();
+          // If no featured blogs, return first N blogs from all
+          if (blogs.isEmpty) {
+            return (await getAllBlogs()).take(limit).toList();
+          }
+          return blogs;
+        }
+      }
+      // Fallback to all blogs
+      return (await getAllBlogs()).take(limit).toList();
+    } catch (e) {
+      debugPrint('Error fetching featured blogs: $e');
+      return [];
+    }
+  }
+
+
   Future<Blog> getBlogBySlug(String slug) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();

@@ -21,6 +21,7 @@ import 'pages/forum_page.dart';
 import 'pages/forum_post_detail_page.dart';
 import 'pages/create_post_page.dart';
 import 'pages/notifications_page.dart';
+import 'pages/blogs_page.dart';
 
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -110,6 +111,7 @@ class MyApp extends StatelessWidget {
         '/community/forum/create': (context) => const CreatePostPage(),
         '/community/forum/detail': (context) => const ForumPostDetailPage(),
         '/notifications': (context) => const NotificationsPage(),
+        '/blogs': (context) => const BlogsPage(),
       },
     );
   }

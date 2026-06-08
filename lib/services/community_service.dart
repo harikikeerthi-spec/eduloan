@@ -330,7 +330,7 @@ class CommunityService {
       'title': title,
       'content': content,
       'category': category,
-      if (tags != null) 'tags': tags,
+      if (tags != null && tags.isNotEmpty) 'tags': tags,
     });
     return response;
   }
@@ -373,7 +373,8 @@ class CommunityService {
     required String content,
     String? parentId,
   }) async {
-    final response = await _postRequest('/community/forum/$postId/comments', {
+    // Backend route is POST /community/forum/:id/comment (singular)
+    final response = await _postRequest('/community/forum/$postId/comment', {
       'content': content,
       if (parentId != null) 'parentId': parentId,
     });

@@ -460,9 +460,66 @@ export class CommunityService {
     }
   }
 
+  // ==================== AI CONTENT MODERATION ====================
+
+  /**
+   * Uses AI to check whether a post is relevant to the community's purpose:
+   * education loans, study abroad, universities, visa, scholarships, career, exams.
+   * Returns { isRelevant: boolean, reason: string }
+   */
+  private async checkContentRelevance(title: string, content: string): Promise<{ isRelevant: boolean; reason: string }> {
+    try {
+      const prompt = `You are a content moderator for a community platform focused on education loans, study abroad, universities, scholarships, visa & immigration, exams (GRE/GMAT/IELTS/TOEFL), and career guidance for students.
+
+Post Title: "${title}"
+Post Content: "${content}"
+
+Is this post relevant to the platform's topics? Topics include:
+- Education loans and financing
+- Study abroad programs and countries
+- University admissions and courses
+- Scholarships and financial aid
+- Visa and immigration for students
+- Exams (GRE, GMAT, IELTS, TOEFL, etc.)
+- Career guidance for students
+- General academic questions
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "isRelevant": true or false,
+  "reason": "brief explanation in one sentence"
+}
+
+If the post is completely off-topic (e.g., sports, entertainment, politics, spam, or adult content), set isRelevant to false.
+If it has even a loose connection to student life or education, set isRelevant to true.`;
+
+      const result = await this.openRouterService.getJson<{ isRelevant: boolean; reason: string }>(prompt);
+      return {
+        isRelevant: result.isRelevant !== false, // default to true if AI is uncertain
+        reason: result.reason || 'Content check complete',
+      };
+    } catch (error) {
+      console.error('[CommunityService] Content moderation failed, allowing post:', error);
+      return { isRelevant: true, reason: 'Moderation check unavailable' };
+    }
+  }
+
   async createForumPost(userId: string, data: any) {
     const { data: user } = await this.db.from('User').select('id').eq('id', userId).single();
     if (!user) throw new NotFoundException('User not found');
+
+    // ── AI Content Moderation ──
+    const { isRelevant, reason } = await this.checkContentRelevance(data.title || '', data.content || '');
+    if (!isRelevant) {
+      throw new HttpException(
+        {
+          success: false,
+          message: `Your post was not published because it appears to be off-topic. ${reason}. Please keep discussions related to education loans, universities, study abroad, scholarships, visa, exams, or career guidance.`,
+          code: 'CONTENT_NOT_RELEVANT',
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
     // Idempotency check
     const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();

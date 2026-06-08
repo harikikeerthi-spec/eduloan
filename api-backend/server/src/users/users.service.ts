@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { extractFullNameFromOcrRaw } from '../ai/utils/ocr-fields.util';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -817,6 +817,7 @@ export class UsersService {
     const { data: application, error } = await this.db
       .from('LoanApplication')
       .insert({
+        id: randomUUID(),
         applicationNumber,
         userId,
         bank: data.bank,

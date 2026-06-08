@@ -86,7 +86,45 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     }
   }
 
-  // ...
+  Future<void> _deletePost() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text(
+            'Are you sure you want to delete this post? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final result = await _communityService.deleteForumPost(_post!.id);
+      if (result['success'] == true && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post deleted successfully')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete post: $e')),
+        );
+      }
+    }
+  }
+
 
   Widget _buildCommentTile(ForumComment comment, {int depth = 0}) {
     final isAuthor =
@@ -303,9 +341,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     if (_post == null) return;
 
     final String text =
-        'Check out this discussion on VidhyaLoan: ${_post!.title}\n\n'
+        'Check out this discussion on Vidya Loan: ${_post!.title}\n\n'
         '${_post!.content}\n\n'
-        'Join the community at VidhyaLoan!';
+        'Join the community at Vidya Loan!';
 
     Share.share(text, subject: _post!.title);
   }
@@ -478,13 +516,16 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
   }
 
   Widget _buildPostHeader() {
+    final isAuthor = _currentUserId != null && _post!.authorId == _currentUserId;
     return Row(
       children: [
         CircleAvatar(
           radius: 20,
           backgroundColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
           child: Text(
-            'U',
+            (_post!.userName?.isNotEmpty ?? false)
+                ? _post!.userName![0].toUpperCase()
+                : 'U',
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF6605C7),
@@ -495,9 +536,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Text(
+              _post!.userName ?? 'Anonymous',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             Text(
               _formatDate(_post!.createdAt),
@@ -524,6 +565,17 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
             ),
           ),
         ),
+        if (isAuthor) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _deletePost,
+            child: const Icon(
+              Icons.delete_outline,
+              size: 20,
+              color: Colors.red,
+            ),
+          ),
+        ],
       ],
     );
   }

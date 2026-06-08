@@ -8,7 +8,16 @@ import '../services/auth_service.dart';
 import 'main_navigation.dart';
 
 class ApplyLoanPage extends StatefulWidget {
-  const ApplyLoanPage({super.key});
+  final String? initialUniversity;
+  final String? initialCourse;
+  final String? initialCountry;
+
+  const ApplyLoanPage({
+    super.key,
+    this.initialUniversity,
+    this.initialCourse,
+    this.initialCountry,
+  });
 
   @override
   State<ApplyLoanPage> createState() => _ApplyLoanPageState();
@@ -76,6 +85,20 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     super.initState();
     _amountController.addListener(_updateAmountLabel);
     _loadUserData();
+    if (widget.initialUniversity != null) {
+      _instituteController.text = widget.initialUniversity!;
+    }
+    if (widget.initialCourse != null) {
+      _courseController.text = widget.initialCourse!;
+    }
+    if (widget.initialCountry != null) {
+      final country = widget.initialCountry!;
+      _countryController.text = country;
+      final normalizedCountries = _countries.map((c) => c.toLowerCase()).toList();
+      if (!normalizedCountries.contains(country.toLowerCase())) {
+        _isManualCountryEntry = true;
+      }
+    }
   }
 
   Future<void> _loadUserData() async {

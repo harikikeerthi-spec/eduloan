@@ -145,7 +145,7 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
                         children: [
                           TextSpan(text: 'Plan Your Repayments Easily\nwith '),
                           TextSpan(
-                            text: 'VidhyaLoan EMI Calculator',
+                            text: 'Vidya Loan EMI Calculator',
                             style: TextStyle(
                               color: Color(0xFF311B92), // Use brand color
                             ),
@@ -360,7 +360,7 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
                 child: Column(
                   children: [
                     const Text(
-                      'Why the VidhyaLoan EMI Calculator is the perfect choice for you!',
+                      'Why the Vidya Loan EMI Calculator is the perfect choice for you!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,

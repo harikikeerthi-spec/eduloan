@@ -170,9 +170,9 @@ class LoanService {
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
-      debugPrint('[LoanService] URL: $baseUrl/applications/$loanId');
+      debugPrint('[LoanService] URL: $baseUrl/auth/application/$loanId');
       final response = await http.delete(
-        Uri.parse('$baseUrl/applications/$loanId'),
+        Uri.parse('$baseUrl/auth/application/$loanId'),
         headers: headers,
       );
 

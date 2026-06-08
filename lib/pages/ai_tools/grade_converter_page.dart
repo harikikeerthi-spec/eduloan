@@ -61,11 +61,17 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
           setState(() {
             _isLoading = false;
           });
+          String displayError = e.toString().replaceAll("Exception: ", "");
+          if (displayError.contains('400') ||
+              displayError.contains('BadRequestException') ||
+              displayError.toLowerCase().contains('exceed')) {
+            displayError = 'enter the correct value';
+          } else {
+            displayError = 'Error: $displayError';
+          }
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Error: ${e.toString().replaceAll("Exception: ", "")}',
-              ),
+              content: Text(displayError),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -197,8 +203,32 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                                 return 'Enter a letter grade';
                               }
                             } else {
-                              if (double.tryParse(v) == null) {
+                              final numVal = double.tryParse(v);
+                              if (numVal == null) {
                                 return 'Enter a valid number';
+                              }
+                              if (_inputType == 'percentage') {
+                                if (numVal < 0 || numVal > 100) {
+                                  return 'enter the correct value';
+                                }
+                              } else if (_inputType == 'gpa') {
+                                if (numVal < 0 || numVal > 4.0) {
+                                  return 'enter the correct value';
+                                }
+                              } else if (_inputType == 'cgpa') {
+                                if (numVal < 0 || numVal > 10.0) {
+                                  return 'enter the correct value';
+                                }
+                              } else if (_inputType == 'marks') {
+                                if (numVal < 0) {
+                                  return 'enter the correct value';
+                                }
+                                final totalVal = double.tryParse(
+                                  _totalMarksController.text,
+                                );
+                                if (totalVal != null && numVal > totalVal) {
+                                  return 'enter the correct value';
+                                }
                               }
                             }
                             return null;
@@ -222,8 +252,15 @@ class _GradeConverterPageState extends State<GradeConverterPage> {
                             ),
                             validator: (v) {
                               if (v == null || v.isEmpty) return 'Required';
-                              if (double.tryParse(v) == null) {
+                              final numVal = double.tryParse(v);
+                              if (numVal == null || numVal <= 0) {
                                 return 'Enter a valid number';
+                              }
+                              final inputVal = double.tryParse(
+                                _valueController.text,
+                              );
+                              if (inputVal != null && inputVal > numVal) {
+                                return 'enter the correct value';
                               }
                               return null;
                             },

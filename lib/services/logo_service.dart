@@ -26,7 +26,9 @@ class LogoService {
             domain = domain.replaceAll(RegExp(r'^www\.'), '');
             domain = domain.replaceAll(RegExp(r'/$'), '');
             domain = domain.split('/')[0];
-            return 'https://logo.clearbit.com/$domain';
+            
+            final logo = await getValidLogoForDomain(domain);
+            if (logo != null) return logo;
           }
         }
       }
@@ -42,7 +44,10 @@ class LogoService {
         final List<dynamic> data = json.decode(response.body);
         for (var match in data) {
           if (match['logo'] != null) {
-            return match['logo'] as String;
+            final logoUrl = match['logo'] as String;
+            if (await isUrlValid(logoUrl)) {
+              return logoUrl;
+            }
           }
         }
       }
@@ -50,5 +55,31 @@ class LogoService {
       debugPrint('Error fetching logo for $name: $e');
     }
     return null;
+  }
+
+  static Future<String?> getValidLogoForDomain(String domain) async {
+    final clearbitUrl = 'https://logo.clearbit.com/$domain';
+    if (await isUrlValid(clearbitUrl)) {
+      return clearbitUrl;
+    }
+    // Fallback to Google Favicon which resolves for almost all domains
+    final googleFaviconUrl = 'https://www.google.com/s2/favicons?sz=128&domain=$domain';
+    if (await isUrlValid(googleFaviconUrl)) {
+      return googleFaviconUrl;
+    }
+    return null;
+  }
+
+  static Future<bool> isUrlValid(String url) async {
+    try {
+      final response = await http.head(Uri.parse(url)).timeout(const Duration(milliseconds: 1500));
+      if (response.statusCode == 200) return true;
+    } catch (_) {
+      try {
+        final response = await http.get(Uri.parse(url)).timeout(const Duration(milliseconds: 1500));
+        if (response.statusCode == 200) return true;
+      } catch (_) {}
+    }
+    return false;
   }
 }

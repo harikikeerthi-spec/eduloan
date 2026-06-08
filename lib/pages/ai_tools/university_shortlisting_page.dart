@@ -2096,11 +2096,21 @@ class _UniversityShortlistingPageState
       return Center(
         child: ElevatedButton.icon(
           onPressed: () {
-            setState(() {
-              _flow = _activeFlow == 'evaluate'
-                  ? 'evaluate_get_results'
-                  : 'test_status';
-            });
+            if (_activeFlow == 'loan') {
+              setState(() {
+                _flow = 'completed';
+                _isGeneratingResults = true;
+              });
+              _generateShortlist();
+            } else {
+              setState(() {
+                _flow = (_activeFlow == 'evaluate' ||
+                        _activeFlow == 'masters' ||
+                        _activeFlow == 'bachelors')
+                    ? 'evaluate_get_results'
+                    : 'test_status';
+              });
+            }
           },
           icon: const Icon(Icons.refresh),
           label: const Text("Try Again"),

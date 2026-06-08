@@ -121,21 +121,53 @@ class GradeConversionResult {
     required this.analysis,
   });
 
+  static double _toDouble(dynamic val) {
+    if (val == null) return 0.0;
+    if (val is num) return val.toDouble();
+    if (val is String) {
+      final clean = val.replaceAll('%', '').trim();
+      return double.tryParse(clean) ?? 0.0;
+    }
+    return 0.0;
+  }
+
   // Compatibility getters for legacy code
-  double get percentage => (analysis['percentage'] ?? score).toDouble();
-  double get gpa => (analysis['gpa'] ?? score).toDouble();
-  double get cgpa => (analysis['cgpa'] ?? score).toDouble();
+  double get percentage => _toDouble(analysis['percentage'] ?? score);
+  double get gpa => _toDouble(analysis['gpa'] ?? score);
+  double get cgpa => _toDouble(analysis['cgpa'] ?? score);
   String get outputGrade => quality;
 
   factory GradeConversionResult.fromJson(Map<String, dynamic> json) {
+    final analysisMap = Map<String, dynamic>.from(json['analysis'] ?? {});
+    
+    // Copy root-level values into analysis map if they aren't already there
+    if (json['percentage'] != null && analysisMap['percentage'] == null) {
+      analysisMap['percentage'] = json['percentage'];
+    }
+    if (json['gpa'] != null && analysisMap['gpa'] == null) {
+      analysisMap['gpa'] = json['gpa'];
+    }
+    if (json['cgpa'] != null && analysisMap['cgpa'] == null) {
+      analysisMap['cgpa'] = json['cgpa'];
+    }
+    if (json['strength'] != null && analysisMap['strength'] == null) {
+      analysisMap['strength'] = json['strength'];
+    }
+    if (json['competitiveness'] != null && analysisMap['competitiveness'] == null) {
+      analysisMap['competitiveness'] = json['competitiveness'];
+    }
+    if (json['recommendations'] != null && analysisMap['recommendations'] == null) {
+      analysisMap['recommendations'] = json['recommendations'];
+    }
+
     return GradeConversionResult(
       score: (json['score'] ?? 0).toDouble(),
       scale: json['scale'] ?? '',
-      quality: json['quality'] ?? '',
+      quality: json['quality'] ?? json['letterGrade'] ?? json['outputGrade'] ?? '',
       internationalEquivalent: Map<String, String>.from(
         json['internationalEquivalent'] ?? {},
       ),
-      analysis: Map<String, dynamic>.from(json['analysis'] ?? {}),
+      analysis: analysisMap,
     );
   }
 }
@@ -680,7 +712,7 @@ class AiLogicService {
       final userId = prefs.getString('userId') ?? '';
 
       final String baseUrl = await ApiConfig.getBaseUrl();
-      final url = Uri.parse('$baseUrl/university/inquiry');
+      final url = Uri.parse('$baseUrl/university-inquiry');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -718,7 +750,7 @@ class AiLogicService {
 
       final String baseUrl = await ApiConfig.getBaseUrl();
       final url = Uri.parse(
-        '$baseUrl/university/inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
+        '$baseUrl/university-inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
       );
 
       final response = await http.get(
