@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.VidyaLoan"
+    namespace = "com.example.vidhyaloan"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.VidyaLoan"
+        applicationId = "com.example.vidhyaloan"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

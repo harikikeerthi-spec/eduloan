@@ -5,34 +5,35 @@ import 'package:flutter/foundation.dart';
 class GoogleAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // google_sign_in v6 uses GoogleSignIn() constructor, not singleton
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
+
   /// Handles Google Sign-In and returns the Firebase User
   Future<User?> signInWithGoogle() async {
     try {
-      // 1. Trigger the Google Authentication flow using the singleton
-      final GoogleSignInAccount googleUser = await GoogleSignIn.instance.authenticate(
-        scopeHint: ['email', 'profile'],
-      );
+      // 1. Trigger the Google Authentication flow (v6 API)
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
-      // 2. Obtain the auth details — NOTE: must await in google_sign_in v7
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      // If user cancels the sign-in dialog, googleUser is null
+      if (googleUser == null) {
+        debugPrint('Google Sign-In was cancelled by user');
+        return null;
+      }
+
+      // 2. Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
       final String? idToken = googleAuth.idToken;
+      final String? accessToken = googleAuth.accessToken;
 
       if (idToken == null) {
-        throw Exception("Failed to retrieve ID Token from Google Sign In.");
+        throw Exception('Failed to retrieve ID Token from Google Sign In.');
       }
 
-      // 3. Try to get the access token (optional — Firebase often only needs idToken)
-      String? accessToken;
-      try {
-        final GoogleSignInClientAuthorization? authz =
-            await googleUser.authorizationClient
-                .authorizationForScopes(['email', 'profile']);
-        accessToken = authz?.accessToken;
-      } catch (e) {
-        debugPrint('Warning: Could not fetch access token (non-fatal): $e');
-      }
-
-      // 4. Create Firebase credential and sign in
+      // 3. Create Firebase credential and sign in
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: accessToken,
         idToken: idToken,
@@ -50,7 +51,7 @@ class GoogleAuthService {
   /// Handles Logout
   Future<void> signOut() async {
     try {
-      await GoogleSignIn.instance.signOut();
+      await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
       debugPrint('Error during Sign-Out: $e');
