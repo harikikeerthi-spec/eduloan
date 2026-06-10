@@ -8,6 +8,7 @@ class GoogleAuthService {
   // google_sign_in v6 uses GoogleSignIn() constructor, not singleton
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    serverClientId: '496981213875-7imkhflkb3b805bo6fga84hqpe7dapcr.apps.googleusercontent.com',
   );
 
   /// Handles Google Sign-In and returns the Firebase User
