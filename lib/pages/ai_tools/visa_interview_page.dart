@@ -23,6 +23,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
   bool _isLoading = false;
   bool _isFinished = false;
   bool _isEditingProfile = false;
+  bool _isSpeakerOn = true;
 
   // Voice Call State
   bool _isListening = false;
@@ -127,6 +128,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
   }
 
   Future<void> _speak(String text) async {
+    if (!_isSpeakerOn) return;
     await _tts.speak(text);
   }
 
@@ -896,15 +898,43 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildVoiceControlButton(
+                icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_off,
+                label: 'Speaker',
+                color: _isSpeakerOn ? const Color(0xFF6200EE) : Colors.grey,
+                onTap: () {
+                  setState(() {
+                    _isSpeakerOn = !_isSpeakerOn;
+                  });
+                  if (!_isSpeakerOn) {
+                    _tts.stop();
+                  }
+                },
+              ),
+              const SizedBox(width: 32),
+              _buildVoiceControlButton(
                 icon: _isListening ? Icons.mic : Icons.mic_off,
-                label: _isListening ? 'Listening' : 'Wait',
-                color: _isListening ? Colors.redAccent : Colors.grey,
+                label: 'Mic',
+                color: _isListening ? Colors.green : Colors.grey,
                 onTap: () {
                   if (_isListening) {
                     _stopListening();
                   } else {
                     _startListening();
                   }
+                },
+              ),
+              const SizedBox(width: 32),
+              _buildVoiceControlButton(
+                icon: Icons.call_end,
+                label: 'End Call',
+                color: Colors.redAccent,
+                onTap: () {
+                  _stopListening();
+                  _tts.stop();
+                  setState(() {
+                    _isFinished = true;
+                  });
+                  _generateFinalReport();
                 },
               ),
             ],
