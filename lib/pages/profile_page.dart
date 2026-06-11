@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../widgets/mesh_background.dart';
 import '../services/auth_service.dart';
+import '../services/google_auth_service.dart';
 import 'user_details_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/avatar_selection_dialog.dart';
@@ -387,6 +388,11 @@ class _ProfilePageState extends State<ProfilePage> {
                           onPressed: () async {
                             final prefs = await SharedPreferences.getInstance();
                             await prefs.clear();
+                            try {
+                              await GoogleAuthService().signOut();
+                            } catch (e) {
+                              debugPrint('Error during Google/Firebase sign out: $e');
+                            }
                             if (context.mounted) {
                               Navigator.of(
                                 context,

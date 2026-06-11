@@ -1037,7 +1037,69 @@ class AiLogicService {
       'evaluations': evaluations.map((e) => e.toJson()).toList(),
       'visaType': visaType,
     });
-    return data['report'] ?? '';
+    
+    final reportData = data['report'];
+    if (reportData is Map) {
+      final buffer = StringBuffer();
+      
+      final score = reportData['overallScore'] ?? 'N/A';
+      final risk = reportData['overallRisk'] ?? 'N/A';
+      final likelihood = reportData['approvalLikelihood'] ?? 'N/A';
+      final verdict = reportData['verdict'] ?? '';
+      
+      buffer.writeln('🎯 Overall Score: $score/100');
+      buffer.writeln('⚠️ Risk Level: $risk');
+      buffer.writeln('👍 Approval Likelihood: $likelihood');
+      buffer.writeln();
+      
+      if (verdict.isNotEmpty) {
+        buffer.writeln('📝 Consular Verdict:\n$verdict');
+        buffer.writeln();
+      }
+      
+      if (reportData['strengths'] is List && (reportData['strengths'] as List).isNotEmpty) {
+        buffer.writeln('💪 Key Strengths:');
+        for (var str in reportData['strengths']) {
+          buffer.writeln('• $str');
+        }
+        buffer.writeln();
+      }
+      
+      if (reportData['weaknesses'] is List && (reportData['weaknesses'] as List).isNotEmpty) {
+        buffer.writeln('🥀 Weaknesses:');
+        for (var weak in reportData['weaknesses']) {
+          buffer.writeln('• $weak');
+        }
+        buffer.writeln();
+      }
+      
+      if (reportData['criticalIssues'] is List && (reportData['criticalIssues'] as List).isNotEmpty) {
+        buffer.writeln('🚨 Critical Issues:');
+        for (var issue in reportData['criticalIssues']) {
+          buffer.writeln('• $issue');
+        }
+        buffer.writeln();
+      }
+      
+      if (reportData['ds160Inconsistencies'] is List && (reportData['ds160Inconsistencies'] as List).isNotEmpty) {
+        buffer.writeln('❓ Inconsistencies:');
+        for (var inc in reportData['ds160Inconsistencies']) {
+          buffer.writeln('• $inc');
+        }
+        buffer.writeln();
+      }
+      
+      if (reportData['tips'] is List && (reportData['tips'] as List).isNotEmpty) {
+        buffer.writeln('💡 Tips for the Real Interview:');
+        for (var tip in reportData['tips']) {
+          buffer.writeln('• $tip');
+        }
+      }
+      
+      return buffer.toString().trim();
+    }
+    
+    return reportData?.toString() ?? '';
   }
 
   // Saved Universities Persistence
@@ -1175,10 +1237,13 @@ class AiLogicService {
     String userId,
   ) async {
     try {
-      final data = await _getRequest('recommendations/$userId');
-      if (data['success'] == true && data['recommendations'] != null) {
-        final List<dynamic> list = data['recommendations'];
-        return list.map((e) => UniversityRecommendation.fromJson(e)).toList();
+      final data = await _getRequest('shortlist/$userId');
+      if (data['success'] == true && data['chat'] != null) {
+        final chat = data['chat'];
+        if (chat['recommendations'] != null) {
+          final List<dynamic> list = chat['recommendations'];
+          return list.map((e) => UniversityRecommendation.fromJson(e)).toList();
+        }
       }
     } catch (e) {
       debugPrint('Error getting saved AI recommendations: $e');

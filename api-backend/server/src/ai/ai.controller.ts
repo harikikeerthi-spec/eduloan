@@ -1144,5 +1144,145 @@ Return ONLY valid JSON:
       return { success: false, message: 'Failed to save result' };
     }
   }
+
+  @Get('university/favorites/:userId')
+  async getSavedUniversities(@Param('userId') userId: string) {
+    try {
+      const { data, error } = await this.supabase.getClient()
+        .from('RecommendedUniversity')
+        .select('*')
+        .eq('userId', userId);
+
+      if (error) throw error;
+
+      const formatted = (data || []).map(item => ({
+        id: item.id,
+        userId: item.userId,
+        universityName: item.name,
+        universityData: {
+          name: item.name,
+          chance: item.chance,
+          type: item.type,
+          rank: item.rank,
+          tuition: item.tuition,
+          location: item.location,
+          reason: item.reason,
+          avgSalary: item.avgSalary,
+          deadline: item.deadline,
+          flag: item.flag,
+          country: item.country,
+          programName: item.programName,
+          logoUrl: item.logoUrl,
+          description: item.description,
+          roi: item.roi,
+          acceptanceRate: item.acceptanceRate,
+          duration: item.duration,
+          category: item.category,
+          websiteUrl: item.websiteUrl,
+        }
+      }));
+
+      return formatted;
+    } catch (e) {
+      console.warn('Failed to fetch saved universities:', e);
+      return [];
+    }
+  }
+
+  @Post('university/favorite')
+  async toggleSaveUniversity(
+    @Body() data: { userId: string; universityName: string; universityData: Record<string, any> }
+  ) {
+    try {
+      const db = this.supabase.getClient();
+      
+      const { data: existing, error: fetchError } = await db
+        .from('RecommendedUniversity')
+        .select('id')
+        .eq('userId', data.userId)
+        .eq('name', data.universityName)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existing) {
+        const { error: deleteError } = await db
+          .from('RecommendedUniversity')
+          .delete()
+          .eq('id', existing.id);
+        
+        if (deleteError) throw deleteError;
+        
+        return { success: true, saved: false };
+      } else {
+        const uData = data.universityData || {};
+        const { error: insertError } = await db
+          .from('RecommendedUniversity')
+          .insert({
+            userId: data.userId,
+            name: data.universityName,
+            chance: String(uData.chance || ''),
+            type: String(uData.type || ''),
+            rank: String(uData.rank || ''),
+            tuition: String(uData.tuition || ''),
+            location: String(uData.location || ''),
+            reason: String(uData.reason || ''),
+            avgSalary: String(uData.avgSalary || uData.averageSalary || ''),
+            deadline: String(uData.deadline || ''),
+            flag: String(uData.flag || ''),
+            country: String(uData.country || ''),
+            programName: String(uData.programName || ''),
+            logoUrl: String(uData.logoUrl || ''),
+            description: String(uData.description || ''),
+            roi: String(uData.roi || ''),
+            acceptanceRate: String(uData.acceptanceRate || ''),
+            duration: String(uData.duration || ''),
+            category: String(uData.category || ''),
+            websiteUrl: String(uData.websiteUrl || ''),
+          });
+
+        if (insertError) throw insertError;
+        
+        return { success: true, saved: true };
+      }
+    } catch (e) {
+      console.error('Failed to toggle favorite university:', e);
+      return { success: false, saved: false, message: e.message || 'Failed' };
+    }
+  }
+
+  @Post('pincode-lookup')
+  async lookupPincode(@Body() body: { pincode: string }) {
+    const pincode = body.pincode;
+    if (!pincode || pincode.length !== 6) {
+      throw new BadRequestException('A valid 6-digit pincode is required');
+    }
+
+    const prompt = `Given the Indian pincode "${pincode}", identify the corresponding city and state.
+    
+    Respond with strictly valid JSON:
+    {
+       "address": "City, State"
+    }`;
+
+    try {
+      const result = await this.openRouterService.getJson<{ address: string }>(prompt);
+      return {
+        success: true,
+        address: result.address || 'Unknown Location',
+      };
+    } catch (error) {
+      console.error('Pincode lookup failed:', error);
+      return {
+        success: false,
+        address: 'Unknown Location',
+      };
+    }
+  }
+
+  @Post('university/view')
+  async trackUniversityView(@Body() data: any) {
+    return { success: true };
+  }
 }
 

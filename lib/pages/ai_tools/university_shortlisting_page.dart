@@ -3110,7 +3110,21 @@ class _TestScoresInputState extends State<_TestScoresInput> {
   };
   final Map<String, String?> _errors = {};
 
-  final Map<String, int> _minValues = {'Duolingo': 10, 'GMAT': 205, 'GRE': 260};
+  final Map<String, double> _minValues = {
+    'IELTS': 0.0,
+    'TOEFL': 0.0,
+    'Duolingo': 10.0,
+    'GMAT': 205.0,
+    'GRE': 260.0,
+  };
+
+  final Map<String, double> _maxValues = {
+    'IELTS': 9.0,
+    'TOEFL': 120.0,
+    'Duolingo': 160.0,
+    'GMAT': 805.0,
+    'GRE': 340.0,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -3150,6 +3164,7 @@ class _TestScoresInputState extends State<_TestScoresInput> {
 
   Widget _buildScoreInput(String label, String suffix, {String? key}) {
     final controllerKey = key ?? label;
+    final isDecimal = controllerKey == 'IELTS';
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -3178,7 +3193,9 @@ class _TestScoresInputState extends State<_TestScoresInput> {
                 Expanded(
                   child: TextField(
                     controller: _controllers[controllerKey],
-                    keyboardType: TextInputType.number,
+                    keyboardType: isDecimal
+                        ? const TextInputType.numberWithOptions(decimal: true)
+                        : TextInputType.number,
                     decoration: const InputDecoration(
                       hintText: "Enter Score",
                       border: InputBorder.none,
@@ -3219,15 +3236,26 @@ class _TestScoresInputState extends State<_TestScoresInput> {
       return;
     }
 
-    final score = int.tryParse(value);
+    final score = double.tryParse(value);
     if (score == null) {
       _errors[key] = "Please enter a valid number";
       return;
     }
 
+    if (key != 'IELTS') {
+      if (int.tryParse(value) == null) {
+        _errors[key] = "Please enter a valid integer";
+        return;
+      }
+    }
+
     final min = _minValues[key];
+    final max = _maxValues[key];
+
     if (min != null && score < min) {
-      _errors[key] = "Value must be at least $min";
+      _errors[key] = "Value must be at least ${key == 'IELTS' ? min : min.toInt()}";
+    } else if (max != null && score > max) {
+      _errors[key] = "Value must not exceed ${key == 'IELTS' ? max : max.toInt()}";
     } else {
       _errors[key] = null;
     }
@@ -4218,130 +4246,12 @@ class _LoanResults extends StatefulWidget {
 }
 
 class _LoanResultsState extends State<_LoanResults> {
-  bool _isRequestingCallback = false;
-  bool _hasRequestedCallback = false;
 
   @override
   Widget build(BuildContext context) {
     bool isLocked = widget.admitStatus != 'Yet to Apply';
 
-    if (!widget.hasBids || widget.admitStatus != 'Yet to Apply') {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            !widget.hasBids
-                ? "We have no bids for your education loan."
-                : "Based on your admit status, please connect with our experts.",
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
-          ),
-          const SizedBox(height: 24),
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-                height: 1.5,
-              ),
-              children: [
-                TextSpan(
-                  text: !widget.hasBids
-                      ? "But don't lose hope. You might still be eligible. "
-                      : "To proceed further with your application, ",
-                ),
-                TextSpan(
-                  text:
-                      "Connect with our experts and get guidance for your education loan.",
-                  style: const TextStyle(
-                    color: Color(0xFF6A1B9A),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          Center(
-            child: ElevatedButton.icon(
-              onPressed: _hasRequestedCallback || _isRequestingCallback
-                  ? null
-                  : () async {
-                      setState(() => _isRequestingCallback = true);
 
-                      final success = await AiLogicService()
-                          .requestUniversityCallback(
-                            'General Loan Inquiry',
-                            type: 'callback',
-                          );
-
-                      if (mounted) {
-                        setState(() {
-                          _isRequestingCallback = false;
-                          if (success) _hasRequestedCallback = true;
-                        });
-                        widget.onAction();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                success
-                                    ? 'We received your request, our guidance team will contact you'
-                                    : 'Failed to request callback. Please try again.',
-                              ),
-                              backgroundColor: success
-                                  ? Colors.green
-                                  : Colors.red,
-                              duration: const Duration(seconds: 3),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      }
-                    },
-              icon: _isRequestingCallback
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      _hasRequestedCallback
-                          ? Icons.check_circle
-                          : Icons.phone_outlined,
-                      size: 20,
-                    ),
-              label: Text(
-                _hasRequestedCallback
-                    ? "Callback Requested"
-                    : "Request a call back",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _hasRequestedCallback
-                    ? Colors.green
-                    : const Color(0xFF6A1B9A),
-                disabledBackgroundColor: _hasRequestedCallback
-                    ? Colors.green.withValues(alpha: 0.7)
-                    : Colors.grey,
-                foregroundColor: Colors.white,
-                disabledForegroundColor: Colors.white,
-                minimumSize: const Size(280, 54),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
