@@ -4249,7 +4249,7 @@ class _LoanResultsState extends State<_LoanResults> {
 
   @override
   Widget build(BuildContext context) {
-    bool isLocked = widget.admitStatus != 'Yet to Apply';
+    bool isLocked = false;
 
 
 
@@ -4532,10 +4532,13 @@ class _LenderCard extends StatelessWidget {
           const Spacer(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildMetric("INTEREST\nRATE", offer.rate),
-              _buildMetric("PROCESSING\nTIME", offer.processingTime),
-              _buildMetric("SAVINGS", offer.savings),
+              Expanded(child: _buildMetric("INTEREST\nRATE", offer.rate)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMetric("PROCESSING\nTIME", offer.processingTime)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildMetric("SAVINGS", offer.savings)),
             ],
           ),
         ],
@@ -4549,6 +4552,8 @@ class _LenderCard extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 7,
             color: Colors.grey.shade600,
@@ -4558,6 +4563,8 @@ class _LenderCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
         ),
       ],
