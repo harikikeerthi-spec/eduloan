@@ -289,14 +289,14 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             ),
             const SizedBox(height: 20),
             _buildNumberField(
-              "Annual Income (\$)",
+              "Annual Income",
               "e.g. 50000",
               Icons.payments_outlined,
               _incomeController,
             ),
             const SizedBox(height: 20),
             _buildNumberField(
-              "Loan Amount (\$)",
+              "Loan Amount",
               "e.g. 25000",
               Icons.account_balance_outlined,
               _loanController,

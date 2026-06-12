@@ -271,13 +271,13 @@ class _LoanEligibilityCheckerPageState
             ),
             const SizedBox(height: 16),
             _buildTextField(
-              "Annual Income (USD)",
+              "Annual Income",
               _incomeController,
               isNumber: true,
             ),
             const SizedBox(height: 16),
             _buildTextField(
-              "Required Loan (USD)",
+              "Required Loan",
               _loanAmountController,
               isNumber: true,
             ),
