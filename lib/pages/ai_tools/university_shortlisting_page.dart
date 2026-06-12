@@ -8,8 +8,6 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../widgets/kyc_modal.dart';
-import '../document_vault_page.dart';
 import '../apply_loan_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -4274,11 +4272,9 @@ class _LoanResultsState extends State<_LoanResults> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_showOffers) ...[
-          Text(
-            isLocked
-                ? "With your credentials, you're eligible for multiple loan offers."
-                : "With your credentials, you're eligible for multiple loan offers.",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          const Text(
+            "With your credentials, you're eligible for multiple loan offers.",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -4379,98 +4375,21 @@ class _LoanResultsState extends State<_LoanResults> {
           ),
           const SizedBox(height: 16),
         ] else ...[
-          if (isLocked)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF), // Light purple
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFE9D5FF)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.verified_user_outlined,
-                      color: Color(0xFF7E22CE),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Complete your KYC',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF1F2937),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Get 50% off on processing fees',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: const Color(0xFF1F2937).withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => KycModal(
-                          onManualUpload: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const DocumentVaultPage(),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF7E22CE),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    child: const Text(
-                      'Verify Now',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                children: [
-                  const TextSpan(
-                    text:
-                        "We've partnered with leading banks to get you the best rates. ",
-                  ),
-                  const TextSpan(
-                    text: "Compare offers and choose what works best for you.",
-                    style: TextStyle(color: Color(0xFF6A1B9A)),
-                  ),
-                ],
-              ),
+          RichText(
+            text: TextSpan(
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              children: [
+                const TextSpan(
+                  text:
+                      "We've partnered with leading banks to get you the best rates. ",
+                ),
+                const TextSpan(
+                  text: "Compare offers and choose what works best for you.",
+                  style: TextStyle(color: Color(0xFF6A1B9A)),
+                ),
+              ],
             ),
+          ),
           if (!isLocked) ...[
             const SizedBox(height: 24),
             ElevatedButton(
