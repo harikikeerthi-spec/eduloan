@@ -7,6 +7,8 @@ import 'user_details_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/avatar_selection_dialog.dart';
 import 'refer_and_earn_page.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,6 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String _email = 'Loading...';
   String _phone = 'Loading...';
   String _dob = 'Loading...';
+  String _userId = 'Loading...';
   String? _profileImage;
 
   @override
@@ -33,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('user_email');
+      final cachedUserId = prefs.getString('userId') ?? 'Not set';
 
       debugPrint('DEBUG: ProfilePage fetching for email: $email');
 
@@ -54,6 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
               _email = user['email'] ?? email;
               _phone = user['phoneNumber'] ?? 'Not set';
               _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
+              _userId = user['id']?.toString() ?? cachedUserId;
               
               // Standardize DOB format to DD-MM-YYYY
               if (_dob.contains('-')) {
@@ -274,6 +279,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       const SizedBox(height: 16),
 
                       _buildInfoCard(
+                        icon: Icons.badge_outlined,
+                        title: 'User ID',
+                        value: _userId,
+                        showCopyButton: true,
+                      ),
+                      const SizedBox(height: 12),
+
+                      _buildInfoCard(
                         icon: Icons.phone_outlined,
                         title: 'Phone Number',
                         value: _phone,
@@ -354,13 +367,38 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildSettingItem(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Help & Support coming soon!'),
-                              backgroundColor: Color(0xFF311B92),
-                            ),
+                        onTap: () async {
+                          final Uri whatsappUri = Uri.parse(
+                            'https://wa.me/14155238886?text=Hi%20Vidhya%20Loan%20Mentor%2C%20I%20need%20help%20regarding%20my%20education%20loan%20options.',
                           );
+                          try {
+                            if (await canLaunchUrl(whatsappUri)) {
+                              await launchUrl(
+                                whatsappUri,
+                                mode: LaunchMode.externalApplication,
+                              );
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Could not launch WhatsApp. Please make sure WhatsApp is installed.',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error launching WhatsApp: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                       ),
                       const SizedBox(height: 12),
@@ -433,6 +471,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required IconData icon,
     required String title,
     required String value,
+    bool showCopyButton = false,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -482,6 +521,19 @@ class _ProfilePageState extends State<ProfilePage> {
               ],
             ),
           ),
+          if (showCopyButton)
+            IconButton(
+              icon: const Icon(Icons.copy_all_rounded, color: Color(0xFF311B92), size: 20),
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('User ID copied to clipboard!'),
+                    backgroundColor: Color(0xFF311B92),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
