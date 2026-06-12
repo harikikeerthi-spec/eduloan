@@ -4264,230 +4264,236 @@ class _LoanResults extends StatefulWidget {
 }
 
 class _LoanResultsState extends State<_LoanResults> {
+  bool _showOffers = false;
 
   @override
   Widget build(BuildContext context) {
     bool isLocked = false;
 
-
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          isLocked
-              ? "With your credentials, you're eligible for multiple loan offers."
-              : "With your credentials, you're eligible for multiple loan offers.",
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 180,
-          child: widget.recommendation != null
-              ? ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    GestureDetector(
-                      onTap: () => widget.onAction(widget.recommendation!.primary.bank),
-                      child: _LenderCard(
-                        color: const Color(0xFFE3F2FD),
-                        offer: widget.recommendation!.primary,
-                        isLocked: isLocked,
-                      ),
-                    ),
-                    ...widget.recommendation!.alternatives.map(
-                      (offer) => GestureDetector(
-                        onTap: () => widget.onAction(offer.bank),
+        if (_showOffers) ...[
+          Text(
+            isLocked
+                ? "With your credentials, you're eligible for multiple loan offers."
+                : "With your credentials, you're eligible for multiple loan offers.",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 180,
+            child: widget.recommendation != null
+                ? ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      GestureDetector(
+                        onTap: () => widget.onAction(widget.recommendation!.primary.bank),
                         child: _LenderCard(
-                          color:
-                              widget.recommendation!.alternatives.indexOf(offer) %
-                                      2 ==
-                                      0
-                                  ? const Color(0xFFF5F5F5)
-                                  : const Color(0xFFFFFDE7),
-                          offer: offer,
+                          color: const Color(0xFFE3F2FD),
+                          offer: widget.recommendation!.primary,
                           isLocked: isLocked,
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    GestureDetector(
-                      onTap: () => widget.onAction("State Bank of India"),
-                      child: _LenderCard(
-                        color: const Color(0xFFBBDEFB),
-                        offer: LoanOffer(
-                          id: '1',
-                          bank: 'State Bank of India',
-                          name: 'SBI GLOBAL ED-VANTAGE',
-                          amount: "Up to ₹50 Lakhs",
-                          rate: "8.50% - 9.25%",
-                          processingTime: "3-5 working days",
-                          savings: "Zero processing fee",
-                          requiresCoApplicant: true,
-                          requiresCollateral: false,
-                          bestFor: 'Low interest',
+                      ...widget.recommendation!.alternatives.map(
+                        (offer) => GestureDetector(
+                          onTap: () => widget.onAction(offer.bank),
+                          child: _LenderCard(
+                            color:
+                                widget.recommendation!.alternatives.indexOf(offer) %
+                                        2 ==
+                                        0
+                                    ? const Color(0xFFF5F5F5)
+                                    : const Color(0xFFFFFDE7),
+                            offer: offer,
+                            isLocked: isLocked,
+                          ),
                         ),
-                        isLocked: isLocked,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => widget.onAction("HDFC Credila"),
-                      child: _LenderCard(
-                        color: const Color(0xFFE0E0E0),
-                        offer: LoanOffer(
-                          id: '2',
-                          bank: 'HDFC Credila',
-                          name: 'UNSECURED EDUCATION LOAN',
-                          amount: "Up to ₹60 Lakhs",
-                          rate: "10.00% - 11.00%",
-                          processingTime: "2-3 weeks",
-                          savings: "0 Lakhs",
-                          requiresCoApplicant: true,
-                          requiresCollateral: false,
-                          bestFor: 'Fast approval',
-                        ),
-                        isLocked: isLocked,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    GestureDetector(
-                      onTap: () => widget.onAction("Avanse"),
-                      child: _LenderCard(
-                        color: const Color(0xFFFFF9C4),
-                        offer: LoanOffer(
-                          id: '3',
-                          bank: 'Avanse',
-                          name: 'EDUCATION LOAN',
-                          amount: "Up to ₹40 Lakhs",
-                          rate: "11.25% - 12.25%",
-                          processingTime: "4 days",
-                          savings: "0.4 Lakhs",
-                          requiresCoApplicant: true,
-                          requiresCollateral: false,
-                          bestFor: 'Lowest rate',
-                        ),
-                        isLocked: isLocked,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 16),
-        if (isLocked)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3E8FF), // Light purple
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFE9D5FF)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.verified_user_outlined,
-                    color: Color(0xFF7E22CE),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    ],
+                  )
+                : ListView(
+                    scrollDirection: Axis.horizontal,
                     children: [
-                      const Text(
-                        'Complete your KYC',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1F2937),
+                      GestureDetector(
+                        onTap: () => widget.onAction("State Bank of India"),
+                        child: _LenderCard(
+                          color: const Color(0xFFBBDEFB),
+                          offer: LoanOffer(
+                            id: '1',
+                            bank: 'State Bank of India',
+                            name: 'SBI GLOBAL ED-VANTAGE',
+                            amount: "Up to ₹50 Lakhs",
+                            rate: "8.50% - 9.25%",
+                            processingTime: "3-5 working days",
+                            savings: "Zero processing fee",
+                            requiresCoApplicant: true,
+                            requiresCollateral: false,
+                            bestFor: 'Low interest',
+                          ),
+                          isLocked: isLocked,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Get 50% off on processing fees',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: const Color(0xFF1F2937).withValues(alpha: 0.7),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () => widget.onAction("HDFC Credila"),
+                        child: _LenderCard(
+                          color: const Color(0xFFE0E0E0),
+                          offer: LoanOffer(
+                            id: '2',
+                            bank: 'HDFC Credila',
+                            name: 'UNSECURED EDUCATION LOAN',
+                            amount: "Up to ₹60 Lakhs",
+                            rate: "10.00% - 11.00%",
+                            processingTime: "2-3 weeks",
+                            savings: "0 Lakhs",
+                            requiresCoApplicant: true,
+                            requiresCollateral: false,
+                            bestFor: 'Fast approval',
+                        ),
+                          isLocked: isLocked,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () => widget.onAction("Avanse"),
+                        child: _LenderCard(
+                          color: const Color(0xFFFFF9C4),
+                          offer: LoanOffer(
+                            id: '3',
+                            bank: 'Avanse',
+                            name: 'EDUCATION LOAN',
+                            amount: "Up to ₹40 Lakhs",
+                            rate: "11.25% - 12.25%",
+                            processingTime: "4 days",
+                            savings: "0.4 Lakhs",
+                            requiresCoApplicant: true,
+                            requiresCollateral: false,
+                            bestFor: 'Lowest rate',
+                          ),
+                          isLocked: isLocked,
                         ),
                       ),
                     ],
                   ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => KycModal(
-                        onManualUpload: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const DocumentVaultPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF7E22CE),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  child: const Text(
-                    'Verify Now',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          RichText(
-            text: TextSpan(
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-              children: [
-                const TextSpan(
-                  text:
-                      "We've partnered with leading banks to get you the best rates. ",
-                ),
-                const TextSpan(
-                  text: "Compare offers and choose what works best for you.",
-                  style: TextStyle(color: Color(0xFF6A1B9A)),
-                ),
-              ],
-            ),
           ),
-        if (!isLocked) ...[
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => widget.onAction(widget.recommendation?.primary.bank),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6A1B9A),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          const SizedBox(height: 16),
+        ] else ...[
+          if (isLocked)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E8FF), // Light purple
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE9D5FF)),
               ),
-              elevation: 0,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.verified_user_outlined,
+                      color: Color(0xFF7E22CE),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Complete your KYC',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Get 50% off on processing fees',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: const Color(0xFF1F2937).withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => KycModal(
+                          onManualUpload: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const DocumentVaultPage(),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF7E22CE),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text(
+                      'Verify Now',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                children: [
+                  const TextSpan(
+                    text:
+                        "We've partnered with leading banks to get you the best rates. ",
+                  ),
+                  const TextSpan(
+                    text: "Compare offers and choose what works best for you.",
+                    style: TextStyle(color: Color(0xFF6A1B9A)),
+                  ),
+                ],
+              ),
             ),
-            child: const Text(
-              "Check your offers",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          if (!isLocked) ...[
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _showOffers = true;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A1B9A),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 54),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                "Check your offers",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
+          ],
         ],
       ],
     );
