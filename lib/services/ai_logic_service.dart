@@ -890,9 +890,11 @@ class AiLogicService {
       'country': country,
     });
     final list = data['universities'] as List? ?? [];
-    return list.map((e) {
+    return list.map<Map<String, String>>((e) {
       if (e is Map) {
-        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+        return Map<String, String>.from(
+          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+        );
       }
       return {'name': e.toString()};
     }).toList();
@@ -909,9 +911,11 @@ class AiLogicService {
       'degree': degree,
     });
     final list = data['courses'] as List? ?? [];
-    return list.map((e) {
+    return list.map<Map<String, String>>((e) {
       if (e is Map) {
-        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+        return Map<String, String>.from(
+          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+        );
       }
       return {'name': e.toString()};
     }).toList();
@@ -920,9 +924,11 @@ class AiLogicService {
   Future<List<Map<String, String>>> searchCountries(String query) async {
     final data = await _postRequest('search-countries', {'query': query});
     final list = data['countries'] as List? ?? [];
-    return list.map((e) {
+    return list.map<Map<String, String>>((e) {
       if (e is Map) {
-        return e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''));
+        return Map<String, String>.from(
+          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+        );
       }
       return {'name': e.toString()};
     }).toList();
