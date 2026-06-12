@@ -11,12 +11,14 @@ class ApplyLoanPage extends StatefulWidget {
   final String? initialUniversity;
   final String? initialCourse;
   final String? initialCountry;
+  final String? initialBank;
 
   const ApplyLoanPage({
     super.key,
     this.initialUniversity,
     this.initialCourse,
     this.initialCountry,
+    this.initialBank,
   });
 
   @override
@@ -90,6 +92,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
     if (widget.initialCourse != null) {
       _courseController.text = widget.initialCourse!;
+    }
+    if (widget.initialBank != null) {
+      _bankController.text = widget.initialBank!;
     }
     if (widget.initialCountry != null) {
       final country = widget.initialCountry!;

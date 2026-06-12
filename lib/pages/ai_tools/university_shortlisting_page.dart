@@ -10,6 +10,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/kyc_modal.dart';
 import '../document_vault_page.dart';
+import '../apply_loan_page.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   final String? initialFlow;
@@ -1732,8 +1734,18 @@ class _UniversityShortlistingPageState
           admitStatus: _admitStatus,
           testStatus: _testStatus,
           recommendation: _loanRecommendation,
-          onAction: () {
-            // handle action like requesting call back or checking offers
+          onAction: (bank) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ApplyLoanPage(
+                  initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
+                  initialCourse: _bachelorCourse ?? _tempCourse,
+                  initialCountry: _selectedCountry,
+                  initialBank: bank,
+                ),
+              ),
+            );
           },
         );
       }
@@ -2127,10 +2139,16 @@ class _UniversityShortlistingPageState
           admitStatus: _admitStatus,
           testStatus: _testStatus,
           recommendation: _loanRecommendation,
-          onAction: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Connecting you with our loan experts..."),
+          onAction: (bank) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ApplyLoanPage(
+                  initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
+                  initialCourse: _bachelorCourse ?? _tempCourse,
+                  initialCountry: _selectedCountry,
+                  initialBank: bank,
+                ),
               ),
             );
           },
@@ -4231,7 +4249,7 @@ class _LoanResults extends StatefulWidget {
   final String? admitStatus;
   final String? testStatus;
   final LoanRecommendationResult? recommendation;
-  final VoidCallback onAction;
+  final Function(String? bank) onAction;
 
   const _LoanResults({
     required this.hasBids,
@@ -4269,21 +4287,27 @@ class _LoanResultsState extends State<_LoanResults> {
               ? ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _LenderCard(
-                      color: const Color(0xFFE3F2FD),
-                      offer: widget.recommendation!.primary,
-                      isLocked: isLocked,
+                    GestureDetector(
+                      onTap: () => widget.onAction(widget.recommendation!.primary.bank),
+                      child: _LenderCard(
+                        color: const Color(0xFFE3F2FD),
+                        offer: widget.recommendation!.primary,
+                        isLocked: isLocked,
+                      ),
                     ),
                     ...widget.recommendation!.alternatives.map(
-                      (offer) => _LenderCard(
-                        color:
-                            widget.recommendation!.alternatives.indexOf(offer) %
-                                    2 ==
-                                0
-                            ? const Color(0xFFF5F5F5)
-                            : const Color(0xFFFFFDE7),
-                        offer: offer,
-                        isLocked: isLocked,
+                      (offer) => GestureDetector(
+                        onTap: () => widget.onAction(offer.bank),
+                        child: _LenderCard(
+                          color:
+                              widget.recommendation!.alternatives.indexOf(offer) %
+                                      2 ==
+                                      0
+                                  ? const Color(0xFFF5F5F5)
+                                  : const Color(0xFFFFFDE7),
+                          offer: offer,
+                          isLocked: isLocked,
+                        ),
                       ),
                     ),
                   ],
@@ -4291,55 +4315,64 @@ class _LoanResultsState extends State<_LoanResults> {
               : ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _LenderCard(
-                      color: const Color(0xFFBBDEFB),
-                      offer: LoanOffer(
-                        id: '1',
-                        bank: 'LENDER NAME',
-                        name: 'Loan',
-                        amount: "Up to ₹85 Lakhs",
-                        rate: "11.8% to 12.8%",
-                        processingTime: "6 days",
-                        savings: "0.4 Lakhs",
-                        requiresCoApplicant: true,
-                        requiresCollateral: false,
-                        bestFor: 'Low interest',
+                    GestureDetector(
+                      onTap: () => widget.onAction("State Bank of India"),
+                      child: _LenderCard(
+                        color: const Color(0xFFBBDEFB),
+                        offer: LoanOffer(
+                          id: '1',
+                          bank: 'State Bank of India',
+                          name: 'SBI GLOBAL ED-VANTAGE',
+                          amount: "Up to ₹50 Lakhs",
+                          rate: "8.50% - 9.25%",
+                          processingTime: "3-5 working days",
+                          savings: "Zero processing fee",
+                          requiresCoApplicant: true,
+                          requiresCollateral: false,
+                          bestFor: 'Low interest',
+                        ),
+                        isLocked: isLocked,
                       ),
-                      isLocked: isLocked,
                     ),
                     const SizedBox(width: 12),
-                    _LenderCard(
-                      color: const Color(0xFFE0E0E0),
-                      offer: LoanOffer(
-                        id: '2',
-                        bank: 'LENDER NAME',
-                        name: 'Loan',
-                        amount: "Up to ₹14 Lakhs",
-                        rate: "11.5% to 12.5%",
-                        processingTime: "7 days",
-                        savings: "0 Lakhs",
-                        requiresCoApplicant: true,
-                        requiresCollateral: false,
-                        bestFor: 'Fast approval',
+                    GestureDetector(
+                      onTap: () => widget.onAction("HDFC Credila"),
+                      child: _LenderCard(
+                        color: const Color(0xFFE0E0E0),
+                        offer: LoanOffer(
+                          id: '2',
+                          bank: 'HDFC Credila',
+                          name: 'UNSECURED EDUCATION LOAN',
+                          amount: "Up to ₹60 Lakhs",
+                          rate: "10.00% - 11.00%",
+                          processingTime: "2-3 weeks",
+                          savings: "0 Lakhs",
+                          requiresCoApplicant: true,
+                          requiresCollateral: false,
+                          bestFor: 'Fast approval',
+                        ),
+                        isLocked: isLocked,
                       ),
-                      isLocked: isLocked,
                     ),
                     const SizedBox(width: 12),
-                    _LenderCard(
-                      color: const Color(0xFFFFF9C4),
-                      offer: LoanOffer(
-                        id: '3',
-                        bank: 'LENDER NAME',
-                        name: 'Loan',
-                        amount: "Up to ₹14 Lakhs",
-                        rate: "8.8% to 9.8%",
-                        processingTime: "0 days",
-                        savings: "0.4 Lakhs",
-                        requiresCoApplicant: true,
-                        requiresCollateral: false,
-                        bestFor: 'Lowest rate',
+                    GestureDetector(
+                      onTap: () => widget.onAction("Avanse"),
+                      child: _LenderCard(
+                        color: const Color(0xFFFFF9C4),
+                        offer: LoanOffer(
+                          id: '3',
+                          bank: 'Avanse',
+                          name: 'EDUCATION LOAN',
+                          amount: "Up to ₹40 Lakhs",
+                          rate: "11.25% - 12.25%",
+                          processingTime: "4 days",
+                          savings: "0.4 Lakhs",
+                          requiresCoApplicant: true,
+                          requiresCollateral: false,
+                          bestFor: 'Lowest rate',
+                        ),
+                        isLocked: isLocked,
                       ),
-                      isLocked: isLocked,
                     ),
                   ],
                 ),
@@ -4440,7 +4473,7 @@ class _LoanResultsState extends State<_LoanResults> {
         if (!isLocked) ...[
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: widget.onAction,
+            onPressed: () => widget.onAction(widget.recommendation?.primary.bank),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6A1B9A),
               foregroundColor: Colors.white,
@@ -4472,6 +4505,72 @@ class _LenderCard extends StatelessWidget {
     this.isLocked = false,
   });
 
+  Widget _getBankLogo(String bankName) {
+    final name = bankName.toLowerCase();
+    String? assetPath;
+
+    if (name.contains('sbi') || name.contains('state bank')) {
+      assetPath = 'assets/logos/sbi.svg';
+    } else if (name.contains('hdfc') || name.contains('credila')) {
+      assetPath = 'assets/logos/hdfc_credila.svg';
+    } else if (name.contains('icici')) {
+      assetPath = 'assets/logos/icici.svg';
+    } else if (name.contains('avanse')) {
+      assetPath = 'assets/logos/avanse.svg';
+    } else if (name.contains('auxilo')) {
+      assetPath = 'assets/logos/auxilo.svg';
+    } else if (name.contains('axis')) {
+      assetPath = 'assets/logos/axis.svg';
+    } else if (name.contains('bob') || name.contains('baroda')) {
+      assetPath = 'assets/logos/bob.svg';
+    } else if (name.contains('idfc')) {
+      assetPath = 'assets/logos/idfc.svg';
+    } else if (name.contains('incred')) {
+      assetPath = 'assets/logos/incred.svg';
+    } else if (name.contains('pnb') || name.contains('punjab')) {
+      assetPath = 'assets/logos/pnb.svg';
+    }
+
+    if (assetPath != null) {
+      return Container(
+        width: 28,
+        height: 28,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha((0.05 * 255).toInt()),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: SvgPicture.asset(
+            assetPath,
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        Icons.account_balance,
+        size: 14,
+        color: Colors.grey.shade600,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final double cardWidth = MediaQuery.of(context).size.width - 56;
@@ -4489,14 +4588,27 @@ class _LenderCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                offer.bank,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Row(
+                  children: [
+                    _getBankLogo(offer.bank),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        offer.bank,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
               if (isLocked)
                 Row(
                   children: [
