@@ -12,6 +12,7 @@ import '../models/loan.dart';
 import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
 import '../services/wikipedia_service.dart';
+import '../services/notification_service.dart';
 import 'ai_tools/university_detail_page.dart';
 import 'ai_tools/visa_interview_page.dart';
 import '../services/blog_service.dart';
@@ -32,6 +33,8 @@ class HomeTabState extends State<HomeTab> {
   List<UniversityRecommendation> _savedRecommendations = [];
   String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
   final AiLogicService _aiService = AiLogicService();
+  final NotificationService _notificationService = NotificationService();
+  int _unreadCount = 0;
 
   // Auto-scroll logic for recommendations
   final ScrollController _aiScrollController = ScrollController();
@@ -46,6 +49,7 @@ class HomeTabState extends State<HomeTab> {
     super.initState();
     _loadActiveLoans();
     _loadRecommendations();
+    _loadNotificationCount();
   }
 
   @override
@@ -91,6 +95,20 @@ class HomeTabState extends State<HomeTab> {
     _loadRecommendations();
     _loadSavedRecommendations();
     _loadActiveLoans();
+    _loadNotificationCount();
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final notifications = await _notificationService.getNotifications();
+      if (mounted) {
+        setState(() {
+          _unreadCount = notifications.where((n) => !n.isRead).length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading notification count: $e');
+    }
   }
 
   Future<void> _loadSavedRecommendations() async {
@@ -244,16 +262,24 @@ class HomeTabState extends State<HomeTab> {
                               const SizedBox(width: 16),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/notifications');
+                                  Navigator.pushNamed(context, '/notifications').then((_) {
+                                    _loadNotificationCount();
+                                  });
                                 },
-                                icon: const Badge(
-                                  label: Text('3'),
-                                  child: Icon(
-                                    Icons.notifications_outlined,
-                                    color: Colors.black54,
-                                    size: 28,
-                                  ),
-                                ),
+                                icon: _unreadCount > 0
+                                    ? Badge(
+                                        label: Text('$_unreadCount'),
+                                        child: const Icon(
+                                          Icons.notifications_outlined,
+                                          color: Colors.black54,
+                                          size: 28,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.notifications_outlined,
+                                        color: Colors.black54,
+                                        size: 28,
+                                      ),
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                               ),
