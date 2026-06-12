@@ -4474,8 +4474,9 @@ class _LenderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double cardWidth = MediaQuery.of(context).size.width - 56;
     return Container(
-      width: 260,
+      width: cardWidth,
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
