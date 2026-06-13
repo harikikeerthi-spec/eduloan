@@ -371,6 +371,7 @@ export class AiController {
     },
   ) {
     try {
+      console.log('search-universities called with:', JSON.stringify(data));
       const allowIndia = (data.country || '').toLowerCase() === 'india' || 
                          (data.countries || []).some(c => c.toLowerCase() === 'india');
 

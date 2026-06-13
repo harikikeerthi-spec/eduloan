@@ -41,10 +41,10 @@ class UserService {
     }
   }
 
-  static Future<bool> uploadDocument(File file, String docType) async {
+  static Future<String?> uploadDocument(File file, String docType) async {
     try {
       final token = await _getToken();
-      if (token == null) return false;
+      if (token == null) return 'Authentication token not found.';
 
       final baseUrl = await ApiConfig.getBaseUrl();
       var request = http.MultipartRequest(
@@ -61,12 +61,27 @@ class UserService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        return data['success'] == true;
+        if (data['success'] == true) {
+          return null;
+        } else {
+          return data['message'] ?? 'Upload failed.';
+        }
       }
-      return false;
+
+      try {
+        final data = jsonDecode(response.body);
+        if (data['message'] != null) {
+          if (data['message'] is List) {
+            return (data['message'] as List).join(', ');
+          }
+          return data['message'].toString();
+        }
+      } catch (_) {}
+
+      return 'Upload failed (Status: ${response.statusCode})';
     } catch (e) {
       debugPrint('Error uploading document: $e');
-      return false;
+      return 'Error uploading document: $e';
     }
   }
 

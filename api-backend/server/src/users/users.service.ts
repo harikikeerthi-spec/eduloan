@@ -1,7 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { randomInt, randomUUID } from 'crypto';
+import { randomInt } from 'crypto';
 import { extractFullNameFromOcrRaw } from '../ai/utils/ocr-fields.util';
 import { SupabaseService } from '../supabase/supabase.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class UsersService {
@@ -9,7 +10,10 @@ export class UsersService {
     return this.supabase.getClient();
   }
 
-  constructor(private supabase: SupabaseService) { }
+  constructor(
+    private supabase: SupabaseService,
+    private eventEmitter: EventEmitter2,
+  ) { }
 
   private parseDate(dateStr: string | null | undefined): string | null {
     if (!dateStr) return null;
@@ -294,6 +298,21 @@ export class UsersService {
 
     // Build the insert payload — only include staffId for staff users to avoid
     // PGRST204 ("staffId column not found in schema cache") for regular users
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let referralCode = '';
+    let exists = true;
+    while (exists) {
+      let code = 'VL-';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      const { data: existing } = await this.db.from('User').select('id').eq('referralCode', code).single();
+      if (!existing) {
+        referralCode = code;
+        exists = false;
+      }
+    }
+
     const insertPayload: any = {
       id,
       email: data.email,
@@ -305,6 +324,7 @@ export class UsersService {
       password: data.password || '',
       role: data.role || 'user',
       registeredAtIndia: registeredAtIndia,
+      referralCode,
     };
 
     if (data.role === 'staff' && staffId) {
@@ -421,20 +441,39 @@ export class UsersService {
         }
       }
       
-      const fullNameVal =
-        extractFullNameFromOcrRaw(details) ||
-        details.full_name ||
-        details.fullName ||
-        details.name;
-      if (fullNameVal) {
-        const parts = fullNameVal.trim().split(/\s+/);
-        if (parts.length > 0) {
-          const newFirstName = parts[0];
-          const newLastName = parts.slice(1).join(' ');
-          
-          compareAndSet(currentUser.firstName, newFirstName, 'firstName');
-          if (newLastName) {
-            compareAndSet(currentUser.lastName, newLastName, 'lastName');
+      // Do not update user's profile firstName and lastName from identity documents like PAN, Aadhaar, or Passport,
+      // and never update them from co-applicant or parent documents.
+      const isIdentityDoc = docType && (
+        docType.toLowerCase().includes('pan') ||
+        docType.toLowerCase().includes('aadhar') ||
+        docType.toLowerCase().includes('aadhaar') ||
+        docType.toLowerCase().includes('national_id') ||
+        docType.toLowerCase().includes('passport')
+      );
+      
+      const isStudentDoc = !docType || (
+        !docType.toLowerCase().includes('coapplicant') &&
+        !docType.toLowerCase().includes('father') &&
+        !docType.toLowerCase().includes('mother') &&
+        !docType.toLowerCase().includes('parent')
+      );
+
+      if (!isIdentityDoc && isStudentDoc) {
+        const fullNameVal =
+          extractFullNameFromOcrRaw(details) ||
+          details.full_name ||
+          details.fullName ||
+          details.name;
+        if (fullNameVal) {
+          const parts = fullNameVal.trim().split(/\s+/);
+          if (parts.length > 0) {
+            const newFirstName = parts[0];
+            const newLastName = parts.slice(1).join(' ');
+            
+            compareAndSet(currentUser.firstName, newFirstName, 'firstName');
+            if (newLastName) {
+              compareAndSet(currentUser.lastName, newLastName, 'lastName');
+            }
           }
         }
       }
@@ -817,7 +856,6 @@ export class UsersService {
     const { data: application, error } = await this.db
       .from('LoanApplication')
       .insert({
-        id: randomUUID(),
         applicationNumber,
         userId,
         bank: data.bank,
@@ -840,7 +878,7 @@ export class UsersService {
         hasCollateral: !!data.collateral && data.collateral !== 'no',
         collateralType: data.collateral !== 'no' ? data.collateral : null,
         remarks: data.notes || null,
-        status: 'pending',
+        status: 'submitted',
         stage: 'application_submitted',
         progress: 10,
         submittedAt: now,
@@ -851,6 +889,42 @@ export class UsersService {
       .single();
 
     if (error) throw error;
+
+    // Emit application created event for staff notifications
+    try {
+      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+      this.eventEmitter.emit('application.created', {
+        applicationId: application.id,
+        applicationNumber: application.applicationNumber,
+        userId: application.userId,
+        candidateName: name,
+        candidateEmail: application.email,
+        bank: application.bank,
+        loanAmount: application.amount,
+        loanType: data.loanType,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit application.created event in UsersService:', e);
+    }
+
+    // Emit live dashboard activity event for new application creation!
+    try {
+      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+      const targetUni = application.universityName || 'Target University';
+      this.eventEmitter.emit('dashboard.activity', {
+        type: 'application',
+        msg: `Student ${name} submitted a new Loan Application #${application.applicationNumber} for ${targetUni}.`,
+        icon: 'assignment',
+        color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+        actorName: name,
+        actorEmail: application.email,
+        createdAt: new Date().toISOString()
+      });
+    } catch (e) {
+      console.error('Failed to emit activity event for application creation in UsersService:', e);
+    }
+
     return application;
   }
 
@@ -988,7 +1062,6 @@ export class UsersService {
     if (error) throw error;
     return { success: true };
   }
-
   async updateDocumentStatus(docId: string, status: string, rejectionReason?: string) {
     const payload: any = {
       status,
@@ -997,10 +1070,23 @@ export class UsersService {
     
     if (status === 'verified') {
       payload.verifiedAt = new Date().toISOString();
+      // Clear any previous rejection data
+      payload.verificationMetadata = {
+        status: 'verified',
+        verifiedAt: new Date().toISOString(),
+        message: 'Document manually verified by staff',
+      };
     }
     
     if (status === 'rejected' && rejectionReason) {
-      payload.rejectionReason = rejectionReason;
+      payload.verifiedAt = null;
+      // Store rejection reason inside the existing verificationMetadata JSON column
+      payload.verificationMetadata = {
+        status: 'rejected',
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: rejectionReason,
+        message: `Document rejected by staff: ${rejectionReason}`,
+      };
     }
 
     const { data, error } = await this.db
@@ -1015,9 +1101,31 @@ export class UsersService {
       throw error;
     }
 
+    // Emit events for real-time student notifications
+    if (data) {
+      const docName = data.verificationMetadata?.docName || data.docType;
+      if (status === 'rejected') {
+        this.eventEmitter.emit('document.rejected', {
+          userId: data.userId,
+          documentId: data.id,
+          documentType: data.docType,
+          documentName: docName,
+          rejectionReason: rejectionReason,
+          rejectedAt: payload.verificationMetadata.rejectedAt,
+        });
+      } else if (status === 'verified') {
+        this.eventEmitter.emit('document.verified', {
+          userId: data.userId,
+          documentId: data.id,
+          documentType: data.docType,
+          documentName: docName,
+          verifiedAt: payload.verifiedAt,
+        });
+      }
+    }
+
     return data;
   }
-
   // Get user dashboard data with all applications, documents and full activity feed
   async getUserDashboardData(userId: string) {
     try {

@@ -27,7 +27,6 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       {'name': 'PAN Card', 'type': 'student_pan'},
       {'name': 'Aadhar Card', 'type': 'student_aadhar'},
       {'name': 'Passport Copy', 'type': 'student_passport'},
-      {'name': 'Driving License', 'type': 'student_driving_license'},
     ],
     'Academics': [
       {'name': '10th Marksheet', 'type': 'student_10th_marksheet'},
@@ -150,10 +149,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         ).showSnackBar(SnackBar(content: Text('Uploading $name...')));
       }
 
-      bool success = await UserService.uploadDocument(file, type);
+      String? errorMessage = await UserService.uploadDocument(file, type);
 
       if (mounted) {
-        if (success) {
+        if (errorMessage == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Upload successful!'),
@@ -163,9 +162,17 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           _fetchDocuments();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Upload failed.'),
+            SnackBar(
+              content: Text(errorMessage),
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 6),
+              action: SnackBarAction(
+                label: 'Dismiss',
+                textColor: Colors.white,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+              ),
             ),
           );
         }
