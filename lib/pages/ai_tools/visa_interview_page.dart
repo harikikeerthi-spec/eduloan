@@ -76,18 +76,16 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
   Future<void> _loadUserProfileName() async {
     final prefs = await SharedPreferences.getInstance();
     final firstName =
-        prefs.getString('user_firstName') ?? prefs.getString('user_name');
-    final lastName = prefs.getString('user_lastName');
+        prefs.getString('user_firstName') ?? prefs.getString('user_name') ?? '';
+    final lastName = prefs.getString('user_lastName') ?? '';
 
     if (mounted) {
-      if (firstName != null && firstName.isNotEmpty) {
+      if (firstName.isNotEmpty) {
         setState(() {
           _userProfile['firstName'] = firstName;
           _firstNameController.text = firstName;
-          if (lastName != null) {
-            _userProfile['lastName'] = lastName;
-            _lastNameController.text = lastName;
-          }
+          _userProfile['lastName'] = lastName;
+          _lastNameController.text = lastName;
         });
       }
     }
@@ -193,6 +191,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     _userProfile['university'] = _universityController.text;
     _userProfile['course'] = _courseController.text;
     _userProfile['financials'] = _financialsController.text;
+    _userProfile['localTime'] = DateTime.now().toIso8601String();
+    _userProfile['localHour'] = DateTime.now().hour;
 
     setState(() => _isLoading = true);
 

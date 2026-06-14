@@ -326,7 +326,7 @@ class CommunityService {
     required String category,
     List<String>? tags,
   }) async {
-    final response = await _postRequest('/community/forum', {
+    final response = await _postRequest('/community/posts', {
       'title': title,
       'content': content,
       'category': category,

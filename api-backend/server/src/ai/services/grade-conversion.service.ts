@@ -82,7 +82,7 @@ export class GradeConversionService {
     Target Output: ${input.outputType}
 
     CRITICAL CONSTRAINTS:
-    - If the input Type is 'percentage', the Value is a literal percentage out of 100. Do NOT multiply it by 10, scale it, or assume it represents a 10-point scale CGPA (e.g. an input value of 8 or 8.5 is literally 8% or 8.5% percentage, NOT 80% or 85%). Maintain the input percentage value exactly as the output percentage.
+    - If the input Type is 'percentage', the Value is a literal percentage out of 100. You MUST NEVER scale, multiply, or auto-correct the percentage value, even if it is extremely low (e.g., an input value of 10.5 represents a literal 10.5% out of 100%, NOT 105%, and NOT 10.5 CGPA). Keep the percentage output exactly equal to the input percentage value.
     - If the input Type is 'cgpa', the Value is out of 10.0.
     - If the input Type is 'gpa', the Value is out of 4.0.
     - If the input Type is 'marks', compute the percentage as (Value / Maximum) * 100.

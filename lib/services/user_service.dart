@@ -12,14 +12,21 @@ class UserService {
     return prefs.getString('auth_token');
   }
 
+  static Future<String?> _getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('userId');
+  }
+
   static Future<List<UserDocument>> getUserDocuments() async {
     try {
       final token = await _getToken();
       if (token == null) return [];
+      final userId = await _getUserId();
+      if (userId == null) return [];
 
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.get(
-        Uri.parse('$baseUrl/users/documents'),
+        Uri.parse('$baseUrl/documents/$userId'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -45,15 +52,18 @@ class UserService {
     try {
       final token = await _getToken();
       if (token == null) return 'Authentication token not found.';
+      final userId = await _getUserId();
+      if (userId == null) return 'User ID not found.';
 
       final baseUrl = await ApiConfig.getBaseUrl();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/users/documents'),
+        Uri.parse('$baseUrl/documents/upload'),
       );
 
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['docType'] = docType;
+      request.fields['userId'] = userId;
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
       final streamedResponse = await request.send();
@@ -89,10 +99,12 @@ class UserService {
     try {
       final token = await _getToken();
       if (token == null) return false;
+      final userId = await _getUserId();
+      if (userId == null) return false;
 
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http.delete(
-        Uri.parse('$baseUrl/users/documents/$docType'),
+        Uri.parse('$baseUrl/documents/$userId/$docType'),
         headers: {'Authorization': 'Bearer $token'},
       );
 
@@ -109,6 +121,7 @@ class UserService {
 
   static Future<String> getDocumentViewUrl(String docType) async {
     final baseUrl = await ApiConfig.getBaseUrl();
-    return '$baseUrl/users/documents/$docType/view';
+    final userId = await _getUserId() ?? '';
+    return '$baseUrl/documents/view/$userId/$docType';
   }
 }

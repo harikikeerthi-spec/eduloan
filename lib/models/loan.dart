@@ -61,7 +61,7 @@ class Loan {
       phone: json['phone'],
       email: json['email']?.toString() ?? '',
       universityName: json['universityName'],
-      targetCountry: json['targetCountry'],
+      targetCountry: json['targetCountry'] ?? json['country'],
       courseName: json['courseName'],
       bank: json['bank']?.toString() ?? 'Unknown Bank',
       loanType: json['loanType']?.toString() ?? 'Education Loan',

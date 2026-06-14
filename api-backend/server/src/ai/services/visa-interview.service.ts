@@ -126,7 +126,15 @@ CONSTRAINTS:
     ): string {
         const sections = INTERVIEW_SECTIONS.map((s, i) => `${i + 1}. ${s.id}: ${s.label}`).join('\n');
 
-        const hour = new Date().getHours();
+        let hour = new Date().getHours();
+        if (userProfile && typeof userProfile.localHour === 'number') {
+            hour = userProfile.localHour;
+        } else if (userProfile && typeof userProfile.localTime === 'string') {
+            try {
+                hour = new Date(userProfile.localTime).getHours();
+            } catch (e) {}
+        }
+
         let greeting = 'Good morning';
         if (hour >= 12 && hour < 17) {
             greeting = 'Good afternoon';
@@ -153,11 +161,14 @@ CONSTRAINTS:
             prompt += `\n\nCONVERSATION HISTORY:\n${historyContext}\n\nNEXT JSON RESPONSE:`;
         } else {
             prompt += `\n\nFIRST JSON RESPONSE:
-1. You MUST introduce yourself by name and role first. Use the greeting "${greeting}". Example: "${greeting}. I am Officer [Name]. I'll be conducting your visa interview today."
+1. You MUST introduce yourself by name and role first. Use the greeting "${greeting}". Example: "${greeting}. I am Officer [Name]. I'll be conducting your visa interview today." (where [Name] is Smith, Sarah, or VL Advisor).
 2. Then immediately ask the first question about the applicant's Personal Background (name, purpose of visit).
 3. Combine the introduction and question in the "question" field of the JSON.
-4. Smith: Brief, commanding intro. Sarah: Warm, welcoming intro. VL Advisor: Procedural, formal intro.
-5. Keep it natural and under 4 sentences total.`;
+4. Name mapping for introduction:
+   - If you are acting as Officer Smith: introduce yourself as "Officer Smith".
+   - If you are acting as Officer Sarah: introduce yourself as "Officer Sarah".
+   - If you are acting as Officer VL Advisor: introduce yourself as "Officer VL Advisor".
+5. Keep the introduction and first question natural and under 4 sentences total.`;
         }
 
         return prompt;

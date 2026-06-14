@@ -56,6 +56,7 @@ class LoanService {
           'phone': phoneNumber,
           'email': email,
           'targetCountry': targetCountry,
+          'country': targetCountry, // Map country as targetCountry for backend compatibility
           'universityName': universityName,
           'courseName': courseName,
           'bank': bank,

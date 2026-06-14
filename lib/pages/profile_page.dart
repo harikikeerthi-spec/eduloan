@@ -49,9 +49,22 @@ class _ProfilePageState extends State<ProfilePage> {
             final nestedData = responseData['data'] ?? {};
             final user = nestedData['user'] ?? responseData['user'] ?? responseData;
 
+            final fname = user['firstName'] ?? '';
+            final lname = user['lastName'] ?? '';
+
+            // Save to SharedPreferences so other pages stay in sync
+            prefs.setString('user_firstName', fname);
+            prefs.setString('user_lastName', lname);
+            if (user['phoneNumber'] != null) {
+              prefs.setString('user_phone', user['phoneNumber']);
+            }
+            if (user['dateOfBirth'] != null) {
+              prefs.setString('user_dob', user['dateOfBirth']);
+            } else if (user['dob'] != null) {
+              prefs.setString('user_dob', user['dob']);
+            }
+
             setState(() {
-              final fname = user['firstName'] ?? '';
-              final lname = user['lastName'] ?? '';
               _name = '$fname $lname'.trim();
               if (_name.isEmpty) _name = 'User';
 
