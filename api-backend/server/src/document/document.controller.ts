@@ -46,10 +46,15 @@ export class DocumentController {
       storage,
       limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
       fileFilter: (req, file, cb) => {
-        if (file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
+        const ext = file.originalname.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+        const isMimeValid = file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/) || file.mimetype === 'application/octet-stream';
+        const isExtValid = ext && allowedExtensions.includes(ext);
+
+        if (isMimeValid || isExtValid) {
           cb(null, true);
         } else {
-          cb(new BadRequestException('Unsupported file type'), false);
+          cb(new BadRequestException('Unsupported file type. Only PDF, JPG, JPEG, and PNG files are allowed.'), false);
         }
       },
     }),

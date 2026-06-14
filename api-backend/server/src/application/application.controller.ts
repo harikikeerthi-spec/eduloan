@@ -519,7 +519,12 @@ export class ApplicationController {
         storage: storage,
         limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
         fileFilter: (req, file, cb) => {
-            if (file.mimetype.match(/\/(jpg|jpeg|png|pdf|doc|docx)$/)) {
+            const ext = file.originalname.split('.').pop()?.toLowerCase();
+            const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            const isMimeValid = file.mimetype.match(/\/(jpg|jpeg|png|pdf|doc|docx)$/) || file.mimetype === 'application/octet-stream';
+            const isExtValid = ext && allowedExtensions.includes(ext);
+
+            if (isMimeValid || isExtValid) {
                 cb(null, true);
             } else {
                 cb(new BadRequestException('Unsupported file type. Allowed: jpg, jpeg, png, pdf, doc, docx'), false);

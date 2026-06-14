@@ -83,7 +83,12 @@ export class StaffProfileController {
     storage: uploadStorage,
     limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
     fileFilter: (_req, file, cb) => {
-      if (file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) cb(null, true);
+      const ext = file.originalname.split('.').pop()?.toLowerCase();
+      const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+      const isMimeValid = file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/) || file.mimetype === 'application/octet-stream';
+      const isExtValid = ext && allowedExtensions.includes(ext);
+
+      if (isMimeValid || isExtValid) cb(null, true);
       else cb(new BadRequestException('Only PDF, JPG, PNG allowed'), false);
     },
   }))
