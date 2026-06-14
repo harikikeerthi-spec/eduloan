@@ -50,12 +50,10 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
           VideoPlayerController.asset('assets/images/splash_video.mp4');
       _controller = controller;
 
-      controller.addListener(_videoListener);
-
       await controller.initialize().timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 6),
         onTimeout: () {
-          throw Exception('Video initialization timed out after 5s');
+          throw Exception('Video initialization timed out after 6s');
         },
       );
 
@@ -63,6 +61,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
       await controller.setLooping(false);
       await controller.setVolume(0.0);
+
+      // Add listener after successful initialization to avoid transient startup error events
+      controller.addListener(_videoListener);
 
       FlutterNativeSplash.remove();
 
