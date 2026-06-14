@@ -1122,10 +1122,12 @@ class AiLogicService {
   Future<VisaInterviewStartResponse> startVisaInterview(
     Map<String, dynamic> userProfile, [
     String visaType = 'F1 Student Visa',
+    String agentType = 'agent_michael',
   ]) async {
     final data = await _postRequest('visa-interview/start', {
       'userProfile': userProfile,
       'visaType': visaType,
+      'agentType': agentType,
     });
     return VisaInterviewStartResponse.fromJson(data);
   }
@@ -1137,6 +1139,7 @@ class AiLogicService {
     required String currentSection,
     required List<InterviewMessage> conversationHistory,
     String visaType = 'F1 Student Visa',
+    String agentType = 'agent_michael',
   }) async {
     final data = await _postRequest('visa-interview/continue', {
       'userProfile': userProfile,
@@ -1147,6 +1150,7 @@ class AiLogicService {
       'conversationHistory': conversationHistory
           .map((e) => e.toJson())
           .toList(),
+      'agentType': agentType,
     });
     return VisaInterviewContinueResponse.fromJson(data);
   }

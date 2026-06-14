@@ -30,7 +30,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
   String _lastWords = '';
   double _voiceLevel = 0.0;
 
-  int _setupStep = 0; // 0: Visa Path, 1: Profile
+  int _setupStep = 0; // 0: Visa Path, 1: Officer, 2: Profile
+  String _selectedAgent = 'agent_michael';
 
   late TextEditingController _universityController;
   late TextEditingController _courseController;
@@ -200,6 +201,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
       final response = await _aiService.startVisaInterview(
         _userProfile,
         _visaType,
+        _selectedAgent,
       );
 
       if (mounted) {
@@ -248,6 +250,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
         currentSection: _currentSection,
         conversationHistory: _messages,
         visaType: _visaType,
+        agentType: _selectedAgent,
       );
 
       if (mounted) {
@@ -374,6 +377,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
       case 0:
         return _buildVisaPathSelection();
       case 1:
+        return _buildOfficerSelection();
+      case 2:
       default:
         return _buildProfileSetupUI();
     }
@@ -399,7 +404,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
               const SizedBox(width: 12),
             ],
             Expanded(
-              child: _setupStep == 1
+              child: _setupStep == 2
                   ? _buildBeginButton()
                   : _buildNextButton(() {
                       setState(() => _setupStep++);
@@ -470,6 +475,144 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     );
   }
 
+  Widget _buildOfficerSelection() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 40),
+          _buildStepHeader('SELECT YOUR OFFICER'),
+          const SizedBox(height: 24),
+          _buildOfficerCard(
+            id: 'agent_michael',
+            name: 'Officer Michael',
+            description: 'Neutral, methodical, clinical, follows procedure exactly.',
+            difficulty: 'Standard',
+            difficultyColor: Colors.blue,
+            icon: Icons.assignment_ind,
+          ),
+          const SizedBox(height: 16),
+          _buildOfficerCard(
+            id: 'agent_sarah',
+            name: 'Officer Sarah',
+            description: 'Warm but sharp, conversational, catches everything behind a friendly tone.',
+            difficulty: 'Medium',
+            difficultyColor: Colors.orange,
+            icon: Icons.face,
+          ),
+          const SizedBox(height: 16),
+          _buildOfficerCard(
+            id: 'agent_smith',
+            name: 'Officer Smith',
+            description: 'Strict, authoritative, 20+ years of experience, no patience for vague answers.',
+            difficulty: 'Hard / Strict',
+            difficultyColor: Colors.red,
+            icon: Icons.gavel,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfficerCard({
+    required String id,
+    required String name,
+    required String description,
+    required String difficulty,
+    required Color difficultyColor,
+    required IconData icon,
+  }) {
+    final isSelected = _selectedAgent == id;
+    return InkWell(
+      onTap: () => setState(() => _selectedAgent = id),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF6200EE).withValues(alpha: 0.05)
+              : Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF6200EE)
+                : const Color(0xFFE5E7EB),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF6200EE) : Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : Colors.grey[600],
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: difficultyColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          difficulty,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: difficultyColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.check_circle, color: Color(0xFF6200EE)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildProfileSetupUI() {
     return SingleChildScrollView(
@@ -860,6 +1003,19 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
             ],
           ),
           const SizedBox(height: 40),
+          Text(
+            _selectedAgent == 'agent_smith'
+                ? 'Officer Smith'
+                : _selectedAgent == 'agent_sarah'
+                    ? 'Officer Sarah'
+                    : 'Officer Michael',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6200EE),
+            ),
+          ),
+          const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
