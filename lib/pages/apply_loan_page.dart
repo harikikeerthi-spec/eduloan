@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
@@ -1379,94 +1380,64 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   Widget _getBankLogo(String bankName) {
-    String? logoUrl;
+    final name = bankName.toLowerCase();
+    String? assetPath;
 
-    switch (bankName) {
-      case 'HDFC Credila':
-        logoUrl = 'https://www.credila.com/images/logo.png';
-        break;
-      case 'SBI':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
-        break;
-      case 'ICICI Bank':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
-        break;
-      case 'Axis Bank':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
-        break;
-      case 'Avanse Financial Services':
-        logoUrl = 'https://logo.clearbit.com/avanse.com';
-        break;
-      case 'InCred':
-        logoUrl = 'https://www.incred.com/assets/images/logo.png';
-        break;
-      case 'Auxilo':
-        logoUrl = 'https://logo.clearbit.com/auxilo.com';
-        break;
-      case 'IDFC First Bank':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/IDFC_First_Bank_logo.svg/1280px-IDFC_First_Bank_logo.svg.png';
-        break;
-      case 'Bank of Baroda':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
-        break;
-      case 'Punjab National Bank':
-        logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/1024px-Punjab_National_Bank.svg.png';
-        break;
-      default:
-        logoUrl = null;
+    if (name.contains('sbi') || name.contains('state bank')) {
+      assetPath = 'assets/logos/sbi.svg';
+    } else if (name.contains('hdfc') || name.contains('credila')) {
+      assetPath = 'assets/logos/hdfc_credila.svg';
+    } else if (name.contains('icici')) {
+      assetPath = 'assets/logos/icici.svg';
+    } else if (name.contains('avanse')) {
+      assetPath = 'assets/logos/avanse.svg';
+    } else if (name.contains('auxilo')) {
+      assetPath = 'assets/logos/auxilo.svg';
+    } else if (name.contains('axis')) {
+      assetPath = 'assets/logos/axis.svg';
+    } else if (name.contains('bob') || name.contains('baroda')) {
+      assetPath = 'assets/logos/bob.svg';
+    } else if (name.contains('idfc')) {
+      assetPath = 'assets/logos/idfc.svg';
+    } else if (name.contains('incred')) {
+      assetPath = 'assets/logos/incred.svg';
+    } else if (name.contains('pnb') || name.contains('punjab')) {
+      assetPath = 'assets/logos/pnb.svg';
     }
 
-    if (logoUrl == null) {
-      return Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: const Color(0xFF311B92).withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Icon(Icons.account_balance, size: 24, color: Color(0xFF311B92)),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 40,
-        height: 40,
-        color: Colors.white,
-        padding: const EdgeInsets.all(4),
-        child: Image.network(
-          logoUrl,
+    if (assetPath != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
           width: 40,
           height: 40,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            // Fallback to Google Favicon service if Clearbit fails
-            final domain = _getDomainForBank(bankName);
-            return Image.network(
-              'https://www.google.com/s2/favicons?domain=$domain&sz=128',
-              width: 40,
-              height: 40,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.account_balance,
-                size: 24,
-                color: Colors.grey,
-              ),
-            );
-          },
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
+          color: Colors.white,
+          padding: const EdgeInsets.all(4),
+          child: SvgPicture.asset(
+            assetPath,
+            width: 40,
+            height: 40,
+            fit: BoxFit.contain,
+            placeholderBuilder: (BuildContext context) => const Center(
               child: SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-            );
-          },
+            ),
+          ),
         ),
+      );
+    }
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFF311B92).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
+      child: const Icon(Icons.account_balance, size: 24, color: Color(0xFF311B92)),
     );
   }
 
