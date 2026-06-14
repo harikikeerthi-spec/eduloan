@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
@@ -1380,52 +1379,77 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   Widget _getBankLogo(String bankName) {
-    final name = bankName.toLowerCase();
-    String? assetPath;
+    String? localAssetPath;
+    String? networkLogoUrl;
 
-    if (name.contains('sbi') || name.contains('state bank')) {
-      assetPath = 'assets/logos/sbi.svg';
-    } else if (name.contains('hdfc') || name.contains('credila')) {
-      assetPath = 'assets/logos/hdfc_credila.svg';
-    } else if (name.contains('icici')) {
-      assetPath = 'assets/logos/icici.svg';
+    final name = bankName.toLowerCase();
+
+    if (name.contains('hdfc') || name.contains('credila')) {
+      localAssetPath = 'assets/images/credila_logo_final.png';
     } else if (name.contains('avanse')) {
-      assetPath = 'assets/logos/avanse.svg';
+      localAssetPath = 'assets/images/avanse_logo_final.png';
     } else if (name.contains('auxilo')) {
-      assetPath = 'assets/logos/auxilo.svg';
-    } else if (name.contains('axis')) {
-      assetPath = 'assets/logos/axis.svg';
-    } else if (name.contains('bob') || name.contains('baroda')) {
-      assetPath = 'assets/logos/bob.svg';
+      localAssetPath = 'assets/images/auxilo_logo_final.png';
     } else if (name.contains('idfc')) {
-      assetPath = 'assets/logos/idfc.svg';
+      localAssetPath = 'assets/images/idfc_logo.png';
+    } else if (name.contains('sbi') || name.contains('state bank')) {
+      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
+    } else if (name.contains('icici')) {
+      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
+    } else if (name.contains('axis')) {
+      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
     } else if (name.contains('incred')) {
-      assetPath = 'assets/logos/incred.svg';
+      networkLogoUrl = 'https://incred.com/images/logo.png';
+    } else if (name.contains('bob') || name.contains('baroda')) {
+      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
     } else if (name.contains('pnb') || name.contains('punjab')) {
-      assetPath = 'assets/logos/pnb.svg';
+      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/500px-Punjab_National_Bank.svg.png';
     }
 
-    if (assetPath != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: 40,
-          height: 40,
-          color: Colors.white,
-          padding: const EdgeInsets.all(4),
-          child: SvgPicture.asset(
-            assetPath,
-            width: 40,
-            height: 40,
+    Widget logoImage;
+    if (localAssetPath != null) {
+      logoImage = Image.asset(
+        localAssetPath,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          final domain = _getDomainForBank(bankName);
+          return Image.network(
+            'https://www.google.com/s2/favicons?domain=$domain&sz=128',
             fit: BoxFit.contain,
-            placeholderBuilder: (BuildContext context) => const Center(
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+            errorBuilder: (context, error2, stackTrace2) => const Icon(
+              Icons.account_balance,
+              size: 24,
+              color: Colors.grey,
             ),
-          ),
+          );
+        },
+      );
+    } else if (networkLogoUrl != null) {
+      logoImage = Image.network(
+        networkLogoUrl,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          final domain = _getDomainForBank(bankName);
+          return Image.network(
+            'https://www.google.com/s2/favicons?domain=$domain&sz=128',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error2, stackTrace2) => const Icon(
+              Icons.account_balance,
+              size: 24,
+              color: Colors.grey,
+            ),
+          );
+        },
+      );
+    } else {
+      final domain = _getDomainForBank(bankName);
+      logoImage = Image.network(
+        'https://www.google.com/s2/favicons?domain=$domain&sz=128',
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => const Icon(
+          Icons.account_balance,
+          size: 24,
+          color: Colors.grey,
         ),
       );
     }
@@ -1433,28 +1457,37 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     return Container(
       width: 40,
       height: 40,
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF311B92).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha((0.05 * 255).toInt()),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
-      child: const Icon(Icons.account_balance, size: 24, color: Color(0xFF311B92)),
+      child: ClipOval(
+        child: logoImage,
+      ),
     );
   }
 
   String _getDomainForBank(String bankName) {
-    switch (bankName) {
-      case 'HDFC Credila': return 'credila.com';
-      case 'SBI': return 'sbi.co.in';
-      case 'ICICI Bank': return 'icicibank.com';
-      case 'Axis Bank': return 'axisbank.com';
-      case 'Avanse Financial Services': return 'avanse.com';
-      case 'InCred': return 'incred.com';
-      case 'Auxilo': return 'auxilo.com';
-      case 'IDFC First Bank': return 'idfcfirstbank.com';
-      case 'Bank of Baroda': return 'bankofbaroda.in';
-      case 'Punjab National Bank': return 'pnbindia.in';
-      default: return 'google.com';
-    }
+    final name = bankName.toLowerCase();
+    if (name.contains('hdfc') || name.contains('credila')) return 'credila.com';
+    if (name.contains('sbi') || name.contains('state bank')) return 'sbi.co.in';
+    if (name.contains('icici')) return 'icicibank.com';
+    if (name.contains('axis')) return 'axisbank.com';
+    if (name.contains('avanse')) return 'avanse.com';
+    if (name.contains('incred')) return 'incred.com';
+    if (name.contains('auxilo')) return 'auxilo.com';
+    if (name.contains('idfc')) return 'idfcfirstbank.com';
+    if (name.contains('bob') || name.contains('baroda')) return 'bankofbaroda.in';
+    if (name.contains('pnb') || name.contains('punjab')) return 'pnbindia.in';
+    return 'google.com';
   }
 }
 
