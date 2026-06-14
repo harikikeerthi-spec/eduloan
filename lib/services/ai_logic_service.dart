@@ -922,22 +922,155 @@ class AiLogicService {
   }
 
   Future<List<Map<String, String>>> searchCountries(String query) async {
-    final data = await _postRequest('search-countries', {'query': query});
-    final list = data['countries'] as List? ?? [];
-    return list.map<Map<String, String>>((e) {
-      if (e is Map) {
-        return Map<String, String>.from(
-          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
-        );
+    try {
+      final data = await _postRequest('search-countries', {'query': query});
+      final list = data['countries'] as List? ?? [];
+      return list.map<Map<String, String>>((e) {
+        if (e is Map) {
+          return Map<String, String>.from(
+            e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+        }
+        return {'name': e.toString()};
+      }).toList();
+    } catch (e) {
+      debugPrint('Error searching countries from backend: $e. Falling back to popular list.');
+      try {
+        final data = await _getRequest('popular-countries');
+        final list = data['countries'] as List? ?? [];
+        final List<Map<String, String>> mapped = [];
+        for (var item in list) {
+          final name = item.toString();
+          if (name.toLowerCase() == 'india') continue;
+          mapped.add({
+            'name': name,
+            'code': _getCountryCode(name),
+            'flag': _getCountryFlag(name),
+          });
+        }
+        if (query.trim().isNotEmpty) {
+          final q = query.toLowerCase();
+          return mapped.where((c) => (c['name'] ?? '').toLowerCase().contains(q)).toList();
+        }
+        return mapped;
+      } catch (innerEx) {
+        debugPrint('Error fetching popular-countries: $innerEx. Using hardcoded fallback list.');
+        final List<Map<String, String>> list = [
+          {'name': 'United States', 'code': 'US', 'flag': '🇺🇸'},
+          {'name': 'United Kingdom', 'code': 'GB', 'flag': '🇬🇧'},
+          {'name': 'Canada', 'code': 'CA', 'flag': '🇨🇦'},
+          {'name': 'Australia', 'code': 'AU', 'flag': '🇦🇺'},
+          {'name': 'Germany', 'code': 'DE', 'flag': '🇩🇪'},
+          {'name': 'France', 'code': 'FR', 'flag': '🇫🇷'},
+          {'name': 'Singapore', 'code': 'SG', 'flag': '🇸🇬'},
+          {'name': 'Ireland', 'code': 'IE', 'flag': '🇮🇪'},
+          {'name': 'New Zealand', 'code': 'NZ', 'flag': '🇳🇿'},
+          {'name': 'Netherlands', 'code': 'NL', 'flag': '🇳🇱'},
+          {'name': 'Switzerland', 'code': 'CH', 'flag': '🇨🇭'},
+          {'name': 'Sweden', 'code': 'SE', 'flag': '🇸🇪'},
+          {'name': 'Spain', 'code': 'ES', 'flag': '🇪🇸'},
+          {'name': 'Italy', 'code': 'IT', 'flag': '🇮🇹'},
+        ];
+        if (query.trim().isNotEmpty) {
+          final q = query.toLowerCase();
+          return list.where((c) => (c['name'] ?? '').toLowerCase().contains(q)).toList();
+        }
+        return list;
       }
-      return {'name': e.toString()};
-    }).toList();
+    }
+  }
+
+  static String _getCountryFlag(String name) {
+    const flags = {
+      'united states': '🇺🇸',
+      'united states of america': '🇺🇸',
+      'usa': '🇺🇸',
+      'united kingdom': '🇬🇧',
+      'uk': '🇬🇧',
+      'canada': '🇨🇦',
+      'australia': '🇦🇺',
+      'germany': '🇩🇪',
+      'france': '🇫🇷',
+      'singapore': '🇸🇬',
+      'ireland': '🇮🇪',
+      'new zealand': '🇳🇿',
+      'netherlands': '🇳🇱',
+      'switzerland': '🇨🇭',
+      'sweden': '🇸🇪',
+      'spain': '🇪🇸',
+      'italy': '🇮🇹',
+      'india': '🇮🇳'
+    };
+    final key = name.trim().toLowerCase();
+    return flags[key] ?? '🌐';
+  }
+
+  static String _getCountryCode(String name) {
+    const codes = {
+      'united states': 'US',
+      'united states of america': 'US',
+      'usa': 'US',
+      'united kingdom': 'GB',
+      'uk': 'GB',
+      'canada': 'CA',
+      'australia': 'AU',
+      'germany': 'DE',
+      'france': 'FR',
+      'singapore': 'SG',
+      'ireland': 'IE',
+      'new zealand': 'NZ',
+      'netherlands': 'NL',
+      'switzerland': 'CH',
+      'sweden': 'SE',
+      'spain': 'ES',
+      'italy': 'IT',
+      'india': 'IN'
+    };
+    final key = name.trim().toLowerCase();
+    return codes[key] ?? '';
   }
 
   Future<List<String>> searchFields(String query) async {
-    final data = await _postRequest('search-fields', {'query': query});
-    final list = data['fields'] as List? ?? [];
-    return List<String>.from(list);
+    try {
+      final data = await _postRequest('search-fields', {'query': query});
+      final list = data['fields'] as List? ?? [];
+      return List<String>.from(list);
+    } catch (e) {
+      debugPrint('Error searching fields from backend: $e. Falling back to local list.');
+      const List<String> list = [
+        'Computer Science',
+        'Data Science & Analytics',
+        'Information Technology',
+        'Business Administration (MBA)',
+        'Finance & Accounting',
+        'Marketing',
+        'Management',
+        'Mechanical Engineering',
+        'Electrical & Electronics Engineering',
+        'Civil Engineering',
+        'Chemical Engineering',
+        'Biotechnology',
+        'Life Sciences',
+        'Healthcare Administration',
+        'Medicine & Nursing',
+        'Psychology',
+        'Economics',
+        'Art & Design',
+        'Architecture',
+        'Law & Legal Studies',
+        'Mathematics & Statistics',
+        'Physics',
+        'Chemistry',
+        'Education',
+        'Media & Communication',
+        'Hospitality & Tourism',
+      ];
+      if (query.trim().isNotEmpty) {
+        final q = query.toLowerCase();
+        return list.where((f) => f.toLowerCase().contains(q)).toList();
+      }
+      return list;
+    }
   }
 
   Future<LoanRecommendationResult> getLoanRecommendations(
