@@ -193,6 +193,7 @@ export class ApplicationService {
         progress: data.status === 'draft' ? 10 : 15,
         submittedAt: data.status === 'draft' ? null : new Date().toISOString(),
         estimatedCompletionAt: estimatedCompletionAt.toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select('*, user:User!userId(id, email, firstName, lastName)')
       .single();
@@ -249,7 +250,7 @@ export class ApplicationService {
 
     const { data: updated, error } = await this.db
       .from('LoanApplication')
-      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15 })
+      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15, updatedAt: new Date().toISOString() })
       .eq('id', applicationId)
       .select()
       .single();
@@ -352,6 +353,7 @@ export class ApplicationService {
       courseStartDate: data.courseStartDate ? this.parseDate(data.courseStartDate) : undefined,
       universityName: data.universityName || data.university || undefined,
       courseName: data.courseName || data.courseType || data.course || undefined,
+      updatedAt: new Date().toISOString(),
     };
 
     const { data: updated, error } = await this.db
@@ -374,7 +376,7 @@ export class ApplicationService {
 
     await this.validateApplicationConstraints(application.userId, applicationId, targetBank, targetCountry, targetUniversity);
 
-    const updatePayload: any = { ...data };
+    const updatePayload: any = { ...data, updatedAt: new Date().toISOString() };
 
     // Convert numeric fields if present
     if (data.amount !== undefined) updatePayload.amount = data.amount ? parseFloat(data.amount) : null;
@@ -414,7 +416,7 @@ export class ApplicationService {
     if (application.userId !== userId) throw new BadRequestException('Unauthorized to cancel this application');
     if (['approved', 'disbursed', 'cancelled'].includes(application.status)) throw new BadRequestException('Application cannot be cancelled in current status');
 
-    const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason }).eq('id', applicationId).select().single();
+    const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason, updatedAt: new Date().toISOString() }).eq('id', applicationId).select().single();
     await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: 'cancelled', notes: reason || 'Application cancelled by user', isAutomatic: false });
     return { success: true, data: updated, message: 'Application cancelled successfully' };
   }
@@ -755,7 +757,7 @@ export class ApplicationService {
 
   async updateApplicationStatus(applicationId: string, adminId: string, adminName: string, data: { status?: string; stage?: string; progress?: number; remarks?: string; rejectionReason?: string; bank?: string }, role?: string) {
     const application = await this.getApplicationById(applicationId);
-    const updateData: any = {};
+    const updateData: any = { updatedAt: new Date().toISOString() };
     const historyData: any = { changedBy: adminId, changedByName: adminName };
 
     const isAuthorizedToChangeStatus = ['staff', 'admin', 'super_admin', 'bank', 'partner_bank'].includes(role || '');

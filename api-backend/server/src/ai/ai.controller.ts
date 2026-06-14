@@ -232,7 +232,11 @@ export class AiController {
 
   @Post('predict-admission')
   async predictAdmission(@Body() body: any) {
-    const result = await this.admitPredictorService.predict(body);
+    const profile = body.profile || body;
+    if (!profile.targetUniversity) {
+      profile.targetUniversity = body.university || body.targetUniversity || '';
+    }
+    const result = await this.admitPredictorService.predict(profile);
     return {
       success: true,
       prediction: result
@@ -349,12 +353,27 @@ export class AiController {
   @Post('search-universities')
   async searchUniversities(
     @Body()
-    data: {
-      countries: string[];
-      limit?: number;
-    },
-  ): Promise<{ success: boolean; universities: University[]; totalCount: number; source: string; message?: string }> {
+    data: any,
+  ): Promise<{ success: boolean; universities: any[]; totalCount: number; source: string; message?: string }> {
     try {
+      if (data && data.query) {
+        const context = {
+          country: data.country,
+          degree: data.degree,
+        };
+        const universities = await this.openRouterService.searchAdvice(
+          data.query,
+          'university',
+          context,
+        );
+        return {
+          success: true,
+          universities: universities || [],
+          totalCount: (universities || []).length,
+          source: 'ai',
+        };
+      }
+
       if (!data.countries || data.countries.length === 0) {
         throw new BadRequestException('At least one country is required');
       }

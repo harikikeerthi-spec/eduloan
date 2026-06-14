@@ -618,7 +618,8 @@ export class AuthService {
     firstName: string,
     lastName: string,
     phoneNumber: string,
-    dateOfBirth: string
+    dateOfBirth: string,
+    profileImage?: string
   ) {
     // First, check if user exists with the provided email
     const existingUser = await this.usersService.findOne(email);
@@ -699,7 +700,8 @@ export class AuthService {
         firstName,
         lastName,
         phoneNumber,
-        dateOfBirth
+        dateOfBirth,
+        profileImage
       );
 
       if (!user) {
@@ -715,6 +717,7 @@ export class AuthService {
           lastName: user.lastName,
           phoneNumber: user.phoneNumber,
           dateOfBirth: user.dateOfBirth,
+          profileImage: user.profileImage,
         }
       };
     } catch (error) {

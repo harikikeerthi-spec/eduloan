@@ -202,6 +202,7 @@ export class AuthController {
     lastName: string;
     phoneNumber: string;
     dateOfBirth: string;
+    profileImage?: string;
   }) {
     if (!body || !body.email) {
       return {
@@ -214,7 +215,8 @@ export class AuthController {
       body.firstName,
       body.lastName,
       body.phoneNumber,
-      body.dateOfBirth
+      body.dateOfBirth,
+      body.profileImage
     );
   }
 

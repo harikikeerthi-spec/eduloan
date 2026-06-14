@@ -399,13 +399,18 @@ export class UsersService {
     lastName: string,
     phoneNumber: string,
     dateOfBirth: string,
+    profileImage?: string,
   ) {
     const dobDate = this.parseDate(dateOfBirth);
 
+    const updatePayload: any = { firstName, lastName, phoneNumber, dateOfBirth: dobDate };
+    if (profileImage !== undefined) {
+      updatePayload.profileImage = profileImage;
+    }
 
     const { data, error } = await this.db
       .from('User')
-      .update({ firstName, lastName, phoneNumber, dateOfBirth: dobDate })
+      .update(updatePayload)
       .eq('email', email)
       .select()
       .single();
