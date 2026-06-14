@@ -81,12 +81,6 @@ export class GradeConversionService {
     
     Target Output: ${input.outputType}
 
-    CRITICAL CONSTRAINTS:
-    - If the input Type is 'percentage', the Value is a literal percentage out of 100. You MUST NEVER scale, multiply, or auto-correct the percentage value, even if it is extremely low (e.g., an input value of 10.5 represents a literal 10.5% out of 100%, NOT 105%, and NOT 10.5 CGPA). Keep the percentage output exactly equal to the input percentage value.
-    - If the input Type is 'cgpa', the Value is out of 10.0.
-    - If the input Type is 'gpa', the Value is out of 4.0.
-    - If the input Type is 'marks', compute the percentage as (Value / Maximum) * 100.
-
     Perform a strictly accurate conversion.
     Also provide:
     1. Standardized Percentage (0-100)
@@ -120,16 +114,7 @@ export class GradeConversionService {
     `;
 
     try {
-      const result = await this.openRouter.getJson<GradeConversionResult>(prompt);
-      if (result) {
-        if (!result.analysis) {
-          result.analysis = { strength: '', competitiveness: '', recommendations: [] };
-        }
-        (result.analysis as any).percentage = (result.analysis as any).percentage ?? result.percentage;
-        (result.analysis as any).gpa = (result.analysis as any).gpa ?? result.gpa;
-        (result.analysis as any).cgpa = (result.analysis as any).cgpa ?? result.cgpa;
-      }
-      return result;
+      return await this.openRouter.getJson<GradeConversionResult>(prompt);
     } catch (error) {
       console.error('Grade conversion failed', error);
       // Fallback to simple zero-value object if AI fails, to prevent crash

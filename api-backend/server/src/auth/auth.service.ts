@@ -334,18 +334,12 @@ export class AuthService {
     
     if (otp !== '123456') {
       if (!stored || stored.otp !== otp) {
-        return {
-          success: false,
-          message: 'Invalid OTP. Please try again.'
-        };
+        throw new BadRequestException('Invalid OTP. Please enter the right one to login.');
       }
 
       if (Date.now() > stored.expiresAt) {
         this.otps.delete(email);
-        return {
-          success: false,
-          message: 'OTP has expired. Please request a new OTP.'
-        };
+        throw new BadRequestException('OTP has expired. Please request a new OTP.');
       }
     }
 
@@ -392,6 +386,22 @@ export class AuthService {
           isNewUser
       });
 
+      // Format date of birth if it exists
+      let formattedDob: string | null = null;
+      if (user.dateOfBirth) {
+        try {
+          const date = new Date(user.dateOfBirth);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            formattedDob = `${day}-${month}-${year}`;
+          }
+        } catch (e) {
+          console.error('[AuthService.verifyOtpUnified] DOB parsing failed:', e);
+        }
+      }
+
       return {
         success: true,
         message: isNewUser ? 'Signup successful. Please complete your profile.' : 'Login successful.',
@@ -402,6 +412,8 @@ export class AuthService {
         hasUserDetails,
         firstName: user.firstName,
         lastName: user.lastName,
+        phoneNumber: user.phoneNumber || '',
+        dateOfBirth: formattedDob || '',
         role: user.role,
       };
     } catch (error) {
@@ -457,6 +469,22 @@ export class AuthService {
           isNewUser
       });
 
+      // Format date of birth if it exists
+      let formattedDob: string | null = null;
+      if (user.dateOfBirth) {
+        try {
+          const date = new Date(user.dateOfBirth);
+          if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            formattedDob = `${day}-${month}-${year}`;
+          }
+        } catch (e) {
+          console.error('[AuthService.authenticateFirebaseUser] DOB parsing failed:', e);
+        }
+      }
+
       return {
         success: true,
         message: isNewUser ? 'Signup successful.' : 'Login successful.',
@@ -467,6 +495,8 @@ export class AuthService {
         hasUserDetails,
         firstName: user.firstName,
         lastName: user.lastName,
+        phoneNumber: user.phoneNumber || '',
+        dateOfBirth: formattedDob || '',
         role: user.role,
         picture: picture // Return Firebase profile picture if available
       };

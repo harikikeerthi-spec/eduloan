@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { EmailService } from '../auth/email.service';
-import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UniversityInquiryService {
@@ -20,19 +19,17 @@ export class UniversityInquiryService {
     email: string;
     mobile: string;
     universityName: string;
-    type: string;
+    type: 'callback' | 'fasttrack';
   }) {
     const { data: inquiry, error } = await this.db
       .from('UniversityInquiry')
       .insert({
-        id: randomUUID(),
         userId: data.userId,
         name: data.name,
         email: data.email,
         mobile: data.mobile,
         universityName: data.universityName,
         type: data.type,
-        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
@@ -64,14 +61,7 @@ export class UniversityInquiryService {
   }
 
   private async sendInquiryEmails(data: any) {
-    let typeLabel = data.type;
-    if (data.type === 'callback') {
-      typeLabel = 'Request a Callback';
-    } else if (data.type === 'fast_track' || data.type === 'fasttrack') {
-      typeLabel = 'Fasttrack Application';
-    } else if (data.type === 'application') {
-      typeLabel = 'Admission Application';
-    }
+    const typeLabel = data.type === 'callback' ? 'Request a Callback' : 'Fasttrack Application';
 
     const userHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;">

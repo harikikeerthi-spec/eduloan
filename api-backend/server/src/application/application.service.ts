@@ -5,7 +5,6 @@ import { DocumentVerificationService } from '../ai/services/document-verificatio
 import { ApplicationReviewService } from '../ai/services/application-review.service';
 import { EmailService } from '../auth/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { randomUUID } from 'crypto';
 
 const APPLICATION_STAGES = {
   application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
@@ -110,19 +109,20 @@ export class ApplicationService {
       throw new BadRequestException('You cannot have more than 5 active/pending loan applications.');
     }
 
-    // 2. Check duplicate details for the same bank and university
-    if (bank && universityName) {
+    // 2. Check duplicate details for the same bank
+    if (bank && country && universityName) {
       const duplicate = existingApps?.find(app => {
         if (currentAppId && app.id === currentAppId) return false;
 
         const matchBank = app.bank && bank && app.bank.toLowerCase().trim() === bank.toLowerCase().trim();
+        const matchCountry = app.country && country && app.country.toLowerCase().trim() === country.toLowerCase().trim();
         const matchUniversity = app.universityName && universityName && app.universityName.toLowerCase().trim() === universityName.toLowerCase().trim();
 
-        return matchBank && matchUniversity;
+        return matchBank && matchCountry && matchUniversity;
       });
 
       if (duplicate) {
-        throw new BadRequestException(`An active application to ${bank} for ${universityName} already exists. You cannot apply to the same bank for the same university more than once.`);
+        throw new BadRequestException(`An active application to ${bank} for ${universityName} in ${country} already exists. To apply to the same bank, please use different details (e.g., country or university).`);
       }
     }
   }
@@ -141,7 +141,6 @@ export class ApplicationService {
     const { data: application, error } = await this.db
       .from('LoanApplication')
       .insert({
-        id: randomUUID(),
         applicationNumber,
         userId,
         bank: data.bank,
@@ -189,11 +188,11 @@ export class ApplicationService {
         collateralType: data.collateralType,
         collateralValue: data.collateralValue ? parseFloat(data.collateralValue) : null,
         collateralDetails: data.collateralDetails,
-                status: data.status || 'draft',
+        status: data.status === 'draft' ? 'draft' : (data.status || 'submitted'),
         stage: 'application_submitted',
-        progress: 10,
+        progress: data.status === 'draft' ? 10 : 15,
+        submittedAt: data.status === 'draft' ? null : new Date().toISOString(),
         estimatedCompletionAt: estimatedCompletionAt.toISOString(),
-        updatedAt: new Date().toISOString(),
       })
       .select('*, user:User!userId(id, email, firstName, lastName)')
       .single();
@@ -203,39 +202,41 @@ export class ApplicationService {
     await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
     await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
 
-    // Emit application created event for staff notifications
-    try {
-      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
-      this.eventEmitter.emit('application.created', {
-        applicationId: application.id,
-        applicationNumber: application.applicationNumber,
-        userId: application.userId,
-        candidateName: name,
-        candidateEmail: application.email,
-        bank: application.bank,
-        loanAmount: application.amount,
-        loanType: data.loanType,
-        createdAt: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error('Failed to emit application.created event:', e);
-    }
+    // Emit application created event for staff notifications ONLY if not a draft
+    if (application.status !== 'draft') {
+      try {
+        const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+        this.eventEmitter.emit('application.created', {
+          applicationId: application.id,
+          applicationNumber: application.applicationNumber,
+          userId: application.userId,
+          candidateName: name,
+          candidateEmail: application.email,
+          bank: application.bank,
+          loanAmount: application.amount,
+          loanType: data.loanType,
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Failed to emit application.created event:', e);
+      }
 
-    // Emit live dashboard activity event for new application creation!
-    try {
-      const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
-      const targetUni = application.universityName || 'Target University';
-      this.eventEmitter.emit('dashboard.activity', {
-        type: 'application',
-        msg: `Student ${name} submitted a new Loan Application #${application.applicationNumber} for ${targetUni}.`,
-        icon: 'assignment',
-        color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-        actorName: name,
-        actorEmail: application.email,
-        createdAt: new Date().toISOString()
-      });
-    } catch (e) {
-      console.error('Failed to emit activity event for application creation:', e);
+      // Emit live dashboard activity event for new application creation
+      try {
+        const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+        const targetUni = application.universityName || 'Target University';
+        this.eventEmitter.emit('dashboard.activity', {
+          type: 'application',
+          msg: `Student ${name} submitted a new Loan Application #${application.applicationNumber} for ${targetUni}.`,
+          icon: 'assignment',
+          color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+          actorName: name,
+          actorEmail: application.email,
+          createdAt: new Date().toISOString()
+        });
+      } catch (e) {
+        console.error('Failed to emit activity event for application creation:', e);
+      }
     }
 
     return { success: true, data: application, message: 'Application created successfully' };
@@ -268,8 +269,21 @@ export class ApplicationService {
         actorEmail: application.email,
         createdAt: new Date().toISOString()
       });
+      
+      // Emit application submitted event for staff notifications
+      this.eventEmitter.emit('application.submitted', {
+        applicationId: application.id,
+        applicationNumber: application.applicationNumber,
+        userId: application.userId,
+        candidateName: name,
+        candidateEmail: application.email,
+        bank: application.bank,
+        loanAmount: application.amount,
+        loanType: application.loanType,
+        submittedAt: new Date().toISOString()
+      });
     } catch (e) {
-      console.error('Failed to emit activity event for application submission:', e);
+      console.error('Failed to emit events for application submission:', e);
     }
 
     return { success: true, data: updated, message: 'Application submitted successfully' };
@@ -278,7 +292,7 @@ export class ApplicationService {
   async getApplicationById(applicationId: string) {
     const { data: application } = await this.db
       .from('LoanApplication')
-      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
       .eq('id', applicationId)
       .single();
 
@@ -295,7 +309,7 @@ export class ApplicationService {
   async getApplicationByNumber(applicationNumber: string) {
     const { data: application } = await this.db
       .from('LoanApplication')
-      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
       .eq('applicationNumber', applicationNumber)
       .single();
 
@@ -479,7 +493,6 @@ export class ApplicationService {
       const matchingVaultDoc = vaultDocs?.find(vd => vd.docType === doc.docType && vd.uploaded);
       
       await this.db.from('ApplicationDocument').insert({ 
-        id: randomUUID(),
         applicationId, 
         docType: doc.docType, 
         docName: doc.docName, 
@@ -503,7 +516,7 @@ export class ApplicationService {
       if (error) throw error;
       document = data;
     } else {
-      const { data, error } = await this.db.from('ApplicationDocument').insert({ id: randomUUID(), applicationId, ...documentData, status: 'pending' }).select().single();
+      const { data, error } = await this.db.from('ApplicationDocument').insert({ applicationId, ...documentData, status: 'pending' }).select().single();
       if (error) throw error;
       document = data;
     }
@@ -635,14 +648,13 @@ export class ApplicationService {
           if (existing) {
             await this.db.from('ApplicationDocument').update(updateData).eq('id', existing.id);
           } else {
-            await this.db.from('ApplicationDocument').insert({ id: randomUUID(), ...updateData });
+            await this.db.from('ApplicationDocument').insert(updateData);
           }
           syncedCount++;
         }
       } else if (!existing) {
         // Just create the requirement placeholder
         await this.db.from('ApplicationDocument').insert({
-          id: randomUUID(),
           applicationId,
           docType: req.docType,
           docName: req.docName,
@@ -675,13 +687,13 @@ export class ApplicationService {
     return { success: true, message: 'Document deleted successfully' };
   }
 
-  async getAllApplications(filters?: { status?: string; stage?: string; loanType?: string; bank?: string; search?: string; fromDate?: string; toDate?: string; limit?: number; offset?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; userId?: string }) {
+  async getAllApplications(filters?: { status?: string; stage?: string; loanType?: string; bank?: string; search?: string; fromDate?: string; toDate?: string; limit?: number; offset?: number; sortBy?: string; sortOrder?: 'asc' | 'desc'; userId?: string; excludeStatus?: string }) {
     try {
       console.log('[ApplicationService.getAllApplications] Filters:', JSON.stringify(filters));
       
       let query = this.db
         .from('LoanApplication')
-        .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth), documents:ApplicationDocument(id, status)', { count: 'exact' });
+        .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(id, status)', { count: 'exact' });
 
       // Apply sorting
       const sortCol = filters?.sortBy || 'updatedAt';
@@ -689,9 +701,13 @@ export class ApplicationService {
       query = query.order(sortCol, { ascending: isAsc });
 
       if (filters?.status) query = query.eq('status', filters.status);
+      if (filters?.excludeStatus) query = query.neq('status', filters.excludeStatus);
       if (filters?.stage) query = query.eq('stage', filters.stage);
       if (filters?.loanType) query = query.eq('loanType', filters.loanType);
-      if (filters?.bank) query = query.eq('bank', filters.bank);
+      if (filters?.bank) {
+        query = query.eq('bank', filters.bank);
+        query = query.not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
+      }
       
       if (filters?.search) {
         const search = filters.search;
@@ -737,12 +753,12 @@ export class ApplicationService {
     }
   }
 
-  async updateApplicationStatus(applicationId: string, adminId: string, adminName: string, data: { status?: string; stage?: string; progress?: number; remarks?: string; rejectionReason?: string }, role?: string) {
+  async updateApplicationStatus(applicationId: string, adminId: string, adminName: string, data: { status?: string; stage?: string; progress?: number; remarks?: string; rejectionReason?: string; bank?: string }, role?: string) {
     const application = await this.getApplicationById(applicationId);
     const updateData: any = {};
     const historyData: any = { changedBy: adminId, changedByName: adminName };
 
-    const isAuthorizedToChangeStatus = ['staff', 'super_admin', 'bank'].includes(role || '');
+    const isAuthorizedToChangeStatus = ['staff', 'admin', 'super_admin', 'bank', 'partner_bank'].includes(role || '');
 
     if (data.status && data.status !== application.status) {
       if (!isAuthorizedToChangeStatus) {
@@ -756,6 +772,7 @@ export class ApplicationService {
         if (data.status === 'approved') { updateData.stage = 'sanction'; updateData.progress = 90; }
         else if (data.status === 'rejected') { updateData.progress = 0; }
         else if (data.status === 'processing') { updateData.stage = 'document_verification'; updateData.progress = 40; }
+        else if (data.status === 'disbursed' || data.status === 'disbursement_confirmed') { updateData.stage = 'disbursement'; updateData.progress = 100; }
       }
     }
 
@@ -769,6 +786,7 @@ export class ApplicationService {
     }
 
     if (data.progress !== undefined && isAuthorizedToChangeStatus) updateData.progress = data.progress;
+    if (data.bank && isAuthorizedToChangeStatus) updateData.bank = data.bank;
     if (data.remarks) {
         // Remarks can be updated by anyone in the StaffGuard (including admin)
         if (!updateData.remarks) updateData.remarks = data.remarks;
@@ -853,7 +871,7 @@ export class ApplicationService {
   async addApplicationNote(applicationId: string, authorId: string, authorName: string, data: { content: string; type?: string; isInternal?: boolean }) {
     const { data: note, error } = await this.db
       .from('ApplicationNote')
-      .insert({ id: randomUUID(), applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
+      .insert({ applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
       .select()
       .single();
 
@@ -896,11 +914,12 @@ export class ApplicationService {
       let lastMonthQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
 
       if (isBank && bankName) {
-        totalQuery = totalQuery.ilike('bank', `%${bankName}%`);
-        allAppsQuery = allAppsQuery.ilike('bank', `%${bankName}%`);
-        recentAppsQuery = recentAppsQuery.ilike('bank', `%${bankName}%`);
-        thisMonthQuery = thisMonthQuery.ilike('bank', `%${bankName}%`);
-        lastMonthQuery = lastMonthQuery.ilike('bank', `%${bankName}%`);
+        const excludeStr = '("submitted","pending","draft","docs_received","staff_verified","application_submitted")';
+        totalQuery = totalQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+        allAppsQuery = allAppsQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+        recentAppsQuery = recentAppsQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+        thisMonthQuery = thisMonthQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+        lastMonthQuery = lastMonthQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
       }
 
       console.log(`[Stats] Executing queries for ${bankName || 'all banks'}...`);
@@ -992,7 +1011,7 @@ export class ApplicationService {
       const { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
       const reviewResult = await this.applicationReviewService.reviewApplication(application, documents || []);
 
-      await this.db.from('ApplicationNote').insert({ id: randomUUID(), applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
+      await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
       await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: application.status, changedBy: adminId, changedByName: adminName, notes: `AI Review completed. Score: ${reviewResult.overallScore}/100. Recommendation: ${reviewResult.recommendation}`, isAutomatic: true });
 
       // Emit real-time CIBIL verification activity
@@ -1049,7 +1068,7 @@ export class ApplicationService {
   }
 
   private async createStatusHistory(applicationId: string, data: { fromStatus?: string; toStatus?: string; fromStage?: string; toStage?: string; changedBy?: string; changedByName?: string; changeReason?: string; notes?: string; isAutomatic?: boolean }) {
-    await this.db.from('ApplicationStatusHistory').insert({ id: randomUUID(), applicationId, ...data });
+    await this.db.from('ApplicationStatusHistory').insert({ applicationId, ...data });
   }
 
   async getAgentApplications(agentId: string) {

@@ -438,6 +438,9 @@ export class BankDashboardService {
       .from('LoanApplication')
       .update({
         status: 'disbursed',
+        stage: 'disbursement',
+        progress: 100,
+        disbursedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       })
       .eq('id', applicationId);
@@ -509,7 +512,8 @@ export class BankDashboardService {
     const { data: applications, error } = await this.db
       .from('LoanApplication')
       .select('id, status, amount, createdAt')
-      .eq('bank', bankId);
+      .eq('bank', bankId)
+      .not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
 
     if (error) throw error;
 
@@ -564,7 +568,8 @@ export class BankDashboardService {
     const { data, error } = await this.db
       .from('LoanApplication')
       .select('id, status, amount, firstName, lastName, lanNumber, bank, createdAt, updatedAt')
-      .eq('bank', bankId);
+      .eq('bank', bankId)
+      .not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
 
     if (error) throw error;
     const apps = data || [];
@@ -600,7 +605,7 @@ export class BankDashboardService {
       .from('LoanApplication')
       .select('id, createdAt, status, firstName, lastName, amount, lanNumber')
       .eq('bank', bankId)
-      .not('status', 'in', '("closed","rejected","expired","disbursement_confirmed")');
+      .not('status', 'in', '("closed","rejected","expired","disbursement_confirmed","submitted","pending","draft","docs_received","staff_verified","application_submitted")');
 
     if (error) throw error;
 
@@ -724,7 +729,9 @@ export class BankDashboardService {
         auxilo: ['Auxilo Finserve', 'Auxilo']
       };
 
-      let appQuery = this.db.from('LoanApplication').select('*');
+      let appQuery = this.db.from('LoanApplication')
+        .select('*')
+        .not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
 
       if (bankId) {
         // Filter by specific bank
@@ -776,7 +783,8 @@ export class BankDashboardService {
 
     let query = this.db
       .from('FileEntry')
-      .select('*, LoanApplication(id, firstName, lastName, amount, status, lanNumber, priority, assignedOfficer, bank)');
+      .select('*, LoanApplication!inner(id, firstName, lastName, amount, status, lanNumber, priority, assignedOfficer, bank)')
+      .not('LoanApplication.status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
 
     // Only filter by bankId if a specific bank is requested
     if (bankId) {
@@ -924,9 +932,6 @@ export class BankDashboardService {
       fileId: file?.id || null
     };
   }
-
-  // ==================== DOCUMENT MANAGEMENT ====================
-
   async addDocumentToFile(fileId: string, docData: any, bankUser: any): Promise<any> {
     const { data, error } = await this.db
       .from('FileDocument')

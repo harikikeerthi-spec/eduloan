@@ -79,8 +79,7 @@ export class BlogService {
   async getBlogBySlug(slug: string) {
     const { data: blog } = await this.db
       .from('Blog')
-      .select(`id, title, slug, excerpt, content, category, authorName, authorImage, authorRole, featuredImage, readTime, views, publishedAt, createdAt, updatedAt, tags:BlogTag(tag:Tag(name)),
-        comments:Comment(id, author, content, likes, parentId, createdAt, replies:Comment!parentId(id, author, content, likes, parentId, createdAt))`)
+      .select('id, title, slug, excerpt, content, category, authorName, authorImage, authorRole, featuredImage, readTime, views, publishedAt, createdAt, updatedAt, tags:BlogTag(tag:Tag(name)), comments:Comment(id, author, content, createdAt)')
       .eq('slug', slug)
       .single();
 
@@ -312,16 +311,9 @@ export class BlogService {
     const { data: comment } = await this.db.from('Comment').select('id').eq('id', commentId).single();
     if (!comment) throw new NotFoundException('Comment not found');
 
-    // Fetch replies to delete their likes first to prevent FK constraint violations
-    const { data: replies } = await this.db.from('Comment').select('id').eq('parentId', commentId);
-    const replyIds = (replies || []).map((r: any) => r.id);
-
-    if (replyIds.length > 0) {
-      await this.db.from('CommentLike').delete().in('commentId', replyIds);
-      await this.db.from('Comment').delete().in('id', replyIds);
-    }
-
+    // Delete likes and replies first, then the comment
     await this.db.from('CommentLike').delete().eq('commentId', commentId);
+    await this.db.from('Comment').delete().eq('parentId', commentId);
     await this.db.from('Comment').delete().eq('id', commentId);
 
     return { success: true, message: 'Comment deleted successfully' };
@@ -349,17 +341,6 @@ export class BlogService {
       await this.db.from('Comment').update({ likes: currentLikes + 1 }).eq('id', commentId);
       return { success: true, message: 'Comment liked', liked: true, likesCount: currentLikes + 1 };
     }
-  }
-
-  async getLikedComments(userId: string) {
-    const { data: likes } = await this.db
-      .from('CommentLike')
-      .select('commentId')
-      .eq('userId', userId);
-    return {
-      success: true,
-      data: (likes || []).map((l: any) => l.commentId),
-    };
   }
 
   async getCommentsForBlog(blogId: string, limit = 20, offset = 0) {

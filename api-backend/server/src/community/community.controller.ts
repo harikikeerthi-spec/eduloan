@@ -808,12 +808,6 @@ export class CommunityController {
         return this.communityService.createForumPost(req.user.id, body);
     }
 
-    @Post('forum')
-    @UseGuards(UserGuard)
-    async createForumPostRoute(@Request() req, @Body() body: any) {
-        return this.createPostAlias(req, body);
-    }
-
     @Post('forum/:id/comment')
     @UseGuards(UserGuard)
     async createForumComment(
@@ -863,12 +857,9 @@ export class CommunityController {
         @Request() req,
         @Param('id') id: string
     ) {
-        // Allow post author or admin to delete
-        const post = await this.communityService.getForumPostById(id, req.user.id);
-        const isAuthor = post?.data?.authorId === req.user.id;
-        const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
-        if (!isAuthor && !isAdmin) {
-            throw new HttpException('You can only delete your own posts', HttpStatus.FORBIDDEN);
+        // Only admins can delete posts
+        if (req.user.role !== 'admin') {
+            throw new HttpException('Only admins can delete posts', HttpStatus.FORBIDDEN);
         }
         return this.communityService.deleteForumPost(id);
     }

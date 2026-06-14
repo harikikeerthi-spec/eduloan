@@ -35,7 +35,7 @@ export class BankService {
     let query = this.db
       .from('LoanApplication')
       .select('*')
-      .in('status', ['submitted', 'submitted_to_bank', 'pending']);
+      .in('status', ['submitted_to_bank', 'processing']);
 
     query = this.matchBankFilter(query, bankName);
 
@@ -353,6 +353,19 @@ export class BankService {
     };
   }
 
+  private normalizePhone(phoneStr: string): string {
+    if (!phoneStr) return '';
+    if (phoneStr.startsWith('BNK_')) return phoneStr;
+    const cleaned = phoneStr.replace('whatsapp:', '').trim().replace(/\D/g, '');
+    if (cleaned.length > 10 && cleaned.startsWith('91')) {
+      return cleaned.substring(2);
+    }
+    if (cleaned.length > 10) {
+      return cleaned.slice(-10);
+    }
+    return cleaned;
+  }
+
   /**
    * Category A: Raise query to VidyaLoans staff
    */
@@ -365,7 +378,7 @@ export class BankService {
 
     const { data: application } = await this.db
       .from('LoanApplication')
-      .select('status, stage, bank, applicationNumber')
+      .select('status, stage, bank, applicationNumber, phone, mobile, email, firstName, lastName')
       .eq('id', applicationId)
       .single();
 
@@ -424,6 +437,65 @@ export class BankService {
     };
     await this.db.from('Notification').insert(notifData);
     this.eventEmitter.emit('notification.created', notifData);
+
+    // Push query message to the chat conversation
+    if (application) {
+      const rawPhone = application.phone || application.mobile;
+      const phone = this.normalizePhone(rawPhone || '');
+      if (phone) {
+        // Find or create conversation for the student
+        let { data: conv } = await this.db
+          .from('Conversation')
+          .select('*')
+          .eq('customerPhone', phone)
+          .maybeSingle();
+
+        if (!conv) {
+          const fullName = `${application.firstName || ''} ${application.lastName || ''}`.trim();
+          const { data: newConv } = await this.db
+            .from('Conversation')
+            .insert({
+              customerPhone: phone,
+              status: 'active',
+              customerEmail: application.email || null,
+              customerName: fullName || null,
+              metadata: { type: 'staff' }
+            })
+            .select()
+            .single();
+          conv = newConv;
+        }
+
+        if (conv) {
+          const bankName = bankUser.firstName || 'Banker';
+          const msgContent = `[BANK QUERY from ${bankName}]: ${content}`;
+          const { data: chatMessage } = await this.db
+            .from('Message')
+            .insert({
+              conversationId: conv.id,
+              senderType: 'system',
+              senderId: bankUser.email,
+              receiverType: 'staff',
+              content: msgContent,
+              messageType: 'text',
+              status: 'sent'
+            })
+            .select()
+            .single();
+
+          if (chatMessage) {
+            // Update conversation timestamp
+            await this.db
+              .from('Conversation')
+              .update({ updatedAt: new Date().toISOString() })
+              .eq('id', conv.id);
+
+            // Emit the programmatically created message so WebSocket clients receive it in real-time
+            this.eventEmitter.emit('chat.message_created', chatMessage);
+          }
+        }
+      }
+    }
 
     return {
       success: true,
@@ -487,7 +559,7 @@ export class BankService {
 
     // Update application
     const targetStatus = 'disbursement_confirmed';
-    const updatedStage = LoanStateMachine.getStageByStatus(targetStatus);
+    const updatedStage = 'disbursement';
     const updatedProgress = LoanStateMachine.getProgressByStatus(targetStatus);
 
     const { data: updatedApp, error: updateError } = await this.db
@@ -549,6 +621,14 @@ export class BankService {
       application.applicationNumber
     );
 
+    // Emit disbursement event for referral processing
+    this.eventEmitter.emit('bank.application.disbursed', {
+      applicationId: application.id,
+      userId: application.userId,
+      amount: disbursementAmount,
+      bankId: application.bank,
+    });
+
     return {
       success: true,
       message: 'Disbursement UTR confirmed successfully',
@@ -606,10 +686,29 @@ export class BankService {
   async getFileDetail(applicationId: string): Promise<any> {
     const { data, error } = await this.db
       .from('LoanApplication')
-      .select('*, BankDecision(*), disbursements(*), file_quality_scores(*), queries(*)')
+      .select('*, BankDecision(*), disbursements(*), file_quality_scores(*), queries(*), ProcessingFee(*)')
       .eq('id', applicationId)
-      .single();
-    if (error) throw error;
+      .maybeSingle();
+
+    if (error) {
+      console.error(`[BankService] getFileDetail error for id ${applicationId}:`, error);
+      // Fallback query if relations fail
+      const { data: fallbackData, error: fallbackError } = await this.db
+        .from('LoanApplication')
+        .select('*')
+        .eq('id', applicationId)
+        .maybeSingle();
+        
+      if (fallbackError || !fallbackData) {
+         throw new NotFoundException(`Application not found or error: ${fallbackError?.message || error.message}`);
+      }
+      return fallbackData;
+    }
+
+    if (!data) {
+      throw new NotFoundException(`Loan application with ID "${applicationId}" not found`);
+    }
+
     return data;
   }
 
@@ -714,11 +813,17 @@ export class BankService {
   }
 
   async resolveQuery(queryId: string): Promise<any> {
-    const { error } = await this.db
+    const { error: error1 } = await this.db
       .from('BankQuery')
       .update({ status: 'RESOLVED', resolvedAt: new Date().toISOString() })
       .eq('id', queryId);
-    if (error) throw error;
+
+    const { error: error2 } = await this.db
+      .from('queries')
+      .update({ status: 'resolved' })
+      .eq('id', queryId);
+
+    if (error1 && error2) throw error1; // throw error if both fail
     return { success: true };
   }
 

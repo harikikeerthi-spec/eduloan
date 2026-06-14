@@ -11,20 +11,48 @@ export class ChatService {
     return this.supabase.getClient();
   }
 
-  async getOrCreateConversation(customerPhone: string, customerEmail?: string, conversationType: string = 'staff', customerName?: string, bankName?: string) {
+  private normalizePhone(phoneStr: string): string {
+    // Synthetic bank identifiers start with BNK_ — pass through unchanged
+    if (phoneStr.startsWith('BNK_')) return phoneStr;
+    const cleaned = phoneStr.replace('whatsapp:', '').trim().replace(/\D/g, '');
+    if (cleaned.length > 10 && cleaned.startsWith('91')) {
+      return cleaned.substring(2);
+    }
+    if (cleaned.length > 10) {
+      return cleaned.slice(-10);
+    }
+    return cleaned;
+  }
+
+  async getOrCreateConversation(customerPhone: string, customerEmail?: string, conversationType: string = 'staff', customerName?: string, bankName?: string, additionalMetadata?: any) {
     if (!customerPhone) {
         throw new HttpException('A valid phone number is required to start a chat. Please update your profile.', HttpStatus.BAD_REQUEST);
     }
-    // Clean phone number (strip 'whatsapp:' if present)
-    const phone = customerPhone.replace('whatsapp:', '');
+    // Clean phone number (strip 'whatsapp:' and normalize to 10 digits)
+    const phone = this.normalizePhone(customerPhone);
 
-    // Check if open conversation exists
-    let { data: conv, error } = await this.db
+    let query = this.db
       .from('Conversation')
       .select('*')
-      .eq('customerPhone', phone)
-      .eq('status', 'active')
-      .maybeSingle(); // Changed .single() to .maybeSingle() to handle no results more gracefully
+      .eq('customerPhone', phone);
+
+    if (additionalMetadata && additionalMetadata.applicationId) {
+      query = query.contains('metadata', { applicationId: additionalMetadata.applicationId });
+    }
+
+    let { data: convData, error } = await query.order('updatedAt', { ascending: false }).limit(1);
+    let conv = convData?.[0] || null;
+
+    if (error) {
+      this.logger.error('Failed to query conversation', error);
+      throw new HttpException('Database error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    const mergedMetadata = {
+      type: conversationType,
+      bank: bankName || null,
+      ...(additionalMetadata || {})
+    };
 
     if (!conv) {
       // Create new
@@ -35,7 +63,7 @@ export class ChatService {
             status: 'active',
             customerEmail: customerEmail || null,
             customerName: customerName || null,
-            metadata: { type: conversationType, bank: bankName }
+            metadata: mergedMetadata
         })
         .select()
         .single();
@@ -45,6 +73,31 @@ export class ChatService {
         throw new HttpException('Database error', HttpStatus.INTERNAL_SERVER_ERROR);
       }
       conv = newConv;
+    } else {
+      // Reactivate or update existing conversation metadata
+      const updateData: any = {
+        status: 'active',
+        updatedAt: new Date().toISOString(),
+        metadata: {
+          ...(conv.metadata || {}),
+          ...mergedMetadata
+        }
+      };
+      if (customerEmail) updateData.customerEmail = customerEmail;
+      if (customerName) updateData.customerName = customerName;
+
+      const { data: updatedConv, error: updateError } = await this.db
+        .from('Conversation')
+        .update(updateData)
+        .eq('id', conv.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        this.logger.error('Failed to reactivate conversation', updateError);
+        throw new HttpException('Database error reactivating conversation', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+      conv = updatedConv;
     }
 
     return conv;
@@ -58,6 +111,9 @@ export class ChatService {
     content: string;
     messageType?: string;
     status?: string;
+    attachmentUrl?: string;
+    attachmentType?: string;
+    senderName?: string;
   }) {
     const { data: message, error } = await this.db
       .from('Message')
@@ -137,17 +193,32 @@ export class ChatService {
     return data;
   }
 
+  async getMessageById(messageId: string) {
+    const { data, error } = await this.db
+      .from('Message')
+      .select('*')
+      .eq('id', messageId)
+      .maybeSingle();
+
+    if (error) {
+      throw new HttpException('Db Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    return data;
+  }
+
   async getMessagesByPhone(phone: string) {
-    const cleanPhone = phone.replace('whatsapp:', '');
+    const cleanPhone = this.normalizePhone(phone);
     
-    // Find conversation first
-    const { data: conv } = await this.db
+    // Find most recently updated active conversation first
+    const { data: convData } = await this.db
       .from('Conversation')
       .select('id')
       .eq('customerPhone', cleanPhone)
       .eq('status', 'active')
-      .single();
+      .order('updatedAt', { ascending: false })
+      .limit(1);
 
+    const conv = convData?.[0] || null;
     if (!conv) return [];
 
     return this.getMessages(conv.id);

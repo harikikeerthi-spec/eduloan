@@ -287,17 +287,6 @@ export class BlogController {
     }
 
     /**
-     * Get all comment IDs liked by a user
-     * GET /blogs/comments/likes/:userId
-     * @param userId - User identifier (device ID for anonymous users)
-     * @returns { success: boolean, data: string[] }
-     */
-    @Get('comments/likes/:userId')
-    async getLikedComments(@Param('userId') userId: string) {
-        return this.blogService.getLikedComments(userId);
-    }
-
-    /**
      * Get blog statistics
      * GET /blogs/:id/stats
      * @param id - Blog ID

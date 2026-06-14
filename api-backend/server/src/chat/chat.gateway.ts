@@ -44,7 +44,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const simPhone = client.handshake.auth.phone;
 
       if (isSimulator && simPhone) {
-        const cleanPhone = String(simPhone).replace('whatsapp:', '');
+        const digits = String(simPhone).replace('whatsapp:', '').trim().replace(/\D/g, '');
+        const cleanPhone = digits.length > 10 && digits.startsWith('91') ? digits.substring(2) : (digits.length > 10 ? digits.slice(-10) : digits);
         client.join(`sim_${cleanPhone}`);
         this.logger.log(`Simulator connected for phone: ${cleanPhone}`);
         return;
@@ -171,7 +172,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       // 3. Update WhatsApp Simulator if connected
-      const cleanPhone = payload.customerPhone.replace('whatsapp:', '');
+      const digits = payload.customerPhone.replace('whatsapp:', '').trim().replace(/\D/g, '');
+      const cleanPhone = digits.length > 10 && digits.startsWith('91') ? digits.substring(2) : (digits.length > 10 ? digits.slice(-10) : digits);
       this.server.to(`sim_${cleanPhone}`).emit('wa_message_received', msg);
 
       // 4. Send out via Twilio WhatsApp (Real)
@@ -201,7 +203,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const msg = await this.chatService.saveMessage({
             conversationId: conversation.id,
             senderType: 'customer',
-            senderId: payload.phone.replace('whatsapp:', ''),
+            senderId: conversation.customerPhone,
             content: payload.content,
             status: 'delivered'
         });
@@ -282,6 +284,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     } else {
       this.logger.warn(`WS server not initialized. Skipping notification broadcast.`);
+    }
+  }
+
+  @OnEvent('chat.message_created')
+  handleChatMessageCreated(msg: any) {
+    this.logger.log(`Broadcasting programmatically created message in conversation ${msg.conversationId}`);
+    if (this.server) {
+      this.server.to(`conv_${msg.conversationId}`).emit('new_message', msg);
+      this.server.to('room_staff').emit('conversation_updated', {
+        conversationId: msg.conversationId,
+        lastMessage: msg
+      });
     }
   }
 }

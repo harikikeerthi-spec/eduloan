@@ -18,20 +18,8 @@ export class FirebaseAuthService {
       }
 
       try {
-        // Handle the case where the private key might be wrapped in quotes
-        let formattedPrivateKey = privateKey.trim();
-        if (formattedPrivateKey.startsWith('"') && formattedPrivateKey.endsWith('"')) {
-          formattedPrivateKey = formattedPrivateKey.substring(1, formattedPrivateKey.length - 1);
-        }
-        if (formattedPrivateKey.startsWith("'") && formattedPrivateKey.endsWith("'")) {
-          formattedPrivateKey = formattedPrivateKey.substring(1, formattedPrivateKey.length - 1);
-        }
-
         // Handle the case where the private key might have escaped newlines
-        formattedPrivateKey = formattedPrivateKey.replace(/\\n/g, '\n');
-
-        // Remove any other backslashes (escaping artifacts)
-        formattedPrivateKey = formattedPrivateKey.replace(/\\/g, '');
+        const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
         admin.initializeApp({
           credential: admin.credential.cert({
