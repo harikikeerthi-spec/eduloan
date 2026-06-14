@@ -7,12 +7,13 @@ export class OpenRouterService {
     private readonly apiKey = process.env.OPENROUTER_API_KEY;
     private readonly REQUEST_TIMEOUT_MS = 30_000; // 30 seconds
     
-    // Fallback models to try if primary model fails (in order of preference)
+    // Fallback models to try if primary model fails (free models first, paid as backup)
     private readonly FALLBACK_MODELS = [
-        'openai/gpt-4o-mini',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'meta-llama/llama-2-13b-chat:free',
         'mistralai/mistral-7b-instruct:free',
+        'google/gemma-2-9b-it:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'openai/gpt-4o-mini',
     ];
     
     private readonly VISION_FALLBACK_MODELS = [
@@ -98,7 +99,7 @@ export class OpenRouterService {
         }
     }
 
-    async getJson<T>(prompt: string, model: string = 'openai/gpt-4o-mini'): Promise<T> {
+    async getJson<T>(prompt: string, model: string = 'meta-llama/llama-3.3-70b-instruct:free'): Promise<T> {
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. Do not include markdown formatting.`;
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') throw new Error('OPENROUTER_API_KEY is not configured');
 
