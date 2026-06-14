@@ -486,7 +486,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           const SizedBox(height: 24),
           _buildOfficerCard(
             id: 'agent_michael',
-            name: 'Officer Michael',
+            name: 'VL Loan Officer',
             description: 'Neutral, methodical, clinical, follows procedure exactly.',
             difficulty: 'Standard',
             difficultyColor: Colors.blue,
@@ -1008,7 +1008,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                 ? 'Officer Smith'
                 : _selectedAgent == 'agent_sarah'
                     ? 'Officer Sarah'
-                    : 'Officer Michael',
+                    : 'VL Loan Officer',
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
