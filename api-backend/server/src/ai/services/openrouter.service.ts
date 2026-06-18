@@ -235,8 +235,12 @@ export class OpenRouterService {
             
             MUST respond ONLY with JSON.`;
         } else {
-            prompt = `Search for valid courses/fields of study matching or relevant to "${query || ''}".
+            const university = context?.university || '';
+            const degree = context?.degree || 'masters';
+            prompt = `Provide a comprehensive list of popular and valid courses/fields of study ${university ? `offered at ${university}` : ''} ${degree ? `for a ${degree} degree` : ''} ${query ? `matching or relevant to "${query}"` : ''}.
             Return a JSON object with a "courses" key.
+            The "courses" key should be an array of up to 15-20 distinct and high-demand courses/programs.
+            For each course, provide an object with a "name" key containing the course title (e.g., "MS Computer Science", "MBA").
             MUST respond ONLY with JSON.`;
         }
 
