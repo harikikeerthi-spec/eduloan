@@ -900,7 +900,7 @@ class AiLogicService {
             e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
           );
         }
-        return {'name': e.toString()};
+        return <String, String>{'name': e.toString()};
       }).toList();
     } catch (e) {
       debugPrint('Error calling search-universities: $e');
@@ -925,7 +925,7 @@ class AiLogicService {
               e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
             );
           }
-          return {'name': e.toString()};
+          return <String, String>{'name': e.toString()};
         }).toList();
 
         // Add unified results that are not already in results
@@ -955,7 +955,7 @@ class AiLogicService {
             final stateProvince = e['state-province']?.toString() ?? '';
             final location = stateProvince.isNotEmpty ? '$stateProvince, $countryVal' : countryVal;
             
-            return {
+            return <String, String>{
               'name': name,
               'country': countryVal,
               'location': location,
@@ -1001,7 +1001,7 @@ class AiLogicService {
             e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
           );
         }
-        return {'name': e.toString()};
+        return <String, String>{'name': e.toString()};
       }).toList();
       if (results.isNotEmpty) return results;
     } catch (e) {
@@ -1025,7 +1025,7 @@ class AiLogicService {
             e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
           );
         }
-        return {'name': e.toString()};
+        return <String, String>{'name': e.toString()};
       }).toList();
       if (results.isNotEmpty) return results;
     } catch (e) {
@@ -1044,9 +1044,19 @@ class AiLogicService {
       'MS Biotechnology',
       'Master of Public Health (MPH)',
       'MS Finance',
+      'MS Cybersecurity & Information Assurance',
+      'MS Software Engineering',
+      'MS Civil Engineering',
+      'MS Chemical Engineering',
+      'MS Industrial Engineering',
+      'MS Pharmacology & Toxicology',
+      'MS Project Management',
+      'MS Construction Management',
+      'MS Supply Chain Management',
+      'Master of Architecture',
     ];
     
-    return staticList.map((name) => {'name': name}).toList();
+    return staticList.map((name) => <String, String>{'name': name}).toList();
   }
 
   Future<List<Map<String, String>>> searchCountries(String query) async {
@@ -1059,7 +1069,7 @@ class AiLogicService {
             e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
           );
         }
-        return {'name': e.toString()};
+        return <String, String>{'name': e.toString()};
       }).toList();
     } catch (e) {
       debugPrint('Error searching countries from backend: $e. Falling back to popular list.');

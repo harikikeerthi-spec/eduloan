@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/institutes_data.dart';
 import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
+import '../pages/apply_loan_page.dart';
 import 'mesh_background.dart';
 
 class InstituteSelectionModal extends StatefulWidget {
@@ -23,6 +24,8 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
   bool _isSearchingAI = false;
   List<Institute> _aiInstitutes = [];
   bool _isLoadingCourses = false;
+  final Map<String, List<String>> _fetchedCoursesCache = {};
+  String? _selectedCourse;
 
   List<Institute> get _combinedInstitutes {
     List<Institute> combined = [];
@@ -114,41 +117,65 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
   }
 
   void _selectInstitute(Institute institute) async {
+    // 1. If already cached, just use cached courses
+    if (_fetchedCoursesCache.containsKey(institute.name)) {
+      setState(() {
+        _selectedInstitute = Institute(
+          name: institute.name,
+          state: institute.state,
+          type: institute.type,
+          courses: _fetchedCoursesCache[institute.name]!,
+        );
+        _selectedCourse = null;
+      });
+      return;
+    }
+
+    // 2. Otherwise, select the institute first (shows loading spinner)
     setState(() {
       _selectedInstitute = institute;
+      _isLoadingCourses = true;
+      _selectedCourse = null;
     });
 
-    if (institute.courses.isEmpty) {
-      setState(() {
-        _isLoadingCourses = true;
-      });
-      try {
-        final courses = await AiLogicService().searchUniversityCourses(institute.name, '');
-        if (mounted && _selectedInstitute?.name == institute.name) {
-          setState(() {
-            // We can't modify the const institute, we must replace it
-            _selectedInstitute = Institute(
-              name: institute.name,
-              state: institute.state,
-              type: institute.type,
-              courses: courses.map((c) => c['name'] ?? 'Unknown Course').toList(),
-            );
-            _isLoadingCourses = false;
-          });
-        }
-      } catch (e) {
-        if (mounted && _selectedInstitute?.name == institute.name) {
-          setState(() {
-             // Fallback courses if AI fails
-             _selectedInstitute = Institute(
-              name: institute.name,
-              state: institute.state,
-              type: institute.type,
-              courses: ['MS Computer Science', 'MBA', 'Data Science', 'Engineering'],
-            );
-            _isLoadingCourses = false;
-          });
-        }
+    try {
+      final courses = await AiLogicService().searchUniversityCourses(institute.name, '');
+      final List<String> mappedCourses = courses
+          .map((c) => c['name'] ?? 'Unknown Course')
+          .where((name) => name != 'Unknown Course')
+          .toList();
+
+      final List<String> finalCourses = mappedCourses.isNotEmpty 
+          ? mappedCourses 
+          : (institute.courses.isNotEmpty ? institute.courses : ['MS Computer Science', 'MBA', 'Data Science', 'Engineering']);
+
+      if (mounted && _selectedInstitute?.name == institute.name) {
+        setState(() {
+          _fetchedCoursesCache[institute.name] = finalCourses;
+          _selectedInstitute = Institute(
+            name: institute.name,
+            state: institute.state,
+            type: institute.type,
+            courses: finalCourses,
+          );
+          _isLoadingCourses = false;
+        });
+      }
+    } catch (e) {
+      if (mounted && _selectedInstitute?.name == institute.name) {
+        final List<String> fallbackCourses = institute.courses.isNotEmpty 
+            ? institute.courses 
+            : ['MS Computer Science', 'MBA', 'Data Science', 'Engineering'];
+        setState(() {
+          _fetchedCoursesCache[institute.name] = fallbackCourses;
+          _selectedInstitute = Institute(
+            name: institute.name,
+            state: institute.state,
+            type: institute.type,
+            courses: fallbackCourses,
+          );
+          _isLoadingCourses = false;
+        });
       }
     }
   }
@@ -324,6 +351,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 onTap: () {
                   setState(() {
                     _selectedInstitute = null;
+                    _selectedCourse = null;
                   });
                 },
                 child: Row(
@@ -421,61 +449,111 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
           )
         else
           Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: _selectedInstitute!.courses.length,
-            itemBuilder: (context, index) {
-              final course = _selectedInstitute!.courses[index];
-              return InkWell(
-                onTap: () {
-                  Navigator.pop(context, {
-                    'institute': _selectedInstitute,
-                    'course': course,
-                  });
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF311B92).withValues(alpha: 0.03),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF311B92).withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF6366F1),
-                          shape: BoxShape.circle,
-                        ),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              itemCount: _selectedInstitute!.courses.length,
+              itemBuilder: (context, index) {
+                final course = _selectedInstitute!.courses[index];
+                final isSelected = course == _selectedCourse;
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _selectedCourse = course;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected 
+                          ? const Color(0xFF311B92).withValues(alpha: 0.08)
+                          : const Color(0xFF311B92).withValues(alpha: 0.03),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected 
+                            ? const Color(0xFF311B92)
+                            : const Color(0xFF311B92).withValues(alpha: 0.1),
+                        width: isSelected ? 1.5 : 1.0,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          course,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF311B92) : const Color(0xFF6366F1),
+                            shape: BoxShape.circle,
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            course,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.black,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          isSelected ? Icons.check_circle : Icons.check_circle_outline,
+                          color: isSelected 
+                              ? const Color(0xFF311B92)
+                              : const Color(0xFF311B92).withValues(alpha: 0.3),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (_selectedCourse != null)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final navigator = Navigator.of(context);
+                    navigator.pop();
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => ApplyLoanPage(
+                          initialUniversity: _selectedInstitute!.name,
+                          initialCourse: _selectedCourse!,
+                          initialCountry: _selectedInstitute!.state,
+                        ),
                       ),
-                      Icon(
-                        Icons.check_circle_outline,
-                        color: const Color(0xFF311B92).withValues(alpha: 0.3),
-                        size: 20,
-                      ),
-                    ],
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    'Apply Loan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ),
       ],
     );
   }
@@ -566,14 +644,21 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    institute.courses.isEmpty 
-                        ? 'Explore AI Courses' 
-                        : '${institute.courses.length} Courses Available',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.black.withValues(alpha: 0.6),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final cachedCourses = _fetchedCoursesCache[institute.name];
+                      final coursesCount = cachedCourses?.length ?? institute.courses.length;
+                      final subtitleText = coursesCount == 0 
+                          ? 'Explore AI Courses' 
+                          : '$coursesCount Courses Available';
+                      return Text(
+                        subtitleText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withValues(alpha: 0.6),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
