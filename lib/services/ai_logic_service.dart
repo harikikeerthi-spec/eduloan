@@ -884,20 +884,100 @@ class AiLogicService {
     String degree = 'masters',
     String? country,
   }) async {
-    final data = await _postRequest('search-universities', {
-      'query': query,
-      'degree': degree,
-      'country': country,
-    });
-    final list = data['universities'] as List? ?? [];
-    return list.map<Map<String, String>>((e) {
-      if (e is Map) {
-        return Map<String, String>.from(
-          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
-        );
+    List<Map<String, String>> results = [];
+
+    // 1. Try search-universities endpoint first
+    try {
+      final data = await _postRequest('search-universities', {
+        'query': query,
+        'degree': degree,
+        'country': country,
+      });
+      final list = data['universities'] as List? ?? [];
+      results = list.map<Map<String, String>>((e) {
+        if (e is Map) {
+          return Map<String, String>.from(
+            e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+        }
+        return {'name': e.toString()};
+      }).toList();
+    } catch (e) {
+      debugPrint('Error calling search-universities: $e');
+    }
+
+    final queryLower = query.toLowerCase().trim();
+    bool hasCloseMatch = results.any((uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower));
+
+    // 2. If no matching results, try the unified search endpoint
+    if (!hasCloseMatch) {
+      try {
+        final data = await _postRequest('search', {
+          'query': query,
+          'type': 'university',
+          'country': country,
+          'degree': degree,
+        });
+        final list = data['universities'] as List? ?? data['results'] as List? ?? [];
+        final unifiedResults = list.map<Map<String, String>>((e) {
+          if (e is Map) {
+            return Map<String, String>.from(
+              e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+            );
+          }
+          return {'name': e.toString()};
+        }).toList();
+
+        // Add unified results that are not already in results
+        for (var uni in unifiedResults) {
+          if (!results.any((r) => (r['name'] ?? '').toLowerCase() == (uni['name'] ?? '').toLowerCase())) {
+            results.add(uni);
+          }
+        }
+      } catch (e) {
+        debugPrint('Error calling search fallback: $e');
       }
-      return {'name': e.toString()};
-    }).toList();
+    }
+
+    hasCloseMatch = results.any((uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower));
+
+    // 3. Fallback to public universities API (hipolabs) if still no exact/close match is found
+    if (!hasCloseMatch && queryLower.length >= 3) {
+      try {
+        final encodedQuery = Uri.encodeComponent(query);
+        final url = Uri.parse('http://universities.hipolabs.com/search?name=$encodedQuery');
+        final response = await http.get(url).timeout(const Duration(seconds: 5));
+        if (response.statusCode == 200) {
+          final List<dynamic> decoded = jsonDecode(response.body);
+          final hipoResults = decoded.map<Map<String, String>>((e) {
+            final name = e['name']?.toString() ?? '';
+            final countryVal = e['country']?.toString() ?? '';
+            final stateProvince = e['state-province']?.toString() ?? '';
+            final location = stateProvince.isNotEmpty ? '$stateProvince, $countryVal' : countryVal;
+            
+            return {
+              'name': name,
+              'country': countryVal,
+              'location': location,
+              'loc': location,
+              'accept': '75', // Default placeholder
+              'tuition': '25000', // Default placeholder
+            };
+          }).toList();
+
+          // Add hipolabs results that are not already in results
+          for (var uni in hipoResults) {
+            if (!results.any((r) => (r['name'] ?? '').toLowerCase() == (uni['name'] ?? '').toLowerCase())) {
+              results.add(uni);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Error calling hipolabs fallback: $e');
+      }
+    }
+
+    return results;
   }
 
   Future<List<Map<String, String>>> searchUniversityCourses(
@@ -905,20 +985,68 @@ class AiLogicService {
     String query, {
     String degree = 'masters',
   }) async {
-    final data = await _postRequest('search-courses', {
-      'university': university,
-      'query': query,
-      'degree': degree,
-    });
-    final list = data['courses'] as List? ?? [];
-    return list.map<Map<String, String>>((e) {
-      if (e is Map) {
-        return Map<String, String>.from(
-          e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
-        );
-      }
-      return {'name': e.toString()};
-    }).toList();
+    List<Map<String, String>> results = [];
+
+    // 1. Try search-courses endpoint
+    try {
+      final data = await _postRequest('search-courses', {
+        'university': university,
+        'query': query,
+        'degree': degree,
+      });
+      final list = data['courses'] as List? ?? [];
+      results = list.map<Map<String, String>>((e) {
+        if (e is Map) {
+          return Map<String, String>.from(
+            e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+        }
+        return {'name': e.toString()};
+      }).toList();
+      if (results.isNotEmpty) return results;
+    } catch (e) {
+      debugPrint('Error calling search-courses: $e');
+    }
+
+    // 2. Try search endpoint with type 'course'
+    try {
+      final data = await _postRequest('search', {
+        'query': query,
+        'type': 'course',
+        'context': {
+          'university': university,
+          'degree': degree,
+        }
+      });
+      final list = data['results'] as List? ?? data['courses'] as List? ?? [];
+      results = list.map<Map<String, String>>((e) {
+        if (e is Map) {
+          return Map<String, String>.from(
+            e.map((k, v) => MapEntry(k.toString(), v?.toString() ?? '')),
+          );
+        }
+        return {'name': e.toString()};
+      }).toList();
+      if (results.isNotEmpty) return results;
+    } catch (e) {
+      debugPrint('Error calling search endpoint for courses: $e');
+    }
+
+    // 3. Static fallback list of courses if both endpoints fail
+    final staticList = [
+      'MS Computer Science',
+      'MBA (Master of Business Administration)',
+      'MS Data Science & Analytics',
+      'MS Information Technology',
+      'MS Business Analytics',
+      'MS Mechanical Engineering',
+      'MS Electrical Engineering',
+      'MS Biotechnology',
+      'Master of Public Health (MPH)',
+      'MS Finance',
+    ];
+    
+    return staticList.map((name) => {'name': name}).toList();
   }
 
   Future<List<Map<String, String>>> searchCountries(String query) async {

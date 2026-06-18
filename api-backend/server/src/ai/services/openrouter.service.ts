@@ -211,10 +211,11 @@ export class OpenRouterService {
             const country = context?.country || '';
             const course = context?.course || '';
 
-            prompt = `Search for REAL, ACCREDITED universities ${query ? `matching or relevant to "${query}"` : 'that are popular'} for international students.
+            prompt = `Search for REAL, ACCREDITED universities for international students.
+            ${query ? `If the query "${query}" matches or represents a specific university, that exact university MUST be included in the results (ideally as the very first item). Otherwise, return universities matching or relevant to "${query}".` : 'Return popular universities.'}
             ${country ? `PRIORITY: Focus PRIMARILY on universities located in "${country}".` : ''}
-            ${course ? `SECONARY FOCUS: Universities strong in "${course}".` : ''}
-            CRITICAL REQUIREMENT: Focus on finding top universities that have the HIGHEST acceptance rates for international students. Ensure the acceptance rate data is highly accurate. Please rank the returned universities in descending order of their acceptance rates (highest to lowest).
+            ${course ? `SECONDARY FOCUS: Universities strong in "${course}".` : ''}
+            CRITICAL REQUIREMENT: Focus on finding top universities that have the HIGHEST acceptance rates for international students. Ensure the acceptance rate data is highly accurate. Please rank the returned universities in descending order of their acceptance rates (highest to lowest) (with the exception of the exact name match which should always be included).
 
             Context Details: ${JSON.stringify(context || {})}
 
