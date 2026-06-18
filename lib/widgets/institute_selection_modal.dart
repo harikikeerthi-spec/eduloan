@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/institutes_data.dart';
 import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
+import 'mesh_background.dart';
 
 class InstituteSelectionModal extends StatefulWidget {
   final String? selectedCountry;
@@ -154,36 +155,40 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(32),
+        topRight: Radius.circular(32),
       ),
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF311B92).withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+        ),
+        child: MeshBackground(
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
 
-          // Content
-          Expanded(
-            child: _selectedInstitute == null
-                ? _buildSelectionView()
-                : _buildDetailsView(),
+              // Content
+              Expanded(
+                child: _selectedInstitute == null
+                    ? _buildSelectionView()
+                    : _buildDetailsView(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
