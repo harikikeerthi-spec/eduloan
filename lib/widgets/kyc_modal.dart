@@ -39,16 +39,7 @@ class KycModal extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           const Text(
-            'Connect with DigiLocker for seamless KYC and profile integration.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Color(0xFF4B5563),
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Alternatively, you can manually upload the following documents',
+            'Please manually upload the following documents to complete your KYC and profile integration.',
             style: TextStyle(
               fontSize: 15,
               color: Color(0xFF4B5563),

@@ -259,14 +259,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final List<String> _lendingPartners = [
     'HDFC Credila',
     'Avanse Financial Services',
-    'InCred',
     'Auxilo',
-    'SBI',
-    'ICICI Bank',
-    'Axis Bank',
     'IDFC First Bank',
-    'Bank of Baroda',
-    'Punjab National Bank',
+    'Poonawalla Fincorp',
   ];
 
   void _showBankSelection() {
@@ -1392,6 +1387,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       localAssetPath = 'assets/images/auxilo_logo_final.png';
     } else if (name.contains('idfc')) {
       localAssetPath = 'assets/images/idfc_logo.png';
+    } else if (name.contains('poonawalla')) {
+      localAssetPath = 'assets/images/poonawalla_logo_final.jpg';
     } else if (name.contains('sbi') || name.contains('state bank')) {
       networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
     } else if (name.contains('icici')) {
@@ -1485,6 +1482,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     if (name.contains('incred')) return 'incred.com';
     if (name.contains('auxilo')) return 'auxilo.com';
     if (name.contains('idfc')) return 'idfcfirstbank.com';
+    if (name.contains('poonawalla')) return 'poonawallafincorp.com';
     if (name.contains('bob') || name.contains('baroda')) return 'bankofbaroda.in';
     if (name.contains('pnb') || name.contains('punjab')) return 'pnbindia.in';
     return 'google.com';

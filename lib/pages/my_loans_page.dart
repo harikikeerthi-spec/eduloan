@@ -194,8 +194,8 @@ class _MyLoansPageState extends State<MyLoansPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildStatisticsCards(),
-          const SizedBox(height: 20),
-          _buildDigilockerProminentCard(),
+          // const SizedBox(height: 20),
+          // _buildDigilockerProminentCard(),
           const SizedBox(height: 24),
           ..._loans.map((loan) => _buildLoanCard(loan)),
         ],
@@ -503,24 +503,24 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint('DEBUG: FETCH button tapped for loan: ${loan.id}');
-                    _verifyWithDigilocker(loanId: loan.id);
-                  },
-                  icon: const Icon(Icons.cloud_download_outlined),
-                  label: const Text('FETCH FROM DIGILOCKER', style: TextStyle(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
+              // const SizedBox(height: 16),
+              // SizedBox(
+              //   width: double.infinity,
+              //   child: ElevatedButton.icon(
+              //     onPressed: () {
+              //       debugPrint('DEBUG: FETCH button tapped for loan: ${loan.id}');
+              //       _verifyWithDigilocker(loanId: loan.id);
+              //     },
+              //     icon: const Icon(Icons.cloud_download_outlined),
+              //     label: const Text('FETCH FROM DIGILOCKER', style: TextStyle(fontWeight: FontWeight.bold)),
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: const Color(0xFF10B981),
+              //       foregroundColor: Colors.white,
+              //       padding: const EdgeInsets.symmetric(vertical: 12),
+              //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              //     ),
+              //   ),
+              // ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -1088,6 +1088,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
       ),
     );
   }
+  // ignore: unused_element
   Widget _buildDigilockerProminentCard() {
     return Container(
       padding: const EdgeInsets.all(20),

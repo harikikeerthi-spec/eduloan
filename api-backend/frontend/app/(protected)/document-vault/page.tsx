@@ -299,7 +299,7 @@ export default function DocumentVaultPage() {
                                     ) : (
                                         <>
                                             {/* DigiLocker Flow - First Priority */}
-                                            {([
+                                            {false && ([
                                                 'pan_student', 'pan_coapp', 'aadhar_student', 'aadhar_coapp',
                                                 'marksheet_10th', 'marksheet_12th', 'passport',
                                                 'pan_father', 'pan_mother', 'aadhar_father', 'aadhar_mother'
@@ -394,6 +394,7 @@ export default function DocumentVaultPage() {
                 </div>
 
                 {/* DigiLocker Integrated Section */}
+                {false && (
                 <div className="mb-12">
                     <div className="bg-gradient-to-br from-[#004791] to-[#0b84ff] rounded-[32px] p-8 text-white relative overflow-hidden shadow-2xl shadow-blue-500/20">
                         {/* Semi-circles for design */}
@@ -486,6 +487,7 @@ export default function DocumentVaultPage() {
                 )}
                     </div>
                 </div>
+                )}
 
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
