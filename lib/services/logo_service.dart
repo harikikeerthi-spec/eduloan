@@ -3,8 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class LogoService {
+  static final Map<String, String?> _cache = {};
+
   /// Fetches a company/university logo URL dynamically using external APIs.
   static Future<String?> getLogoByName(String name) async {
+    if (_cache.containsKey(name)) {
+      return _cache[name];
+    }
     try {
       final encodedName = Uri.encodeComponent(name);
 
@@ -28,7 +33,10 @@ class LogoService {
             domain = domain.split('/')[0];
             
             final logo = await getValidLogoForDomain(domain);
-            if (logo != null) return logo;
+            if (logo != null) {
+              _cache[name] = logo;
+              return logo;
+            }
           }
         }
       }
@@ -46,6 +54,7 @@ class LogoService {
           if (match['logo'] != null) {
             final logoUrl = match['logo'] as String;
             if (await isUrlValid(logoUrl)) {
+              _cache[name] = logoUrl;
               return logoUrl;
             }
           }
@@ -54,6 +63,7 @@ class LogoService {
     } catch (e) {
       debugPrint('Error fetching logo for $name: $e');
     }
+    _cache[name] = null;
     return null;
   }
 

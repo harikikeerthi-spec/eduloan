@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/institutes_data.dart';
 import '../services/ai_logic_service.dart';
+import '../services/logo_service.dart';
 
 class InstituteSelectionModal extends StatefulWidget {
   final String? selectedCountry;
@@ -474,6 +475,23 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     );
   }
 
+  Widget _buildFallbackIcon() {
+    return Container(
+      width: 48,
+      height: 48,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Icon(
+        Icons.school,
+        color: Color(0xFF6366F1),
+        size: 24,
+      ),
+    );
+  }
+
   Widget _buildInstituteCard(Institute institute) {
     return InkWell(
       onTap: () => _selectInstitute(institute),
@@ -497,17 +515,37 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.account_balance,
-                color: Color(0xFF6366F1),
-                size: 24,
-              ),
+            FutureBuilder<String?>(
+              future: LogoService.getLogoByName(institute.name),
+              builder: (context, snapshot) {
+                final logoUrl = snapshot.data;
+                if (logoUrl != null && logoUrl.isNotEmpty) {
+                  return Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.network(
+                          logoUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildFallbackIcon(),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return _buildFallbackIcon();
+              },
             ),
             const SizedBox(width: 16),
             Expanded(
