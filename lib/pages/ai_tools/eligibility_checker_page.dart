@@ -363,7 +363,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
               child: ElevatedButton(
                 onPressed: _checkEligibility,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A1A1A),
+                  backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
