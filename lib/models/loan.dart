@@ -3,6 +3,7 @@ import 'application_document.dart';
 class Loan {
   final String id;
   final String userId;
+  final String? applicationNumber;
   final String? firstName;
   final String? lastName;
   final String? phone;
@@ -25,6 +26,7 @@ class Loan {
   Loan({
     required this.id,
     required this.userId,
+    this.applicationNumber,
     this.firstName,
     this.lastName,
     this.phone,
@@ -56,6 +58,7 @@ class Loan {
     return Loan(
       id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
+      applicationNumber: json['applicationNumber']?.toString(),
       firstName: json['firstName'],
       lastName: json['lastName'],
       phone: json['phone'],
@@ -89,6 +92,7 @@ class Loan {
     return {
       'id': id,
       'userId': userId,
+      'applicationNumber': applicationNumber,
       'firstName': firstName,
       'lastName': lastName,
       'phone': phone,

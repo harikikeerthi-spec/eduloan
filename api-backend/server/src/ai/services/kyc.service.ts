@@ -407,8 +407,12 @@ export class KycService {
                 - "PASSPORT OFFICE"
                 - "DATE OF ISSUE" + "DATE OF EXPIRY" (Passport structure)
                 - Passport biodata page layout
+                - "INCOME TAX" or "INCOME TAX DEPARTMENT" or "TAX DEPARTMENT" keyword anywhere
+                - "PERMANENT ACCOUNT" or "PAN" card markers
+                - PAN number format (5 letters followed by 4 digits followed by 1 letter, e.g. ABCDE1234F)
                 
-                If ANY of the above detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PASSPORT', do NOT extract fields.
+                If Passport markers are detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PASSPORT', do NOT extract fields.
+                If PAN card markers are detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PAN', do NOT extract fields.
 
                 ACCEPT ONLY IF YOU DETECT:
                 - "UNIQUE IDENTIFICATION" or "UIDAI"

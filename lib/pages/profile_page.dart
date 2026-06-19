@@ -29,7 +29,18 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
+    _loadCachedProfileImage();
     _fetchProfile();
+  }
+
+  Future<void> _loadCachedProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedImage = prefs.getString('user_profileImage');
+    if (cachedImage != null && mounted) {
+      setState(() {
+        _profileImage = cachedImage;
+      });
+    }
   }
 
   Future<void> _fetchProfile() async {
@@ -63,6 +74,9 @@ class _ProfilePageState extends State<ProfilePage> {
             } else if (user['dob'] != null) {
               prefs.setString('user_dob', user['dob']);
             }
+            if (user['profileImage'] != null) {
+              prefs.setString('user_profileImage', user['profileImage']);
+            }
 
             setState(() {
               _name = '$fname $lname'.trim();
@@ -84,7 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   // If it's already DD-MM-YYYY, keep it as is
                 }
               }
-              _profileImage = user['profileImage'];
+              _profileImage = user['profileImage'] ?? prefs.getString('user_profileImage');
               _isLoading = false;
             });
           } else {

@@ -70,6 +70,88 @@ export class AiController {
     };
   }
 
+  @Post('loan-recommendations')
+  async getLoanRecommendations(
+    @Body()
+    data: any,
+  ) {
+    // 1. Map frontend profile parameters to eligibility/recommendations format
+    const credit = 720;
+    const loan = Number(data.loanAmount) || Number(data.loan) || 1500000;
+    const income = Number(data.cosignerIncome) || 800000;
+    const coApplicant = (data.cosignerRelation && data.cosignerRelation !== 'None') ? 'yes' : 'no';
+    const collateral = (Number(data.collateralValue) > 0 || data.claimCollateral === 'Yes') ? 'yes' : 'no';
+    
+    let employment: 'employed' | 'self' | 'student' | 'unemployed' = 'employed';
+    if (data.cosignerType) {
+      const type = data.cosignerType.toLowerCase();
+      if (type.includes('self')) {
+        employment = 'self';
+      } else if (type.includes('salaried') || type.includes('employed')) {
+        employment = 'employed';
+      } else if (type.includes('farmer') || type.includes('pensioner')) {
+        employment = 'employed';
+      }
+    }
+
+    const study = (data.degree && data.degree.toLowerCase().includes('bachelor')) ? 'undergrad' : 'masters';
+
+    // Calculate eligibility score first
+    const eligibilityResult = await this.eligibilityService.calculateEligibilityScore({
+      age: 23,
+      credit,
+      income,
+      loan,
+      employment,
+      study,
+      coApplicant,
+      collateral,
+    });
+
+    // Get recommendations from service
+    const serviceRecommendations = await this.loanRecommendationService.recommendLoans(
+      eligibilityResult.score,
+      credit,
+      eligibilityResult.ratio,
+      loan,
+      coApplicant,
+      collateral,
+      study,
+    );
+
+    // Helper to format rupees in Indian format
+    const formatRupees = (val: number) => {
+      return '₹' + val.toLocaleString('en-IN');
+    };
+
+    // Helper to map and format service offer to frontend expected fields
+    const mapOffer = (offer: any) => {
+      const formattedAmount = offer.maxLoan ? formatRupees(offer.maxLoan) : formatRupees(loan);
+      return {
+        ...offer,
+        rate: offer.apr || '9.5%',
+        amount: formattedAmount,
+        processingTime: offer.processingTime || '3-5 Days',
+        savings: offer.savings || '₹15,000 on processing fee',
+      };
+    };
+
+    const mappedPrimary = {
+      offer: mapOffer(serviceRecommendations.primary.offer),
+      fit: serviceRecommendations.primary.fit,
+    };
+
+    const mappedAlternatives = serviceRecommendations.alternatives.map((alt) => ({
+      offer: mapOffer(alt.offer),
+      fit: alt.fit,
+    }));
+
+    return {
+      primary: mappedPrimary,
+      alternatives: mappedAlternatives,
+    };
+  }
+
   @Post('sop-analysis')
   async analyzeSop(
     @Body()
@@ -663,6 +745,186 @@ export class AiController {
     } catch (error) {
       console.error('Failed to save visa interview result:', error);
       return { success: false, message: 'Failed to save result' };
+    }
+  }
+
+  @Post('shortlist')
+  async shortlist(
+    @Body()
+    data: {
+      profile: any;
+      userId?: string;
+      messages?: any[];
+    },
+  ) {
+    const { profile, userId, messages } = data;
+    if (!profile) {
+      throw new BadRequestException('Profile is required');
+    }
+
+    const isEvaluate = profile.selectedUniversities && profile.selectedUniversities.length > 0;
+    let systemPrompt = '';
+    let userPrompt = '';
+
+    if (isEvaluate) {
+      systemPrompt = `You are an expert AI university admission consultant.
+The student has a profile and has shortlisted a set of universities they want to evaluate.
+Evaluate their chances of admission (Safe, Reach, or Moderate) and provide feedback for each shortlisted university.
+
+Response MUST be strictly valid JSON in the following format:
+{
+  "recommendations": [
+    {
+      "name": "University Name",
+      "chance": "Safe/Reach/Moderate",
+      "type": "Public/Private",
+      "rank": "QS or US News Rank (integer as string)",
+      "tuition": "Annual Tuition fee in USD (integer as string, e.g. 35000)",
+      "location": "City, State/Country",
+      "reason": "Clear explanation of why this chance was assigned based on their CGPA, tests, and backlogs",
+      "avgSalary": "Average starting salary in USD (integer as string, e.g. 95000)",
+      "deadline": "Upcoming main deadline (e.g. Dec 15 / Jan 15)",
+      "flag": "Country flag emoji, e.g. 🇺🇸 or 🇨🇦",
+      "country": "Country name",
+      "programName": "Suggested matching program name",
+      "description": "Short summary of the program/university",
+      "roi": "High/Medium/Low",
+      "acceptanceRate": "Acceptance rate percentage (integer as string, e.g. 25)",
+      "duration": "Program duration (e.g. 2 years)",
+      "category": "Safe/Reach/Moderate"
+    }
+  ]
+}`;
+
+      userPrompt = `Student Profile:
+- Target Degree: ${profile.degree || "Master's"}
+- Target Major/Field: ${profile.major || 'Computer Science'}
+- CGPA: ${profile.gpa || 'N/A'}
+- Backlogs: ${profile.backlogs === 'Yes' ? (profile.backlogCount || 'Yes') : 'No'}
+- Test Scores: ${profile.tests || 'None'}
+- Work Experience: ${profile.experience || 'None'}
+
+Shortlisted Universities to Evaluate:
+${JSON.stringify(profile.selectedUniversities)}`;
+    } else {
+      systemPrompt = `You are an expert AI university shortlister.
+Based on the student's profile, recommend the top 6-8 matching universities in their target country.
+Categorize them into:
+- Safe (highly likely admission, GPA/scores well above average)
+- Moderate (good fit, standard chance)
+- Reach (ambitious, highly competitive)
+
+Response MUST be strictly valid JSON in the following format:
+{
+  "recommendations": [
+    {
+      "name": "University Name",
+      "chance": "Safe/Reach/Moderate",
+      "type": "Public/Private",
+      "rank": "QS or US News Rank (integer as string)",
+      "tuition": "Annual Tuition fee in USD (integer as string, e.g. 35000)",
+      "location": "City, State/Country",
+      "reason": "Clear explanation of why this is a Safe/Moderate/Reach choice for their specific CGPA, tests, and backlogs",
+      "avgSalary": "Average starting salary in USD (integer as string, e.g. 95000)",
+      "deadline": "Upcoming main deadline (e.g. Dec 15 / Jan 15)",
+      "flag": "Country flag emoji, e.g. 🇺🇸 or 🇨🇦",
+      "country": "Country name",
+      "programName": "Suggested matching program name",
+      "description": "Short summary of the program/university",
+      "roi": "High/Medium/Low",
+      "acceptanceRate": "Acceptance rate percentage (integer as string, e.g. 25)",
+      "duration": "Program duration (e.g. 2 years)",
+      "category": "Safe/Reach/Moderate"
+    }
+  ]
+}`;
+
+      userPrompt = `Student Profile:
+- Target Degree: ${profile.degree || "Master's"}
+- Target Country: ${profile.country || 'USA'}
+- Target Major/Field: ${profile.major || 'Computer Science'}
+- CGPA: ${profile.gpa || 'N/A'}
+- Backlogs: ${profile.backlogs === 'Yes' ? (profile.backlogCount || 'Yes') : 'No'}
+- Test Scores: ${profile.tests || 'None'}
+- Work Experience: ${profile.experience || 'None'}`;
+    }
+
+    try {
+      const prompt = `${systemPrompt}\n\nUser Profile & Request:\n${userPrompt}`;
+      const response = await this.openRouterService.getJson<{ recommendations: any[] }>(
+        prompt,
+        'meta-llama/llama-3.3-70b-instruct:free',
+      );
+
+      const recommendations = response?.recommendations || [];
+
+      if (userId) {
+        const client = this.supabase.getClient();
+        
+        const { data: existing } = await client
+          .from('UniversityShortlistChat')
+          .select('id')
+          .eq('userId', userId)
+          .maybeSingle();
+
+        if (existing) {
+          await client
+            .from('UniversityShortlistChat')
+            .update({
+              messages: messages || [],
+              recommendations: recommendations,
+              updatedAt: new Date().toISOString(),
+            })
+            .eq('userId', userId);
+        } else {
+          await client
+            .from('UniversityShortlistChat')
+            .insert({
+              userId,
+              messages: messages || [],
+              recommendations: recommendations,
+            });
+        }
+      }
+
+      return {
+        success: true,
+        recommendations,
+      };
+    } catch (error) {
+      console.error('[AiController.shortlist] Error generating shortlist:', error);
+      throw new BadRequestException('Failed to generate university shortlist: ' + error.message);
+    }
+  }
+
+  @Get('shortlist/:userId')
+  async getShortlistChat(@Param('userId') userId: string) {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
+
+    try {
+      const client = this.supabase.getClient();
+      const { data, error } = await client
+        .from('UniversityShortlistChat')
+        .select('*')
+        .eq('userId', userId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return {
+        success: true,
+        chat: data,
+      };
+    } catch (error) {
+      console.error('[AiController.getShortlistChat] Error fetching shortlist chat:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch shortlist chat history',
+      };
     }
   }
 }

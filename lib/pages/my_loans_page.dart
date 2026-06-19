@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'document_vault_page.dart';
 import '../widgets/mesh_background.dart';
 import '../models/loan.dart';
-import '../models/application_document.dart';
 import '../services/loan_service.dart';
 import 'apply_loan_page.dart';
 import 'digilocker_auth_page.dart';
@@ -154,32 +153,61 @@ class _MyLoansPageState extends State<MyLoansPage> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ApplyLoanPage(),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ApplyLoanPage(),
+                      ),
+                    ).then((_) => _fetchLoans());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 1,
                   ),
-                ).then((_) => _fetchLoans());
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF311B92),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text(
+                    'Apply Loan',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
                 ),
-                elevation: 2,
               ),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text(
-                'New Application',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DocumentVaultPage(),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF311B92),
+                    side: const BorderSide(color: Color(0xFF311B92)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  icon: const Icon(Icons.folder_shared_outlined, size: 18),
+                  label: const Text(
+                    'Doc Vault',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -474,81 +502,67 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'DOCUMENTS',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                  color: Colors.grey,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.3,
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      ...loan.documents
-                          .where(
-                            (doc) =>
-                                doc.status != 'pending' ||
-                                !doc.docName.contains('Unnamed'),
-                          )
-                          .map((doc) => _buildDocumentItem(loan.id, doc)),
-                    ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'APPLICATION ID',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          loan.applicationNumber ?? loan.id,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-              // const SizedBox(height: 16),
-              // SizedBox(
-              //   width: double.infinity,
-              //   child: ElevatedButton.icon(
-              //     onPressed: () {
-              //       debugPrint('DEBUG: FETCH button tapped for loan: ${loan.id}');
-              //       _verifyWithDigilocker(loanId: loan.id);
-              //     },
-              //     icon: const Icon(Icons.cloud_download_outlined),
-              //     label: const Text('FETCH FROM DIGILOCKER', style: TextStyle(fontWeight: FontWeight.bold)),
-              //     style: ElevatedButton.styleFrom(
-              //       backgroundColor: const Color(0xFF10B981),
-              //       foregroundColor: Colors.white,
-              //       padding: const EdgeInsets.symmetric(vertical: 12),
-              //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              //     ),
-              //   ),
-              // ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () {
+                    Navigator.pop(context); // Close details dialog
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const DocumentVaultPage(),
                       ),
-                    ).then((_) => _fetchLoans());
+                    );
                   },
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text(
-                    'UPLOAD FROM VAULT',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF311B92),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 1,
+                  ),
+                  icon: const Icon(Icons.folder_shared_outlined, size: 20),
+                  label: const Text(
+                    'Document Vault',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               Row(
                 children: [
                   Expanded(
@@ -756,8 +770,18 @@ class _MyLoansPageState extends State<MyLoansPage> {
       {'key': 'disbursed', 'label': 'Disbursed', 'icon': Icons.payments},
     ];
 
-    int currentStageIndex = stages.indexWhere((s) => s['key'] == loan.stage);
-    if (currentStageIndex == -1) currentStageIndex = 0;
+    int currentStageIndex = 0;
+    if (loan.stage == 'application_submitted') {
+      currentStageIndex = 0;
+    } else if (loan.stage == 'document_verification' || loan.stage == 'documents_uploaded') {
+      currentStageIndex = 1;
+    } else if (loan.stage == 'credit_check' || loan.stage == 'bank_review' || loan.stage == 'under_review') {
+      currentStageIndex = 2;
+    } else if (loan.stage == 'sanction' || loan.stage == 'sanctioned') {
+      currentStageIndex = 3;
+    } else if (loan.stage == 'disbursement' || loan.stage == 'disbursed') {
+      currentStageIndex = 4;
+    }
 
     return Column(
       children: [
@@ -835,6 +859,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
   Widget _buildLoanDetails(Loan loan) {
     return Column(
       children: [
+        _buildDetailRow('Application ID', loan.applicationNumber ?? loan.id),
         _buildDetailRow('University', loan.universityName ?? 'N/A'),
         _buildDetailRow('Course', loan.courseName ?? 'N/A'),
         _buildDetailRow(
@@ -1029,65 +1054,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
     );
   }
 
-  Widget _buildDocumentItem(String applicationId, ApplicationDocument doc) {
-    bool isUploaded = doc.status != 'pending';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            isUploaded ? Icons.check_circle : Icons.error_outline,
-            color: isUploaded ? Colors.green : Colors.orange,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  doc.docName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  doc.isRequired ? 'Required' : 'Optional',
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                ),
-              ],
-            ),
-          ),
-
-          if (!isUploaded)
-            const Text(
-              'PENDING',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.orange,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          else
-            const Text(
-              'UPLOADED',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
   // ignore: unused_element
   Widget _buildDigilockerProminentCard() {
     return Container(

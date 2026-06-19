@@ -10,17 +10,15 @@ export class OpenRouterService {
     // Fallback models to try if primary model fails (free models first, paid as backup)
     private readonly FALLBACK_MODELS = [
         'meta-llama/llama-3.3-70b-instruct:free',
-        'mistralai/mistral-7b-instruct:free',
-        'google/gemma-2-9b-it:free',
+        'openrouter/free',
         'meta-llama/llama-3.2-3b-instruct:free',
         'openai/gpt-4o-mini',
     ];
     
     private readonly VISION_FALLBACK_MODELS = [
         'openai/gpt-4o-mini',
+        'openrouter/free',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemma-2-9b-it:free',
     ];
 
     /** Create an AbortSignal that auto-aborts after the configured timeout. */

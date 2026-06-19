@@ -600,6 +600,7 @@ export class AuthService {
           phoneNumber: user.phoneNumber || '',
           dateOfBirth: formattedDob || '',
           role: user.role || 'user',
+          profileImage: user.profileImage || null,
           createdAt: user.createdAt,
         }
       };

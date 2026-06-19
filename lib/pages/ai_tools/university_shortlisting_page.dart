@@ -38,6 +38,7 @@ class _UniversityShortlistingPageState
   bool? _claimCollateral;
   String? _collateralType;
   double? _collateralValue;
+  double? _loanAmount;
   String? _backlogs;
   String? _backlogCount;
   String? _testStatus;
@@ -357,8 +358,11 @@ class _UniversityShortlistingPageState
           'cosignerRelation': _cosignerRelation,
           'cosignerType': _cosignerType,
           'cosignerIncome': _cosignerIncome,
+          'claimCollateral': _claimCollateral == true ? 'Yes' : 'No',
+          'collateralType': _collateralType,
           'collateralValue': _collateralValue,
           'experience': _workExperience,
+          'loanAmount': _loanAmount ?? 1500000.0,
         };
 
         final result = await AiLogicService().getLoanRecommendations(profile);
@@ -1069,7 +1073,7 @@ class _UniversityShortlistingPageState
         hintText: "Search your university",
         onSearch: (query) => AiLogicService().searchGlobalUniversities(
           query,
-          degree: _activeFlow == 'masters' ? 'Master\'s' : 'Bachelor\'s',
+          degree: _activeFlow == 'bachelors' ? 'Bachelor\'s' : 'Master\'s',
         ),
         onSelect: (uni) {
           setState(() {
@@ -1097,7 +1101,7 @@ class _UniversityShortlistingPageState
         onSearch: (query) => AiLogicService().searchUniversityCourses(
           _selectedUniversity!,
           query,
-          degree: _activeFlow == 'masters' ? 'Master\'s' : 'Bachelor\'s',
+          degree: _activeFlow == 'bachelors' ? 'Bachelor\'s' : 'Master\'s',
         ),
         onSelect: (course) {
           setState(() {
@@ -1123,6 +1127,7 @@ class _UniversityShortlistingPageState
       return _LoanAmountSelector(
         onConfirm: (amount) {
           setState(() {
+            _loanAmount = amount;
             final formatted = NumberFormat.currency(
               locale: 'en_IN',
               symbol: '₹',
@@ -1830,7 +1835,7 @@ class _UniversityShortlistingPageState
         onSearch: (query) => AiLogicService().searchUniversityCourses(
           _tempUniversity!,
           query,
-          degree: _activeFlow == 'masters' ? 'Master\'s' : 'Bachelor\'s',
+          degree: _activeFlow == 'bachelors' ? 'Bachelor\'s' : 'Master\'s',
         ),
         onSelect: (course) {
           setState(() {
@@ -3481,10 +3486,22 @@ class _LoanAmountSelectorState extends State<_LoanAmountSelector> {
   String _formatSpelledOut(double amount) {
     if (amount >= 10000000) {
       double cr = amount / 10000000;
-      return "${cr.toStringAsFixed(2)} CRORE".toUpperCase();
+      String crStr = cr.toStringAsFixed(2);
+      if (crStr.endsWith('.00')) {
+        crStr = crStr.substring(0, crStr.length - 3);
+      } else if (crStr.endsWith('0')) {
+        crStr = crStr.substring(0, crStr.length - 1);
+      }
+      return "$crStr CRORE".toUpperCase();
     } else if (amount >= 100000) {
       double lakh = amount / 100000;
-      return "${lakh.toStringAsFixed(0)} LAKH".toUpperCase();
+      String lakhStr = lakh.toStringAsFixed(2);
+      if (lakhStr.endsWith('.00')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 3);
+      } else if (lakhStr.endsWith('0')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 1);
+      }
+      return "$lakhStr LAKH".toUpperCase();
     }
     return "";
   }
@@ -3552,7 +3569,9 @@ class _LoanAmountSelectorState extends State<_LoanAmountSelector> {
               min: 1200000,
               max: 20000000,
               onChanged: (value) {
-                setState(() => _amount = value);
+                // Round to the nearest 50,000 for clean selection
+                final rounded = (value / 50000).round() * 50000.0;
+                setState(() => _amount = rounded);
               },
             ),
           ),
@@ -3848,16 +3867,31 @@ class _IncomeInputState extends State<_IncomeInput> {
     if (amount <= 0) return "";
     if (amount >= 10000000) {
       double cr = amount / 10000000;
-      return "${cr.toStringAsFixed(2)} CRORE ONLY".toUpperCase();
+      String crStr = cr.toStringAsFixed(2);
+      if (crStr.endsWith('.00')) {
+        crStr = crStr.substring(0, crStr.length - 3);
+      } else if (crStr.endsWith('0')) {
+        crStr = crStr.substring(0, crStr.length - 1);
+      }
+      return "$crStr CRORE ONLY".toUpperCase();
     } else if (amount >= 100000) {
       double lakh = amount / 100000;
-      return "${lakh.toStringAsFixed(2)} LAKH ONLY".toUpperCase();
+      String lakhStr = lakh.toStringAsFixed(2);
+      if (lakhStr.endsWith('.00')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 3);
+      } else if (lakhStr.endsWith('0')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 1);
+      }
+      return "$lakhStr LAKH ONLY".toUpperCase();
     } else if (amount >= 1000) {
       double thousand = amount / 1000;
-      if (amount % 1000 == 0) {
-        return "${thousand.toStringAsFixed(0)} THOUSAND ONLY".toUpperCase();
+      String thousandStr = thousand.toStringAsFixed(2);
+      if (thousandStr.endsWith('.00')) {
+        thousandStr = thousandStr.substring(0, thousandStr.length - 3);
+      } else if (thousandStr.endsWith('0')) {
+        thousandStr = thousandStr.substring(0, thousandStr.length - 1);
       }
-      return "${thousand.toStringAsFixed(1)} THOUSAND ONLY".toUpperCase();
+      return "$thousandStr THOUSAND ONLY".toUpperCase();
     }
     return "${amount.toStringAsFixed(0)} ONLY".toUpperCase();
   }
@@ -4125,12 +4159,31 @@ class _CollateralAmountSelectorState extends State<_CollateralAmountSelector> {
   String _formatSpelledOut(double amount) {
     if (amount >= 10000000) {
       double cr = amount / 10000000;
-      return "${cr.toStringAsFixed(2)} CRORE".toUpperCase();
+      String crStr = cr.toStringAsFixed(2);
+      if (crStr.endsWith('.00')) {
+        crStr = crStr.substring(0, crStr.length - 3);
+      } else if (crStr.endsWith('0')) {
+        crStr = crStr.substring(0, crStr.length - 1);
+      }
+      return "$crStr CRORE".toUpperCase();
     } else if (amount >= 100000) {
       double lakh = amount / 100000;
-      return "${lakh.toStringAsFixed(0)} LAKH".toUpperCase();
-    } else if (amount >= 10000) {
-      return "TEN THOUSAND";
+      String lakhStr = lakh.toStringAsFixed(2);
+      if (lakhStr.endsWith('.00')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 3);
+      } else if (lakhStr.endsWith('0')) {
+        lakhStr = lakhStr.substring(0, lakhStr.length - 1);
+      }
+      return "$lakhStr LAKH".toUpperCase();
+    } else if (amount >= 1000) {
+      double thousand = amount / 1000;
+      String thousandStr = thousand.toStringAsFixed(2);
+      if (thousandStr.endsWith('.00')) {
+        thousandStr = thousandStr.substring(0, thousandStr.length - 3);
+      } else if (thousandStr.endsWith('0')) {
+        thousandStr = thousandStr.substring(0, thousandStr.length - 1);
+      }
+      return "$thousandStr THOUSAND".toUpperCase();
     }
     return "";
   }
@@ -4198,7 +4251,11 @@ class _CollateralAmountSelectorState extends State<_CollateralAmountSelector> {
               min: 10000,
               max: 40000000,
               onChanged: (value) {
-                setState(() => _amount = value);
+                // Snap slider selections to clean increments: nearest 50,000 if value >= 100,000, otherwise nearest 10,000.
+                final rounded = value >= 100000
+                    ? (value / 50000).round() * 50000.0
+                    : (value / 10000).round() * 10000.0;
+                setState(() => _amount = rounded);
               },
             ),
           ),

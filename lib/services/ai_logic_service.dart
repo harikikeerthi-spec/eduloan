@@ -945,7 +945,20 @@ class AiLogicService {
     if (!hasCloseMatch && queryLower.length >= 3) {
       try {
         final encodedQuery = Uri.encodeComponent(query);
-        final url = Uri.parse('http://universities.hipolabs.com/search?name=$encodedQuery');
+        String urlString = 'http://universities.hipolabs.com/search?name=$encodedQuery';
+        if (country != null && country.trim().isNotEmpty) {
+          final cLower = country.trim().toLowerCase();
+          String hCountry;
+          if (cLower == 'usa' || cLower == 'united states of america' || cLower == 'us') {
+            hCountry = 'United States';
+          } else if (cLower == 'uk' || cLower == 'united kingdom') {
+            hCountry = 'United Kingdom';
+          } else {
+            hCountry = country.trim();
+          }
+          urlString += '&country=${Uri.encodeComponent(hCountry)}';
+        }
+        final url = Uri.parse(urlString);
         final response = await http.get(url).timeout(const Duration(seconds: 5));
         if (response.statusCode == 200) {
           final List<dynamic> decoded = jsonDecode(response.body);
@@ -1137,7 +1150,14 @@ class AiLogicService {
       'sweden': '🇸🇪',
       'spain': '🇪🇸',
       'italy': '🇮🇹',
-      'india': '🇮🇳'
+      'india': '🇮🇳',
+      'china': '🇨🇳',
+      'japan': '🇯🇵',
+      'south korea': '🇰🇷',
+      'malaysia': '🇲🇾',
+      'united arab emirates': '🇦🇪',
+      'uae': '🇦🇪',
+      'russia': '🇷🇺'
     };
     final key = name.trim().toLowerCase();
     return flags[key] ?? '🌐';
@@ -1162,7 +1182,14 @@ class AiLogicService {
       'sweden': 'SE',
       'spain': 'ES',
       'italy': 'IT',
-      'india': 'IN'
+      'india': 'IN',
+      'china': 'CN',
+      'japan': 'JP',
+      'south korea': 'KR',
+      'malaysia': 'MY',
+      'united arab emirates': 'AE',
+      'uae': 'AE',
+      'russia': 'RU'
     };
     final key = name.trim().toLowerCase();
     return codes[key] ?? '';
