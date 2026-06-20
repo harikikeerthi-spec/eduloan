@@ -1,77 +1,44 @@
 "use strict";
-var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
-    }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
-};
-var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
-    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
-    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
-var common_1 = require("@nestjs/common");
-var AppController = function () {
-    var _classDecorators = [(0, common_1.Controller)()];
-    var _classDescriptor;
-    var _classExtraInitializers = [];
-    var _classThis;
-    var _instanceExtraInitializers = [];
-    var _getHello_decorators;
-    var _health_decorators;
-    var AppController = _classThis = /** @class */ (function () {
-        function AppController_1(appService) {
-            this.appService = (__runInitializers(this, _instanceExtraInitializers), appService);
-        }
-        AppController_1.prototype.getHello = function () {
-            return this.appService.getHello();
-        };
-        AppController_1.prototype.health = function () {
-            return { status: 'ok' };
-        };
-        return AppController_1;
-    }());
-    __setFunctionName(_classThis, "AppController");
-    (function () {
-        var _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-        _getHello_decorators = [(0, common_1.Get)()];
-        _health_decorators = [(0, common_1.Get)('health')];
-        __esDecorate(_classThis, null, _getHello_decorators, { kind: "method", name: "getHello", static: false, private: false, access: { has: function (obj) { return "getHello" in obj; }, get: function (obj) { return obj.getHello; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-        __esDecorate(_classThis, null, _health_decorators, { kind: "method", name: "health", static: false, private: false, access: { has: function (obj) { return "health" in obj; }, get: function (obj) { return obj.health; } }, metadata: _metadata }, null, _instanceExtraInitializers);
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        AppController = _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return AppController = _classThis;
-}();
+const common_1 = require("@nestjs/common");
+const app_service_1 = require("./app.service");
+let AppController = class AppController {
+    appService;
+    constructor(appService) {
+        this.appService = appService;
+    }
+    getHello() {
+        return this.appService.getHello();
+    }
+    health() {
+        return { status: 'ok' };
+    }
+};
 exports.AppController = AppController;
+__decorate([
+    (0, common_1.Get)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", String)
+], AppController.prototype, "getHello", null);
+__decorate([
+    (0, common_1.Get)('health'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AppController.prototype, "health", null);
+exports.AppController = AppController = __decorate([
+    (0, common_1.Controller)(),
+    __metadata("design:paramtypes", [app_service_1.AppService])
+], AppController);
+//# sourceMappingURL=app.controller.js.map
