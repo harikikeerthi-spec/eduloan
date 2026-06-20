@@ -813,34 +813,6 @@ class HomeTabState extends State<HomeTab> {
                   ],
                 ),
               ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Colors.grey.withValues(alpha: 0.2),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Tenure',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.black.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${loan.tenure} months',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),

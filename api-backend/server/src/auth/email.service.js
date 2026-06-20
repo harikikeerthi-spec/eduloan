@@ -1,225 +1,357 @@
 "use strict";
-var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
-    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
-    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
-var common_1 = require("@nestjs/common");
-var nodemailer = require("nodemailer");
-var EmailService = function () {
-    var _classDecorators = [(0, common_1.Injectable)()];
-    var _classDescriptor;
-    var _classExtraInitializers = [];
-    var _classThis;
-    var EmailService = _classThis = /** @class */ (function () {
-        function EmailService_1() {
-            // Configure SMTP transporter using environment variables
-            this.transporter = nodemailer.createTransport({
-                host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-                port: parseInt(process.env.EMAIL_PORT || '587'),
-                secure: false, // true for 465, false for other ports
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS,
-                },
-            });
+const common_1 = require("@nestjs/common");
+const nodemailer = __importStar(require("nodemailer"));
+let EmailService = class EmailService {
+    transporter;
+    constructor() {
+        this.transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.EMAIL_PORT || '587'),
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+    }
+    async sendOtp(email, otp) {
+        const timestamp = new Date().toLocaleTimeString();
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || '"VidyaLoan" <[EMAIL_ADDRESS]>',
+            to: email,
+            subject: `Your VidyaLoan OTP Verification Code`,
+            text: `Your OTP is: ${otp}. This code expires in 1 minutes.`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #6605c7 0%, #8b5cf6 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0;">VidyaLoan</h1>
+          </div>
+          <div style="background: #f7f5f8; padding: 30px; border-radius: 0 0 10px 10px;">
+            <h2 style="color: #333;">Your Verification Code</h2>
+            <p style="color: #666; font-size: 16px;">Use the following OTP to complete your authentication:</p>
+            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;">
+              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #6605c7;">${otp}</span>
+            </div>
+            <p style="color: #999; font-size: 14px;">This code expires in 5 minutes. Do not share this code with anyone.</p>
+          </div>
+        </div>
+      `,
+        };
+        try {
+            console.log(`[EmailService] PREPARING TO SEND OTP`);
+            console.log(`[EmailService] Target Email: ${email}`);
+            console.log(`[EmailService] OTP Value: ${otp}`);
+            console.log(`--------------------------------`);
+            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                await this.transporter.sendMail(mailOptions);
+                console.log(`Email sent successfully to ${email}`);
+            }
+            else {
+                console.log(`Email credentials not configured - OTP only logged to console`);
+            }
         }
-        EmailService_1.prototype.sendOtp = function (email, otp) {
-            return __awaiter(this, void 0, void 0, function () {
-                var timestamp, mailOptions, error_1;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            timestamp = new Date().toLocaleTimeString();
-                            mailOptions = {
-                                from: process.env.EMAIL_FROM || '"LoanHero" <noreply@loanhero.com>',
-                                to: email,
-                                subject: "Your LoanHero OTP Verification Code [".concat(timestamp, "]"),
-                                text: "Your OTP is: ".concat(otp, ". This code expires in 5 minutes."),
-                                html: "\n        <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n          <div style=\"background: linear-gradient(135deg, #6605c7 0%, #8b5cf6 100%); padding: 30px; border-radius: 10px; text-align: center;\">\n            <h1 style=\"color: white; margin: 0;\">LoanHero</h1>\n          </div>\n          <div style=\"background: #f7f5f8; padding: 30px; border-radius: 0 0 10px 10px;\">\n            <h2 style=\"color: #333;\">Your Verification Code</h2>\n            <p style=\"color: #666; font-size: 16px;\">Use the following OTP to complete your authentication:</p>\n            <div style=\"background: white; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0;\">\n              <span style=\"font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #6605c7;\">".concat(otp, "</span>\n            </div>\n            <p style=\"color: #999; font-size: 14px;\">This code expires in 5 minutes. Do not share this code with anyone.</p>\n          </div>\n        </div>\n      "),
-                            };
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 5, , 6]);
-                            // Always log to console for debugging
-                            console.log("[EmailService] PREPARING TO SEND OTP");
-                            console.log("[EmailService] Target Email: ".concat(email));
-                            console.log("[EmailService] OTP Value: ".concat(otp));
-                            console.log("--------------------------------");
-                            if (!(process.env.EMAIL_USER && process.env.EMAIL_PASS)) return [3 /*break*/, 3];
-                            return [4 /*yield*/, this.transporter.sendMail(mailOptions)];
-                        case 2:
-                            _a.sent();
-                            console.log("Email sent successfully to ".concat(email));
-                            return [3 /*break*/, 4];
-                        case 3:
-                            console.log("Email credentials not configured - OTP only logged to console");
-                            _a.label = 4;
-                        case 4: return [3 /*break*/, 6];
-                        case 5:
-                            error_1 = _a.sent();
-                            console.error('Error sending email:', error_1);
-                            // Don't throw - still allow OTP flow to work even if email fails
-                            console.log("Email failed but OTP is: ".concat(otp));
-                            return [3 /*break*/, 6];
-                        case 6: return [2 /*return*/];
-                    }
-                });
-            });
+        catch (error) {
+            console.error('Error sending email:', error);
+            console.log(`Email failed but OTP is: ${otp}`);
+        }
+    }
+    async sendDigilockerConsentRequest(email, consentLink, documentTypes) {
+        const timestamp = new Date().toLocaleTimeString();
+        const docListHtml = documentTypes.map(doc => `<li>${doc.replace(/_/g, ' ').toUpperCase()}</li>`).join('');
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || '"Vidya Loan" <noreply@vidyaloan.com>',
+            to: email,
+            subject: `Action Required: DigiLocker Document Consent Request `,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;">
+          <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 24px;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">Vidya Loan</h1>
+          </div>
+          
+          <div style="padding: 0 10px;">
+            <h2 style="color: #111827; margin-bottom: 16px;">Document Verification Request</h2>
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.5;">You have requested to sync the following documents from your DigiLocker account to Vidya Loan:</p>
+            
+            <ul style="color: #4b5563; font-size: 14px; background: #f9fafb; padding: 20px 40px; border-radius: 8px; margin: 20px 0;">
+              ${docListHtml}
+            </ul>
+
+            <p style="color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">To proceed with the verification, please click the button below to grant permission and log in to your DigiLocker account.</p>
+            
+            <div style="text-align: center; margin-bottom: 30px;">
+              <a href="${consentLink}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                Give Permission & Login
+              </a>
+            </div>
+
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+                If you did not initiate this request, please ignore this email.<br>
+                For your security, do not share this link with anyone.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
         };
-        EmailService_1.prototype.sendDigilockerConsentRequest = function (email, consentLink, documentTypes) {
-            return __awaiter(this, void 0, void 0, function () {
-                var timestamp, docListHtml, mailOptions, error_2;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            timestamp = new Date().toLocaleTimeString();
-                            docListHtml = documentTypes.map(function (doc) { return "<li>".concat(doc.replace(/_/g, ' ').toUpperCase(), "</li>"); }).join('');
-                            mailOptions = {
-                                from: process.env.EMAIL_FROM || '"Vidhya Loan" <noreply@vidhyaloan.com>',
-                                to: email,
-                                subject: "Action Required: DigiLocker Document Consent Request [".concat(timestamp, "]"),
-                                html: "\n        <div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;\">\n          <div style=\"background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 24px;\">\n            <h1 style=\"color: white; margin: 0; font-size: 24px;\">Vidhya Loan</h1>\n          </div>\n          \n          <div style=\"padding: 0 10px;\">\n            <h2 style=\"color: #111827; margin-bottom: 16px;\">Document Verification Request</h2>\n            <p style=\"color: #4b5563; font-size: 16px; line-height: 1.5;\">You have requested to sync the following documents from your DigiLocker account to Vidhya Loan:</p>\n            \n            <ul style=\"color: #4b5563; font-size: 14px; background: #f9fafb; padding: 20px 40px; border-radius: 8px; margin: 20px 0;\">\n              ".concat(docListHtml, "\n            </ul>\n\n            <p style=\"color: #4b5563; font-size: 16px; line-height: 1.5; margin-bottom: 30px;\">To proceed with the verification, please click the button below to grant permission and log in to your DigiLocker account.</p>\n            \n            <div style=\"text-align: center; margin-bottom: 30px;\">\n              <a href=\"").concat(consentLink, "\" style=\"background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);\">\n                Give Permission & Login\n              </a>\n            </div>\n\n            <div style=\"border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;\">\n              <p style=\"color: #9ca3af; font-size: 12px; text-align: center;\">\n                If you did not initiate this request, please ignore this email.<br>\n                For your security, do not share this link with anyone.\n              </p>\n            </div>\n          </div>\n        </div>\n      "),
-                            };
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 5, , 6]);
-                            console.log("[EmailService] SENDING DIGILOCKER CONSENT TO: ".concat(email));
-                            if (!(process.env.EMAIL_USER && process.env.EMAIL_PASS)) return [3 /*break*/, 3];
-                            return [4 /*yield*/, this.transporter.sendMail(mailOptions)];
-                        case 2:
-                            _a.sent();
-                            console.log("Consent email sent successfully to ".concat(email));
-                            return [3 /*break*/, 4];
-                        case 3:
-                            console.log("Email credentials not configured - Link: ".concat(consentLink));
-                            _a.label = 4;
-                        case 4: return [3 /*break*/, 6];
-                        case 5:
-                            error_2 = _a.sent();
-                            console.error('Error sending consent email:', error_2);
-                            return [3 /*break*/, 6];
-                        case 6: return [2 /*return*/];
-                    }
-                });
-            });
+        try {
+            console.log(`[EmailService] SENDING DIGILOCKER CONSENT TO: ${email}`);
+            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                await this.transporter.sendMail(mailOptions);
+                console.log(`Consent email sent successfully to ${email}`);
+            }
+            else {
+                console.log(`Email credentials not configured - Link: ${consentLink}`);
+            }
+        }
+        catch (error) {
+            console.error('Error sending consent email:', error);
+        }
+    }
+    async sendMail(to, subject, html, text, replyTo) {
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || '"Vidya Loan" <noreply@vidyaloan.com>',
+            to: to,
+            replyTo: replyTo,
+            subject: subject,
+            html: html,
+            text: text,
         };
-        EmailService_1.prototype.sendMail = function (to, subject, html, text) {
-            return __awaiter(this, void 0, void 0, function () {
-                var mailOptions, error_3;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            mailOptions = {
-                                from: process.env.EMAIL_FROM || '"Vidhya Loan" <noreply@vidhyaloan.com>',
-                                to: to,
-                                subject: subject,
-                                html: html,
-                                text: text,
-                            };
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 5, , 6]);
-                            if (!(process.env.EMAIL_USER && process.env.EMAIL_PASS)) return [3 /*break*/, 3];
-                            return [4 /*yield*/, this.transporter.sendMail(mailOptions)];
-                        case 2:
-                            _a.sent();
-                            console.log("Email sent successfully to ".concat(to));
-                            return [3 /*break*/, 4];
-                        case 3:
-                            console.log("Email credentials not configured - Subject: ".concat(subject));
-                            _a.label = 4;
-                        case 4: return [3 /*break*/, 6];
-                        case 5:
-                            error_3 = _a.sent();
-                            console.error('Error sending email:', error_3);
-                            return [3 /*break*/, 6];
-                        case 6: return [2 /*return*/];
-                    }
-                });
-            });
+        try {
+            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                await this.transporter.sendMail(mailOptions);
+                console.log(`Email sent successfully to ${to}`);
+            }
+            else {
+                console.log(`Email credentials not configured - Subject: ${subject}`);
+            }
+        }
+        catch (error) {
+            console.error('Error sending email:', error);
+        }
+    }
+    async sendWelcomeEmail(email, firstName) {
+        const name = firstName ? firstName : 'there';
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const mailOptions = {
+            from: process.env.EMAIL_FROM || '"Vidyaloan" <noreply@vidyaloan.com>',
+            to: email,
+            subject: '🎉 Welcome to Vidyaloan – Your Education Loan Journey Starts Here!',
+            text: `Hi ${name},\n\nThank you for joining Vidyaloan! We're thrilled to have you on board.\n\nVidyaloan helps students like you get fast and easy education loans with minimal paperwork. Here's how to get started:\n\n1. Complete your profile\n2. Upload your documents digitally via DigiLocker\n3. Choose your preferred bank\n4. Track your application in real time\n\nStart your application now: ${frontendUrl}\n\nWarm regards,\nThe Vidyaloan Team`,
+            html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Vidyaloan</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f4ff;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f4ff;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#1a1a6e 0%,#3a3acc 60%,#6366f1 100%);border-radius:16px 16px 0 0;padding:40px 40px 32px;text-align:center;">
+              <h1 style="color:#ffffff;margin:0;font-size:30px;font-weight:800;letter-spacing:-0.5px;">Vidyaloan</h1>
+              <p style="color:#c7d2fe;margin:6px 0 0;font-size:14px;letter-spacing:1px;">EDUCATION LOAN PLATFORM</p>
+            </td>
+          </tr>
+
+          <!-- Hero Banner -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#4338ca 0%,#6366f1 100%);padding:30px 40px;text-align:center;">
+              <p style="margin:0;font-size:36px;">🎉</p>
+              <h2 style="color:#ffffff;margin:12px 0 8px;font-size:24px;font-weight:700;">Welcome, ${name}!</h2>
+              <p style="color:#e0e7ff;margin:0;font-size:15px;line-height:1.6;">Thank you for joining Vidyaloan. Your education dream just got a powerful ally!</p>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td style="background:#ffffff;padding:40px;border-radius:0 0 16px 16px;">
+
+              <!-- Thank You Message -->
+              <p style="color:#374151;font-size:16px;line-height:1.7;margin:0 0 24px;">We're genuinely excited to have you with us. Vidyaloan was built with one mission — to make education loan applications <strong>fast, simple, and stress-free</strong> for every student in India.</p>
+
+              <!-- Divider -->
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 28px;" />
+
+              <!-- How It Works -->
+              <h3 style="color:#1e1b4b;font-size:18px;font-weight:700;margin:0 0 20px;">🚀 How to Apply – It's Super Easy!</h3>
+
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <!-- Step 1 -->
+                <tr>
+                  <td style="padding:12px 0;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="width:44px;vertical-align:top;">
+                          <div style="background:#4338ca;color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;font-size:14px;">1</div>
+                        </td>
+                        <td style="vertical-align:top;padding-left:12px;">
+                          <p style="margin:0;font-weight:700;color:#111827;font-size:15px;">Complete Your Profile</p>
+                          <p style="margin:4px 0 0;color:#6b7280;font-size:14px;line-height:1.5;">Fill in your personal and academic details. It takes less than 5 minutes.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Step 2 -->
+                <tr>
+                  <td style="padding:12px 0;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="width:44px;vertical-align:top;">
+                          <div style="background:#4338ca;color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;font-size:14px;">2</div>
+                        </td>
+                        <td style="vertical-align:top;padding-left:12px;">
+                          <p style="margin:0;font-weight:700;color:#111827;font-size:15px;">Upload Documents via DigiLocker</p>
+                          <p style="margin:4px 0 0;color:#6b7280;font-size:14px;line-height:1.5;">No physical paperwork! Sync your ID, marksheets, and more directly from DigiLocker — 100% digital and secure.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Step 3 -->
+                <tr>
+                  <td style="padding:12px 0;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="width:44px;vertical-align:top;">
+                          <div style="background:#4338ca;color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;font-size:14px;">3</div>
+                        </td>
+                        <td style="vertical-align:top;padding-left:12px;">
+                          <p style="margin:0;font-weight:700;color:#111827;font-size:15px;">Choose Your Bank</p>
+                          <p style="margin:4px 0 0;color:#6b7280;font-size:14px;line-height:1.5;">Compare loan offers from top banks and pick the one that fits your needs — interest rate, tenure, and more.</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <!-- Step 4 -->
+                <tr>
+                  <td style="padding:12px 0;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="width:44px;vertical-align:top;">
+                          <div style="background:#4338ca;color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;font-size:14px;">4</div>
+                        </td>
+                        <td style="vertical-align:top;padding-left:12px;">
+                          <p style="margin:0;font-weight:700;color:#111827;font-size:15px;">Track Your Application in Real Time</p>
+                          <p style="margin:4px 0 0;color:#6b7280;font-size:14px;line-height:1.5;">Get instant updates at every stage — from submission to approval. No more waiting in the dark!</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Key Benefits -->
+              <div style="background:#f5f3ff;border-left:4px solid #6366f1;border-radius:8px;padding:20px 24px;margin:28px 0;">
+                <h4 style="color:#1e1b4b;margin:0 0 12px;font-size:15px;font-weight:700;">✨ Why Students Love Vidyaloan</h4>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td width="50%" style="padding:4px 0;color:#4c1d95;font-size:13px;">✅ 100% Online Application</td>
+                    <td width="50%" style="padding:4px 0;color:#4c1d95;font-size:13px;">⚡ Fast Approval Process</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;color:#4c1d95;font-size:13px;">🔒 Secure Document Handling</td>
+                    <td style="padding:4px 0;color:#4c1d95;font-size:13px;">🏦 Multiple Bank Options</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;color:#4c1d95;font-size:13px;">📊 Real-Time Status Tracking</td>
+                    <td style="padding:4px 0;color:#4c1d95;font-size:13px;">🎓 Student-First Approach</td>
+                  </tr>
+                </table>
+              </div>
+
+              <!-- CTA Button -->
+              <div style="text-align:center;margin:32px 0 24px;">
+                <a href="${frontendUrl}" style="display:inline-block;background:linear-gradient(135deg,#4338ca,#6366f1);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:50px;font-size:16px;font-weight:700;letter-spacing:0.3px;box-shadow:0 4px 15px rgba(99,102,241,0.4);">
+                  🚀 Start My Loan Application
+                </a>
+              </div>
+
+              <!-- Footer Note -->
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+              <p style="color:#9ca3af;font-size:12px;text-align:center;line-height:1.6;margin:0;">If you have any questions, just reply to this email — we're always here to help!<br/>© ${new Date().getFullYear()} Vidyaloan. All rights reserved.</p>
+
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `,
         };
-        return EmailService_1;
-    }());
-    __setFunctionName(_classThis, "EmailService");
-    (function () {
-        var _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        EmailService = _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return EmailService = _classThis;
-}();
+        try {
+            console.log(`[EmailService] Sending welcome email to new user: ${email}`);
+            if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+                await this.transporter.sendMail(mailOptions);
+                console.log(`[EmailService] Welcome email sent successfully to ${email}`);
+            }
+            else {
+                console.log(`[EmailService] Email credentials not configured – welcome email skipped for ${email}`);
+            }
+        }
+        catch (error) {
+            console.error(`[EmailService] Failed to send welcome email to ${email}:`, error);
+        }
+    }
+};
 exports.EmailService = EmailService;
+exports.EmailService = EmailService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
+], EmailService);
+//# sourceMappingURL=email.service.js.map

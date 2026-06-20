@@ -1,184 +1,259 @@
 "use strict";
-var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
-    }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
-};
-var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
-    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
-    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LoanRecommendationService = void 0;
-var common_1 = require("@nestjs/common");
-var LoanRecommendationService = function () {
-    var _classDecorators = [(0, common_1.Injectable)()];
-    var _classDescriptor;
-    var _classExtraInitializers = [];
-    var _classThis;
-    var LoanRecommendationService = _classThis = /** @class */ (function () {
-        function LoanRecommendationService_1() {
-            this.loanOffers = [
-                {
-                    id: 'aurora-student-core',
-                    bank: 'Aurora Bank',
-                    name: 'Global Scholar Starter Loan',
-                    minScore: 55,
-                    minCredit: 640,
-                    minRatio: 0.8,
-                    maxLoan: 85000,
-                    requiresCoApplicant: true,
-                    requiresCollateral: false,
-                    apr: '10.2% - 12.9%',
-                    coverage: 'Up to 85% of course cost',
-                    bestFor: 'Undergraduate and masters students with co-applicant support.',
-                },
-                {
-                    id: 'veridian-secured',
-                    bank: 'Veridian Capital',
-                    name: 'Secure Path Education Loan',
-                    minScore: 60,
-                    minCredit: 670,
-                    minRatio: 0.9,
-                    maxLoan: 180000,
-                    requiresCoApplicant: false,
-                    requiresCollateral: true,
-                    apr: '8.8% - 11.4%',
-                    coverage: 'Up to 95% of course cost',
-                    bestFor: 'Higher loan amounts backed by collateral.',
-                },
-                {
-                    id: 'summit-premier',
-                    bank: 'Summit Federal',
-                    name: 'Premier International Student Loan',
-                    minScore: 70,
-                    minCredit: 720,
-                    minRatio: 1.1,
-                    maxLoan: 220000,
-                    requiresCoApplicant: false,
-                    requiresCollateral: false,
-                    apr: '8.1% - 10.5%',
-                    coverage: 'Up to 90% of course cost',
-                    bestFor: 'Strong credit profiles seeking competitive rates.',
-                },
-                {
-                    id: 'nova-flex',
-                    bank: 'Nova Learners Bank',
-                    name: 'Flexi Study Loan',
-                    minScore: 48,
-                    minCredit: 610,
-                    minRatio: 0.7,
-                    maxLoan: 60000,
-                    requiresCoApplicant: false,
-                    requiresCollateral: false,
-                    apr: '12.0% - 15.8%',
-                    coverage: 'Up to 70% of course cost',
-                    bestFor: 'Students needing smaller loan sizes with quick approvals.',
-                },
-                {
-                    id: 'harbor-support',
-                    bank: 'Harbor Trust',
-                    name: 'Co-Applicant Advantage Loan',
-                    minScore: 50,
-                    minCredit: 630,
-                    minRatio: 0.75,
-                    maxLoan: 120000,
-                    requiresCoApplicant: true,
-                    requiresCollateral: false,
-                    apr: '9.9% - 12.6%',
-                    coverage: 'Up to 88% of course cost',
-                    bestFor: 'Applicants with a reliable co-applicant and stable income.',
-                },
-            ];
+const common_1 = require("@nestjs/common");
+const openrouter_service_1 = require("./openrouter.service");
+let LoanRecommendationService = class LoanRecommendationService {
+    openRouter;
+    constructor(openRouter) {
+        this.openRouter = openRouter;
+    }
+    async recommendLoans(score, credit, ratio, loan, coApplicant, collateral, study) {
+        const profile = `
+      Validation Score: ${score}
+      Credit Score: ${credit}
+      Income Ratio: ${ratio}
+      Loan Amount: ${loan} (in INR)
+      Co-Applicant: ${coApplicant}
+      Collateral: ${collateral}
+      Study Level: ${study}
+    `;
+        const prompt = `
+    Based on the following student loan applicant profile, GENERATE 3 realistic and competitive loan offers.
+    Do not use a predefined list. Create offers that would be suitable from major banks or fintech lenders.
+
+    Applicant Profile:
+    ${profile}
+
+    Task:
+    1. Generate a "Primary" loan offer that is the best fit.
+    2. Generate 2 "Alternative" offers with slightly different terms (e.g. lower rate but requires collateral, or flexibility but higher rate).
+    3. Calculate a "fit" score (0-100) for each.
+
+    Return JSON format:
+    {
+      "primary": { 
+        "offer": {
+          "id": "generated-id-1",
+          "bank": "Bank Name",
+          "name": "Loan Product Name",
+          "minScore": number,
+          "minCredit": number,
+          "minRatio": number,
+          "maxLoan": number,
+          "requiresCoApplicant": boolean,
+          "requiresCollateral": boolean,
+          "apr": "string range (e.g. 9.5% - 11.0%)",
+          "coverage": "string (e.g. Up to 100%)",
+          "bestFor": "string reason"
+        }, 
+        "fit": number 
+      },
+      "alternatives": [
+        { "offer": { ...same structure... }, "fit": number }
+      ]
+    }
+    
+    Ensure the terms are realistic for the credit variance and profile provided.
+    `;
+        try {
+            return await this.openRouter.getJson(prompt);
         }
-        LoanRecommendationService_1.prototype.recommendLoans = function (score, credit, ratio, loan, coApplicant, collateral, study) {
-            var _this = this;
-            var scored = this.loanOffers.map(function (offer) { return ({
-                offer: offer,
-                fit: _this.calculateOfferFit(offer, score, credit, ratio, loan, coApplicant, collateral, study),
-            }); });
-            scored.sort(function (a, b) { return b.fit - a.fit; });
+        catch (error) {
+            console.error('Loan recommendation failed', error);
             return {
-                primary: scored[0],
-                alternatives: scored.slice(1, 3),
+                primary: {
+                    offer: {
+                        id: 'fallback-sbi',
+                        bank: 'State Bank of India',
+                        name: 'SBI Global Ed-Vantage',
+                        minScore: 60,
+                        minCredit: 700,
+                        minRatio: 0.1,
+                        maxLoan: 15000000,
+                        requiresCoApplicant: true,
+                        requiresCollateral: true,
+                        apr: '8.15% - 9.50%',
+                        coverage: 'Up to 100%',
+                        bestFor: 'Lowest interest rates'
+                    },
+                    fit: 85
+                },
+                alternatives: [
+                    {
+                        offer: {
+                            id: 'fallback-hdfc',
+                            bank: 'HDFC Credila',
+                            name: 'Unsecured Education Loan',
+                            minScore: 50,
+                            minCredit: 650,
+                            minRatio: 0.2,
+                            maxLoan: 4000000,
+                            requiresCoApplicant: true,
+                            requiresCollateral: false,
+                            apr: '10.75% - 12.50%',
+                            coverage: 'Up to 80%',
+                            bestFor: 'No collateral required'
+                        },
+                        fit: 75
+                    }
+                ]
             };
-        };
-        LoanRecommendationService_1.prototype.calculateOfferFit = function (offer, score, credit, ratio, loan, coApplicant, collateral, study) {
-            var fit = 0;
-            if (score >= offer.minScore) {
-                fit += 25;
-            }
-            else {
-                fit -= offer.minScore - score;
-            }
-            if (credit >= offer.minCredit) {
-                fit += 20;
-            }
-            else {
-                fit -= (offer.minCredit - credit) / 5;
-            }
-            if (ratio >= offer.minRatio) {
-                fit += 20;
-            }
-            else {
-                fit -= (offer.minRatio - ratio) * 40;
-            }
-            if (loan <= offer.maxLoan) {
-                fit += 15;
-            }
-            else {
-                fit -= (loan - offer.maxLoan) / 2000;
-            }
-            if (offer.requiresCoApplicant) {
-                fit += coApplicant === 'yes' ? 10 : -20;
-            }
-            if (offer.requiresCollateral) {
-                fit += collateral === 'yes' ? 10 : -20;
-            }
-            if (study === 'doctoral' || study === 'masters') {
-                fit += 5;
-            }
-            return fit;
-        };
-        return LoanRecommendationService_1;
-    }());
-    __setFunctionName(_classThis, "LoanRecommendationService");
-    (function () {
-        var _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        LoanRecommendationService = _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return LoanRecommendationService = _classThis;
-}();
+        }
+    }
+    async recommendChatLoans(profile) {
+        const prompt = `You are a student loan advisor. Recommend 3 customized student loan options for an Indian student based on the following profile:
+
+Profile:
+- Degree targeting: ${profile.degree || 'Masters'}
+- Target Country: ${profile.country || 'USA'}
+- Field of study: ${profile.major || 'Computer Science'}
+- GPA / CGPA: ${profile.gpa || '8.0'}
+- Backlogs: ${profile.backlogs || 'No'} (Count: ${profile.backlogCount || '0'})
+- Standardized test status: ${profile.testStatus || 'Not taken'} (Scores: ${JSON.stringify(profile.testScores || {})})
+- Admission status: ${profile.admitStatus || 'Yet to Apply'}
+- Pincode: ${profile.pincode || 'N/A'}
+- Co-signer relationship: ${profile.cosignerRelation || 'Parent'}
+- Co-signer type: ${profile.cosignerType || 'Salaried'}
+- Co-signer monthly income: ${profile.cosignerIncome || 'N/A'}
+- Collateral value: ${profile.collateralValue || 'N/A'}
+- Work experience: ${profile.experience || 'None'} months
+
+Task:
+1. Generate one "primary" best-fit loan offer.
+2. Generate two "alternative" loan offers.
+3. For each offer, generate the following fields exactly:
+   - id: Unique string ID (e.g. sbi-global, hdfc-unsecured, prodigy-finance, auxilo-abroad)
+   - bank: Lenders Name (e.g. State Bank of India, HDFC Credila, Auxilo, Avanse, Prodigy Finance, MPOWER Financing, etc.)
+   - name: Loan scheme name (e.g. SBI Global Ed-Vantage, Unsecured Study Abroad Loan)
+   - amount: Maximum loan amount offered as a string (e.g. "₹1.5 Crore", "₹50 Lakhs", "$100,000")
+   - rate: Annual Interest Rate range as a string (e.g. "8.55% - 9.50%", "10.75% - 11.50%")
+   - processingTime: Expected time to process as a string (e.g. "5-7 working days", "2-3 weeks")
+   - savings: Estimated savings/benefits or unique perk as a string (e.g. "Zero processing fee online", "0.5% interest concession for female students", "No collateral required")
+   - requiresCoApplicant: boolean (true or false)
+   - requiresCollateral: boolean (true or false)
+   - bestFor: Short text indicating why this is best for this profile (e.g. "Low interest rate with collateral", "Unsecured funding for top universities")
+   - fit: A numeric percentage value representing suitability for this profile (e.g., 92, 85)
+
+Return strictly valid JSON in this exact structure:
+{
+  "primary": {
+    "offer": {
+      "id": "...",
+      "bank": "...",
+      "name": "...",
+      "amount": "...",
+      "rate": "...",
+      "processingTime": "...",
+      "savings": "...",
+      "requiresCoApplicant": false,
+      "requiresCollateral": false,
+      "bestFor": "..."
+    },
+    "fit": 95
+  },
+  "alternatives": [
+    {
+      "offer": {
+        "id": "...",
+        "bank": "...",
+        "name": "...",
+        "amount": "...",
+        "rate": "...",
+        "processingTime": "...",
+        "savings": "...",
+        "requiresCoApplicant": false,
+        "requiresCollateral": false,
+        "bestFor": "..."
+      },
+      "fit": 80
+    },
+    {
+      "offer": {
+        "id": "...",
+        "bank": "...",
+        "name": "...",
+        "amount": "...",
+        "rate": "...",
+        "processingTime": "...",
+        "savings": "...",
+        "requiresCoApplicant": false,
+        "requiresCollateral": false,
+        "bestFor": "..."
+      },
+      "fit": 75
+    }
+  ]
+}`;
+        try {
+            return await this.openRouter.getJson(prompt);
+        }
+        catch (e) {
+            console.error('[LoanRecommendationService] Chat recommendations failed, using static fallback:', e);
+            return {
+                primary: {
+                    offer: {
+                        id: 'sbi-global',
+                        bank: 'State Bank of India',
+                        name: 'SBI Global Ed-Vantage',
+                        amount: 'Up to ₹1.5 Crore',
+                        rate: '8.55% - 9.50%',
+                        processingTime: '7-14 working days',
+                        savings: 'Concession for female students',
+                        requiresCoApplicant: true,
+                        requiresCollateral: true,
+                        bestFor: 'Lowest interest rates with collateral'
+                    },
+                    fit: 90
+                },
+                alternatives: [
+                    {
+                        offer: {
+                            id: 'hdfc-credila',
+                            bank: 'HDFC Credila',
+                            name: 'Unsecured Abroad Loan',
+                            amount: 'Up to ₹50 Lakhs',
+                            rate: '10.50% - 12.00%',
+                            processingTime: '3-5 working days',
+                            savings: 'Fast online processing',
+                            requiresCoApplicant: true,
+                            requiresCollateral: false,
+                            bestFor: 'Unsecured loan without collateral'
+                        },
+                        fit: 80
+                    },
+                    {
+                        offer: {
+                            id: 'prodigy-abroad',
+                            bank: 'Prodigy Finance',
+                            name: 'International Student Funding',
+                            amount: 'Up to $100,000',
+                            rate: '11.20% - 13.50%',
+                            processingTime: '2-4 working days',
+                            requiresCoApplicant: false,
+                            requiresCollateral: false,
+                            savings: 'No co-signer or collateral required',
+                            bestFor: 'Top international MBA/MS programs'
+                        },
+                        fit: 75
+                    }
+                ]
+            };
+        }
+    }
+};
 exports.LoanRecommendationService = LoanRecommendationService;
+exports.LoanRecommendationService = LoanRecommendationService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [openrouter_service_1.OpenRouterService])
+], LoanRecommendationService);
+//# sourceMappingURL=loan-recommendation.service.js.map

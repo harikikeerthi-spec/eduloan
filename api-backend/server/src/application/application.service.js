@@ -1,94 +1,23 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, decorators, contextIn, initializers, extraInitializers) {
-    function accept(f) { if (f !== void 0 && typeof f !== "function") throw new TypeError("Function expected"); return f; }
-    var kind = contextIn.kind, key = kind === "getter" ? "get" : kind === "setter" ? "set" : "value";
-    var target = !descriptorIn && ctor ? contextIn["static"] ? ctor : ctor.prototype : null;
-    var descriptor = descriptorIn || (target ? Object.getOwnPropertyDescriptor(target, contextIn.name) : {});
-    var _, done = false;
-    for (var i = decorators.length - 1; i >= 0; i--) {
-        var context = {};
-        for (var p in contextIn) context[p] = p === "access" ? {} : contextIn[p];
-        for (var p in contextIn.access) context.access[p] = contextIn.access[p];
-        context.addInitializer = function (f) { if (done) throw new TypeError("Cannot add initializers after decoration has completed"); extraInitializers.push(accept(f || null)); };
-        var result = (0, decorators[i])(kind === "accessor" ? { get: descriptor.get, set: descriptor.set } : descriptor[key], context);
-        if (kind === "accessor") {
-            if (result === void 0) continue;
-            if (result === null || typeof result !== "object") throw new TypeError("Object expected");
-            if (_ = accept(result.get)) descriptor.get = _;
-            if (_ = accept(result.set)) descriptor.set = _;
-            if (_ = accept(result.init)) initializers.unshift(_);
-        }
-        else if (_ = accept(result)) {
-            if (kind === "field") initializers.unshift(_);
-            else descriptor[key] = _;
-        }
-    }
-    if (target) Object.defineProperty(target, contextIn.name, descriptor);
-    done = true;
-};
-var __runInitializers = (this && this.__runInitializers) || function (thisArg, initializers, value) {
-    var useValue = arguments.length > 2;
-    for (var i = 0; i < initializers.length; i++) {
-        value = useValue ? initializers[i].call(thisArg, value) : initializers[i].call(thisArg);
-    }
-    return useValue ? value : void 0;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __setFunctionName = (this && this.__setFunctionName) || function (f, name, prefix) {
-    if (typeof name === "symbol") name = name.description ? "[".concat(name.description, "]") : "";
-    return Object.defineProperty(f, "name", { configurable: true, value: prefix ? "".concat(prefix, " ", name) : name });
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApplicationService = void 0;
-var common_1 = require("@nestjs/common");
-// Application stages with descriptions and order
-var APPLICATION_STAGES = {
+const common_1 = require("@nestjs/common");
+const supabase_service_1 = require("../supabase/supabase.service");
+const digilocker_service_1 = require("../integration/digilocker.service");
+const document_verification_service_1 = require("../ai/services/document-verification.service");
+const application_review_service_1 = require("../ai/services/application-review.service");
+const email_service_1 = require("../auth/email.service");
+const event_emitter_1 = require("@nestjs/event-emitter");
+const APPLICATION_STAGES = {
     application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
     document_verification: { order: 2, label: 'Document Verification', progress: 30 },
     credit_check: { order: 3, label: 'Credit Check', progress: 50 },
@@ -96,8 +25,7 @@ var APPLICATION_STAGES = {
     sanction: { order: 5, label: 'Sanction', progress: 90 },
     disbursement: { order: 6, label: 'Disbursement', progress: 100 },
 };
-// Required documents by loan type
-var REQUIRED_DOCUMENTS = {
+const REQUIRED_DOCUMENTS = {
     education: [
         { docType: 'identity_proof', docName: 'Identity Proof (Aadhar/Passport)', isRequired: true },
         { docType: 'address_proof', docName: 'Address Proof', isRequired: true },
@@ -138,1126 +66,1091 @@ var REQUIRED_DOCUMENTS = {
         { docType: 'vehicle_quotation', docName: 'Vehicle Quotation', isRequired: true },
     ],
 };
-var ApplicationService = function () {
-    var _classDecorators = [(0, common_1.Injectable)()];
-    var _classDescriptor;
-    var _classExtraInitializers = [];
-    var _classThis;
-    var ApplicationService = _classThis = /** @class */ (function () {
-        function ApplicationService_1(prisma) {
-            this.prisma = prisma;
+let ApplicationService = class ApplicationService {
+    supabase;
+    digilockerService;
+    verificationService;
+    applicationReviewService;
+    emailService;
+    eventEmitter;
+    get db() {
+        return this.supabase.getClient();
+    }
+    constructor(supabase, digilockerService, verificationService, applicationReviewService, emailService, eventEmitter) {
+        this.supabase = supabase;
+        this.digilockerService = digilockerService;
+        this.verificationService = verificationService;
+        this.applicationReviewService = applicationReviewService;
+        this.emailService = emailService;
+        this.eventEmitter = eventEmitter;
+    }
+    parseDate(dateStr) {
+        if (!dateStr)
+            return null;
+        let d = new Date(dateStr);
+        if (!isNaN(d.getTime()))
+            return d.toISOString();
+        const parts = dateStr.split(/[-/]/);
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                d = new Date(year, month, day);
+                if (!isNaN(d.getTime()))
+                    return d.toISOString();
+            }
         }
-        // ==================== APPLICATION CRUD ====================
-        /**
-         * Create a new loan application
-         */
-        ApplicationService_1.prototype.createApplication = function (userId, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                var phoneDigits, fPhoneDigits, mPhoneDigits, applicationNumber, estimatedCompletionAt, application, error_1;
-                var _a;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            _b.trys.push([0, 4, , 5]);
-                            console.log('[ApplicationService] Creating application for user:', userId);
-                            // Validation logic
-                            if (!data.firstName || data.firstName.length < 3) {
-                                throw new common_1.BadRequestException('First name must be at least 3 characters long');
-                            }
-                            if (!data.lastName || data.lastName.length < 1) {
-                                throw new common_1.BadRequestException('Last name must be at least 1 character long');
-                            }
-                            phoneDigits = ((_a = data.phone) === null || _a === void 0 ? void 0 : _a.replace(/[^0-9]/g, '')) || '';
-                            if (phoneDigits.length !== 10) {
-                                throw new common_1.BadRequestException('Phone number must be exactly 10 digits');
-                            }
-                            // Parent Details Validation (if provided)
-                            if (data.fatherName && data.fatherName.length < 3) {
-                                throw new common_1.BadRequestException('Father\'s name must be at least 3 characters long');
-                            }
-                            if (data.fatherPhone) {
-                                fPhoneDigits = data.fatherPhone.replace(/[^0-9]/g, '');
-                                if (fPhoneDigits.length !== 10) {
-                                    throw new common_1.BadRequestException('Father\'s phone number must be exactly 10 digits');
-                                }
-                            }
-                            if (data.motherName && data.motherName.length < 3) {
-                                throw new common_1.BadRequestException('Mother\'s name must be at least 3 characters long');
-                            }
-                            if (data.motherPhone) {
-                                mPhoneDigits = data.motherPhone.replace(/[^0-9]/g, '');
-                                if (mPhoneDigits.length !== 10) {
-                                    throw new common_1.BadRequestException('Mother\'s phone number must be exactly 10 digits');
-                                }
-                            }
-                            applicationNumber = this.generateApplicationNumber(data.loanType);
-                            estimatedCompletionAt = new Date();
-                            estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
-                            return [4 /*yield*/, this.prisma.loanApplication.create({
-                                    data: {
-                                        applicationNumber: applicationNumber,
-                                        userId: userId,
-                                        bank: data.bank || 'HDFC Credila',
-                                        loanType: data.loanType || 'education',
-                                        amount: data.amount ? parseFloat(data.amount.toString()) : 0,
-                                        tenure: data.tenure ? parseInt(data.tenure.toString()) : null,
-                                        purpose: data.purpose,
-                                        // Applicant Details
-                                        firstName: data.firstName,
-                                        lastName: data.lastName,
-                                        email: data.email,
-                                        phone: data.phone,
-                                        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-                                        gender: data.gender,
-                                        nationality: data.nationality,
-                                        // Address
-                                        address: data.address,
-                                        city: data.city,
-                                        state: data.state,
-                                        pincode: data.pincode,
-                                        country: data.country,
-                                        // Employment
-                                        employmentType: data.employmentType,
-                                        employerName: data.employerName,
-                                        jobTitle: data.jobTitle,
-                                        annualIncome: data.annualIncome ? parseFloat(data.annualIncome.toString()) : null,
-                                        workExperience: data.workExperience ? parseInt(data.workExperience.toString()) : null,
-                                        // Education specific
-                                        universityName: data.universityName,
-                                        courseName: data.courseName,
-                                        courseDuration: data.courseDuration ? parseInt(data.courseDuration.toString()) : null,
-                                        courseStartDate: data.courseStartDate ? new Date(data.courseStartDate) : null,
-                                        admissionStatus: data.admissionStatus,
-                                        // Co-Applicant
-                                        hasCoApplicant: data.hasCoApplicant || false,
-                                        coApplicantName: data.coApplicantName,
-                                        coApplicantRelation: data.coApplicantRelation,
-                                        coApplicantPhone: data.coApplicantPhone,
-                                        coApplicantEmail: data.coApplicantEmail,
-                                        coApplicantIncome: data.coApplicantIncome ? parseFloat(data.coApplicantIncome.toString()) : null,
-                                        // Parent Details
-                                        fatherName: data.fatherName,
-                                        fatherPhone: data.fatherPhone,
-                                        fatherEmail: data.fatherEmail,
-                                        motherName: data.motherName,
-                                        motherPhone: data.motherPhone,
-                                        motherEmail: data.motherEmail,
-                                        // Collateral
-                                        hasCollateral: data.hasCollateral || false,
-                                        collateralType: data.collateralType,
-                                        collateralValue: data.collateralValue ? parseFloat(data.collateralValue.toString()) : null,
-                                        collateralDetails: data.collateralDetails,
-                                        // Status
-                                        status: data.status || 'draft',
-                                        stage: 'application_submitted',
-                                        progress: 10,
-                                        estimatedCompletionAt: estimatedCompletionAt,
-                                    },
-                                    include: {
-                                        user: {
-                                            select: { id: true, email: true, firstName: true, lastName: true }
-                                        }
-                                    }
-                                })];
-                        case 1:
-                            application = _b.sent();
-                            // Create initial status history
-                            return [4 /*yield*/, this.createStatusHistory(application.id, {
-                                    toStatus: application.status,
-                                    toStage: application.stage,
-                                    notes: 'Application created',
-                                    isAutomatic: true,
-                                })];
-                        case 2:
-                            // Create initial status history
-                            _b.sent();
-                            // Initialize required documents based on loan type
-                            return [4 /*yield*/, this.initializeRequiredDocuments(application.id, data.loanType || 'education')];
-                        case 3:
-                            // Initialize required documents based on loan type
-                            _b.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: application,
-                                    message: 'Application created successfully'
-                                }];
-                        case 4:
-                            error_1 = _b.sent();
-                            console.error('[ApplicationService] Error in createApplication:', error_1);
-                            throw error_1;
-                        case 5: return [2 /*return*/];
+        return null;
+    }
+    async validateApplicationConstraints(userId, currentAppId, bank, country, universityName) {
+        const { data: existingApps, error } = await this.db
+            .from('LoanApplication')
+            .select('id, bank, country, universityName, status')
+            .eq('userId', userId)
+            .neq('status', 'cancelled');
+        if (error)
+            throw error;
+        if (!currentAppId && existingApps && existingApps.length >= 5) {
+            throw new common_1.BadRequestException('You cannot have more than 5 active/pending loan applications.');
+        }
+        if (bank && country && universityName) {
+            const duplicate = existingApps?.find(app => {
+                if (currentAppId && app.id === currentAppId)
+                    return false;
+                const matchBank = app.bank && bank && app.bank.toLowerCase().trim() === bank.toLowerCase().trim();
+                const matchCountry = app.country && country && app.country.toLowerCase().trim() === country.toLowerCase().trim();
+                const matchUniversity = app.universityName && universityName && app.universityName.toLowerCase().trim() === universityName.toLowerCase().trim();
+                return matchBank && matchCountry && matchUniversity;
+            });
+            if (duplicate) {
+                throw new common_1.BadRequestException(`An active application to ${bank} for ${universityName} in ${country} already exists. To apply to the same bank, please use different details (e.g., country or university).`);
+            }
+        }
+    }
+    async createApplication(userId, data) {
+        const targetBank = data.bank;
+        const targetCountry = data.country;
+        const targetUniversity = data.universityName || data.university;
+        await this.validateApplicationConstraints(userId, null, targetBank, targetCountry, targetUniversity);
+        const applicationNumber = await this.generateApplicationNumber();
+        const estimatedCompletionAt = new Date();
+        estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
+        const { data: application, error } = await this.db
+            .from('LoanApplication')
+            .insert({
+            applicationNumber,
+            userId,
+            bank: data.bank,
+            loanType: data.loanType,
+            amount: parseFloat(data.amount),
+            tenure: data.tenure ? parseInt(data.tenure) : null,
+            purpose: data.purpose,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            dateOfBirth: this.parseDate(data.dateOfBirth),
+            gender: data.gender,
+            nationality: data.nationality,
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            pincode: data.pincode,
+            country: data.country,
+            employmentType: data.employmentType,
+            employerName: data.employerName,
+            jobTitle: data.jobTitle,
+            annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : null,
+            workExperience: data.workExperience ? parseInt(data.workExperience) : null,
+            universityName: data.universityName || data.university,
+            courseName: data.courseName || data.courseType || data.course,
+            courseDuration: data.courseDuration ? parseInt(data.courseDuration) : null,
+            courseStartDate: this.parseDate(data.courseStartDate),
+            admissionStatus: data.admissionStatus,
+            hasCoApplicant: data.hasCoApplicant || false,
+            coApplicantName: data.coApplicantName,
+            coApplicantRelation: data.coApplicantRelation,
+            coApplicantPhone: data.coApplicantPhone,
+            coApplicantEmail: data.coApplicantEmail,
+            coApplicantIncome: data.coApplicantIncome ? parseFloat(data.coApplicantIncome) : null,
+            fatherName: data.fatherName,
+            fatherPhone: data.fatherPhone,
+            fatherEmail: data.fatherEmail,
+            motherName: data.motherName,
+            motherPhone: data.motherPhone,
+            motherEmail: data.motherEmail,
+            hasCollateral: data.hasCollateral || false,
+            collateralType: data.collateralType,
+            collateralValue: data.collateralValue ? parseFloat(data.collateralValue) : null,
+            collateralDetails: data.collateralDetails,
+            status: data.status === 'draft' ? 'draft' : (data.status || 'submitted'),
+            stage: 'application_submitted',
+            progress: data.status === 'draft' ? 10 : 15,
+            submittedAt: data.status === 'draft' ? null : new Date().toISOString(),
+            estimatedCompletionAt: estimatedCompletionAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+        })
+            .select('*, user:User!userId(id, email, firstName, lastName)')
+            .single();
+        if (error)
+            throw error;
+        await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
+        await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
+        if (application.status !== 'draft') {
+            try {
+                const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+                this.eventEmitter.emit('application.created', {
+                    applicationId: application.id,
+                    applicationNumber: application.applicationNumber,
+                    userId: application.userId,
+                    candidateName: name,
+                    candidateEmail: application.email,
+                    bank: application.bank,
+                    loanAmount: application.amount,
+                    loanType: data.loanType,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            catch (e) {
+                console.error('Failed to emit application.created event:', e);
+            }
+            try {
+                const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+                const targetUni = application.universityName || 'Target University';
+                this.eventEmitter.emit('dashboard.activity', {
+                    type: 'application',
+                    msg: `Student ${name} submitted a new Loan Application #${application.applicationNumber} for ${targetUni}.`,
+                    icon: 'assignment',
+                    color: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+                    actorName: name,
+                    actorEmail: application.email,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            catch (e) {
+                console.error('Failed to emit activity event for application creation:', e);
+            }
+        }
+        return { success: true, data: application, message: 'Application created successfully' };
+    }
+    async submitApplication(applicationId, userId) {
+        const application = await this.getApplicationById(applicationId);
+        if (application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to submit this application');
+        if (application.status !== 'draft')
+            throw new common_1.BadRequestException('Only draft applications can be submitted');
+        const { data: updated, error } = await this.db
+            .from('LoanApplication')
+            .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15, updatedAt: new Date().toISOString() })
+            .eq('id', applicationId)
+            .select()
+            .single();
+        if (error)
+            throw error;
+        await this.createStatusHistory(applicationId, { fromStatus: 'draft', toStatus: 'submitted', notes: 'Application submitted for review', isAutomatic: true });
+        try {
+            const name = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Student';
+            this.eventEmitter.emit('dashboard.activity', {
+                type: 'application',
+                msg: `Student ${name} submitted Application #${application.applicationNumber || application.id.slice(-4)} for review.`,
+                icon: 'rocket_launch',
+                color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                actorName: name,
+                actorEmail: application.email,
+                createdAt: new Date().toISOString()
+            });
+            this.eventEmitter.emit('application.submitted', {
+                applicationId: application.id,
+                applicationNumber: application.applicationNumber,
+                userId: application.userId,
+                candidateName: name,
+                candidateEmail: application.email,
+                bank: application.bank,
+                loanAmount: application.amount,
+                loanType: application.loanType,
+                submittedAt: new Date().toISOString()
+            });
+        }
+        catch (e) {
+            console.error('Failed to emit events for application submission:', e);
+        }
+        return { success: true, data: updated, message: 'Application submitted successfully' };
+    }
+    async getApplicationById(applicationId) {
+        const { data: application } = await this.db
+            .from('LoanApplication')
+            .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
+            .eq('id', applicationId)
+            .single();
+        if (!application)
+            throw new common_1.NotFoundException('Application not found');
+        if (application.documents)
+            application.documents.sort((a, b) => new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime());
+        if (application.statusHistory)
+            application.statusHistory.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (application.notes)
+            application.notes = application.notes.filter((n) => !n.isInternal).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return application;
+    }
+    async getApplicationByNumber(applicationNumber) {
+        const { data: application } = await this.db
+            .from('LoanApplication')
+            .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
+            .eq('applicationNumber', applicationNumber)
+            .single();
+        if (!application)
+            throw new common_1.NotFoundException('Application not found');
+        return application;
+    }
+    async getUserApplications(userId, filters) {
+        let query = this.db
+            .from('LoanApplication')
+            .select('*, documents:ApplicationDocument(id, docType, status)', { count: 'exact' })
+            .eq('userId', userId)
+            .order('submittedAt', { ascending: false });
+        if (filters?.status)
+            query = query.eq('status', filters.status);
+        if (filters?.loanType)
+            query = query.eq('loanType', filters.loanType);
+        if (filters?.limit)
+            query = query.limit(filters.limit);
+        const { data: applications, count } = await query;
+        return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
+    }
+    async updateApplication(applicationId, userId, data) {
+        const application = await this.getApplicationById(applicationId);
+        if (application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to update this application');
+        if (!['draft', 'documents_pending'].includes(application.status))
+            throw new common_1.BadRequestException('Application cannot be modified in current status');
+        const targetBank = data.bank !== undefined ? data.bank : application.bank;
+        const targetCountry = data.country !== undefined ? data.country : application.country;
+        const targetUniversity = (data.universityName || data.university) !== undefined ? (data.universityName || data.university) : application.universityName;
+        await this.validateApplicationConstraints(userId, applicationId, targetBank, targetCountry, targetUniversity);
+        const updatePayload = {
+            ...data,
+            amount: data.amount ? parseFloat(data.amount) : undefined,
+            tenure: data.tenure ? parseInt(data.tenure) : undefined,
+            annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : undefined,
+            dateOfBirth: data.dateOfBirth ? this.parseDate(data.dateOfBirth) : undefined,
+            courseStartDate: data.courseStartDate ? this.parseDate(data.courseStartDate) : undefined,
+            universityName: data.universityName || data.university || undefined,
+            courseName: data.courseName || data.courseType || data.course || undefined,
+            updatedAt: new Date().toISOString(),
+        };
+        const { data: updated, error } = await this.db
+            .from('LoanApplication')
+            .update(updatePayload)
+            .eq('id', applicationId)
+            .select()
+            .single();
+        if (error)
+            throw error;
+        return { success: true, data: updated, message: 'Application updated successfully' };
+    }
+    async adminUpdateApplication(applicationId, data) {
+        const application = await this.getApplicationById(applicationId);
+        const targetBank = data.bank !== undefined ? data.bank : application.bank;
+        const targetCountry = data.country !== undefined ? data.country : application.country;
+        const targetUniversity = (data.universityName || data.university) !== undefined ? (data.universityName || data.university) : application.universityName;
+        await this.validateApplicationConstraints(application.userId, applicationId, targetBank, targetCountry, targetUniversity);
+        const updatePayload = { ...data, updatedAt: new Date().toISOString() };
+        if (data.amount !== undefined)
+            updatePayload.amount = data.amount ? parseFloat(data.amount) : null;
+        if (data.tenure !== undefined)
+            updatePayload.tenure = data.tenure ? parseInt(data.tenure) : null;
+        if (data.sanctionAmount !== undefined)
+            updatePayload.sanctionAmount = data.sanctionAmount ? parseFloat(data.sanctionAmount) : null;
+        if (data.disbursedAmount !== undefined)
+            updatePayload.disbursedAmount = data.disbursedAmount ? parseFloat(data.disbursedAmount) : null;
+        if (data.interestRate !== undefined)
+            updatePayload.interestRate = data.interestRate ? parseFloat(data.interestRate) : null;
+        if (data.sanctionedInterestRate !== undefined)
+            updatePayload.sanctionedInterestRate = data.sanctionedInterestRate ? parseFloat(data.sanctionedInterestRate) : null;
+        if (data.processingFee !== undefined)
+            updatePayload.processingFee = data.processingFee ? parseFloat(data.processingFee) : null;
+        if (data.roiBase !== undefined)
+            updatePayload.roiBase = data.roiBase ? parseFloat(data.roiBase) : null;
+        if (data.roiEffective !== undefined)
+            updatePayload.roiEffective = data.roiEffective ? parseFloat(data.roiEffective) : null;
+        if (data.roiSubsidy !== undefined)
+            updatePayload.roiSubsidy = data.roiSubsidy ? parseFloat(data.roiSubsidy) : null;
+        Object.keys(updatePayload).forEach(key => {
+            if (updatePayload[key] === undefined) {
+                delete updatePayload[key];
+            }
+        });
+        const { data: updated, error } = await this.db
+            .from('LoanApplication')
+            .update(updatePayload)
+            .eq('id', applicationId)
+            .select()
+            .single();
+        if (error) {
+            console.error('[ApplicationService.adminUpdateApplication] DB Error:', error);
+            throw error;
+        }
+        return { success: true, data: updated, message: 'Application updated successfully' };
+    }
+    async cancelApplication(applicationId, userId, reason) {
+        const application = await this.getApplicationById(applicationId);
+        if (application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to cancel this application');
+        if (['approved', 'disbursed', 'cancelled'].includes(application.status))
+            throw new common_1.BadRequestException('Application cannot be cancelled in current status');
+        const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason, updatedAt: new Date().toISOString() }).eq('id', applicationId).select().single();
+        await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: 'cancelled', notes: reason || 'Application cancelled by user', isAutomatic: false });
+        return { success: true, data: updated, message: 'Application cancelled successfully' };
+    }
+    async getApplicationTracking(applicationId, userId) {
+        const { data: application } = await this.db
+            .from('LoanApplication')
+            .select('*, statusHistory:ApplicationStatusHistory(*), documents:ApplicationDocument(id, docType, docName, status)')
+            .eq('id', applicationId)
+            .single();
+        if (!application)
+            throw new common_1.NotFoundException('Application not found');
+        if (userId && application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to view this application');
+        const statusHistory = (application.statusHistory || []).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
+            const currentStageOrder = APPLICATION_STAGES[application.stage]?.order || 0;
+            const isCompleted = value.order < currentStageOrder;
+            const isCurrent = key === application.stage;
+            return { key, label: value.label, order: value.order, isCompleted, isCurrent, completedAt: isCompleted ? statusHistory.find((h) => h.toStage === key)?.createdAt : null };
+        });
+        const docs = application.documents || [];
+        const documentsStatus = {
+            total: docs.length,
+            pending: docs.filter((d) => d.status === 'pending').length,
+            verified: docs.filter((d) => d.status === 'verified').length,
+            rejected: docs.filter((d) => d.status === 'rejected').length,
+        };
+        return {
+            success: true,
+            data: { applicationId: application.id, applicationNumber: application.applicationNumber, status: application.status, currentStage: application.stage, progress: application.progress, stages, timeline: statusHistory, documents: documentsStatus, estimatedCompletion: application.estimatedCompletionAt, submittedAt: application.submittedAt, lastUpdated: application.updatedAt },
+        };
+    }
+    async trackApplication(applicationNumber) {
+        const { data: application } = await this.db
+            .from('LoanApplication')
+            .select('id, applicationNumber, loanType, bank, amount, status, stage, progress, submittedAt, estimatedCompletionAt, updatedAt')
+            .eq('applicationNumber', applicationNumber)
+            .single();
+        if (!application)
+            throw new common_1.NotFoundException('Application not found');
+        const stages = Object.entries(APPLICATION_STAGES).map(([key, value]) => {
+            const currentStageOrder = APPLICATION_STAGES[application.stage]?.order || 0;
+            return { key, label: value.label, order: value.order, isCompleted: value.order < currentStageOrder, isCurrent: key === application.stage };
+        });
+        return { success: true, data: { ...application, stages } };
+    }
+    normalizeLoanType(type) {
+        const t = (type || '').toLowerCase();
+        if (t.includes('education') || t.includes('study') || t.includes('undergraduate') || t.includes('postgraduate') || t.includes('doctoral'))
+            return 'education';
+        if (t.includes('home') || t.includes('property'))
+            return 'home';
+        if (t.includes('personal'))
+            return 'personal';
+        if (t.includes('business'))
+            return 'business';
+        if (t.includes('vehicle') || t.includes('car'))
+            return 'vehicle';
+        return 'personal';
+    }
+    async initializeRequiredDocuments(applicationId, userId, loanType) {
+        const normalizedType = this.normalizeLoanType(loanType);
+        const requiredDocs = REQUIRED_DOCUMENTS[normalizedType] || REQUIRED_DOCUMENTS.personal;
+        console.log(`[DOCS] Initializing documents for application ${applicationId}, userId ${userId}, type ${loanType} (normalized: ${normalizedType})`);
+        const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', userId);
+        for (const doc of requiredDocs) {
+            const matchingVaultDoc = vaultDocs?.find(vd => vd.docType === doc.docType && vd.uploaded);
+            await this.db.from('ApplicationDocument').insert({
+                applicationId,
+                docType: doc.docType,
+                docName: doc.docName,
+                fileName: matchingVaultDoc?.fileName || '',
+                filePath: matchingVaultDoc?.filePath || '',
+                status: matchingVaultDoc ? 'pending' : 'not_uploaded',
+                isRequired: doc.isRequired
+            });
+        }
+    }
+    async uploadDocument(applicationId, userId, documentData) {
+        const application = await this.getApplicationById(applicationId);
+        if (application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to upload documents');
+        const { data: existingDoc } = await this.db.from('ApplicationDocument').select('id').eq('applicationId', applicationId).eq('docType', documentData.docType).single();
+        let document;
+        if (existingDoc) {
+            const { data, error } = await this.db.from('ApplicationDocument').update({ ...documentData, status: 'pending', uploadedAt: new Date().toISOString() }).eq('id', existingDoc.id).select().single();
+            if (error)
+                throw error;
+            document = data;
+        }
+        else {
+            const { data, error } = await this.db.from('ApplicationDocument').insert({ applicationId, ...documentData, status: 'pending' }).select().single();
+            if (error)
+                throw error;
+            document = data;
+        }
+        try {
+            const verificationResult = await this.digilockerService.verifyDocument(document.filePath, document.docType);
+            let updateData = {};
+            if (verificationResult.isValid) {
+                updateData = { status: 'verified', digilockerTxId: verificationResult.txId, verifiedAt: new Date().toISOString(), verifiedBy: 'Digilocker System', verificationMetadata: verificationResult.details };
+            }
+            else {
+                const explanation = await this.verificationService.explainRejection(document.docType, verificationResult.code || 'Unknown Error');
+                updateData = { status: 'rejected', aiExplanation: explanation, rejectionReason: verificationResult.code || 'Verification Failed', verificationMetadata: verificationResult.details };
+            }
+            const { data: updated } = await this.db.from('ApplicationDocument').update(updateData).eq('id', document.id).select().single();
+            document = updated;
+        }
+        catch (error) {
+            console.error('Document verification process failed:', error);
+        }
+        try {
+            const candidateName = `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email || 'Candidate';
+            this.eventEmitter.emit('document.uploaded', {
+                applicationId,
+                applicationNumber: application.applicationNumber,
+                userId: application.userId,
+                candidateName,
+                candidateEmail: application.email,
+                documentType: documentData.docType,
+                documentName: documentData.docName,
+                status: document.status,
+                createdAt: new Date().toISOString()
+            });
+        }
+        catch (e) {
+            console.error('Failed to emit document.uploaded event:', e);
+        }
+        return { success: true, data: document, message: 'Document uploaded successfully' };
+    }
+    async getApplicationDocuments(applicationId, userId) {
+        const application = await this.getApplicationById(applicationId);
+        if (userId && application.userId !== userId) {
+            throw new common_1.BadRequestException('Unauthorized to view documents');
+        }
+        let { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId).order('isRequired', { ascending: false });
+        if (!documents || documents.length === 0) {
+            await this.initializeRequiredDocuments(application.id, application.userId, application.loanType);
+            const { data: newDocs } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId).order('isRequired', { ascending: false });
+            documents = newDocs;
+        }
+        const docs = documents || [];
+        const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', application.userId);
+        const applicationDocTypes = new Set(docs.map(d => d.docType));
+        const extraVaultDocs = (vaultDocs || [])
+            .filter(vd => !applicationDocTypes.has(vd.docType) && vd.uploaded)
+            .map(vd => ({
+            ...vd,
+            id: `vault_${vd.id}`,
+            isVaultDoc: true,
+            docName: (vd.docType || '').replace(/_/g, ' ').toUpperCase(),
+            status: vd.status || 'uploaded'
+        }));
+        const allDocs = [...docs, ...extraVaultDocs];
+        const grouped = {
+            pending: allDocs.filter((d) => d.status === 'pending' && d.filePath),
+            verified: allDocs.filter((d) => d.status === 'verified' || d.status === 'approved'),
+            rejected: allDocs.filter((d) => d.status === 'rejected'),
+            notUploaded: allDocs.filter((d) => !d.filePath && !d.isVaultDoc),
+            vault: extraVaultDocs
+        };
+        return {
+            success: true,
+            data: allDocs,
+            grouped,
+            summary: {
+                total: docs.length,
+                vaultTotal: extraVaultDocs.length,
+                uploaded: docs.filter((d) => d.filePath).length,
+                pending: grouped.pending.length,
+                verified: grouped.verified.length,
+                rejected: grouped.rejected.length,
+                notUploaded: grouped.notUploaded.length
+            }
+        };
+    }
+    async syncApplicationDocuments(applicationId, adminId) {
+        const application = await this.getApplicationById(applicationId);
+        const { data: vaultDocs } = await this.db.from('UserDocument').select('*').eq('userId', application.userId);
+        const { data: appDocs } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
+        const appDocsMap = new Map(appDocs?.map(d => [d.docType, d]) || []);
+        const normalizedType = this.normalizeLoanType(application.loanType);
+        const requiredDocs = REQUIRED_DOCUMENTS[normalizedType] || REQUIRED_DOCUMENTS.personal;
+        let syncedCount = 0;
+        for (const req of requiredDocs) {
+            const existing = appDocsMap.get(req.docType);
+            const vaultMatch = vaultDocs?.find(vd => vd.docType === req.docType && vd.uploaded);
+            if (vaultMatch) {
+                if (!existing || !existing.filePath) {
+                    const updateData = {
+                        applicationId,
+                        docType: req.docType,
+                        docName: req.docName,
+                        fileName: vaultMatch.fileName || '',
+                        filePath: vaultMatch.filePath || '',
+                        status: 'pending',
+                        isRequired: req.isRequired
+                    };
+                    if (existing) {
+                        await this.db.from('ApplicationDocument').update(updateData).eq('id', existing.id);
                     }
-                });
-            });
-        };
-        /**
-         * Submit a draft application
-         */
-        ApplicationService_1.prototype.submitApplication = function (applicationId, userId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, updated;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to submit this application');
-                            }
-                            if (application.status !== 'draft') {
-                                throw new common_1.BadRequestException('Only draft applications can be submitted');
-                            }
-                            return [4 /*yield*/, this.prisma.loanApplication.update({
-                                    where: { id: applicationId },
-                                    data: {
-                                        status: 'submitted',
-                                        submittedAt: new Date(),
-                                        progress: 15,
-                                    },
-                                    include: {
-                                        documents: true,
-                                        statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 }
-                                    }
-                                })];
-                        case 2:
-                            updated = _a.sent();
-                            return [4 /*yield*/, this.createStatusHistory(applicationId, {
-                                    fromStatus: 'draft',
-                                    toStatus: 'submitted',
-                                    notes: 'Application submitted for review',
-                                    isAutomatic: true,
-                                })];
-                        case 3:
-                            _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: updated,
-                                    message: 'Application submitted successfully'
-                                }];
+                    else {
+                        await this.db.from('ApplicationDocument').insert(updateData);
                     }
+                    syncedCount++;
+                }
+            }
+            else if (!existing) {
+                await this.db.from('ApplicationDocument').insert({
+                    applicationId,
+                    docType: req.docType,
+                    docName: req.docName,
+                    status: 'not_uploaded',
+                    isRequired: req.isRequired
                 });
-            });
-        };
-        /**
-         * Get application by ID
-         */
-        ApplicationService_1.prototype.getApplicationById = function (applicationId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.loanApplication.findUnique({
-                                where: { id: applicationId },
-                                include: {
-                                    user: {
-                                        select: { id: true, email: true, firstName: true, lastName: true, phoneNumber: true }
-                                    },
-                                    documents: {
-                                        orderBy: { uploadedAt: 'desc' }
-                                    },
-                                    statusHistory: {
-                                        orderBy: { createdAt: 'desc' }
-                                    },
-                                    notes: {
-                                        where: { isInternal: false },
-                                        orderBy: { createdAt: 'desc' }
-                                    }
-                                }
-                            })];
-                        case 1:
-                            application = _a.sent();
-                            if (!application) {
-                                throw new common_1.NotFoundException('Application not found');
-                            }
-                            return [2 /*return*/, application];
-                    }
-                });
-            });
-        };
-        /**
-         * Get application by application number
-         */
-        ApplicationService_1.prototype.getApplicationByNumber = function (applicationNumber) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.loanApplication.findUnique({
-                                where: { applicationNumber: applicationNumber },
-                                include: {
-                                    user: {
-                                        select: { id: true, email: true, firstName: true, lastName: true }
-                                    },
-                                    documents: true,
-                                    statusHistory: {
-                                        orderBy: { createdAt: 'desc' }
-                                    }
-                                }
-                            })];
-                        case 1:
-                            application = _a.sent();
-                            if (!application) {
-                                throw new common_1.NotFoundException('Application not found');
-                            }
-                            return [2 /*return*/, application];
-                    }
-                });
-            });
-        };
-        /**
-         * Get all applications for a user
-         */
-        ApplicationService_1.prototype.getUserApplications = function (userId, filters) {
-            return __awaiter(this, void 0, void 0, function () {
-                var where, _a, applications, total;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            where = { userId: userId };
-                            if (filters === null || filters === void 0 ? void 0 : filters.status) {
-                                where.status = filters.status;
-                            }
-                            if (filters === null || filters === void 0 ? void 0 : filters.loanType) {
-                                where.loanType = filters.loanType;
-                            }
-                            return [4 /*yield*/, Promise.all([
-                                    this.prisma.loanApplication.findMany({
-                                        where: where,
-                                        include: {
-                                            documents: true
-                                        },
-                                        orderBy: { date: 'desc' },
-                                        take: (filters === null || filters === void 0 ? void 0 : filters.limit) || 20,
-                                        skip: (filters === null || filters === void 0 ? void 0 : filters.offset) || 0,
-                                    }),
-                                    this.prisma.loanApplication.count({ where: where })
-                                ])];
-                        case 1:
-                            _a = _b.sent(), applications = _a[0], total = _a[1];
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: applications,
-                                    pagination: {
-                                        total: total,
-                                        limit: (filters === null || filters === void 0 ? void 0 : filters.limit) || 20,
-                                        offset: (filters === null || filters === void 0 ? void 0 : filters.offset) || 0
-                                    }
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Update application
-         */
-        ApplicationService_1.prototype.updateApplication = function (applicationId, userId, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, updated;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to update this application');
-                            }
-                            if (!['draft', 'documents_pending'].includes(application.status)) {
-                                throw new common_1.BadRequestException('Application cannot be modified in current status');
-                            }
-                            return [4 /*yield*/, this.prisma.loanApplication.update({
-                                    where: { id: applicationId },
-                                    data: __assign(__assign({}, data), { amount: data.amount ? parseFloat(data.amount) : undefined, tenure: data.tenure ? parseInt(data.tenure) : undefined, annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : undefined, dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined, courseStartDate: data.courseStartDate ? new Date(data.courseStartDate) : undefined }),
-                                    include: {
-                                        documents: true
-                                    }
-                                })];
-                        case 2:
-                            updated = _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: updated,
-                                    message: 'Application updated successfully'
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Cancel application
-         */
-        ApplicationService_1.prototype.cancelApplication = function (applicationId, userId, reason) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, updated;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to cancel this application');
-                            }
-                            if (['approved', 'disbursed', 'cancelled'].includes(application.status)) {
-                                throw new common_1.BadRequestException('Application cannot be cancelled in current status');
-                            }
-                            return [4 /*yield*/, this.prisma.loanApplication.update({
-                                    where: { id: applicationId },
-                                    data: {
-                                        status: 'cancelled',
-                                        remarks: reason,
-                                    }
-                                })];
-                        case 2:
-                            updated = _a.sent();
-                            return [4 /*yield*/, this.createStatusHistory(applicationId, {
-                                    fromStatus: application.status,
-                                    toStatus: 'cancelled',
-                                    notes: reason || 'Application cancelled by user',
-                                    isAutomatic: false,
-                                })];
-                        case 3:
-                            _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: updated,
-                                    message: 'Application cancelled successfully'
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Delete application
-         */
-        ApplicationService_1.prototype.deleteApplication = function (applicationId, userId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to delete this application');
-                            }
-                            // Optional: restriction on status, e.g. can only delete if draft/cancelled/rejected
-                            // For now allowing deletion regardless of status as per request, but good to be mindful.
-                            // Delete related records
-                            // Prisma cascade delete might handle this if configured, but explicit deletion is safer if relationships vary
-                            // 1. Delete documents
-                            return [4 /*yield*/, this.prisma.applicationDocument.deleteMany({
-                                    where: { applicationId: applicationId }
-                                })];
-                        case 2:
-                            // Optional: restriction on status, e.g. can only delete if draft/cancelled/rejected
-                            // For now allowing deletion regardless of status as per request, but good to be mindful.
-                            // Delete related records
-                            // Prisma cascade delete might handle this if configured, but explicit deletion is safer if relationships vary
-                            // 1. Delete documents
-                            _a.sent();
-                            // 2. Delete notes
-                            return [4 /*yield*/, this.prisma.applicationNote.deleteMany({
-                                    where: { applicationId: applicationId }
-                                })];
-                        case 3:
-                            // 2. Delete notes
-                            _a.sent();
-                            // 3. Delete status history
-                            return [4 /*yield*/, this.prisma.applicationStatusHistory.deleteMany({
-                                    where: { applicationId: applicationId }
-                                })];
-                        case 4:
-                            // 3. Delete status history
-                            _a.sent();
-                            // 4. Delete application
-                            return [4 /*yield*/, this.prisma.loanApplication.delete({
-                                    where: { id: applicationId }
-                                })];
-                        case 5:
-                            // 4. Delete application
-                            _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    message: 'Application deleted successfully'
-                                }];
-                    }
-                });
-            });
-        };
-        // ==================== APPLICATION TRACKING ====================
-        /**
-         * Get application timeline/tracking info
-         */
-        ApplicationService_1.prototype.getApplicationTracking = function (applicationId, userId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, stages, documentsStatus;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.loanApplication.findUnique({
-                                where: { id: applicationId },
-                                include: {
-                                    statusHistory: {
-                                        orderBy: { createdAt: 'asc' }
-                                    },
-                                    documents: true
-                                }
-                            })];
-                        case 1:
-                            application = _a.sent();
-                            if (!application) {
-                                throw new common_1.NotFoundException('Application not found');
-                            }
-                            // If userId provided, verify ownership
-                            if (userId && application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to view this application');
-                            }
-                            stages = Object.entries(APPLICATION_STAGES).map(function (_a) {
-                                var _b, _c;
-                                var key = _a[0], value = _a[1];
-                                var currentStageOrder = ((_b = APPLICATION_STAGES[application.stage]) === null || _b === void 0 ? void 0 : _b.order) || 0;
-                                var isCompleted = value.order < currentStageOrder;
-                                var isCurrent = key === application.stage;
-                                return {
-                                    key: key,
-                                    label: value.label,
-                                    order: value.order,
-                                    isCompleted: isCompleted,
-                                    isCurrent: isCurrent,
-                                    completedAt: isCompleted
-                                        ? (_c = application.statusHistory.find(function (h) { return h.toStage === key; })) === null || _c === void 0 ? void 0 : _c.createdAt
-                                        : null
-                                };
-                            });
-                            documentsStatus = {
-                                total: application.documents.length,
-                                pending: application.documents.filter(function (d) { return d.status === 'pending'; }).length,
-                                verified: application.documents.filter(function (d) { return d.status === 'verified'; }).length,
-                                rejected: application.documents.filter(function (d) { return d.status === 'rejected'; }).length,
-                            };
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: {
-                                        applicationId: application.id,
-                                        applicationNumber: application.applicationNumber,
-                                        status: application.status,
-                                        currentStage: application.stage,
-                                        progress: application.progress,
-                                        stages: stages,
-                                        timeline: application.statusHistory,
-                                        documents: documentsStatus,
-                                        estimatedCompletion: application.estimatedCompletionAt,
-                                        submittedAt: application.submittedAt,
-                                        lastUpdated: application.updatedAt,
-                                    }
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Track application by application number (public)
-         */
-        ApplicationService_1.prototype.trackApplication = function (applicationNumber) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, stages;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.loanApplication.findUnique({
-                                where: { applicationNumber: applicationNumber },
-                                select: {
-                                    id: true,
-                                    applicationNumber: true,
-                                    loanType: true,
-                                    bank: true,
-                                    amount: true,
-                                    status: true,
-                                    stage: true,
-                                    progress: true,
-                                    submittedAt: true,
-                                    estimatedCompletionAt: true,
-                                    updatedAt: true,
-                                }
-                            })];
-                        case 1:
-                            application = _a.sent();
-                            if (!application) {
-                                throw new common_1.NotFoundException('Application not found');
-                            }
-                            stages = Object.entries(APPLICATION_STAGES).map(function (_a) {
-                                var _b;
-                                var key = _a[0], value = _a[1];
-                                var currentStageOrder = ((_b = APPLICATION_STAGES[application.stage]) === null || _b === void 0 ? void 0 : _b.order) || 0;
-                                return {
-                                    key: key,
-                                    label: value.label,
-                                    order: value.order,
-                                    isCompleted: value.order < currentStageOrder,
-                                    isCurrent: key === application.stage,
-                                };
-                            });
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: __assign(__assign({}, application), { stages: stages })
-                                }];
-                    }
-                });
-            });
-        };
-        // ==================== DOCUMENT MANAGEMENT ====================
-        /**
-         * Initialize required documents for an application
-         */
-        ApplicationService_1.prototype.initializeRequiredDocuments = function (applicationId, loanType) {
-            return __awaiter(this, void 0, void 0, function () {
-                var requiredDocs, _i, requiredDocs_1, doc;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            requiredDocs = REQUIRED_DOCUMENTS[loanType] || REQUIRED_DOCUMENTS.personal;
-                            _i = 0, requiredDocs_1 = requiredDocs;
-                            _a.label = 1;
-                        case 1:
-                            if (!(_i < requiredDocs_1.length)) return [3 /*break*/, 4];
-                            doc = requiredDocs_1[_i];
-                            return [4 /*yield*/, this.prisma.applicationDocument.create({
-                                    data: {
-                                        applicationId: applicationId,
-                                        docType: doc.docType,
-                                        docName: doc.docName,
-                                        fileName: '',
-                                        filePath: '',
-                                        status: 'pending',
-                                        isRequired: doc.isRequired,
-                                    }
-                                })];
-                        case 2:
-                            _a.sent();
-                            _a.label = 3;
-                        case 3:
-                            _i++;
-                            return [3 /*break*/, 1];
-                        case 4: return [2 /*return*/];
-                    }
-                });
-            });
-        };
-        /**
-         * Upload document to application
-         */
-        ApplicationService_1.prototype.uploadDocument = function (applicationId, userId, documentData) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, existingDoc, document;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to upload documents');
-                            }
-                            return [4 /*yield*/, this.prisma.applicationDocument.findFirst({
-                                    where: {
-                                        applicationId: applicationId,
-                                        docType: documentData.docType
-                                    }
-                                })];
-                        case 2:
-                            existingDoc = _a.sent();
-                            if (!existingDoc) return [3 /*break*/, 4];
-                            return [4 /*yield*/, this.prisma.applicationDocument.update({
-                                    where: { id: existingDoc.id },
-                                    data: {
-                                        fileName: documentData.fileName,
-                                        filePath: documentData.filePath,
-                                        fileSize: documentData.fileSize,
-                                        mimeType: documentData.mimeType,
-                                        status: 'pending',
-                                        uploadedAt: new Date(),
-                                    }
-                                })];
-                        case 3:
-                            // Update existing document
-                            document = _a.sent();
-                            return [3 /*break*/, 6];
-                        case 4: return [4 /*yield*/, this.prisma.applicationDocument.create({
-                                data: __assign(__assign({ applicationId: applicationId }, documentData), { status: 'pending' })
-                            })];
-                        case 5:
-                            // Create new document
-                            document = _a.sent();
-                            _a.label = 6;
-                        case 6: return [2 /*return*/, {
-                                success: true,
-                                data: document,
-                                message: 'Document uploaded successfully'
-                            }];
-                    }
-                });
-            });
-        };
-        /**
-         * Get documents for an application
-         */
-        ApplicationService_1.prototype.getApplicationDocuments = function (applicationId, userId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, documents, grouped;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            if (!userId) return [3 /*break*/, 2];
-                            return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _a.sent();
-                            if (application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to view documents');
-                            }
-                            _a.label = 2;
-                        case 2: return [4 /*yield*/, this.prisma.applicationDocument.findMany({
-                                where: { applicationId: applicationId },
-                                orderBy: { uploadedAt: 'desc' }
-                            })];
-                        case 3:
-                            documents = _a.sent();
-                            grouped = {
-                                pending: documents.filter(function (d) { return d.status === 'pending' && d.filePath; }),
-                                verified: documents.filter(function (d) { return d.status === 'verified'; }),
-                                rejected: documents.filter(function (d) { return d.status === 'rejected'; }),
-                                notUploaded: documents.filter(function (d) { return !d.filePath; }),
-                            };
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: documents,
-                                    grouped: grouped,
-                                    summary: {
-                                        total: documents.length,
-                                        uploaded: documents.filter(function (d) { return d.filePath; }).length,
-                                        pending: grouped.pending.length,
-                                        verified: grouped.verified.length,
-                                        rejected: grouped.rejected.length,
-                                        notUploaded: grouped.notUploaded.length,
-                                    }
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Delete a document
-         */
-        ApplicationService_1.prototype.deleteDocument = function (documentId, userId) {
-            return __awaiter(this, void 0, void 0, function () {
-                var document;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.applicationDocument.findUnique({
-                                where: { id: documentId },
-                                include: { application: true }
-                            })];
-                        case 1:
-                            document = _a.sent();
-                            if (!document) {
-                                throw new common_1.NotFoundException('Document not found');
-                            }
-                            if (document.application.userId !== userId) {
-                                throw new common_1.BadRequestException('Unauthorized to delete this document');
-                            }
-                            if (document.status === 'verified') {
-                                throw new common_1.BadRequestException('Verified documents cannot be deleted');
-                            }
-                            if (!document.isRequired) return [3 /*break*/, 3];
-                            return [4 /*yield*/, this.prisma.applicationDocument.update({
-                                    where: { id: documentId },
-                                    data: {
-                                        fileName: '',
-                                        filePath: '',
-                                        fileSize: null,
-                                        mimeType: null,
-                                        status: 'pending',
-                                    }
-                                })];
-                        case 2:
-                            _a.sent();
-                            return [3 /*break*/, 5];
-                        case 3: return [4 /*yield*/, this.prisma.applicationDocument.delete({
-                                where: { id: documentId }
-                            })];
-                        case 4:
-                            _a.sent();
-                            _a.label = 5;
-                        case 5: return [2 /*return*/, {
-                                success: true,
-                                message: 'Document deleted successfully'
-                            }];
-                    }
-                });
-            });
-        };
-        // ==================== ADMIN OPERATIONS ====================
-        /**
-         * Get all applications (admin)
-         */
-        ApplicationService_1.prototype.getAllApplications = function (filters) {
-            return __awaiter(this, void 0, void 0, function () {
-                var where, orderBy, _a, applications, total;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0:
-                            where = {};
-                            if (filters === null || filters === void 0 ? void 0 : filters.status)
-                                where.status = filters.status;
-                            if (filters === null || filters === void 0 ? void 0 : filters.stage)
-                                where.stage = filters.stage;
-                            if (filters === null || filters === void 0 ? void 0 : filters.loanType)
-                                where.loanType = filters.loanType;
-                            if (filters === null || filters === void 0 ? void 0 : filters.bank)
-                                where.bank = filters.bank;
-                            if (filters === null || filters === void 0 ? void 0 : filters.search) {
-                                where.OR = [
-                                    { applicationNumber: { contains: filters.search, mode: 'insensitive' } },
-                                    { firstName: { contains: filters.search, mode: 'insensitive' } },
-                                    { lastName: { contains: filters.search, mode: 'insensitive' } },
-                                    { email: { contains: filters.search, mode: 'insensitive' } },
-                                ];
-                            }
-                            if ((filters === null || filters === void 0 ? void 0 : filters.fromDate) || (filters === null || filters === void 0 ? void 0 : filters.toDate)) {
-                                where.submittedAt = {};
-                                if (filters.fromDate)
-                                    where.submittedAt.gte = new Date(filters.fromDate);
-                                if (filters.toDate)
-                                    where.submittedAt.lte = new Date(filters.toDate);
-                            }
-                            orderBy = {};
-                            orderBy[(filters === null || filters === void 0 ? void 0 : filters.sortBy) || 'date'] = (filters === null || filters === void 0 ? void 0 : filters.sortOrder) || 'desc';
-                            return [4 /*yield*/, Promise.all([
-                                    this.prisma.loanApplication.findMany({
-                                        where: where,
-                                        include: {
-                                            user: {
-                                                select: { id: true, email: true, firstName: true, lastName: true }
-                                            },
-                                            documents: true
-                                        },
-                                        orderBy: orderBy,
-                                        take: (filters === null || filters === void 0 ? void 0 : filters.limit) || 20,
-                                        skip: (filters === null || filters === void 0 ? void 0 : filters.offset) || 0,
-                                    }),
-                                    this.prisma.loanApplication.count({ where: where })
-                                ])];
-                        case 1:
-                            _a = _b.sent(), applications = _a[0], total = _a[1];
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: applications,
-                                    pagination: {
-                                        total: total,
-                                        limit: (filters === null || filters === void 0 ? void 0 : filters.limit) || 20,
-                                        offset: (filters === null || filters === void 0 ? void 0 : filters.offset) || 0
-                                    }
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Update application status (admin)
-         */
-        ApplicationService_1.prototype.updateApplicationStatus = function (applicationId, adminId, adminName, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                var application, updateData, historyData, updated;
-                var _a;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0: return [4 /*yield*/, this.getApplicationById(applicationId)];
-                        case 1:
-                            application = _b.sent();
-                            updateData = {};
-                            historyData = {
-                                changedBy: adminId,
-                                changedByName: adminName,
-                            };
-                            if (data.status && data.status !== application.status) {
-                                updateData.status = data.status;
-                                historyData.fromStatus = application.status;
-                                historyData.toStatus = data.status;
-                                // Set timestamps based on status
-                                if (data.status === 'under_review') {
-                                    updateData.reviewStartedAt = new Date();
-                                }
-                                else if (data.status === 'approved') {
-                                    updateData.approvedAt = new Date();
-                                }
-                                else if (data.status === 'rejected') {
-                                    updateData.rejectedAt = new Date();
-                                    updateData.rejectionReason = data.rejectionReason;
-                                }
-                                else if (data.status === 'disbursed') {
-                                    updateData.disbursedAt = new Date();
-                                }
-                            }
-                            if (data.stage && data.stage !== application.stage) {
-                                updateData.stage = data.stage;
-                                updateData.progress = ((_a = APPLICATION_STAGES[data.stage]) === null || _a === void 0 ? void 0 : _a.progress) || application.progress;
-                                historyData.fromStage = application.stage;
-                                historyData.toStage = data.stage;
-                            }
-                            if (data.progress !== undefined)
-                                updateData.progress = data.progress;
-                            if (data.remarks)
-                                updateData.remarks = data.remarks;
-                            if (data.assignedTo)
-                                updateData.assignedTo = data.assignedTo;
-                            if (data.sanctionAmount)
-                                updateData.sanctionAmount = data.sanctionAmount;
-                            if (data.sanctionedInterestRate)
-                                updateData.sanctionedInterestRate = data.sanctionedInterestRate;
-                            return [4 /*yield*/, this.prisma.loanApplication.update({
-                                    where: { id: applicationId },
-                                    data: updateData,
-                                    include: {
-                                        documents: true,
-                                        statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 }
-                                    }
-                                })];
-                        case 2:
-                            updated = _b.sent();
-                            if (!(data.status || data.stage)) return [3 /*break*/, 4];
-                            return [4 /*yield*/, this.createStatusHistory(applicationId, __assign(__assign({}, historyData), { notes: data.remarks }))];
-                        case 3:
-                            _b.sent();
-                            _b.label = 4;
-                        case 4: return [2 /*return*/, {
-                                success: true,
-                                data: updated,
-                                message: 'Application updated successfully'
-                            }];
-                    }
-                });
-            });
-        };
-        /**
-         * Verify document (admin)
-         */
-        ApplicationService_1.prototype.verifyDocument = function (documentId, adminId, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                var document, updated;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.applicationDocument.findUnique({
-                                where: { id: documentId }
-                            })];
-                        case 1:
-                            document = _a.sent();
-                            if (!document) {
-                                throw new common_1.NotFoundException('Document not found');
-                            }
-                            return [4 /*yield*/, this.prisma.applicationDocument.update({
-                                    where: { id: documentId },
-                                    data: {
-                                        status: data.status,
-                                        verifiedAt: data.status === 'verified' ? new Date() : null,
-                                        verifiedBy: adminId,
-                                        rejectionReason: data.rejectionReason,
-                                    }
-                                })];
-                        case 2:
-                            updated = _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: updated,
-                                    message: "Document ".concat(data.status, " successfully")
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Add note to application (admin)
-         */
-        ApplicationService_1.prototype.addApplicationNote = function (applicationId, authorId, authorName, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                var note;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.prisma.applicationNote.create({
-                                data: {
-                                    applicationId: applicationId,
-                                    authorId: authorId,
-                                    authorName: authorName,
-                                    content: data.content,
-                                    type: data.type || 'general',
-                                    isInternal: data.isInternal || false,
-                                }
-                            })];
-                        case 1:
-                            note = _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: note,
-                                    message: 'Note added successfully'
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Get application notes (admin)
-         */
-        ApplicationService_1.prototype.getApplicationNotes = function (applicationId_1) {
-            return __awaiter(this, arguments, void 0, function (applicationId, includeInternal) {
-                var where, notes;
-                if (includeInternal === void 0) { includeInternal = true; }
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            where = { applicationId: applicationId };
-                            if (!includeInternal) {
-                                where.isInternal = false;
-                            }
-                            return [4 /*yield*/, this.prisma.applicationNote.findMany({
-                                    where: where,
-                                    orderBy: { createdAt: 'desc' }
-                                })];
-                        case 1:
-                            notes = _a.sent();
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: notes
-                                }];
-                    }
-                });
-            });
-        };
-        /**
-         * Get application statistics (admin dashboard)
-         */
-        ApplicationService_1.prototype.getApplicationStats = function () {
-            return __awaiter(this, void 0, void 0, function () {
-                var _a, total, byStatus, byLoanType, recentApplications, thisMonth, lastMonth, statusStats, loanTypeStats;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0: return [4 /*yield*/, Promise.all([
-                                this.prisma.loanApplication.count(),
-                                this.prisma.loanApplication.groupBy({
-                                    by: ['status'],
-                                    _count: true
-                                }),
-                                this.prisma.loanApplication.groupBy({
-                                    by: ['loanType'],
-                                    _count: true,
-                                    _sum: { amount: true }
-                                }),
-                                this.prisma.loanApplication.findMany({
-                                    take: 5,
-                                    orderBy: { date: 'desc' },
-                                    select: {
-                                        id: true,
-                                        applicationNumber: true,
-                                        loanType: true,
-                                        amount: true,
-                                        status: true,
-                                        date: true,
-                                        firstName: true,
-                                        lastName: true,
-                                    }
-                                }),
-                                this.prisma.loanApplication.count({
-                                    where: {
-                                        date: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-                                    }
-                                }),
-                                this.prisma.loanApplication.count({
-                                    where: {
-                                        date: {
-                                            gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-                                            lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-                                        }
-                                    }
-                                }),
-                            ])];
-                        case 1:
-                            _a = _b.sent(), total = _a[0], byStatus = _a[1], byLoanType = _a[2], recentApplications = _a[3], thisMonth = _a[4], lastMonth = _a[5];
-                            statusStats = byStatus.reduce(function (acc, curr) {
-                                acc[curr.status] = curr._count;
-                                return acc;
-                            }, {});
-                            loanTypeStats = byLoanType.map(function (lt) { return ({
-                                type: lt.loanType,
-                                count: lt._count,
-                                totalAmount: lt._sum.amount
-                            }); });
-                            return [2 /*return*/, {
-                                    success: true,
-                                    data: {
-                                        total: total,
-                                        statusStats: statusStats,
-                                        loanTypeStats: loanTypeStats,
-                                        recentApplications: recentApplications,
-                                        monthlyComparison: {
-                                            thisMonth: thisMonth,
-                                            lastMonth: lastMonth,
-                                            change: lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth * 100).toFixed(1) : 0
-                                        }
-                                    }
-                                }];
-                    }
-                });
-            });
-        };
-        // ==================== HELPER METHODS ====================
-        /**
-         * Generate application number
-         */
-        ApplicationService_1.prototype.generateApplicationNumber = function (loanType) {
-            var prefix = {
-                education: 'EDU',
-                home: 'HME',
-                personal: 'PRS',
-                business: 'BUS',
-                vehicle: 'VEH',
-            }[loanType] || 'APP';
-            var timestamp = Date.now().toString(36).toUpperCase();
-            var random = Math.random().toString(36).substring(2, 6).toUpperCase();
-            return "".concat(prefix).concat(timestamp).concat(random);
-        };
-        /**
-         * Create status history entry
-         */
-        ApplicationService_1.prototype.createStatusHistory = function (applicationId, data) {
-            return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    return [2 /*return*/, this.prisma.applicationStatusHistory.create({
-                            data: __assign({ applicationId: applicationId }, data)
-                        })];
-                });
-            });
-        };
-        /**
-         * Get required documents list for a loan type
-         */
-        ApplicationService_1.prototype.getRequiredDocuments = function (loanType) {
+            }
+        }
+        return { success: true, message: `Synchronized ${syncedCount} documents from vault`, syncedCount };
+    }
+    async deleteDocument(documentId, userId) {
+        const { data: document } = await this.db
+            .from('ApplicationDocument')
+            .select('*, application:LoanApplication!applicationId(userId)')
+            .eq('id', documentId)
+            .single();
+        if (!document)
+            throw new common_1.NotFoundException('Document not found');
+        if (document.application.userId !== userId)
+            throw new common_1.BadRequestException('Unauthorized to delete this document');
+        if (document.status === 'verified')
+            throw new common_1.BadRequestException('Verified documents cannot be deleted');
+        if (document.isRequired) {
+            await this.db.from('ApplicationDocument').update({ fileName: '', filePath: '', fileSize: null, mimeType: null, status: 'pending' }).eq('id', documentId);
+        }
+        else {
+            await this.db.from('ApplicationDocument').delete().eq('id', documentId);
+        }
+        return { success: true, message: 'Document deleted successfully' };
+    }
+    async getAllApplications(filters) {
+        try {
+            console.log('[ApplicationService.getAllApplications] Filters:', JSON.stringify(filters));
+            let query = this.db
+                .from('LoanApplication')
+                .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(id, status)', { count: 'exact' });
+            const sortCol = filters?.sortBy || 'updatedAt';
+            const isAsc = filters?.sortOrder === 'asc';
+            query = query.order(sortCol, { ascending: isAsc });
+            if (filters?.status)
+                query = query.eq('status', filters.status);
+            if (filters?.excludeStatus)
+                query = query.neq('status', filters.excludeStatus);
+            if (filters?.stage)
+                query = query.eq('stage', filters.stage);
+            if (filters?.loanType)
+                query = query.eq('loanType', filters.loanType);
+            if (filters?.bank) {
+                query = query.eq('bank', filters.bank);
+                query = query.not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
+            }
+            if (filters?.search) {
+                const search = filters.search;
+                query = query.or(`applicationNumber.ilike.%${search}%,firstName.ilike.%${search}%,lastName.ilike.%${search}%,email.ilike.%${search}%`);
+            }
+            if (filters?.fromDate)
+                query = query.gte('submittedAt', filters.fromDate);
+            if (filters?.toDate)
+                query = query.lte('submittedAt', filters.toDate);
+            const limit = filters?.limit || 20;
+            const offset = filters?.offset || 0;
+            query = query.range(offset, offset + limit - 1);
+            console.log(`[ApplicationService.getAllApplications] Executing query: sort=${sortCol}, limit=${limit}, offset=${offset}`);
+            const { data: applications, count, error } = await query;
+            if (error) {
+                console.error('[ApplicationService.getAllApplications] Supabase Error:', error);
+                throw error;
+            }
+            console.log(`[ApplicationService.getAllApplications] Success. Count: ${count}, Data size: ${applications?.length}`);
             return {
                 success: true,
-                data: REQUIRED_DOCUMENTS[loanType] || REQUIRED_DOCUMENTS.personal
+                data: applications || [],
+                pagination: {
+                    total: count || 0,
+                    limit,
+                    offset
+                }
             };
-        };
-        /**
-         * Get application stages
-         */
-        ApplicationService_1.prototype.getApplicationStages = function () {
+        }
+        catch (error) {
+            console.error('[ApplicationService.getAllApplications] Fatal Exception:', error);
+            return {
+                success: false,
+                data: [],
+                pagination: { total: 0, limit: 20, offset: 0 },
+                message: 'Internal server error during application retrieval'
+            };
+        }
+    }
+    async updateApplicationStatus(applicationId, adminId, adminName, data, role) {
+        const application = await this.getApplicationById(applicationId);
+        const updateData = { updatedAt: new Date().toISOString() };
+        const historyData = { changedBy: adminId, changedByName: adminName };
+        const isAuthorizedToChangeStatus = ['staff', 'admin', 'super_admin', 'bank', 'partner_bank'].includes(role || '');
+        if (data.status && data.status !== application.status) {
+            if (!isAuthorizedToChangeStatus) {
+            }
+            else {
+                updateData.status = data.status;
+                historyData.fromStatus = application.status;
+                historyData.toStatus = data.status;
+                if (data.status === 'rejected' && data.rejectionReason)
+                    updateData.remarks = data.rejectionReason;
+                if (data.status === 'approved') {
+                    updateData.stage = 'sanction';
+                    updateData.progress = 90;
+                }
+                else if (data.status === 'rejected') {
+                    updateData.progress = 0;
+                }
+                else if (data.status === 'processing') {
+                    updateData.stage = 'document_verification';
+                    updateData.progress = 40;
+                }
+                else if (data.status === 'disbursed' || data.status === 'disbursement_confirmed') {
+                    updateData.stage = 'disbursement';
+                    updateData.progress = 100;
+                }
+            }
+        }
+        if (data.stage && data.stage !== application.stage) {
+            if (isAuthorizedToChangeStatus) {
+                updateData.stage = data.stage;
+                updateData.progress = APPLICATION_STAGES[data.stage]?.progress || application.progress;
+                historyData.fromStage = application.stage;
+                historyData.toStage = data.stage;
+            }
+        }
+        if (data.progress !== undefined && isAuthorizedToChangeStatus)
+            updateData.progress = data.progress;
+        if (data.bank && isAuthorizedToChangeStatus)
+            updateData.bank = data.bank;
+        if (data.remarks) {
+            if (!updateData.remarks)
+                updateData.remarks = data.remarks;
+        }
+        const { data: updated, error } = await this.db.from('LoanApplication').update(updateData).eq('id', applicationId).select().single();
+        if (error)
+            throw error;
+        if (data.status || data.stage) {
+            await this.createStatusHistory(applicationId, { ...historyData, notes: data.remarks });
+            if (data.status && data.status !== application.status && isAuthorizedToChangeStatus) {
+                const actorName = adminName || 'Staff';
+                const capitalizedStatus = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                let msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to ${capitalizedStatus}.`;
+                let color = 'bg-blue-50 text-blue-700 border-blue-100';
+                let icon = 'sync';
+                if (data.status === 'approved') {
+                    msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to Approved.`;
+                    color = 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                    icon = 'task_alt';
+                }
+                else if (data.status === 'rejected') {
+                    msg = `Staff member ${actorName} moved Application #${application.applicationNumber || application.id.slice(-4)} to Rejected.`;
+                    color = 'bg-rose-50 text-rose-700 border-rose-100';
+                    icon = 'cancel';
+                }
+                this.eventEmitter.emit('dashboard.activity', {
+                    type: data.status,
+                    msg,
+                    icon,
+                    color,
+                    actorName,
+                    actorEmail: adminId || null,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
+        return { success: true, data: updated, message: 'Application updated successfully' };
+    }
+    async verifyDocument(documentId, adminId, data) {
+        if (documentId.startsWith('vault_')) {
+            const realId = documentId.replace('vault_', '');
+            const update = { status: data.status === 'verified' ? 'approved' : 'rejected' };
+            if (data.status === 'verified')
+                update.updatedAt = new Date().toISOString();
+            const { error } = await this.db.from('UserDocument').update(update).eq('id', realId);
+            if (error)
+                throw error;
+            return { success: true, message: `Vault document ${data.status} successfully` };
+        }
+        const { data: document } = await this.db.from('ApplicationDocument').select('id').eq('id', documentId).single();
+        if (!document) {
+            const { data: userDoc } = await this.db.from('UserDocument').select('id').eq('id', documentId).single();
+            if (userDoc) {
+                const update = { status: data.status === 'verified' ? 'approved' : 'rejected' };
+                if (data.status === 'verified')
+                    update.updatedAt = new Date().toISOString();
+                const { error } = await this.db.from('UserDocument').update(update).eq('id', documentId);
+                if (error)
+                    throw error;
+                return { success: true, message: `Vault document ${data.status} successfully` };
+            }
+            throw new common_1.NotFoundException('Document not found');
+        }
+        const { data: updated, error } = await this.db
+            .from('ApplicationDocument')
+            .update({ status: data.status, verifiedAt: data.status === 'verified' ? new Date().toISOString() : null, verifiedBy: adminId, rejectionReason: data.rejectionReason })
+            .eq('id', documentId)
+            .select()
+            .single();
+        if (error)
+            throw error;
+        return { success: true, data: updated, message: `Document ${data.status} successfully` };
+    }
+    async addApplicationNote(applicationId, authorId, authorName, data) {
+        const { data: note, error } = await this.db
+            .from('ApplicationNote')
+            .insert({ applicationId, authorId, authorName, content: data.content, type: data.type || 'general', isInternal: data.isInternal || false })
+            .select()
+            .single();
+        if (error)
+            throw error;
+        return { success: true, data: note, message: 'Note added successfully' };
+    }
+    async getApplicationNotes(applicationId, includeInternal = true) {
+        let query = this.db.from('ApplicationNote').select('*').eq('applicationId', applicationId).order('createdAt', { ascending: false });
+        if (!includeInternal)
+            query = query.eq('isInternal', false);
+        const { data: notes } = await query;
+        return { success: true, data: notes || [] };
+    }
+    async getApplicationStats(user, bankId) {
+        try {
+            const now = new Date();
+            const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+            const isBank = (user?.role === 'bank' || user?.role === 'partner_bank');
+            let bankName = null;
+            if (isBank) {
+                const bId = bankId || user?.firstName;
+                if (bId) {
+                    const lower = bId.toLowerCase();
+                    if (lower.includes('credila'))
+                        bankName = 'HDFC Credila';
+                    else if (lower.includes('poonawalla'))
+                        bankName = 'Poonawalla Fincorp';
+                    else if (lower.includes('idfc'))
+                        bankName = 'IDFC First Bank';
+                    else if (lower.includes('avanse'))
+                        bankName = 'Avanse Financial Services';
+                    else if (lower.includes('auxilo'))
+                        bankName = 'Auxilo';
+                    else
+                        bankName = bId;
+                }
+            }
+            let totalQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
+            let allAppsQuery = this.db.from('LoanApplication').select('status, loanType, amount');
+            let recentAppsQuery = this.db.from('LoanApplication').select('id, applicationNumber, loanType, amount, status, submittedAt, firstName, lastName');
+            let thisMonthQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
+            let lastMonthQuery = this.db.from('LoanApplication').select('*', { count: 'exact', head: true });
+            if (isBank && bankName) {
+                const excludeStr = '("submitted","pending","draft","docs_received","staff_verified","application_submitted")';
+                totalQuery = totalQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+                allAppsQuery = allAppsQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+                recentAppsQuery = recentAppsQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+                thisMonthQuery = thisMonthQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+                lastMonthQuery = lastMonthQuery.ilike('bank', `%${bankName}%`).not('status', 'in', excludeStr);
+            }
+            console.log(`[Stats] Executing queries for ${bankName || 'all banks'}...`);
+            const [totalRes, allAppsRes, recentAppsRes, thisMonthRes, lastMonthRes,] = await Promise.all([
+                Promise.resolve(totalQuery).catch(e => { console.error('Total query failed:', e); return { count: 0 }; }),
+                Promise.resolve(allAppsQuery).catch(e => { console.error('All apps query failed:', e); return { data: [] }; }),
+                Promise.resolve(recentAppsQuery.order('submittedAt', { ascending: false }).limit(5)).catch(e => { console.error('Recent apps query failed:', e); return { data: [] }; }),
+                Promise.resolve(thisMonthQuery.gte('submittedAt', thisMonthStart)).catch(e => { console.error('This month query failed:', e); return { count: 0 }; }),
+                Promise.resolve(lastMonthQuery.gte('submittedAt', lastMonthStart).lt('submittedAt', thisMonthStart)).catch(e => { console.error('Last month query failed:', e); return { count: 0 }; }),
+            ]);
+            console.log(`[Stats] Queries completed. Success: ${!!allAppsRes.data}, Count: ${allAppsRes.data?.length}`);
+            const total = totalRes.count || 0;
+            const allApps = allAppsRes.data || [];
+            const recentApps = recentAppsRes.data || [];
+            const thisMonth = thisMonthRes.count || 0;
+            const lastMonth = lastMonthRes.count || 0;
+            const statusStats = {};
+            const loanTypeMap = {};
+            let totalAmount = 0;
+            let disbursedAmount = 0;
+            for (const app of allApps) {
+                const amt = app.amount || 0;
+                totalAmount += amt;
+                if (app.status === 'disbursed') {
+                    disbursedAmount += amt;
+                }
+                statusStats[app.status] = (statusStats[app.status] || 0) + 1;
+                if (!loanTypeMap[app.loanType])
+                    loanTypeMap[app.loanType] = { count: 0, totalAmount: 0 };
+                loanTypeMap[app.loanType].count++;
+                loanTypeMap[app.loanType].totalAmount += amt;
+            }
+            const loanTypeStats = Object.entries(loanTypeMap).map(([type, stats]) => ({
+                type,
+                count: stats.count,
+                totalAmount: stats.totalAmount
+            }));
+            const tm = thisMonth || 0;
+            const lm = lastMonth || 0;
             return {
                 success: true,
-                data: APPLICATION_STAGES
+                data: {
+                    total,
+                    totalAmount,
+                    disbursedAmount,
+                    statusStats,
+                    loanTypeStats,
+                    recentApplications: recentApps,
+                    monthlyComparison: {
+                        thisMonth: tm,
+                        lastMonth: lm,
+                        change: lm > 0 ? ((tm - lm) / lm * 100).toFixed(1) : (tm > 0 ? '100.0' : '0.0')
+                    }
+                },
             };
-        };
-        return ApplicationService_1;
-    }());
-    __setFunctionName(_classThis, "ApplicationService");
-    (function () {
-        var _metadata = typeof Symbol === "function" && Symbol.metadata ? Object.create(null) : void 0;
-        __esDecorate(null, _classDescriptor = { value: _classThis }, _classDecorators, { kind: "class", name: _classThis.name, metadata: _metadata }, null, _classExtraInitializers);
-        ApplicationService = _classThis = _classDescriptor.value;
-        if (_metadata) Object.defineProperty(_classThis, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
-        __runInitializers(_classThis, _classExtraInitializers);
-    })();
-    return ApplicationService = _classThis;
-}();
+        }
+        catch (error) {
+            console.error('[ApplicationService] getApplicationStats Error:', error);
+            return {
+                success: true,
+                data: {
+                    total: 0,
+                    totalAmount: 0,
+                    disbursedAmount: 0,
+                    statusStats: {},
+                    loanTypeStats: [],
+                    recentApplications: [],
+                    monthlyComparison: { thisMonth: 0, lastMonth: 0, change: '0.0' }
+                }
+            };
+        }
+    }
+    async aiReviewApplication(applicationId, adminId, adminName) {
+        try {
+            const application = await this.getApplicationById(applicationId);
+            const { data: documents } = await this.db.from('ApplicationDocument').select('*').eq('applicationId', applicationId);
+            const reviewResult = await this.applicationReviewService.reviewApplication(application, documents || []);
+            await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: 'AI Review System', content: JSON.stringify(reviewResult), type: 'ai_review', isInternal: true });
+            await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: application.status, changedBy: adminId, changedByName: adminName, notes: `AI Review completed. Score: ${reviewResult.overallScore}/100. Recommendation: ${reviewResult.recommendation}`, isAutomatic: true });
+            this.eventEmitter.emit('dashboard.activity', {
+                type: 'verification',
+                msg: `System auto-verified CIBIL score for Student #${application.applicationNumber || application.id.slice(-4)}.`,
+                icon: 'verified',
+                color: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+                actorName: 'System',
+                actorEmail: 'system@vidyaloan.in',
+                createdAt: new Date().toISOString()
+            });
+            return { success: true, data: reviewResult, message: 'AI review completed successfully' };
+        }
+        catch (error) {
+            console.error(`[ApplicationService] aiReviewApplication failed for ${applicationId}:`, error);
+            throw error;
+        }
+    }
+    async generateApplicationNumber() {
+        const year = new Date().getFullYear();
+        const prefix = `VL-APP-${year}-`;
+        try {
+            const { data, error } = await this.db
+                .from('LoanApplication')
+                .select('applicationNumber')
+                .like('applicationNumber', `${prefix}%`)
+                .order('applicationNumber', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            if (error) {
+                console.error('[ApplicationService] Error fetching max application number:', error);
+            }
+            let nextSeq = 1;
+            if (data && data.applicationNumber) {
+                const parts = data.applicationNumber.split('-');
+                if (parts.length === 4) {
+                    const currentSeq = parseInt(parts[3], 10);
+                    if (!isNaN(currentSeq)) {
+                        nextSeq = currentSeq + 1;
+                    }
+                }
+            }
+            return `${prefix}${String(nextSeq).padStart(5, '0')}`;
+        }
+        catch (err) {
+            console.error('[ApplicationService] Failed to generate sequential application number, falling back to random:', err);
+            const seq = String(Math.floor(Math.random() * 100_000)).padStart(5, '0');
+            return `${prefix}${seq}`;
+        }
+    }
+    async createStatusHistory(applicationId, data) {
+        await this.db.from('ApplicationStatusHistory').insert({ applicationId, ...data });
+    }
+    async getAgentApplications(agentId) {
+        try {
+            const { data: referrals } = await this.db.from('Referral').select('refereeId').eq('referrerId', agentId);
+            if (!referrals || referrals.length === 0)
+                return { success: true, data: [] };
+            const refereeIds = referrals.map(r => r.refereeId);
+            const { data: applications } = await this.db
+                .from('LoanApplication')
+                .select('*, user:User!userId(id, email, firstName, lastName)')
+                .in('userId', refereeIds)
+                .order('submittedAt', { ascending: false });
+            return { success: true, data: applications || [] };
+        }
+        catch (error) {
+            console.error('[ApplicationService] getAgentApplications Error:', error);
+            return { success: false, data: [] };
+        }
+    }
+    async getAgentStats(agentId) {
+        try {
+            const { data: referrals } = await this.db.from('Referral').select('refereeId').eq('referrerId', agentId);
+            if (!referrals || referrals.length === 0) {
+                return { success: true, data: { total: 0, totalAmount: 0, revenue: 0, disbursedAmount: 0, recentApplications: [] } };
+            }
+            const refereeIds = referrals.map(r => r.refereeId);
+            const { data: applications } = await this.db
+                .from('LoanApplication')
+                .select('*')
+                .in('userId', refereeIds);
+            let totalAmount = 0;
+            let disbursedAmount = 0;
+            for (const app of applications || []) {
+                const amt = parseFloat(app.amount) || 0;
+                totalAmount += amt;
+                if (app.status === 'disbursed' || app.status === 'approved') {
+                    disbursedAmount += amt;
+                }
+            }
+            const revenue = disbursedAmount * 0.005;
+            return {
+                success: true,
+                data: {
+                    total: (applications || []).length,
+                    totalAmount,
+                    revenue,
+                    disbursedAmount,
+                    recentApplications: (applications || []).slice(0, 5)
+                }
+            };
+        }
+        catch (error) {
+            console.error('[ApplicationService] getAgentStats Error:', error);
+            return {
+                success: true,
+                data: { total: 0, totalAmount: 0, revenue: 0, disbursedAmount: 0, recentApplications: [] }
+            };
+        }
+    }
+    async shareApplication(applicationId, adminId, adminName) {
+        try {
+            const application = await this.getApplicationById(applicationId);
+            if (!application)
+                throw new Error('Application not found');
+            const userEmail = application.email || application.user?.email;
+            if (!userEmail)
+                throw new Error('Recipient email not found');
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+            const statusColor = application.status === 'approved' ? '#10b981' : application.status === 'rejected' ? '#ef4444' : '#6366f1';
+            const emailHtml = `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #334155; background-color: #f8fafc;">
+          <div style="background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%); padding: 40px; border-radius: 24px 24px 0 0; text-align: center; color: white;">
+            <h1 style="margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Vidyaloan</h1>
+            <p style="margin: 10px 0 0; font-size: 14px; opacity: 0.8; text-transform: uppercase; letter-spacing: 2px;">Application Details Shared</p>
+          </div>
+          
+          <div style="background: white; padding: 40px; border-radius: 0 0 24px 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <h2 style="color: #1e1b4b; font-size: 20px; margin-bottom: 24px;">Hi ${application.firstName || 'Student'},</h2>
+            <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 30px;">
+              Details for your education loan application <strong>${application.applicationNumber}</strong> are summarized below. You can track your progress anytime on our dashboard.
+            </p>
+
+            <div style="background-color: #f1f5f9; padding: 24px; border-radius: 16px; margin-bottom: 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Status</td>
+                  <td style="padding-bottom: 12px; text-align: right;">
+                    <span style="background-color: ${statusColor}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase;">
+                      ${application.status?.toUpperCase() || 'IN REVIEW'}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Current Stage</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">${application.stage?.replace(/_/g, ' ').toUpperCase() || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Loan Amount</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">₹${Number(application.amount || 0).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 12px; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Bank Partner</td>
+                  <td style="padding-bottom: 12px; text-align: right; font-weight: 700; color: #1e1b4b;">${application.bank || 'Pending Assignment'}</td>
+                </tr>
+                <tr>
+                  <td style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Progress</td>
+                  <td style="text-align: right; font-weight: 700; color: #1e1b4b;">${application.progress}%</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 30px;">
+              <a href="${frontendUrl}/dashboard" style="display: inline-block; background-color: #4338ca; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.4);">
+                Track My Application
+              </a>
+            </div>
+
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; margin-top: 24px;">
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.6;">
+                This information was shared by ${adminName} from the Vidyaloan Staff Dashboard.<br>
+                If you have any questions, please contact our support team.
+              </p>
+            </div>
+          </div>
+          
+          <div style="padding: 24px; text-align: center; font-size: 11px; color: #94a3b8;">
+            © ${new Date().getFullYear()} Vidyaloan. All rights reserved.
+          </div>
+        </div>
+      `;
+            await this.emailService.sendMail(userEmail, `Application Details: ${application.applicationNumber} - Vidyaloan`, emailHtml);
+            await this.db.from('ApplicationNote').insert({ applicationId, authorId: adminId, authorName: adminName, content: `Application details shared to registered email: ${userEmail}`, type: 'share', isInternal: true });
+            return { success: true, message: 'Application details shared successfully' };
+        }
+        catch (error) {
+            console.error('[ApplicationService] shareApplication Error:', error);
+            throw new Error(`Failed to share application: ${error.message}`);
+        }
+    }
+    getRequiredDocuments(loanType) {
+        return { success: true, data: REQUIRED_DOCUMENTS[loanType] || REQUIRED_DOCUMENTS.personal };
+    }
+    getApplicationStages() {
+        return { success: true, data: APPLICATION_STAGES };
+    }
+};
 exports.ApplicationService = ApplicationService;
+exports.ApplicationService = ApplicationService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [supabase_service_1.SupabaseService,
+        digilocker_service_1.DigilockerService,
+        document_verification_service_1.DocumentVerificationService,
+        application_review_service_1.ApplicationReviewService,
+        email_service_1.EmailService,
+        event_emitter_1.EventEmitter2])
+], ApplicationService);
+//# sourceMappingURL=application.service.js.map
