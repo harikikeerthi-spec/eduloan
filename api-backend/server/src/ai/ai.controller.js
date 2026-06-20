@@ -275,7 +275,8 @@ let AiController = class AiController {
             const course = data.course || data.context?.course;
             console.log(`AI Search requested: type=${type}, query="${query}", country=${country}`);
             if (type === 'university' && !query && country) {
-                const universities = await this.universitySearchService.searchUniversitiesByCountry([country], 12);
+                const searchCountry = country === 'India' ? 'USA' : country;
+                const universities = await this.universitySearchService.searchUniversitiesByCountry([searchCountry], 12);
                 return { success: true, universities };
             }
             const results = await this.openRouterService.searchAdvice(query, type, data.context || data);

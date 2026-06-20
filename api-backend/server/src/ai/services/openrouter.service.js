@@ -198,32 +198,36 @@ let OpenRouterService = class OpenRouterService {
     }
     async searchAdvice(query, type, context) {
         let prompt = '';
-        if (type === 'university') {
-            const country = context?.country || '';
-            const course = context?.course || '';
+        let finalType = type;
+        let finalQuery = query;
+        let finalContext = { ...context };
+        if (finalType === 'ug_university') {
+            finalType = 'university';
+        }
+        if (finalContext && finalContext.country === 'India') {
+            finalContext.country = undefined;
+        }
+        if (finalQuery && /india|iit|iim|bits|iisc/i.test(finalQuery)) {
+            finalQuery = "Top Global Universities";
+        }
+        if (finalType === 'university') {
+            const country = finalContext?.country || '';
+            const course = finalContext?.course || '';
             prompt = `Search for REAL, ACCREDITED universities for international students.
-            ${query ? `If the query "${query}" matches or represents a specific university, that exact university MUST be included in the results (ideally as the very first item). Otherwise, return universities matching or relevant to "${query}".` : 'Return popular universities.'}
+            ${finalQuery ? `If the query "${finalQuery}" matches or represents a specific university, that exact university MUST be included in the results (ideally as the very first item). Otherwise, return universities matching or relevant to "${finalQuery}".` : 'Return popular universities.'}
             ${country ? `PRIORITY: Focus PRIMARILY on universities located in "${country}".` : ''}
             ${course ? `SECONDARY FOCUS: Universities strong in "${course}".` : ''}
             CRITICAL REQUIREMENT: Focus on finding top universities that have the HIGHEST acceptance rates for international students. Ensure the acceptance rate data is highly accurate. Please rank the returned universities in descending order of their acceptance rates (highest to lowest) (with the exception of the exact name match which should always be included).
+            
+            STRICT REQUIREMENT: DO NOT return any universities or colleges located in India. All returned universities MUST be abroad/international universities (e.g. located in USA, UK, Canada, Australia, Singapore, Europe, etc.).
 
-            Context Details: ${JSON.stringify(context || {})}
+            Context Details: ${JSON.stringify(finalContext || {})}
 
             Requirement: Return a JSON object with a "universities" key.
             The "universities" key should be an array of up to 12 objects.
             For each university, provide:
             - name, loc, slug, rank, accept, tuition, country, description, website, courses
 
-            MUST respond ONLY with JSON.`;
-        }
-        else if (type === 'ug_university') {
-            prompt = `Search for REAL undergraduate degree or engineering colleges/universities matching or relevant to "${query || ''}". 
-            IMPORTANT: Return ONLY colleges and universities located in INDIA. Do not include institutions from any other country.
-            Return a JSON object with a "universities" key.
-            The "universities" key should be an array of up to 5 objects.
-            For each university, provide:
-            - name, loc (City, State), pincode
-            
             MUST respond ONLY with JSON.`;
         }
         else {
@@ -236,7 +240,20 @@ let OpenRouterService = class OpenRouterService {
             MUST respond ONLY with JSON.`;
         }
         const res = await this.getJson(prompt);
-        return ((res && (res.universities || res.courses)) || []);
+        const list = ((res && (res.universities || res.courses)) || []);
+        if (finalType === 'university') {
+            return list.filter((uni) => {
+                if (!uni)
+                    return false;
+                const uniCountry = (uni.country || '').toLowerCase();
+                const uniLoc = (uni.loc || uni.location || '').toLowerCase();
+                const uniName = (uni.name || '').toLowerCase();
+                return !uniCountry.includes('india') &&
+                    !uniLoc.includes('india') &&
+                    !uniName.includes('indian institute');
+            });
+        }
+        return list;
     }
     async chatWithVision(prompt, imageUrl, model = 'openai/gpt-4o-mini') {
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {

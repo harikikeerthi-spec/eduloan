@@ -26,6 +26,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
   bool _isLoadingCourses = false;
   final Map<String, List<String>> _fetchedCoursesCache = {};
   String? _selectedCourse;
+  final Set<String> _expandedCategories = {'Masters'};
 
   List<Institute> get _combinedInstitutes {
     List<Institute> combined = [];
@@ -451,64 +452,14 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: _selectedInstitute!.courses.length,
+              itemCount: _renderableCourseItems.length,
               itemBuilder: (context, index) {
-                final course = _selectedInstitute!.courses[index];
-                final isSelected = course == _selectedCourse;
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      _selectedCourse = course;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? const Color(0xFF311B92).withValues(alpha: 0.08)
-                          : const Color(0xFF311B92).withValues(alpha: 0.03),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected 
-                            ? const Color(0xFF311B92)
-                            : const Color(0xFF311B92).withValues(alpha: 0.1),
-                        width: isSelected ? 1.5 : 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF311B92) : const Color(0xFF6366F1),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            course,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        Icon(
-                          isSelected ? Icons.check_circle : Icons.check_circle_outline,
-                          color: isSelected 
-                              ? const Color(0xFF311B92)
-                              : const Color(0xFF311B92).withValues(alpha: 0.3),
-                          size: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                final item = _renderableCourseItems[index];
+                if (item.isHeader) {
+                  return _buildCategoryHeader(item.category!, item.count);
+                } else {
+                  return _buildSubCourseCard(item.course!, item.category);
+                }
               },
             ),
           ),
@@ -673,4 +624,231 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
       ),
     );
   }
+
+  String _getCourseCategory(String courseName) {
+    final lower = courseName.toLowerCase();
+    if (lower.contains('master') ||
+        lower.startsWith('ms ') ||
+        lower.startsWith('msc') ||
+        lower.startsWith('mba') ||
+        lower.startsWith('llm') ||
+        lower.startsWith('mphil') ||
+        lower.startsWith('m.eng') ||
+        lower.startsWith('ma ') ||
+        lower.startsWith('m.tech') ||
+        lower.startsWith('m.s.')) {
+      return 'Masters';
+    }
+    if (lower.contains('bachelor') ||
+        lower.startsWith('bs ') ||
+        lower.startsWith('bsc') ||
+        lower.startsWith('ba ') ||
+        lower.startsWith('b.eng') ||
+        lower.startsWith('bse') ||
+        lower.startsWith('b.tech') ||
+        lower.startsWith('b.a.') ||
+        lower.startsWith('b.s.')) {
+      return 'Bachelors';
+    }
+    if (lower.contains('phd') ||
+        lower.contains('jd') ||
+        lower.contains('doctor') ||
+        lower.contains('ph.d.')) {
+      return 'Doctorate';
+    }
+    return 'Other';
+  }
+
+  List<_CourseRenderItem> get _renderableCourseItems {
+    if (_selectedInstitute == null) return [];
+
+    Map<String, List<String>> groups = {
+      'Bachelors': [],
+      'Masters': [],
+      'Doctorate': [],
+      'Other': [],
+    };
+
+    for (var course in _selectedInstitute!.courses) {
+      final cat = _getCourseCategory(course);
+      groups[cat]!.add(course);
+    }
+
+    List<_CourseRenderItem> items = [];
+
+    if (groups['Bachelors']!.isNotEmpty) {
+      items.add(_CourseRenderItem(category: 'Bachelors', count: groups['Bachelors']!.length, isHeader: true));
+      if (_expandedCategories.contains('Bachelors')) {
+        for (var course in groups['Bachelors']!) {
+          items.add(_CourseRenderItem(category: 'Bachelors', course: course, isHeader: false));
+        }
+      }
+    }
+
+    if (groups['Masters']!.isNotEmpty) {
+      items.add(_CourseRenderItem(category: 'Masters', count: groups['Masters']!.length, isHeader: true));
+      if (_expandedCategories.contains('Masters')) {
+        for (var course in groups['Masters']!) {
+          items.add(_CourseRenderItem(category: 'Masters', course: course, isHeader: false));
+        }
+      }
+    }
+
+    if (groups['Doctorate']!.isNotEmpty) {
+      items.add(_CourseRenderItem(category: 'Doctorate', count: groups['Doctorate']!.length, isHeader: true));
+      if (_expandedCategories.contains('Doctorate')) {
+        for (var course in groups['Doctorate']!) {
+          items.add(_CourseRenderItem(category: 'Doctorate', course: course, isHeader: false));
+        }
+      }
+    }
+
+    if (groups['Other']!.isNotEmpty) {
+      for (var course in groups['Other']!) {
+        items.add(_CourseRenderItem(course: course, isHeader: false));
+      }
+    }
+
+    return items;
+  }
+
+  Widget _buildCategoryHeader(String category, int count) {
+    final isExpanded = _expandedCategories.contains(category);
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedCategories.remove(category);
+          } else {
+            _expandedCategories.add(category);
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF311B92).withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF311B92).withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              category == 'Masters' 
+                  ? Icons.workspace_premium 
+                  : (category == 'Bachelors' ? Icons.school : Icons.psychology),
+              color: const Color(0xFF311B92),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$count programs available',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: const Color(0xFF311B92).withValues(alpha: 0.6),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubCourseCard(String course, String? category) {
+    final isSelected = course == _selectedCourse;
+    return Padding(
+      padding: EdgeInsets.only(left: category != null ? 24.0 : 0.0),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedCourse = course;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected 
+                ? const Color(0xFF311B92).withValues(alpha: 0.08)
+                : const Color(0xFF311B92).withValues(alpha: 0.02),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected 
+                  ? const Color(0xFF311B92)
+                  : const Color(0xFF311B92).withValues(alpha: 0.08),
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF311B92) : const Color(0xFF6366F1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  course,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Icon(
+                isSelected ? Icons.check_circle : Icons.check_circle_outline,
+                color: isSelected 
+                    ? const Color(0xFF311B92)
+                    : const Color(0xFF311B92).withValues(alpha: 0.3),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CourseRenderItem {
+  final String? category;
+  final String? course;
+  final int count;
+  final bool isHeader;
+
+  _CourseRenderItem({
+    this.category,
+    this.course,
+    this.count = 0,
+    required this.isHeader,
+  });
 }

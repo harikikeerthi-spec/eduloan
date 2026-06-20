@@ -383,7 +383,8 @@ export class AiController {
 
       // Case 1: Fetching top universities for a country (Initial load in onboarding)
       if (type === 'university' && !query && country) {
-        const universities = await this.universitySearchService.searchUniversitiesByCountry([country], 12);
+        const searchCountry = country === 'India' ? 'USA' : country;
+        const universities = await this.universitySearchService.searchUniversitiesByCountry([searchCountry], 12);
         return { success: true, universities };
       }
 
