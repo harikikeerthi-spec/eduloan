@@ -91,7 +91,7 @@ let OpenRouterService = class OpenRouterService {
             throw error;
         }
     }
-    async getJson(prompt, model = 'meta-llama/llama-3.3-70b-instruct:free') {
+    async getJson(prompt, model = 'openai/gpt-4o-mini') {
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. Do not include markdown formatting.`;
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here')
             throw new Error('OPENROUTER_API_KEY is not configured');
@@ -160,6 +160,8 @@ let OpenRouterService = class OpenRouterService {
         }
         if (!content && lastError) {
             console.error('All getJson models failed. Returning empty result.');
+            if (prompt.includes('recommendations'))
+                return { recommendations: [] };
             if (prompt.includes('universities'))
                 return { universities: [] };
             if (prompt.includes('courses'))

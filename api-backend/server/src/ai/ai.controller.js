@@ -605,7 +605,7 @@ Response MUST be strictly valid JSON in the following format:
         }
         try {
             const prompt = `${systemPrompt}\n\nUser Profile & Request:\n${userPrompt}`;
-            const response = await this.openRouterService.getJson(prompt, 'meta-llama/llama-3.3-70b-instruct:free');
+            const response = await this.openRouterService.getJson(prompt, 'openai/gpt-4o-mini');
             const recommendations = response?.recommendations || [];
             if (userId) {
                 const client = this.supabase.getClient();
