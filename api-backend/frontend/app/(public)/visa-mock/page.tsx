@@ -81,9 +81,9 @@ const VISA_TYPES = [
 ];
 
 export const AGENT_TYPES = [
-    { value: "agent_smith", label: "Officer Smith", icon: "security", desc: "Strict and intimidating. Short sentences. No small talk. 20 years of experience.", pitch: 0.88, rate: 0.94, avatar: "/images/agents/officer_smith.png" },
-    { value: "agent_sarah", label: "Officer Sarah", icon: "psychology", desc: "Friendly and conversational, but catches everything. Feels like a real chat.", pitch: 1.04, rate: 1.0, avatar: "/images/agents/officer_sarah.png" },
-    { value: "agent_michael", label: "Officer Michael", icon: "badge", desc: "Completely neutral and methodical. Clinical, efficient, by-the-book.", pitch: 0.95, rate: 0.96, avatar: "/images/agents/officer_michael.png" },
+    { value: "agent_smith", label: "VL Officer", icon: "security", desc: "Hard Difficulty. Strict and intimidating. Short sentences. No small talk. 20 years of experience.", pitch: 0.88, rate: 0.94, avatar: "/images/agents/officer_smith.png" },
+    { value: "agent_sarah", label: "VL Officer", icon: "psychology", desc: "Medium Difficulty. Friendly and conversational, but catches everything. Feels like a real chat.", pitch: 1.04, rate: 1.0, avatar: "/images/agents/officer_sarah.png" },
+    { value: "agent_michael", label: "VL Officer", icon: "badge", desc: "Easy Difficulty. Completely neutral, methodical, and friendly. Clinical, efficient, uses simple questions.", pitch: 0.95, rate: 0.96, avatar: "/images/agents/officer_michael.png" },
 ];
 
 
@@ -765,9 +765,9 @@ function SetupPhase({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const text = a.value === "agent_smith" ? "Good morning. I am Officer Smith. State your full name." :
-                                                        a.value === "agent_sarah" ? "Hi, I am Officer Sarah. Nice to meet you. Could you tell me your name?" :
-                                                        "Good morning. I am Officer Michael. Please state your full name.";
+                                            const text = a.value === "agent_smith" ? "Good morning. I am VL Officer. State your full name." :
+                                                        a.value === "agent_sarah" ? "Hi, I am VL Officer. Nice to meet you. Could you tell me your name?" :
+                                                        "Good morning. I am VL Officer. Please state your full name.";
                                             void playPreviewVoice(a.value, text);
                                         }}
                                         className="inline-flex items-center gap-2 text-[10px] font-black text-[#6605c7] uppercase tracking-widest hover:gap-3 transition-all"
