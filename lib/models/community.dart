@@ -234,9 +234,17 @@ class ForumPost {
     return ForumPost(
       id: json['id'] ?? '',
       authorId: json['authorId'] ?? '',
-      userName: json['author'] != null
-          ? '${json['author']['firstName']} ${json['author']['lastName']}'
-          : (json['userName'] ?? 'Anonymous'),
+      userName: () {
+        if (json['author'] != null) {
+          final first = json['author']['firstName'];
+          final last = json['author']['lastName'];
+          if (first == null && last == null) {
+            return 'Anonymous';
+          }
+          return '${first ?? ''} ${last ?? ''}'.trim();
+        }
+        return json['userName'] ?? 'Anonymous';
+      }(),
       userImage: json['userImage'],
       title: json['title'] ?? 'Untitled Post',
       content: json['content'] ?? '',
@@ -286,9 +294,17 @@ class ForumComment {
       id: json['id'] ?? '',
       content: json['content'] ?? '',
       authorId: json['authorId'] ?? '',
-      authorName: json['author'] != null
-          ? '${json['author']['firstName']} ${json['author']['lastName']}'
-          : 'Anonymous',
+      authorName: () {
+        if (json['author'] != null) {
+          final first = json['author']['firstName'];
+          final last = json['author']['lastName'];
+          if (first == null && last == null) {
+            return 'Anonymous';
+          }
+          return '${first ?? ''} ${last ?? ''}'.trim();
+        }
+        return 'Anonymous';
+      }(),
       authorImage: json['userImage'],
       createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       likes: json['likes'] ?? 0,
