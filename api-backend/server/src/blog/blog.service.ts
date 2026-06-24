@@ -311,9 +311,20 @@ export class BlogService {
     const { data: comment } = await this.db.from('Comment').select('id').eq('id', commentId).single();
     if (!comment) throw new NotFoundException('Comment not found');
 
-    // Delete likes and replies first, then the comment
-    await this.db.from('CommentLike').delete().eq('commentId', commentId);
-    await this.db.from('Comment').delete().eq('parentId', commentId);
+    // 1. Fetch child replies first
+    const { data: replies } = await this.db.from('Comment').select('id').eq('parentId', commentId);
+    const replyIds = (replies || []).map((r: any) => r.id);
+    const allIds = [commentId, ...replyIds];
+
+    // 2. Delete all likes for both parent and child comments
+    await this.db.from('CommentLike').delete().in('commentId', allIds);
+
+    // 3. Delete the child comments
+    if (replyIds.length > 0) {
+      await this.db.from('Comment').delete().in('id', replyIds);
+    }
+
+    // 4. Delete the parent comment
     await this.db.from('Comment').delete().eq('id', commentId);
 
     return { success: true, message: 'Comment deleted successfully' };

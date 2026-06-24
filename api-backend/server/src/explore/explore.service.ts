@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { CommunityService } from '../community/community.service';
+import { CommunityService, resolveCategories } from '../community/community.service';
 import { ReferenceService } from '../reference/reference.service';
 
 @Injectable()
@@ -42,9 +42,10 @@ export class ExploreService {
       this.communityService.getForumPosts({ category: targetTopic, limit: 5 }),
     ]);
 
+    const resolved = resolveCategories(targetTopic) || [targetTopic];
     const [{ count: activeMentorsCount }, { count: totalPostsCount }] = await Promise.all([
-      this.db.from('Mentor').select('*', { count: 'exact', head: true }).ilike('category', `%${targetTopic}%`).eq('isActive', true).eq('isApproved', true),
-      this.db.from('ForumPost').select('*', { count: 'exact', head: true }).ilike('category', `%${targetTopic}%`),
+      this.db.from('Mentor').select('*', { count: 'exact', head: true }).in('category', resolved).eq('isActive', true).eq('isApproved', true),
+      this.db.from('ForumPost').select('*', { count: 'exact', head: true }).in('category', resolved),
     ]);
 
     const am = activeMentorsCount || 0;

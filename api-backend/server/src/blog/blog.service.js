@@ -288,8 +288,13 @@ let BlogService = class BlogService {
         const { data: comment } = await this.db.from('Comment').select('id').eq('id', commentId).single();
         if (!comment)
             throw new common_1.NotFoundException('Comment not found');
-        await this.db.from('CommentLike').delete().eq('commentId', commentId);
-        await this.db.from('Comment').delete().eq('parentId', commentId);
+        const { data: replies } = await this.db.from('Comment').select('id').eq('parentId', commentId);
+        const replyIds = (replies || []).map((r) => r.id);
+        const allIds = [commentId, ...replyIds];
+        await this.db.from('CommentLike').delete().in('commentId', allIds);
+        if (replyIds.length > 0) {
+            await this.db.from('Comment').delete().in('id', replyIds);
+        }
         await this.db.from('Comment').delete().eq('id', commentId);
         return { success: true, message: 'Comment deleted successfully' };
     }

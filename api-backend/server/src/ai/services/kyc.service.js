@@ -132,7 +132,16 @@ let KycService = class KycService {
             normalizedType.includes('aadhaar') ||
             normalizedType.includes('national_id') ||
             normalizedType.includes('passport');
-        if (!isIdentityDoc) {
+        const isAcademicDoc = normalizedType.includes('marksheet') ||
+            normalizedType.includes('10th') ||
+            normalizedType.includes('12th') ||
+            normalizedType.includes('degree') ||
+            normalizedType.includes('ssc') ||
+            normalizedType.includes('hsc') ||
+            normalizedType.includes('transcript') ||
+            normalizedType.includes('admission') ||
+            normalizedType.includes('offer');
+        if (!isIdentityDoc && !isAcademicDoc) {
             return { is_valid: true };
         }
         let text = '';
@@ -186,8 +195,30 @@ let KycService = class KycService {
             const isPan = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
             matches = hasPassportKeywords && !isAadhaar && !isPan;
         }
-        else {
-            return { is_valid: true };
+        else if (normalizedType.includes('marksheet_10') || normalizedType.includes('10th') || normalizedType.includes('ssc')) {
+            expectedLabel = 'Grade 10 Marksheet';
+            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'roll', 'subject', 'result', 'ssc', 'cbse', 'icse', 'matriculation', 'secondary'];
+            matches = keywords.some(kw => clean.includes(kw));
+        }
+        else if (normalizedType.includes('marksheet_12') || normalizedType.includes('12th') || normalizedType.includes('hsc') || normalizedType.includes('intermediate')) {
+            expectedLabel = 'Grade 12 Marksheet';
+            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'college', 'roll', 'subject', 'result', 'hsc', 'intermediate', 'higher secondary', 'cbse', 'icse'];
+            matches = keywords.some(kw => clean.includes(kw));
+        }
+        else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor')) {
+            expectedLabel = 'Undergraduate Marksheet/Degree';
+            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'undergraduate', 'bachelor'];
+            matches = keywords.some(kw => clean.includes(kw));
+        }
+        else if (normalizedType.includes('marksheet_pg') || normalizedType.includes('postgrad') || normalizedType.includes('master')) {
+            expectedLabel = 'Postgraduate Marksheet/Degree';
+            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'postgraduate', 'master'];
+            matches = keywords.some(kw => clean.includes(kw));
+        }
+        else if (normalizedType.includes('admission') || normalizedType.includes('offer')) {
+            expectedLabel = 'Admission Letter';
+            const keywords = ['admission', 'offer', 'admit', 'congratulations', 'university', 'college', 'course', 'program', 'enrol', 'enrollment', 'acceptance', 'letter'];
+            matches = keywords.some(kw => clean.includes(kw));
         }
         if (!matches) {
             if (isPdf && (clean.includes('%pdf') || clean.includes('pdf-'))) {

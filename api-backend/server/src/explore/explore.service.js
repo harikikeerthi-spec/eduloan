@@ -51,9 +51,10 @@ let ExploreService = class ExploreService {
             this.communityService.getAllStories({ category: targetTopic, limit: 3 }),
             this.communityService.getForumPosts({ category: targetTopic, limit: 5 }),
         ]);
+        const resolved = (0, community_service_1.resolveCategories)(targetTopic) || [targetTopic];
         const [{ count: activeMentorsCount }, { count: totalPostsCount }] = await Promise.all([
-            this.db.from('Mentor').select('*', { count: 'exact', head: true }).ilike('category', `%${targetTopic}%`).eq('isActive', true).eq('isApproved', true),
-            this.db.from('ForumPost').select('*', { count: 'exact', head: true }).ilike('category', `%${targetTopic}%`),
+            this.db.from('Mentor').select('*', { count: 'exact', head: true }).in('category', resolved).eq('isActive', true).eq('isApproved', true),
+            this.db.from('ForumPost').select('*', { count: 'exact', head: true }).in('category', resolved),
         ]);
         const am = activeMentorsCount || 0;
         const tp = totalPostsCount || 0;

@@ -13,6 +13,34 @@ exports.CommunityService = void 0;
 const common_1 = require("@nestjs/common");
 const supabase_service_1 = require("../supabase/supabase.service");
 const openrouter_service_1 = require("../ai/services/openrouter.service");
+
+const hubToDbCategories = {
+    eligibility: ['Education Loans'],
+    loan: ['Education Loans'],
+    'education loans': ['Education Loans'],
+    universities: ['Universities'],
+    courses: ['Courses'],
+    scholarships: ['Scholarship'],
+    scholarship: ['Scholarship'],
+    visa: ['Visa & Immigration'],
+    'visa & immigration': ['Visa & Immigration'],
+    accommodation: ['Accommodation'],
+    gre: ['GRE / GMAT', 'IELTS / TOEFL', 'Exams'],
+    'gre / gmat': ['GRE / GMAT', 'IELTS / TOEFL', 'Exams'],
+    'ielts / toefl': ['GRE / GMAT', 'IELTS / TOEFL', 'Exams'],
+    exams: ['GRE / GMAT', 'IELTS / TOEFL', 'Exams'],
+    jobs: ['Career & Jobs'],
+    'career & jobs': ['Career & Jobs'],
+    general: ['General'],
+};
+function resolveCategories(category) {
+    if (!category)
+        return null;
+    const catKey = category.toLowerCase().trim();
+    return hubToDbCategories[catKey] || [category];
+}
+exports.resolveCategories = resolveCategories;
+
 let CommunityService = class CommunityService {
     supabase;
     openRouterService;
@@ -39,8 +67,12 @@ let CommunityService = class CommunityService {
             query = query.ilike('country', `%${country}%`);
         if (loanType)
             query = query.ilike('loanType', `%${loanType}%`);
-        if (category)
-            query = query.ilike('category', `%${category}%`);
+        if (category) {
+            const resolved = resolveCategories(category);
+            if (resolved) {
+                query = query.in('category', resolved);
+            }
+        }
         if (limit)
             query = query.limit(limit);
         if (offset)
@@ -158,8 +190,12 @@ let CommunityService = class CommunityService {
         let query = this.db.from('SuccessStory').select('*', { count: 'exact' }).eq('isApproved', true).order('createdAt', { ascending: false });
         if (country)
             query = query.ilike('country', `%${country}%`);
-        if (category)
-            query = query.ilike('category', `%${category}%`);
+        if (category) {
+            const resolved = resolveCategories(category);
+            if (resolved) {
+                query = query.in('category', resolved);
+            }
+        }
         if (limit)
             query = query.limit(limit);
         if (offset)
@@ -188,8 +224,12 @@ let CommunityService = class CommunityService {
         let query = this.db.from('CommunityResource').select('*', { count: 'exact' }).order('createdAt', { ascending: false });
         if (type)
             query = query.eq('type', type);
-        if (category)
-            query = query.ilike('category', `%${category}%`);
+        if (category) {
+            const resolved = resolveCategories(category);
+            if (resolved) {
+                query = query.in('category', resolved);
+            }
+        }
         if (limit)
             query = query.limit(limit);
         if (offset)
@@ -332,8 +372,12 @@ let CommunityService = class CommunityService {
             .from('ForumPost')
             .select('*, author:User!authorId(firstName, lastName, role), commentCount:ForumComment(count)', { count: 'exact' })
             .order(sort === 'popular' ? 'likes' : 'createdAt', { ascending: false });
-        if (category)
-            query = query.ilike('category', `%${category}%`);
+        if (category) {
+            const resolved = resolveCategories(category);
+            if (resolved) {
+                query = query.in('category', resolved);
+            }
+        }
         if (tag)
             query = query.contains('tags', [tag]);
         if (limit)
@@ -354,7 +398,7 @@ let CommunityService = class CommunityService {
             success: true,
             data: (posts || []).map((post) => ({
                 ...post,
-                commentCount: Array.isArray(post.commentCount) ? post.commentCount.length : (post.commentCount || 0),
+                commentCount: Array.isArray(post.commentCount) ? (post.commentCount[0]?.count ?? 0) : (post.commentCount || 0),
                 liked: likedPostIds.has(post.id),
             })),
             pagination: { total: count || 0, limit, offset, hasMore: (offset || 0) + (posts?.length || 0) < (count || 0) },
@@ -413,7 +457,7 @@ let CommunityService = class CommunityService {
         scored.sort((a, b) => b.score - a.score);
         const top5 = scored.slice(0, 5).map(({ score, ...p }) => ({
             ...p,
-            commentCount: Array.isArray(p.comments) ? p.comments.length : 0,
+            commentCount: Array.isArray(p.comments) ? (p.comments[0]?.count ?? 0) : 0,
         }));
         return { success: true, data: top5 };
     }
@@ -487,9 +531,11 @@ If it has even a loose connection to student life or education, set isRelevant t
         if (recentPost && data.force !== true) {
             return { success: true, message: 'Post already created recently', data: recentPost, isDuplicate: true };
         }
+        const resolved = resolveCategories(data.category);
+        const canonicalCategory = (resolved && resolved.length > 0) ? resolved[0] : (data.category || 'General');
         const { data: post, error } = await this.db
             .from('ForumPost')
-            .insert({ title: data.title, content: data.content, category: data.category || 'General', tags: data.tags || [], authorId: userId, isMentorOnly: data.isMentorOnly || false })
+            .insert({ title: data.title, content: data.content, category: canonicalCategory, tags: data.tags || [], authorId: userId, isMentorOnly: data.isMentorOnly || false })
             .select('*, author:User!authorId(firstName, lastName, role, id)')
             .single();
         if (error)
@@ -661,8 +707,12 @@ If it has even a loose connection to student life or education, set isRelevant t
             .select('*, author:User!authorId(firstName, lastName, role, email), comments:ForumComment(count)', { count: 'exact' })
             .order('isPinned', { ascending: false })
             .order(sort === 'popular' ? 'likes' : 'createdAt', { ascending: false });
-        if (category)
-            query = query.ilike('category', `%${category}%`);
+        if (category) {
+            const resolved = resolveCategories(category);
+            if (resolved) {
+                query = query.in('category', resolved);
+            }
+        }
         if (limit)
             query = query.limit(limit);
         if (offset)
@@ -670,7 +720,7 @@ If it has even a loose connection to student life or education, set isRelevant t
         const { data: posts, count } = await query;
         return {
             success: true,
-            data: (posts || []).map((p) => ({ ...p, commentCount: Array.isArray(p.comments) ? p.comments.length : 0 })),
+            data: (posts || []).map((p) => ({ ...p, commentCount: Array.isArray(p.comments) ? (p.comments[0]?.count ?? 0) : 0 })),
             pagination: { total: count || 0, limit, offset, hasMore: (offset || 0) + (posts?.length || 0) < (count || 0) },
         };
     }
@@ -700,17 +750,19 @@ If it has even a loose connection to student life or education, set isRelevant t
             const keywords = questionData.title.toLowerCase().split(/\s+/).filter((w) => w.length >= 3 && !stopwords.has(w));
             let existingQuestions = [];
             if (keywords.length > 0) {
+                const resolved = resolveCategories(questionData.category) || [questionData.category];
                 const { data } = await this.db
                     .from('ForumPost')
                     .select('id, title, content, createdAt')
-                    .ilike('category', `%${questionData.category}%`)
+                    .in('category', resolved)
                     .or(keywords.map((kw) => `title.ilike.%${kw}%`).join(','))
                     .order('createdAt', { ascending: false })
                     .limit(50);
                 existingQuestions = data || [];
             }
             if (existingQuestions.length === 0) {
-                const { data } = await this.db.from('ForumPost').select('id, title, content, createdAt').ilike('category', `%${questionData.category}%`).order('createdAt', { ascending: false }).limit(20);
+                const resolved = resolveCategories(questionData.category) || [questionData.category];
+                const { data } = await this.db.from('ForumPost').select('id, title, content, createdAt').in('category', resolved).order('createdAt', { ascending: false }).limit(20);
                 existingQuestions = data || [];
             }
             if (existingQuestions.length === 0)
