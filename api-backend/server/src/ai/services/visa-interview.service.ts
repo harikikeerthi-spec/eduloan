@@ -127,9 +127,9 @@ CONSTRAINTS:
         const sections = INTERVIEW_SECTIONS.map((s, i) => `${i + 1}. ${s.id}: ${s.label}`).join('\n');
 
         const agentLabels: Record<string, string> = {
-            'agent_smith': 'Officer Smith (Strict, authoritative, deep voice, 20+ years experience, no patience for vague answers)',
-            'agent_sarah': 'Officer Sarah (Warm but sharp, conversational, catches everything behind friendly tone)',
-            'agent_michael': 'VL Loan Officer (Neutral, methodical, clinical, follows procedure exactly)',
+            'agent_smith': 'VL Officer (Hard) (Strict, authoritative, deep voice, 20+ years experience, no patience for vague answers)',
+            'agent_sarah': 'VL Officer (Medium) (Warm but sharp, conversational, catches everything behind friendly tone)',
+            'agent_michael': 'VL Officer (Easy) (Neutral, methodical, clinical, friendly, follows procedure exactly but uses simple and easy-to-understand questions)',
         };
 
         let prompt = this.getSystemPromptTemplate()
@@ -145,10 +145,10 @@ CONSTRAINTS:
             prompt += `\n\nCONVERSATION HISTORY:\n${historyContext}\n\nNEXT JSON RESPONSE:`;
         } else {
             prompt += `\n\nFIRST JSON RESPONSE:
-1. You MUST introduce yourself by name and role first. Example: "Good morning. I am VL Loan Officer (or Officer [Name] if you are Sarah/Smith). I'll be conducting your visa interview today."
+1. You MUST introduce yourself by name and role first. Example: "Good morning. I am VL Officer (Easy) (or VL Officer (Medium) / VL Officer (Hard)). I'll be conducting your visa interview today."
 2. Then immediately ask the first question about the applicant's Personal Background (name, purpose of visit).
 3. Combine the introduction and question in the "question" field of the JSON.
-4. Smith: Brief, commanding intro. Sarah: Warm, welcoming intro. VL Loan Officer: Procedural, formal intro.
+4. VL Officer (Hard): Brief, commanding intro. VL Officer (Medium): Warm, welcoming intro. VL Officer (Easy): Procedural, friendly, simple formal intro.
 5. Keep it natural and under 4 sentences total.`;
         }
 

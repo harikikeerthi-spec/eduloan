@@ -55,6 +55,84 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final Map<TextEditingController, String?> _fieldErrors = {};
   final TextEditingController _purposeController = TextEditingController();
   bool _isManualCountryEntry = false;
+  String _selectedCountryFlag = '';
+
+  // Static country → flag emoji map (no API needed, works fully offline)
+  static const Map<String, String> _countryFlags = {
+    'usa': '🇺🇸',
+    'united states': '🇺🇸',
+    'united states of america': '🇺🇸',
+    'uk': '🇬🇧',
+    'united kingdom': '🇬🇧',
+    'england': '🇬🇧',
+    'britain': '🇬🇧',
+    'canada': '🇨🇦',
+    'australia': '🇦🇺',
+    'germany': '🇩🇪',
+    'france': '🇫🇷',
+    'ireland': '🇮🇪',
+    'singapore': '🇸🇬',
+    'new zealand': '🇳🇿',
+    'netherlands': '🇳🇱',
+    'holland': '🇳🇱',
+    'sweden': '🇸🇪',
+    'switzerland': '🇨🇭',
+    'norway': '🇳🇴',
+    'denmark': '🇩🇰',
+    'finland': '🇫🇮',
+    'italy': '🇮🇹',
+    'spain': '🇪🇸',
+    'portugal': '🇵🇹',
+    'japan': '🇯🇵',
+    'south korea': '🇰🇷',
+    'korea': '🇰🇷',
+    'china': '🇨🇳',
+    'hong kong': '🇭🇰',
+    'uae': '🇦🇪',
+    'dubai': '🇦🇪',
+    'united arab emirates': '🇦🇪',
+    'malaysia': '🇲🇾',
+    'indonesia': '🇮🇩',
+    'philippines': '🇵🇭',
+    'thailand': '🇹🇭',
+    'taiwan': '🇹🇼',
+    'austria': '🇦🇹',
+    'belgium': '🇧🇪',
+    'poland': '🇵🇱',
+    'czech republic': '🇨🇿',
+    'czechia': '🇨🇿',
+    'hungary': '🇭🇺',
+    'romania': '🇷🇴',
+    'greece': '🇬🇷',
+    'turkey': '🇹🇷',
+    'russia': '🇷🇺',
+    'mexico': '🇲🇽',
+    'brazil': '🇧🇷',
+    'argentina': '🇦🇷',
+    'chile': '🇨🇱',
+    'colombia': '🇨🇴',
+    'india': '🇮🇳',
+    'sri lanka': '🇱🇰',
+    'pakistan': '🇵🇰',
+    'bangladesh': '🇧🇩',
+    'nepal': '🇳🇵',
+    'south africa': '🇿🇦',
+    'nigeria': '🇳🇬',
+    'kenya': '🇰🇪',
+    'egypt': '🇪🇬',
+    'israel': '🇮🇱',
+    'saudi arabia': '🇸🇦',
+    'qatar': '🇶🇦',
+    'kuwait': '🇰🇼',
+    'bahrain': '🇧🇭',
+  };
+
+  /// Returns the flag emoji for the given country name (case-insensitive).
+  /// Returns empty string if not found.
+  String _getFlagForCountry(String countryName) {
+    final key = countryName.trim().toLowerCase();
+    return _countryFlags[key] ?? '';
+  }
 
   String _amountInLakhsLabel = '';
   
@@ -102,8 +180,20 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       final normalizedCountries = _countries.map((c) => c.toLowerCase()).toList();
       if (!normalizedCountries.contains(country.toLowerCase())) {
         _isManualCountryEntry = true;
+        _selectedCountryFlag = _getFlagForCountry(country);
+      } else {
+        _selectedCountryFlag = _getFlagForCountry(country);
       }
     }
+    // Auto-detect flag as user types manually
+    _countryController.addListener(() {
+      if (_isManualCountryEntry) {
+        final flag = _getFlagForCountry(_countryController.text);
+        if (flag != _selectedCountryFlag) {
+          setState(() => _selectedCountryFlag = flag);
+        }
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -180,6 +270,20 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     'France',
     'Ireland',
     'Singapore',
+    'New Zealand',
+    'Netherlands',
+    'Sweden',
+    'Switzerland',
+    'Italy',
+    'Spain',
+    'Japan',
+    'South Korea',
+    'UAE',
+    'Malaysia',
+    'India',
+    'Denmark',
+    'Finland',
+    'Norway',
     'Other',
   ];
 
@@ -187,9 +291,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   void _showCountrySelection() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
+        height: MediaQuery.of(context).size.height * 0.65,
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -222,16 +327,37 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 itemCount: _countries.length,
                 itemBuilder: (context, index) {
                   final country = _countries[index];
+                  final flag = country == 'Other' ? '🌍' : _getFlagForCountry(country);
+                  final isSelected = _countryController.text == country;
                   return ListTile(
-                    contentPadding: EdgeInsets.zero,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    leading: flag.isNotEmpty
+                        ? Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? const Color(0xFF311B92).withValues(alpha: 0.1)
+                                  : const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                flag,
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ),
+                          )
+                        : null,
                     title: Text(
                       country,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
                       ),
                     ),
-                    trailing: _countryController.text == country
+                    trailing: isSelected
                         ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
                         : const Icon(Icons.chevron_right, color: Colors.grey),
                     onTap: () {
@@ -239,9 +365,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         if (country == 'Other') {
                           _countryController.clear();
                           _isManualCountryEntry = true;
+                          _selectedCountryFlag = '';
                         } else {
                           _countryController.text = country;
                           _isManualCountryEntry = false;
+                          _selectedCountryFlag = flag;
                         }
                       });
                       Navigator.pop(context);
@@ -915,19 +1043,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             ),
             const SizedBox(height: 8),
             _isManualCountryEntry
-                ? _buildTextInput(
-                    hint: 'Enter Target Country',
-                    icon: Icons.public,
-                    controller: _countryController,
-                    isRequired: true,
-                  )
-                : _buildReadOnlyInput(
-                    hint: 'Target Country',
-                    icon: Icons.public,
-                    onTap: _showCountrySelection,
-                    controller: _countryController,
-                    isRequired: true,
-                  ),
+                ? _buildCountryManualInput()
+                : _buildCountryReadOnlyInput(),
             const SizedBox(height: 16),
             _buildTextInput(
               hint: 'Target University',
@@ -1367,6 +1484,216 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             child: Text(
               errorText,
               style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Country picker field showing flag emoji + country name when selected
+  Widget _buildCountryReadOnlyInput() {
+    final errorText = _fieldErrors[_countryController];
+    final hasError = errorText != null;
+    final hasValue = _countryController.text.isNotEmpty;
+    final flag = _selectedCountryFlag;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () {
+            if (hasError) setState(() => _fieldErrors[_countryController] = null);
+            _showCountrySelection();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: hasError
+                  ? Colors.red.withValues(alpha: 0.05)
+                  : const Color(0xFF311B92).withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: hasError
+                    ? Colors.red
+                    : const Color(0xFF311B92).withValues(alpha: 0.05),
+                width: hasError ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                if (hasValue && flag.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(flag, style: const TextStyle(fontSize: 22)),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: hasValue ? _countryController.text : 'Target Country',
+                          style: TextStyle(
+                            color: hasValue
+                                ? Colors.black
+                                : Colors.black.withValues(alpha: 0.4),
+                            fontSize: 16,
+                            fontWeight: hasValue ? FontWeight.w500 : FontWeight.normal,
+                          ),
+                        ),
+                        if (!hasValue)
+                          const TextSpan(
+                            text: ' *',
+                            style: TextStyle(color: Colors.red, fontSize: 16),
+                          ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: hasError
+                      ? Colors.red
+                      : const Color(0xFF311B92).withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(
+                  color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Manual country text entry with real-time flag emoji prefix
+  Widget _buildCountryManualInput() {
+    final errorText = _fieldErrors[_countryController];
+    final hasError = errorText != null;
+    final flag = _selectedCountryFlag;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: hasError
+                ? Colors.red.withValues(alpha: 0.05)
+                : const Color(0xFF311B92).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: hasError
+                  ? Colors.red
+                  : const Color(0xFF311B92).withValues(alpha: 0.05),
+              width: hasError ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Animated flag prefix (appears as user types a recognized country)
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: flag.isNotEmpty
+                    ? Container(
+                        key: ValueKey(flag),
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(flag,
+                            style: const TextStyle(fontSize: 22)),
+                      )
+                    : Container(
+                        key: const ValueKey('globe'),
+                        margin: const EdgeInsets.only(right: 10),
+                        child: Icon(
+                          Icons.public,
+                          color: const Color(0xFF311B92).withValues(alpha: 0.4),
+                          size: 24,
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _countryController,
+                  style: const TextStyle(color: Colors.black, fontSize: 16),
+                  onChanged: (_) {
+                    if (hasError) {
+                      setState(() => _fieldErrors[_countryController] = null);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Enter Target Country *',
+                    hintStyle: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.4)),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              // Tap to switch back to picker
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isManualCountryEntry = false;
+                    _countryController.clear();
+                    _selectedCountryFlag = '';
+                  });
+                  _showCountrySelection();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.list_rounded,
+                    size: 18,
+                    color: const Color(0xFF311B92).withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (flag.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              'Country recognized  $flag',
+              style: const TextStyle(
+                color: Color(0xFF10B981),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(left: 12, top: 4),
+            child: Text(
+              errorText,
+              style: const TextStyle(
+                  color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ),
       ],

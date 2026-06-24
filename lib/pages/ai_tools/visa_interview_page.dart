@@ -126,8 +126,63 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     }
   }
 
+  Future<void> _configureTtsForAgent() async {
+    double pitch = 1.0;
+    double rate = 0.5;
+
+    if (_selectedAgent == 'agent_michael') {
+      pitch = 1.15;
+      rate = 0.45;
+    } else if (_selectedAgent == 'agent_sarah') {
+      pitch = 1.0;
+      rate = 0.50;
+    } else if (_selectedAgent == 'agent_smith') {
+      pitch = 0.80;
+      rate = 0.55;
+    }
+
+    await _tts.setPitch(pitch);
+    await _tts.setSpeechRate(rate);
+
+    try {
+      final List<dynamic> voices = await _tts.getVoices;
+      if (voices.isNotEmpty) {
+        final englishVoices = voices.where((v) {
+          if (v is Map) {
+            final locale = (v['locale'] ?? '').toString().toLowerCase();
+            return locale.contains('en-') || locale == 'en';
+          }
+          return false;
+        }).toList();
+
+        if (englishVoices.isNotEmpty) {
+          int index = 0;
+          if (_selectedAgent == 'agent_michael') {
+            index = 0;
+          } else if (_selectedAgent == 'agent_sarah') {
+            index = englishVoices.length > 1 ? 1 : 0;
+          } else if (_selectedAgent == 'agent_smith') {
+            index = englishVoices.length > 2 ? 2 : (englishVoices.length > 1 ? 1 : 0);
+          }
+
+          final selectedVoice = englishVoices[index];
+          if (selectedVoice is Map) {
+            final String? name = selectedVoice['name']?.toString();
+            final String? locale = selectedVoice['locale']?.toString();
+            if (name != null && locale != null) {
+              await _tts.setVoice({"name": name, "locale": locale});
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to set native voice: $e');
+    }
+  }
+
   Future<void> _speak(String text) async {
     if (!_isSpeakerOn) return;
+    await _configureTtsForAgent();
     await _tts.speak(text);
   }
 
@@ -486,16 +541,16 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           const SizedBox(height: 24),
           _buildOfficerCard(
             id: 'agent_michael',
-            name: 'VL Loan Officer',
-            description: 'Neutral, methodical, clinical, follows procedure exactly.',
-            difficulty: 'Standard',
-            difficultyColor: Colors.blue,
+            name: 'VL Officer',
+            description: 'Neutral, methodical, friendly, follows procedure exactly but uses simple and easy-to-understand questions.',
+            difficulty: 'Easy',
+            difficultyColor: Colors.green,
             icon: Icons.assignment_ind,
           ),
           const SizedBox(height: 16),
           _buildOfficerCard(
             id: 'agent_sarah',
-            name: 'Officer Sarah',
+            name: 'VL Officer',
             description: 'Warm but sharp, conversational, catches everything behind a friendly tone.',
             difficulty: 'Medium',
             difficultyColor: Colors.orange,
@@ -504,9 +559,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           const SizedBox(height: 16),
           _buildOfficerCard(
             id: 'agent_smith',
-            name: 'Officer Smith',
+            name: 'VL Officer',
             description: 'Strict, authoritative, 20+ years of experience, no patience for vague answers.',
-            difficulty: 'Hard / Strict',
+            difficulty: 'Hard',
             difficultyColor: Colors.red,
             icon: Icons.gavel,
           ),
@@ -1003,13 +1058,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
             ],
           ),
           const SizedBox(height: 40),
-          Text(
-            _selectedAgent == 'agent_smith'
-                ? 'Officer Smith'
-                : _selectedAgent == 'agent_sarah'
-                    ? 'Officer Sarah'
-                    : 'VL Loan Officer',
-            style: const TextStyle(
+          const Text(
+            'VL Officer',
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
               color: Color(0xFF6200EE),
