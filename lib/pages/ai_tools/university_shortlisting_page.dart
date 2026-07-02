@@ -960,10 +960,17 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1200), () {
-            _addAiMessage(
-              "Perfect! To give you a detailed roadmap, I'll need a bit more info.\n\nFirst, how much work experience do you have (in months)?",
-            );
-            setState(() => _flow = 'work_experience');
+            if (_activeFlow == 'bachelors') {
+              _addAiMessage(
+                "Almost there! To find the perfect programs, I need a bit more about your academic background. Which high school or 12th board school did you study in?",
+              );
+              setState(() => _flow = 'bachelors_university');
+            } else {
+              _addAiMessage(
+                "Perfect! To give you a detailed roadmap, I'll need a bit more info.\n\nFirst, how much work experience do you have (in months)?",
+              );
+              setState(() => _flow = 'work_experience');
+            }
           });
         },
       );
@@ -1429,9 +1436,15 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1000), () {
-            _addAiMessage(
-              "Almost there! To find the perfect programs, I need a bit more about your academic background. Which university did you graduate from?",
-            );
+            if (_activeFlow == 'bachelors') {
+              _addAiMessage(
+                "Almost there! To find the perfect programs, I need a bit more about your academic background. Which school/college did you study in for 12th/High School?",
+              );
+            } else {
+              _addAiMessage(
+                "Almost there! To find the perfect programs, I need a bit more about your academic background. Which university did you graduate from?",
+              );
+            }
             setState(() => _flow = 'bachelors_university');
           });
         },
@@ -1460,7 +1473,11 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1000), () {
-            _addAiMessage("Noted. And what was your bachelor's course?");
+            if (_activeFlow == 'bachelors') {
+              _addAiMessage("Noted. What was your stream/major in 12th class? (e.g. Science, Commerce, Arts)");
+            } else {
+              _addAiMessage("Noted. And what was your bachelor's course?");
+            }
             setState(() => _flow = 'bachelors_course');
           });
         },
@@ -1492,9 +1509,15 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1000), () {
-            _addAiMessage(
-              "Got it. What was your graduation CGPA? (on a scale of 10)",
-            );
+            if (_activeFlow == 'bachelors') {
+              _addAiMessage(
+                "Got it. What was your 12th board percentage/GPA?",
+              );
+            } else {
+              _addAiMessage(
+                "Got it. What was your graduation CGPA? (on a scale of 10)",
+              );
+            }
             setState(() => _flow = 'cgpa');
           });
         },
@@ -1511,9 +1534,15 @@ class _UniversityShortlistingPageState
           });
 
           Future.delayed(const Duration(milliseconds: 1000), () {
-            _addAiMessage(
-              "Final check: Have you taken any entrance exams like GRE, GMAT, IELTS, or TOEFL?",
-            );
+            if (_activeFlow == 'bachelors') {
+              _addAiMessage(
+                "Final check: Have you taken any entrance/language exams like SAT, ACT, IELTS, or TOEFL?",
+              );
+            } else {
+              _addAiMessage(
+                "Final check: Have you taken any entrance exams like GRE, GMAT, IELTS, or TOEFL?",
+              );
+            }
             setState(() => _flow = 'test_status');
           });
         },
@@ -1535,9 +1564,15 @@ class _UniversityShortlistingPageState
 
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (status == "Yes, I've taken them") {
-              _addAiMessage(
-                "Great! Please share your test scores (GRE, GMAT, IELTS, or TOEFL).",
-              );
+              if (_activeFlow == 'bachelors') {
+                _addAiMessage(
+                  "Great! Please share your test scores (SAT, ACT, IELTS, or TOEFL).",
+                );
+              } else {
+                _addAiMessage(
+                  "Great! Please share your test scores (GRE, GMAT, IELTS, or TOEFL).",
+                );
+              }
               setState(() => _flow = 'test_scores');
             } else {
               _addAiMessage(
@@ -1577,9 +1612,15 @@ class _UniversityShortlistingPageState
               setState(() => _flow = 'completed');
               _generateShortlist();
             } else {
-              _addAiMessage(
-                "Thank you! Based on your merits, I've found relevant programs that best meet your needs.",
-              );
+              if (_activeFlow == 'bachelors') {
+                _addAiMessage(
+                  "Thank you! Based on your 12th grades and test scores, I've found relevant Bachelor's programs that best meet your needs.",
+                );
+              } else {
+                _addAiMessage(
+                  "Thank you! Based on your merits, I've found relevant programs that best meet your needs.",
+                );
+              }
               setState(() => _flow = 'evaluate_get_results');
             }
           });

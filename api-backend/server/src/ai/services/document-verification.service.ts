@@ -493,13 +493,22 @@ export class DocumentVerificationService {
 
             console.log(`[DocumentVerification] API Key validation passed (length: ${apiKey.length})`);
 
-            // Use a vision-capable model - preferring stable vision models for top-tier document intelligence
+            // Use a vision-capable model - preferring latest cutting-edge models for top-tier document intelligence
             const models = [
-                'openai/gpt-4o-mini',
-                'google/gemini-2.5-flash',
+                'anthropic/claude-sonnet-4.6',   // High intelligence Claude 4.6
+                'google/gemini-3-flash-preview', // High intelligence Gemini 3
+                'anthropic/claude-3.7-sonnet',   // Premium Claude 3.7
+                'google/gemini-3.1-flash-lite',  // Premium Gemini 3.1
+                'anthropic/claude-haiku-4.5',    // Premium Haiku 4.5
+                'anthropic/claude-3.7-sonnet:thinking',
                 'anthropic/claude-3.5-sonnet',
-                'openrouter/free',
-                'meta-llama/llama-3.2-11b-vision-instruct:free',
+                'google/gemma-4-31b',
+                'google/gemma-4-26b-a4b',
+                'openai/gpt-oss-120b:free',
+                'nvidia/nemotron-3-super:free',
+                'anthropic/claude-3-opus',
+                'google/gemini-2.0-flash-001',
+                'openai/gpt-4-vision',
             ];
 
             let response: any;

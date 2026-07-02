@@ -221,18 +221,9 @@ export class KycService {
                               normalizedType.includes('national_id') || 
                               normalizedType.includes('passport');
 
-        const isAcademicDoc = normalizedType.includes('marksheet') || 
-                              normalizedType.includes('10th') || 
-                              normalizedType.includes('12th') || 
-                              normalizedType.includes('degree') || 
-                              normalizedType.includes('ssc') || 
-                              normalizedType.includes('hsc') || 
-                              normalizedType.includes('transcript') || 
-                              normalizedType.includes('admission') || 
-                              normalizedType.includes('offer');
-
-        if (!isIdentityDoc && !isAcademicDoc) {
-            // Other support files are allowed by default without keyword checks.
+        if (!isIdentityDoc) {
+            // Other academic or support files are allowed by default without keyword checks.
+            // Bypassing local OCR/Tesseract to save CPU/Memory and avoid offline CDN initialization issues.
             return { is_valid: true };
         }
 
@@ -294,26 +285,9 @@ export class KycService {
             const isPan = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
             
             matches = hasPassportKeywords && !isAadhaar && !isPan;
-        } else if (normalizedType.includes('marksheet_10') || normalizedType.includes('10th') || normalizedType.includes('ssc')) {
-            expectedLabel = 'Grade 10 Marksheet';
-            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'roll', 'subject', 'result', 'ssc', 'cbse', 'icse', 'matriculation', 'secondary'];
-            matches = keywords.some(kw => clean.includes(kw));
-        } else if (normalizedType.includes('marksheet_12') || normalizedType.includes('12th') || normalizedType.includes('hsc') || normalizedType.includes('intermediate')) {
-            expectedLabel = 'Grade 12 Marksheet';
-            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'college', 'roll', 'subject', 'result', 'hsc', 'intermediate', 'higher secondary', 'cbse', 'icse'];
-            matches = keywords.some(kw => clean.includes(kw));
-        } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor')) {
-            expectedLabel = 'Undergraduate Marksheet/Degree';
-            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'undergraduate', 'bachelor'];
-            matches = keywords.some(kw => clean.includes(kw));
-        } else if (normalizedType.includes('marksheet_pg') || normalizedType.includes('postgrad') || normalizedType.includes('master')) {
-            expectedLabel = 'Postgraduate Marksheet/Degree';
-            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'postgraduate', 'master'];
-            matches = keywords.some(kw => clean.includes(kw));
-        } else if (normalizedType.includes('admission') || normalizedType.includes('offer')) {
-            expectedLabel = 'Admission Letter';
-            const keywords = ['admission', 'offer', 'admit', 'congratulations', 'university', 'college', 'course', 'program', 'enrol', 'enrollment', 'acceptance', 'letter'];
-            matches = keywords.some(kw => clean.includes(kw));
+        } else {
+            // Other academic or support files are allowed by default
+            return { is_valid: true };
         }
 
         if (!matches) {
@@ -433,12 +407,8 @@ export class KycService {
                 - "PASSPORT OFFICE"
                 - "DATE OF ISSUE" + "DATE OF EXPIRY" (Passport structure)
                 - Passport biodata page layout
-                - "INCOME TAX" or "INCOME TAX DEPARTMENT" or "TAX DEPARTMENT" keyword anywhere
-                - "PERMANENT ACCOUNT" or "PAN" card markers
-                - PAN number format (5 letters followed by 4 digits followed by 1 letter, e.g. ABCDE1234F)
                 
-                If Passport markers are detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PASSPORT', do NOT extract fields.
-                If PAN card markers are detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PAN', do NOT extract fields.
+                If ANY of the above detected: Set is_valid=false, fraud_reason='WRONG_DOCUMENT_TYPE_UPLOADED', document_type='PASSPORT', do NOT extract fields.
 
                 ACCEPT ONLY IF YOU DETECT:
                 - "UNIQUE IDENTIFICATION" or "UIDAI"
