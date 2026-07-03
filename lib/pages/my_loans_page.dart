@@ -770,16 +770,39 @@ class _MyLoansPageState extends State<MyLoansPage> {
       {'key': 'disbursed', 'label': 'Disbursed', 'icon': Icons.payments},
     ];
 
+    final stageLower = loan.stage.toLowerCase();
+    final statusLower = loan.status.toLowerCase();
+
     int currentStageIndex = 0;
-    if (loan.stage == 'application_submitted') {
+    if (statusLower == 'pending') {
       currentStageIndex = 0;
-    } else if (loan.stage == 'document_verification' || loan.stage == 'documents_uploaded') {
+    } else if (statusLower == 'docs_received' ||
+        statusLower == 'staff_verified' ||
+        stageLower == 'document_verification' ||
+        stageLower == 'documents_uploaded') {
       currentStageIndex = 1;
-    } else if (loan.stage == 'credit_check' || loan.stage == 'bank_review' || loan.stage == 'under_review') {
+    } else if (statusLower == 'submitted_to_bank' ||
+        statusLower == 'file_logged' ||
+        statusLower == 'under_bank_review' ||
+        statusLower == 'query_raised' ||
+        stageLower == 'credit_check' ||
+        stageLower == 'bank_review' ||
+        stageLower == 'under_review' ||
+        stageLower == 'submitted' ||
+        stageLower == 'verification') {
       currentStageIndex = 2;
-    } else if (loan.stage == 'sanction' || loan.stage == 'sanctioned') {
+    } else if (statusLower == 'conditional_sanction' ||
+        statusLower == 'partial_sanction' ||
+        statusLower == 'counter_offer' ||
+        statusLower == 'approved' ||
+        statusLower == 'sanctioned' ||
+        stageLower == 'sanction' ||
+        stageLower == 'sanctioned') {
       currentStageIndex = 3;
-    } else if (loan.stage == 'disbursement' || loan.stage == 'disbursed') {
+    } else if (statusLower == 'disbursement_confirmed' ||
+        statusLower == 'closed' ||
+        stageLower == 'disbursement' ||
+        stageLower == 'disbursed') {
       currentStageIndex = 4;
     }
 
