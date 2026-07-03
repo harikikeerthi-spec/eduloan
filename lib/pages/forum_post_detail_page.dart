@@ -86,45 +86,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     }
   }
 
-  Future<void> _deletePost() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Post'),
-        content: const Text(
-            'Are you sure you want to delete this post? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    try {
-      final result = await _communityService.deleteForumPost(_post!.id);
-      if (result['success'] == true && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post deleted successfully')),
-        );
-        Navigator.pop(context, true);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete post: $e')),
-        );
-      }
-    }
-  }
-
 
   Widget _buildCommentTile(ForumComment comment, {int depth = 0}) {
     final isAuthor =
@@ -516,7 +477,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
   }
 
   Widget _buildPostHeader() {
-    final isAuthor = _currentUserId != null && _post!.authorId == _currentUserId;
     return Row(
       children: [
         CircleAvatar(
@@ -565,17 +525,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
             ),
           ),
         ),
-        if (isAuthor) ...[
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _deletePost,
-            child: const Icon(
-              Icons.delete_outline,
-              size: 20,
-              color: Colors.red,
-            ),
-          ),
-        ],
       ],
     );
   }
