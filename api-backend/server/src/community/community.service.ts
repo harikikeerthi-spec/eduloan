@@ -510,6 +510,17 @@ export class CommunityService {
     const { data: user } = await this.db.from('User').select('id').eq('id', userId).single();
     if (!user) throw new NotFoundException('User not found');
 
+    // AI content relevance and quality verification check
+    const verification = await this.validateCommunityPostContent(
+      data.title || '',
+      data.content || '',
+      data.category || 'General'
+    );
+
+    if (!verification.isAllowed) {
+      throw new BadRequestException(`CONTENT_NOT_RELEVANT: ${verification.reason}`);
+    }
+
     // Idempotency check
     const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
     const { data: recentPost } = await this.db
@@ -785,6 +796,45 @@ export class CommunityService {
     } catch (error) {
       console.error('Error in duplicate question detection:', error);
       return { isDuplicate: false, similarQuestions: [], message: 'Duplicate check unavailable, but you can still post your question', error: error.message };
+    }
+  }
+
+  // ==================== AI POST RELEVANCE VALIDATION ====================
+
+  async validateCommunityPostContent(title: string, content: string, category: string): Promise<{ isAllowed: boolean; reason?: string }> {
+    try {
+      const prompt = `You are an AI moderator for a study abroad and education finance community forum.
+Your task is to analyze if a new question/post is relevant and appropriate for the forum.
+
+A post is RELEVANT if:
+1. It is a question or discussion related to study abroad, university admissions, courses, exams (like GRE, GMAT, IELTS, TOEFL, SAT, etc.), scholarships, student visas, immigration, abroad accommodation, student loans, or general education/career planning.
+2. The content is meaningful, coherent, and written in a comprehensible language.
+
+A post is NOT RELEVANT (should be blocked) if:
+1. It is spam, advertisements, or promotional material not related to education.
+2. It is gibberish, keyboard-mashing, nonsense, or random character sequences (e.g. "jdkssmsbsks mm jeke...").
+3. It contains offensive, hateful, or highly inappropriate language.
+4. It is entirely unrelated to education, student life, study abroad, study preparation, career planning, or student loans/visas/accommodation.
+
+New Post details:
+Category: "${category}"
+Title: "${title}"
+Content: "${content}"
+
+Analyze the post. Respond ONLY with a JSON object in the following format:
+{
+  "isAllowed": true/false,
+  "reason": "Brief explanation of why it is allowed or blocked. If blocked, state the reason clearly to the user (e.g., 'nonsense/gibberish content is not allowed', 'content must be related to study abroad or education finance')"
+}`;
+
+      const response = await this.openRouterService.getJson<{ isAllowed: boolean; reason?: string }>(prompt);
+      return {
+        isAllowed: response.isAllowed === true,
+        reason: response.reason || 'Content is not relevant to study abroad or student loans.'
+      };
+    } catch (error) {
+      console.error('Error in AI post validation:', error);
+      return { isAllowed: true };
     }
   }
 }
