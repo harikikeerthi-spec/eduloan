@@ -9,6 +9,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../apply_loan_page.dart';
+import '../../services/loan_service.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   final String? initialFlow;
@@ -4360,9 +4361,32 @@ class _LoanResults extends StatefulWidget {
 
 class _LoanResultsState extends State<_LoanResults> {
   bool _showOffers = false;
+  bool _hasAppliedForLoan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoanStatus();
+  }
+
+  Future<void> _checkLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (mounted) {
+        setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_hasAppliedForLoan) {
+      return const SizedBox.shrink();
+    }
     bool isLocked = false;
 
     return Column(

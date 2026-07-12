@@ -1046,28 +1046,50 @@ class AiLogicService {
     }
 
     // 3. Static fallback list of courses if both endpoints fail
-    final staticList = [
-      'MS Computer Science',
-      'MBA (Master of Business Administration)',
-      'MS Data Science & Analytics',
-      'MS Information Technology',
-      'MS Business Analytics',
-      'MS Mechanical Engineering',
-      'MS Electrical Engineering',
-      'MS Biotechnology',
-      'Master of Public Health (MPH)',
-      'MS Finance',
-      'MS Cybersecurity & Information Assurance',
-      'MS Software Engineering',
-      'MS Civil Engineering',
-      'MS Chemical Engineering',
-      'MS Industrial Engineering',
-      'MS Pharmacology & Toxicology',
-      'MS Project Management',
-      'MS Construction Management',
-      'MS Supply Chain Management',
-      'Master of Architecture',
-    ];
+    final bool isBachelors = degree.toLowerCase().contains('bachelor') || 
+        degree.toLowerCase().contains('ug') || 
+        degree.toLowerCase().contains('undergrad');
+    
+    final staticList = isBachelors 
+      ? [
+          'B.Tech Computer Science',
+          'Bachelor of Business Administration (BBA)',
+          'B.Sc Computer Science',
+          'B.Tech Information Technology',
+          'B.Sc Data Science & Analytics',
+          'B.Tech Mechanical Engineering',
+          'B.Tech Electrical Engineering',
+          'B.Tech Biotechnology',
+          'Bachelor of Commerce (B.Com)',
+          'B.Sc Cybersecurity',
+          'B.Tech Software Engineering',
+          'B.Tech Civil Engineering',
+          'B.Tech Chemical Engineering',
+          'Bachelor of Architecture (B.Arch)',
+          'Bachelor of Computer Applications (BCA)',
+        ]
+      : [
+          'MS Computer Science',
+          'MBA (Master of Business Administration)',
+          'MS Data Science & Analytics',
+          'MS Information Technology',
+          'MS Business Analytics',
+          'MS Mechanical Engineering',
+          'MS Electrical Engineering',
+          'MS Biotechnology',
+          'Master of Public Health (MPH)',
+          'MS Finance',
+          'MS Cybersecurity & Information Assurance',
+          'MS Software Engineering',
+          'MS Civil Engineering',
+          'MS Chemical Engineering',
+          'MS Industrial Engineering',
+          'MS Pharmacology & Toxicology',
+          'MS Project Management',
+          'MS Construction Management',
+          'MS Supply Chain Management',
+          'Master of Architecture',
+        ];
     
     return staticList.map((name) => <String, String>{'name': name}).toList();
   }

@@ -14,6 +14,7 @@ import 'forum_page.dart';
 import 'ai_tools/ai_tools_page.dart';
 import 'ai_tools/eligibility_checker_page.dart';
 import 'ai_tools/grade_converter_page.dart';
+import '../services/loan_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -29,6 +30,26 @@ class MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
+  bool _hasAppliedForLoan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoanStatus();
+  }
+
+  Future<void> _checkLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (mounted) {
+        setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
 
   void openDrawer() {
     _scaffoldKey.currentState?.openDrawer();
@@ -95,7 +116,7 @@ class MainNavigationState extends State<MainNavigation> {
         );
         if (mounted) {
           _homeTabKey.currentState?.refreshData();
-          setState(() {});
+          _checkLoanStatus();
         }
       },
     );
@@ -238,13 +259,14 @@ class MainNavigationState extends State<MainNavigation> {
                 ),
               ),
             ),
-            _buildDrawerLink(
-              context,
-              imagePath: 'assets/icons/3d/apply_loan.png',
-              title: 'Apply for Loan',
-              destination: const ApplyLoanPage(),
-              iconColor: const Color(0xFF10B981),
-            ),
+            if (!_hasAppliedForLoan)
+              _buildDrawerLink(
+                context,
+                imagePath: 'assets/icons/3d/apply_loan.png',
+                title: 'Apply for Loan',
+                destination: const ApplyLoanPage(),
+                iconColor: const Color(0xFF10B981),
+              ),
             _buildDrawerLink(
               context,
               imagePath: 'assets/icons/3d/emi_calculator.png',

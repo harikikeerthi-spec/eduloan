@@ -29,6 +29,7 @@ class HomeTab extends StatefulWidget {
 class HomeTabState extends State<HomeTab> {
   final LoanService _loanService = LoanService();
   List<Loan> _activeLoans = [];
+  bool _hasAppliedForLoan = false;
   List<UniversityRecommendation> _aiRecommendations = [];
   List<UniversityRecommendation> _savedRecommendations = [];
   String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
@@ -207,6 +208,7 @@ class HomeTabState extends State<HomeTab> {
       if (userId.isNotEmpty) {
         final loans = await _loanService.getUserLoans();
         setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
           _activeLoans = loans
               .where(
                 (loan) =>
@@ -372,21 +374,23 @@ class HomeTabState extends State<HomeTab> {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Row(
                         children: [
-                          _buildActionCard(
-                            imagePath: 'assets/icons/3d/apply_loan.png',
-                            title: 'Apply for Loan',
-                            description: 'New application',
-                            color: const Color(0xFF10B981),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ApplyLoanPage(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 16),
+                          if (!_hasAppliedForLoan) ...[
+                            _buildActionCard(
+                              imagePath: 'assets/icons/3d/apply_loan.png',
+                              title: 'Apply for Loan',
+                              description: 'New application',
+                              color: const Color(0xFF10B981),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ApplyLoanPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(width: 16),
+                          ],
                           _buildActionCard(
                             imagePath: 'assets/icons/3d/emi_calculator.png',
                             title: 'EMI Cal',
@@ -1581,46 +1585,7 @@ class HomeTabState extends State<HomeTab> {
                 ),
                 width: 220,
               ),
-              const SizedBox(width: 16),
-              _buildServiceCard(
-                title: 'Visa Counselling',
-                subtitle: 'Expert guidance for visa interviews & documentation',
-                primaryIcon: Icons.assignment_turned_in,
-                bgColor: const Color(0xFFF0FDF4),
-                iconColor: const Color(0xFF22C55E),
-                topTrailing: const Icon(
-                  Icons.flight_takeoff,
-                  size: 36,
-                  color: Color(0xFFBBF7D0),
-                ),
-                width: 220,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const VisaInterviewPage(),
-                    ),
-                  );
-                },
-              ),
             ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _buildWideServiceCard(
-            title: 'Accommodation Support',
-            subtitle:
-                'Find verified student housing near your university campus',
-            primaryIcon: Icons.home,
-            bgColor: const Color(0xFFFDF2F8),
-            iconColor: const Color(0xFFEC4899),
-            trailing: const Icon(
-              Icons.maps_home_work,
-              size: 50,
-              color: Color(0xFFFBCFE8),
-            ),
           ),
         ),
         const SizedBox(height: 48),

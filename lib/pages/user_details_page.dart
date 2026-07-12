@@ -66,10 +66,14 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           _firstNameController.text = widget.currentName!;
         }
       }
-      if (widget.currentPhone != null) {
-        _phoneController.text = widget.currentPhone!;
+      if (widget.currentPhone != null && widget.currentPhone != 'Not set') {
+        String cleanedPhone = widget.currentPhone!.replaceAll(RegExp(r'[^0-9]'), '');
+        if (cleanedPhone.length > 10) {
+          cleanedPhone = cleanedPhone.substring(cleanedPhone.length - 10);
+        }
+        _phoneController.text = cleanedPhone;
       }
-      if (widget.currentDob != null) {
+      if (widget.currentDob != null && widget.currentDob != 'Not set' && widget.currentDob!.contains('-')) {
         _dobController.text = widget.currentDob!;
       }
     }

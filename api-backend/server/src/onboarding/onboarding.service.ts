@@ -179,6 +179,7 @@ export class OnboardingService {
         admitStatus: admitStatusValue,
         source: 'onboarding_bot',
         status: user.admitStatus ? 'processing' : 'pending',
+        updatedAt: new Date().toISOString(),
       };
 
       // Upsert OnboardingApplication
@@ -189,23 +190,25 @@ export class OnboardingService {
         await this.db.from('OnboardingApplication').insert(leadData);
       }
 
+      const nowStr = new Date().toISOString();
+
       // Upsert study, academic, financial preferences
       await Promise.all([
         (async () => {
           const { data: existing } = await this.db.from('UserStudyPreference').select('id').eq('userId', user.id).single();
-          const pref = { userId: user.id, goal: goalValue, studyDestination: countryValue, courseName: courseValue, targetUniversity: targetUniValue, intakeSeason: intakeValue, admitStatus: admitStatusValue };
+          const pref = { userId: user.id, goal: goalValue, studyDestination: countryValue, courseName: courseValue, targetUniversity: targetUniValue, intakeSeason: intakeValue, admitStatus: admitStatusValue, updatedAt: nowStr };
           if (existing) { await this.db.from('UserStudyPreference').update(pref).eq('userId', user.id); }
           else { await this.db.from('UserStudyPreference').insert(pref); }
         })(),
         (async () => {
           const { data: existing } = await this.db.from('UserAcademicProfile').select('id').eq('userId', user.id).single();
-          const prof = { userId: user.id, bachelorsDegree: bachelorsValue, gpa: gpaValue, workExp: workExpValue, entranceTest: entranceTestValue, entranceScore: entranceScoreValue, englishTest: englishTestValue, englishScore: englishScoreValue };
+          const prof = { userId: user.id, bachelorsDegree: bachelorsValue, gpa: gpaValue, workExp: workExpValue, entranceTest: entranceTestValue, entranceScore: entranceScoreValue, englishTest: englishTestValue, englishScore: englishScoreValue, updatedAt: nowStr };
           if (existing) { await this.db.from('UserAcademicProfile').update(prof).eq('userId', user.id); }
           else { await this.db.from('UserAcademicProfile').insert(prof); }
         })(),
         (async () => {
           const { data: existing } = await this.db.from('UserFinancialProfile').select('id').eq('userId', user.id).single();
-          const fin = { userId: user.id, budget: budgetValue, pincode: pincodeValue, loanAmount: loanAmountValue };
+          const fin = { userId: user.id, budget: budgetValue, pincode: pincodeValue, loanAmount: loanAmountValue, updatedAt: nowStr };
           if (existing) { await this.db.from('UserFinancialProfile').update(fin).eq('userId', user.id); }
           else { await this.db.from('UserFinancialProfile').insert(fin); }
         })(),

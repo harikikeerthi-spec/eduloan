@@ -155,36 +155,50 @@ class _MyLoansPageState extends State<MyLoansPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ApplyLoanPage(),
+              if (_loans.isEmpty) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ApplyLoanPage(),
+                        ),
+                      ).then((_) => _fetchLoans());
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF311B92),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                    ).then((_) => _fetchLoans());
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF311B92),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      elevation: 1,
                     ),
-                    elevation: 1,
-                  ),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text(
-                    'Apply Loan',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text(
+                      'Apply Loan',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
+                    final bool isVaultLocked = _loans.isEmpty;
+                    if (isVaultLocked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Please complete a loan application first to access the Document Vault.',
+                          ),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -193,17 +207,28 @@ class _MyLoansPageState extends State<MyLoansPage> {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF311B92),
-                    side: const BorderSide(color: Color(0xFF311B92)),
+                    foregroundColor: _loans.isEmpty
+                        ? Colors.grey.shade600
+                        : const Color(0xFF311B92),
+                    side: BorderSide(
+                      color: _loans.isEmpty
+                          ? Colors.grey.shade400
+                          : const Color(0xFF311B92),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.folder_shared_outlined, size: 18),
-                  label: const Text(
-                    'Doc Vault',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  icon: Icon(
+                    _loans.isEmpty
+                        ? Icons.lock_outline
+                        : Icons.folder_shared_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _loans.isEmpty ? 'Doc Vault (Locked)' : 'Doc Vault',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

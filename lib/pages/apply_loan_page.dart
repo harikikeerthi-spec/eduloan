@@ -49,6 +49,24 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _motherPhoneController = TextEditingController();
   final TextEditingController _motherEmailController = TextEditingController();
 
+  // Co-Applicant Details
+  final TextEditingController _coApplicantNameController = TextEditingController();
+  final TextEditingController _coApplicantRelationController = TextEditingController();
+  final TextEditingController _coApplicantPhoneController = TextEditingController();
+  final TextEditingController _coApplicantEmailController = TextEditingController();
+  final TextEditingController _coApplicantIncomeController = TextEditingController();
+
+  final List<String> _relations = [
+    'Father',
+    'Mother',
+    'Spouse',
+    'Brother',
+    'Sister',
+    'Uncle',
+    'Aunt',
+    'Other',
+  ];
+
   // Collateral & Purpose
   bool _hasCollateral = false;
   final TextEditingController _collateralController = TextEditingController();
@@ -155,6 +173,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     _motherNameController.dispose();
     _motherPhoneController.dispose();
     _motherEmailController.dispose();
+    _coApplicantNameController.dispose();
+    _coApplicantRelationController.dispose();
+    _coApplicantPhoneController.dispose();
+    _coApplicantEmailController.dispose();
+    _coApplicantIncomeController.dispose();
     _collateralController.dispose();
     _purposeController.dispose();
     super.dispose();
@@ -494,6 +517,72 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
+  void _showRelationSelection() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.45,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Select Relationship',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF311B92),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _relations.length,
+                itemBuilder: (context, index) {
+                  final rel = _relations[index];
+                  final isSelected = _coApplicantRelationController.text == rel;
+                  return ListTile(
+                    title: Text(
+                      rel,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _coApplicantRelationController.text = rel;
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _submitApplication() async {
     if (!_validateStep(0) ||
         !_validateStep(1) ||
@@ -598,6 +687,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         motherEmail: _motherEmailController.text,
         hasCollateral: _hasCollateral,
         collateralDetails: _collateralController.text,
+        hasCoApplicant: true,
+        coApplicantName: _coApplicantNameController.text,
+        coApplicantRelation: _coApplicantRelationController.text,
+        coApplicantPhone: _coApplicantPhoneController.text,
+        coApplicantEmail: _coApplicantEmailController.text.isEmpty
+            ? null
+            : _coApplicantEmailController.text,
+        coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
       );
 
       if (!mounted) return;
@@ -709,15 +806,47 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     } else if (step == 2) {
-      final selectedBanks = _bankController.text.split(',').where((s) => s.isNotEmpty).toList();
-      if (selectedBanks.isEmpty) {
-        setState(() => _fieldErrors[_bankController] = 'Select at least 1 bank');
-        _showError('Please select at least one preferred bank');
+      if (_coApplicantNameController.text.length < 3) {
+        setState(() => _fieldErrors[_coApplicantNameController] = 'Required');
+        _showError('Co-applicant\'s name is required (min 3 chars)');
         return false;
       }
-      if (selectedBanks.length > 3) {
-        setState(() => _fieldErrors[_bankController] = 'Max 3 banks allowed');
-        _showError('You can select a maximum of 3 banks');
+      if (_coApplicantRelationController.text.isEmpty) {
+        setState(() => _fieldErrors[_coApplicantRelationController] = 'Required');
+        _showError('Co-applicant relationship is required');
+        return false;
+      }
+      String caPhone = _coApplicantPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (caPhone.length != 10) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Enter 10 digits');
+        _showError('Co-applicant\'s phone number must be 10 digits');
+        return false;
+      }
+      if (!RegExp(r'^[6-9]').hasMatch(caPhone)) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number for co-applicant');
+        return false;
+      }
+      if (caPhone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Invalid pattern');
+        _showError('Co-applicant\'s phone number cannot be highly repetitive');
+        return false;
+      }
+      if (_coApplicantEmailController.text.isNotEmpty && !_coApplicantEmailController.text.contains('@')) {
+        setState(() => _fieldErrors[_coApplicantEmailController] = 'Enter valid email');
+        _showError('Please enter a valid email address for co-applicant');
+        return false;
+      }
+      final incomeText = _coApplicantIncomeController.text.replaceAll(',', '');
+      if (incomeText.isEmpty) {
+        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Required');
+        _showError('Co-applicant\'s annual income is required');
+        return false;
+      }
+      final income = double.tryParse(incomeText);
+      if (income == null || income <= 0) {
+        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Enter positive amount');
+        _showError('Enter a valid positive annual income');
         return false;
       }
     } else if (step == 3) {
@@ -815,7 +944,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
-  final List<String> _stepLabels = ['Personal', 'Parents', 'Banks', 'Info', 'Review'];
+  final List<String> _stepLabels = ['Personal', 'Parents', 'Co-Applicant', 'Info', 'Review'];
 
   Widget _buildCustomProgressHeader() {
     return Container(
@@ -1005,11 +1134,41 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 2:
         return _buildStepContainer(
           children: [
+            _buildTextInput(
+              hint: 'Co-applicant Name',
+              icon: Icons.person_outline,
+              controller: _coApplicantNameController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
             _buildReadOnlyInput(
-              hint: 'Select Preferred Banks (1-3)',
-              icon: Icons.account_balance_wallet_outlined,
-              controller: _bankController,
-              onTap: _showBankSelection,
+              hint: 'Relationship',
+              icon: Icons.people_outline,
+              controller: _coApplicantRelationController,
+              onTap: _showRelationSelection,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Phone Number',
+              icon: Icons.phone_outlined,
+              controller: _coApplicantPhoneController,
+              keyboardType: TextInputType.phone,
+              isRequired: true,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Email Address',
+              icon: Icons.email_outlined,
+              controller: _coApplicantEmailController,
+              keyboardType: TextInputType.emailAddress,
+            ),
+            const SizedBox(height: 16),
+            _buildTextInput(
+              hint: 'Annual Income (INR)',
+              icon: Icons.currency_rupee,
+              controller: _coApplicantIncomeController,
+              keyboardType: TextInputType.number,
               isRequired: true,
             ),
           ],
@@ -1188,9 +1347,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         ),
         const SizedBox(height: 16),
         _buildReviewSection(
-          'Preferred Banks',
+          'Co-Applicant Details',
           [
-            _buildReviewRow('Banks', _bankController.text),
+            _buildReviewRow('Name', _coApplicantNameController.text),
+            _buildReviewRow('Relationship', _coApplicantRelationController.text),
+            _buildReviewRow('Phone', _coApplicantPhoneController.text),
+            _buildReviewRow('Email', _coApplicantEmailController.text.isEmpty ? 'N/A' : _coApplicantEmailController.text),
+            _buildReviewRow('Annual Income', '₹${_coApplicantIncomeController.text}'),
           ],
           onEdit: () => setState(() => _currentStep = 2),
         ),

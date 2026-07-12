@@ -41,6 +41,12 @@ class LoanService {
     String? motherEmail,
     bool hasCollateral = false,
     String? collateralDetails,
+    bool hasCoApplicant = false,
+    String? coApplicantName,
+    String? coApplicantRelation,
+    String? coApplicantPhone,
+    String? coApplicantEmail,
+    double? coApplicantIncome,
     bool isRetry = false,
   }) async {
     try {
@@ -72,6 +78,12 @@ class LoanService {
           'motherEmail': motherEmail,
           'hasCollateral': hasCollateral,
           'collateralDetails': collateralDetails,
+          'hasCoApplicant': hasCoApplicant,
+          'coApplicantName': coApplicantName,
+          'coApplicantRelation': coApplicantRelation,
+          'coApplicantPhone': coApplicantPhone,
+          'coApplicantEmail': coApplicantEmail,
+          'coApplicantIncome': coApplicantIncome,
         }),
       );
 
@@ -103,6 +115,12 @@ class LoanService {
             motherEmail: motherEmail,
             hasCollateral: hasCollateral,
             collateralDetails: collateralDetails,
+            hasCoApplicant: hasCoApplicant,
+            coApplicantName: coApplicantName,
+            coApplicantRelation: coApplicantRelation,
+            coApplicantPhone: coApplicantPhone,
+            coApplicantEmail: coApplicantEmail,
+            coApplicantIncome: coApplicantIncome,
             isRetry: true,
           );
         } else {

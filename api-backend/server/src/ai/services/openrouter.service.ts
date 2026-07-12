@@ -104,7 +104,6 @@ export class OpenRouterService {
         // Build list of models to try
         const modelsToTry = [model, ...this.FALLBACK_MODELS].filter((m, i, a) => a.indexOf(m) === i); // Remove duplicates
         let lastError: Error | null = null;
-        let content = '';
 
         for (const currentModel of modelsToTry) {
             try {
@@ -125,13 +124,10 @@ export class OpenRouterService {
                     signal: this.createTimeoutSignal(),
                 });
 
+                let content = '';
                 if (response.ok) {
                     const data = await response.json();
                     content = data.choices?.[0]?.message?.content || '';
-                    if (content) {
-                        console.log(`[getJson] Successfully used model: ${currentModel}`);
-                        break; // Successfully got content, exit loop
-                    }
                 } else {
                     const errorBody = await response.text();
                     if (response.status === 404 && (errorBody.includes('No endpoints found') || errorBody.includes('does not exist'))) {
@@ -141,7 +137,6 @@ export class OpenRouterService {
                     } else if (response.status === 400 && errorBody.includes('json_validate_failed')) {
                         console.warn(`Model ${currentModel}: Native JSON mode failed. Retrying with standard mode...`);
                         content = await this.chat(jsonPrompt, currentModel);
-                        if (content) break;
                     } else if (response.status === 429 || errorBody.includes('rate_limit')) {
                         console.warn(`Model ${currentModel}: Rate limited. Trying fallback...`);
                         lastError = new Error(`Rate limit hit for ${currentModel}`);
@@ -152,55 +147,53 @@ export class OpenRouterService {
                         continue;
                     }
                 }
+
+                if (content) {
+                    try {
+                        let cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                        const firstBrace = cleaned.indexOf('{');
+                        const firstBracket = cleaned.indexOf('[');
+                        let start = -1;
+                        let end = -1;
+
+                        if (firstBrace !== -1 && (firstBracket === -1 || (firstBrace < firstBracket && firstBrace !== -1))) {
+                            start = firstBrace;
+                            end = cleaned.lastIndexOf('}');
+                        } else if (firstBracket !== -1) {
+                            start = firstBracket;
+                            end = cleaned.lastIndexOf(']');
+                        }
+
+                        if (start === -1 || end === -1 || end < start) {
+                            throw new Error('No valid JSON structure found in response');
+                        }
+
+                        let jsonString = cleaned.slice(start, end + 1);
+                        jsonString = jsonString.replace(/:\s*(\d+)-(\d+)\s*(,|})/g, ': "$1-$2"$3');
+                        const parsed = JSON.parse(jsonString) as T;
+                        console.log(`[getJson] Successfully used model and parsed JSON: ${currentModel}`);
+                        return parsed; // Successfully parsed! Return immediately
+                    } catch (parseError) {
+                        console.warn(`[getJson] Model ${currentModel} returned content but failed to parse as valid JSON:`, parseError.message);
+                        lastError = parseError as Error;
+                        // Continue to try the next model
+                    }
+                }
             } catch (error) {
                 console.warn(`[getJson] Model ${currentModel} attempt failed:`, error?.message || error);
                 lastError = error as Error;
-                
-                // On timeout/abort, skip to next model
-                if (error?.name === 'TimeoutError' || error?.name === 'AbortError' || error?.message?.includes('timed out')) {
-                    continue;
-                }
-                // For other errors, also continue to next model
                 continue;
             }
         }
 
-        if (!content && lastError) {
-            console.error('All getJson models failed. Returning empty result.');
-            // Return empty result for specific request types
-            if (prompt.includes('universities')) return { universities: [] } as any;
+        if (lastError) {
+            console.error('All getJson models failed. Returning empty result or throwing.');
+            if (prompt.includes('universities')) return { recommendations: [], universities: [] } as any;
             if (prompt.includes('courses')) return { courses: [] } as any;
-            return {} as T;
+            throw lastError;
         }
 
-        try {
-            let cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();
-            const firstBrace = cleaned.indexOf('{');
-            const firstBracket = cleaned.indexOf('[');
-            let start = -1;
-            let end = -1;
-
-            if (firstBrace !== -1 && (firstBracket === -1 || (firstBrace < firstBracket && firstBrace !== -1))) {
-                start = firstBrace;
-                end = cleaned.lastIndexOf('}');
-            } else if (firstBracket !== -1) {
-                start = firstBracket;
-                end = cleaned.lastIndexOf(']');
-            }
-
-            if (start === -1 || end === -1 || end < start) {
-                if (prompt.includes('universities')) return { universities: [] } as any;
-                throw new Error('No valid JSON structure found in response');
-            }
-
-            let jsonString = cleaned.slice(start, end + 1);
-            jsonString = jsonString.replace(/:\s*(\d+)-(\d+)\s*(,|})/g, ': "$1-$2"$3');
-            return JSON.parse(jsonString) as T;
-        } catch (e) {
-            console.error('Failed to parse JSON response:', content);
-            if (prompt.includes('universities')) return { universities: [] } as any;
-            throw new Error(`AI response was not valid JSON: ${e.message}`);
-        }
+        throw new Error('All models failed without specific errors.');
     }
 
     async searchAdvice(query: string, type: 'university' | 'course' | 'ug_university', context?: any): Promise<any[]> {
@@ -243,10 +236,14 @@ export class OpenRouterService {
         } else {
             const university = context?.university || '';
             const degree = context?.degree || 'masters';
+            const isBachelors = degree.toLowerCase().includes('bachelor') || degree.toLowerCase().includes('ug') || degree.toLowerCase().includes('undergrad');
+            const examples = isBachelors 
+                ? '"B.Tech Computer Science", "B.Sc Physics", "BBA"' 
+                : '"MS Computer Science", "MBA"';
             prompt = `Provide a comprehensive list of popular and valid courses/fields of study ${university ? `offered at ${university}` : ''} ${degree ? `for a ${degree} degree` : ''} ${query ? `matching or relevant to "${query}"` : ''}.
             Return a JSON object with a "courses" key.
             The "courses" key should be an array of up to 15-20 distinct and high-demand courses/programs.
-            For each course, provide an object with a "name" key containing the course title (e.g., "MS Computer Science", "MBA").
+            For each course, provide an object with a "name" key containing the course title (e.g., ${examples}).
             MUST respond ONLY with JSON.`;
         }
 

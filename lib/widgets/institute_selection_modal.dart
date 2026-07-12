@@ -5,6 +5,7 @@ import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
 import '../pages/apply_loan_page.dart';
 import 'mesh_background.dart';
+import '../services/loan_service.dart';
 
 class InstituteSelectionModal extends StatefulWidget {
   final String? selectedCountry;
@@ -60,6 +61,27 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     }
     
     return combined;
+  }
+
+  bool _hasAppliedForLoan = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoanStatus();
+  }
+
+  Future<void> _checkLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (mounted) {
+        setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
   }
 
   @override
@@ -463,7 +485,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
               },
             ),
           ),
-          if (_selectedCourse != null)
+          if (_selectedCourse != null && !_hasAppliedForLoan)
             Container(
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(

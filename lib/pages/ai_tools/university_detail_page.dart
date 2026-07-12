@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../services/ai_logic_service.dart';
 import '../../widgets/mesh_background.dart';
 import '../apply_loan_page.dart';
+import '../../services/loan_service.dart';
 import '../loan_eligibility_checker_page.dart';
 import '../sop_writer_page.dart';
 import 'customer_care_bot_page.dart';
@@ -33,6 +34,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   bool _hasRequestedFastTrack = false;
   final bool _isRequestingApplication = false;
   bool _hasRequestedApplication = false;
+  bool _hasAppliedForLoan = false;
 
   @override
   void initState() {
@@ -41,7 +43,21 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     _checkCallbackStatus();
     _checkFastTrackStatus();
     _checkApplicationStatus();
+    _checkLoanStatus();
     _aiService.trackUniversityView(widget.university);
+  }
+
+  Future<void> _checkLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (mounted) {
+        setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
+        });
+      }
+    } catch (e) {
+      // Ignore
+    }
   }
 
   Future<void> _checkSavedStatus() async {
@@ -1872,6 +1888,7 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
+    if (_hasAppliedForLoan) return const SizedBox.shrink();
     return Container(
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

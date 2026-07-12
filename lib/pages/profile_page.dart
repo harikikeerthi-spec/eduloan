@@ -394,38 +394,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildSettingItem(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
-                        onTap: () async {
-                          final Uri whatsappUri = Uri.parse(
-                            'https://wa.me/14155238886?text=Hi%20Vidhya%20Loan%20Mentor%2C%20I%20need%20help%20regarding%20my%20education%20loan%20options.',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Help & Support coming soon!'),
+                              backgroundColor: Color(0xFF311B92),
+                            ),
                           );
-                          try {
-                            if (await canLaunchUrl(whatsappUri)) {
-                              await launchUrl(
-                                whatsappUri,
-                                mode: LaunchMode.externalApplication,
-                              );
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Could not launch WhatsApp. Please make sure WhatsApp is installed.',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error launching WhatsApp: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
                         },
                       ),
                       const SizedBox(height: 12),
