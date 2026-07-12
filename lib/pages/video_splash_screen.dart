@@ -122,13 +122,11 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     _navigated = true;
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      // Clear session tokens on every app launch to force re-login
+      await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
       if (!mounted) return;
-      if (token != null && token.isNotEmpty) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
+      Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {
       debugPrint('VideoSplashScreen: Navigation error — $e');
       if (mounted) {
