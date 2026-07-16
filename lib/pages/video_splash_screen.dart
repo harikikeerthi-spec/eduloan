@@ -166,7 +166,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
             ),
 
           // Fallback animated logo splash
-          if (_showFallback && !_videoReady)
+          if (_showFallback)
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
