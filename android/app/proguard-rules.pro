@@ -1,18 +1,27 @@
-# Flutter video_player / ExoPlayer keep rules
-# Without these, R8 strips reflection-based ExoPlayer classes in release builds
-# causing VideoPlayerController.asset() to silently fail on real devices.
+# Flutter video_player / Media3 keep rules
+# video_player_android 2.9.x uses androidx.media3 (NOT com.google.android.exoplayer2)
+# R8 strips these reflection-based classes in release builds causing video to fail silently.
 
--keep class io.flutter.plugins.videoplayer.** { *; }
+# Media3 (new ExoPlayer - used by video_player_android 2.7+)
+-keep class androidx.media3.** { *; }
+-keep class androidx.media3.common.** { *; }
+-keep class androidx.media3.exoplayer.** { *; }
+-keep class androidx.media3.exoplayer.source.** { *; }
+-keep class androidx.media3.exoplayer.mediacodec.** { *; }
+-keep class androidx.media3.exoplayer.audio.** { *; }
+-keep class androidx.media3.exoplayer.video.** { *; }
+-keep class androidx.media3.extractor.** { *; }
+-keep class androidx.media3.datasource.** { *; }
+-keep class androidx.media3.ui.** { *; }
+-dontwarn androidx.media3.**
+
+# Old ExoPlayer (kept for backwards compatibility)
 -keep class com.google.android.exoplayer2.** { *; }
--keep class com.google.android.exoplayer2.source.** { *; }
--keep class com.google.android.exoplayer2.extractor.** { *; }
--keep class com.google.android.exoplayer2.text.** { *; }
--keep class com.google.android.exoplayer2.upstream.** { *; }
--keep class com.google.android.exoplayer2.util.** { *; }
--keep class com.google.android.exoplayer2.mediacodec.** { *; }
--keep class com.google.android.exoplayer2.audio.** { *; }
--keep class com.google.android.exoplayer2.video.** { *; }
 -dontwarn com.google.android.exoplayer2.**
+
+# video_player Flutter plugin
+-keep class io.flutter.plugins.videoplayer.** { *; }
+-dontwarn io.flutter.plugins.videoplayer.**
 
 # Keep Flutter plugin registration
 -keep class io.flutter.app.** { *; }

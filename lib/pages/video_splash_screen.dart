@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -37,17 +40,32 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   }
 
   Future<void> _initializeAndPlay() async {
-    // Safety net — always navigate after 18 seconds max
-    Future.delayed(const Duration(seconds: 18), () {
+    // Safety net — always navigate after 20 seconds max
+    Future.delayed(const Duration(seconds: 20), () {
       if (mounted && !_navigated) {
         debugPrint('VideoSplashScreen: Safety timeout reached, navigating.');
         _navigateAway();
       }
     });
 
+    File? tempVideoFile;
     try {
-      final controller =
-          VideoPlayerController.asset('assets/images/splash_video.mp4');
+      // ─── Step 1: Copy asset bytes to a temp file ──────────────────────────
+      // VideoPlayerController.asset() silently fails on Android release builds.
+      // The file-based approach is 100% reliable on all real devices.
+      final byteData = await rootBundle.load('assets/images/splash_video.mp4');
+      final tempDir = await getTemporaryDirectory();
+      tempVideoFile = File('${tempDir.path}/splash_video.mp4');
+      await tempVideoFile.writeAsBytes(
+        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
+        flush: true,
+      );
+      debugPrint('VideoSplashScreen: Video copied to temp file: ${tempVideoFile.path}');
+
+      if (!mounted || _navigated) return;
+
+      // ─── Step 2: Initialize player from temp file ─────────────────────────
+      final controller = VideoPlayerController.file(tempVideoFile);
       _controller = controller;
 
       await controller.initialize().timeout(
@@ -61,8 +79,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
       await controller.setLooping(false);
       await controller.setVolume(0.0);
-
-      // Add listener after successful initialization to avoid transient startup error events
       controller.addListener(_videoListener);
 
       FlutterNativeSplash.remove();
@@ -75,11 +91,12 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       debugPrint('VideoSplashScreen: Video playing successfully.');
     } catch (error) {
       debugPrint('VideoSplashScreen: Video failed — $error. Showing fallback.');
+      // Clean up temp file on failure
+      try { await tempVideoFile?.delete(); } catch (_) {}
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
         setState(() => _showFallback = true);
         _animController.forward();
-        // Show fallback for 2.5 seconds then navigate
         Future.delayed(const Duration(milliseconds: 2500), () {
           if (mounted && !_navigated) _navigateAway();
         });
