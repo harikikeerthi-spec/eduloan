@@ -852,43 +852,25 @@ class _UniversityShortlistingPageState
           Row(
             children: [
               Expanded(
-                child: Column(
-                  children: [
-                    _OptionCard(
-                      icon: Icons.help_outline_rounded,
-                      text: "Help me on my Master's plan",
-                      color: Colors.purple,
-                      isSmall: true,
-                      onTap: () =>
-                          _handleOptionSelected("Help me on my Master's plan"),
-                    ),
-                  ],
+                child: _OptionCard(
+                  icon: Icons.help_outline_rounded,
+                  text: "Help me on my Master's plan",
+                  color: Colors.purple,
+                  isSmall: true,
+                  onTap: () =>
+                      _handleOptionSelected("Help me on my Master's plan"),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  children: [
-                    _OptionCard(
-                      icon: Icons.attach_money_rounded,
-                      text: "Need help with an education loan",
-                      color: Colors.green,
-                      isSmall: true,
-                      onTap: () => _handleOptionSelected(
-                        "Need help with an education loan",
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _OptionCard(
-                      icon: Icons.book_outlined,
-                      text: "Evaluate my shortlisted universities",
-                      color: Colors.orange,
-                      isSmall: true,
-                      onTap: () => _handleOptionSelected(
-                        "Evaluate my shortlisted universities",
-                      ),
-                    ),
-                  ],
+                child: _OptionCard(
+                  icon: Icons.book_outlined,
+                  text: "Evaluate my shortlisted universities",
+                  color: Colors.orange,
+                  isSmall: true,
+                  onTap: () => _handleOptionSelected(
+                    "Evaluate my shortlisted universities",
+                  ),
                 ),
               ),
             ],

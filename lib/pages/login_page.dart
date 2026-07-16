@@ -92,10 +92,11 @@ class _LoginPageState extends State<LoginPage> {
             (route) => false,
           );
         } else {
-          Navigator.of(context).push(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => CompleteProfilePage(email: email),
             ),
+            (route) => false,
           );
         }
       } else {
@@ -179,10 +180,11 @@ class _LoginPageState extends State<LoginPage> {
           );
         } else {
           // Incomplete profile -> Complete Profile Page
-          Navigator.of(context).push(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => CompleteProfilePage(email: email),
             ),
+            (route) => false,
           );
         }
       } else {

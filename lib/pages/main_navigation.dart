@@ -14,6 +14,8 @@ import 'forum_page.dart';
 import 'ai_tools/ai_tools_page.dart';
 import 'ai_tools/eligibility_checker_page.dart';
 import 'ai_tools/grade_converter_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
 import '../services/loan_service.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -35,7 +37,21 @@ class MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
+    _checkOnboarding();
     _checkLoanStatus();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final firstName = prefs.getString('user_firstName') ?? '';
+    if (firstName.isEmpty) {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> _checkLoanStatus() async {

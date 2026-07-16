@@ -54,6 +54,7 @@ export default function AgentDashboardPage() {
     const [applications, setApplications] = useState<any[]>([]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [autoStartUser, setAutoStartUser] = useState<any>(null);
+    const [showTimeline, setShowTimeline] = useState(false);
 
     // Filter state
     const [searchQuery, setSearchQuery] = useState("");
@@ -174,6 +175,13 @@ export default function AgentDashboardPage() {
                                     <span className="material-symbols-outlined text-xl">contact_phone</span>
                                 </div>
                             </div>
+                            <button 
+                                onClick={() => setShowTimeline(true)}
+                                className="relative w-12 h-12 flex items-center justify-center rounded-2xl bg-[#6605c7]/5 text-[#6605c7] hover:bg-[#6605c7]/10 transition-all border border-[#6605c7]/10"
+                                title="Timeline Activity"
+                            >
+                                <span className="material-symbols-outlined">timeline</span>
+                            </button>
                             <button className="relative w-12 h-12 flex items-center justify-center rounded-2xl bg-[#6605c7]/5 text-[#6605c7] hover:bg-[#6605c7]/10 transition-all border border-[#6605c7]/10">
                                 <span className="material-symbols-outlined">notifications</span>
                                 <div className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-red-500 border-2 border-white" />
@@ -401,6 +409,121 @@ export default function AgentDashboardPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Timeline Drawer */}
+            {showTimeline && (
+                <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+                    {/* Dark Overlay with blur */}
+                    <div 
+                        className="absolute inset-0 bg-[#0f172a]/30 backdrop-blur-sm transition-opacity duration-300"
+                        onClick={() => setShowTimeline(false)}
+                    />
+                    
+                    <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+                        <div className="w-screen max-w-md bg-white shadow-[0_0_50px_rgba(102,5,199,0.15)] border-l border-[#6605c7]/10 flex flex-col h-full rounded-l-[3rem] overflow-hidden">
+                            
+                            {/* Drawer Header */}
+                            <div className="p-8 border-b border-[#6605c7]/5 bg-[#fcfaff] flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tight">Timeline Activity</h3>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#6605c7]/40 mt-1">Lead progression history</p>
+                                </div>
+                                <button 
+                                    onClick={() => setShowTimeline(false)}
+                                    className="w-10 h-10 rounded-xl bg-white border border-[#6605c7]/10 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:border-[#6605c7]/30 transition-all shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-lg">close</span>
+                                </button>
+                            </div>
+
+                            {/* Drawer Content */}
+                            <div className="flex-1 overflow-y-auto p-8 no-scrollbar space-y-6">
+                                {applications.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                                        <span className="material-symbols-outlined text-4xl mb-2">timeline</span>
+                                        <p className="text-[10px] font-black uppercase tracking-widest">No activities recorded</p>
+                                    </div>
+                                ) : (
+                                    <div className="relative pl-6 border-l border-[#6605c7]/10 space-y-8 py-2">
+                                        {/* Dynamic Timeline items from applications */}
+                                        {applications.map((app, idx) => {
+                                            let icon = "description";
+                                            let color = "text-[#6605c7] bg-[#6605c7]/5 border-[#6605c7]/10";
+                                            let description = "";
+
+                                            if (app.status === "pending") {
+                                                icon = "hourglass_empty";
+                                                color = "text-amber-500 bg-amber-50 border-amber-100";
+                                                description = `Referral registered for ${app.firstName} ${app.lastName}. Pending documents.`;
+                                            } else if (app.status === "processing") {
+                                                icon = "sync";
+                                                color = "text-blue-500 bg-blue-50 border-blue-100";
+                                                description = `Application #${app.applicationNumber} (${app.firstName}) is under credit evaluation.`;
+                                            } else if (app.status === "approved") {
+                                                icon = "check_circle";
+                                                color = "text-emerald-500 bg-emerald-50 border-emerald-100";
+                                                description = `Application #${app.applicationNumber} (${app.firstName}) approved by bank!`;
+                                            } else if (app.status === "disbursed") {
+                                                icon = "payments";
+                                                color = "text-purple-500 bg-purple-50 border-purple-100";
+                                                description = `Loan amount of ₹${Number(app.amount).toLocaleString()} disbursed for ${app.firstName}!`;
+                                            } else if (app.status === "rejected") {
+                                                icon = "cancel";
+                                                color = "text-rose-500 bg-rose-50 border-rose-100";
+                                                description = `Application #${app.applicationNumber} for ${app.firstName} was rejected or cancelled.`;
+                                            }
+
+                                            return (
+                                                <div key={idx} className="relative group">
+                                                    {/* Dot on Line */}
+                                                    <div className={`absolute -left-[37px] top-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm ${color}`}>
+                                                        <span className="material-symbols-outlined text-[10px]" style={{ fontSize: '10px' }}>{icon}</span>
+                                                    </div>
+                                                    
+                                                    {/* Card */}
+                                                    <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md hover:border-[#6605c7]/20 transition-all duration-300">
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
+                                                                {app.loanType || "Education Loan"}
+                                                            </span>
+                                                            <span className="text-[8px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+                                                                {app.createdAt ? format(new Date(app.createdAt), 'MMM d, yyyy') : 'Just now'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs font-black text-gray-900 mb-1">
+                                                            {app.status === "disbursed" ? "Loan Disbursed" : app.status === "approved" ? "Loan Sanctioned" : "Lead Status Update"}
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                                                            {description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        {/* Onboarding static event */}
+                                        <div className="relative group">
+                                            <div className="absolute -left-[37px] top-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-sm text-emerald-500 bg-emerald-50 border-emerald-100">
+                                                <span className="material-symbols-outlined text-[10px]" style={{ fontSize: '10px' }}>verified_user</span>
+                                            </div>
+                                            <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Account</span>
+                                                    <span className="text-[8px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">System</span>
+                                                </div>
+                                                <p className="text-xs font-black text-gray-900 mb-1">Agency Verified</p>
+                                                <p className="text-[11px] text-gray-500 font-medium leading-relaxed">
+                                                    Your agent profile has been verified. Welcome to VidhyaLoan Partner Network.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

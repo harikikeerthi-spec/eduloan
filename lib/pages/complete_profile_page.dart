@@ -124,213 +124,216 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return MeshBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  // --- Header (Outside Card) ---
-                  Text(
-                    'Setup Profile',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      letterSpacing: -0.5,
+    return PopScope(
+      canPop: false,
+      child: MeshBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    // --- Header (Outside Card) ---
+                    Text(
+                      'Setup Profile',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'We need a few details to get you started',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                      height: 1.5,
+                    const SizedBox(height: 8),
+                    Text(
+                      'We need a few details to get you started',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        height: 1.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // --- Main Content Card ---
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            'Personal Details',
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // First Name
-                          _buildLabel('First Name'),
-                          const SizedBox(height: 8),
-                          _buildTextField(
-                            controller: _firstNameController,
-                            hint: 'John',
-                            icon: Icons.person_outline,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Required';
-                              }
-                              if (value.length < 3) return 'Min 3 characters';
-                              if (value.length > 30) return 'Max 30 characters';
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Last Name
-                          _buildLabel('Last Name'),
-                          const SizedBox(height: 8),
-                          _buildTextField(
-                            controller: _lastNameController,
-                            hint: 'Doe',
-                            icon: Icons.person_outline,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Required';
-                              }
-                              if (value.isEmpty) return 'Min 1 character';
-                              if (value.length > 30) return 'Max 30 characters';
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Phone
-                          _buildLabel('Phone Number'),
-                          const SizedBox(height: 8),
-                          _buildTextField(
-                            controller: _phoneController,
-                            hint: '1234567890',
-                            icon: Icons.phone_outlined,
-                            inputType: TextInputType.phone,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Required';
-                              }
-                              if (value.length != 10) {
-                                return 'Must be 10 digits';
-                              }
-                              if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
-                                return 'Invalid Indian mobile number';
-                              }
-                              if (value.split('').toSet().length < 3) {
-                                return 'Highly repetitive number not allowed';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // DOB
-                          _buildLabel('Date of Birth'),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _dobController,
-                            readOnly: true,
-                            onTap: () => _selectDate(context),
-                            style: GoogleFonts.inter(fontSize: 16),
-                            decoration: _inputDecoration(
-                              'DD-MM-YYYY',
-                              Icons.calendar_today_outlined,
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Required';
-                              }
-                              // Age validation is also implicitly handled by initialDate/firstDate but exact check is good
-                              // Parse and check 18+
-                              try {
-                                final parts = value.split('-');
-                                if (parts.length != 3) return 'Invalid format';
-                                final day = int.parse(parts[0]);
-                                final month = int.parse(parts[1]);
-                                final year = int.parse(parts[2]);
-                                final dob = DateTime(year, month, day);
-                                final today = DateTime.now();
-                                var age = today.year - dob.year;
-                                if (today.month < dob.month ||
-                                    (today.month == dob.month &&
-                                        today.day < dob.day)) {
-                                  age--;
-                                }
-                                if (age < 18) return 'Must be 18+ years old';
-                              } catch (e) {
-                                return 'Invalid date';
-                              }
-                              return null;
-                            },
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          SizedBox(
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _submitProfile,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF281C9D),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(
-                                      'Complete Setup',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                            ),
+                    const SizedBox(height: 32),
+  
+                    // --- Main Content Card ---
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(32),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              'Personal Details',
+                              style: GoogleFonts.inter(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+  
+                            // First Name
+                            _buildLabel('First Name'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _firstNameController,
+                              hint: 'John',
+                              icon: Icons.person_outline,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                if (value.length < 3) return 'Min 3 characters';
+                                if (value.length > 30) return 'Max 30 characters';
+                                return null;
+                              },
+                            ),
+  
+                            const SizedBox(height: 16),
+  
+                            // Last Name
+                            _buildLabel('Last Name'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _lastNameController,
+                              hint: 'Doe',
+                              icon: Icons.person_outline,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                if (value.isEmpty) return 'Min 1 character';
+                                if (value.length > 30) return 'Max 30 characters';
+                                return null;
+                              },
+                            ),
+  
+                            const SizedBox(height: 16),
+  
+                            // Phone
+                            _buildLabel('Phone Number'),
+                            const SizedBox(height: 8),
+                            _buildTextField(
+                              controller: _phoneController,
+                              hint: '1234567890',
+                              icon: Icons.phone_outlined,
+                              inputType: TextInputType.phone,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                if (value.length != 10) {
+                                  return 'Must be 10 digits';
+                                }
+                                if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                  return 'Invalid Indian mobile number';
+                                }
+                                if (value.split('').toSet().length < 3) {
+                                  return 'Highly repetitive number not allowed';
+                                }
+                                return null;
+                              },
+                            ),
+  
+                            const SizedBox(height: 16),
+  
+                            // DOB
+                            _buildLabel('Date of Birth'),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _dobController,
+                              readOnly: true,
+                              onTap: () => _selectDate(context),
+                              style: GoogleFonts.inter(fontSize: 16),
+                              decoration: _inputDecoration(
+                                'DD-MM-YYYY',
+                                Icons.calendar_today_outlined,
+                              ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Required';
+                                }
+                                // Age validation is also implicitly handled by initialDate/firstDate but exact check is good
+                                // Parse and check 18+
+                                try {
+                                  final parts = value.split('-');
+                                  if (parts.length != 3) return 'Invalid format';
+                                  final day = int.parse(parts[0]);
+                                  final month = int.parse(parts[1]);
+                                  final year = int.parse(parts[2]);
+                                  final dob = DateTime(year, month, day);
+                                  final today = DateTime.now();
+                                  var age = today.year - dob.year;
+                                  if (today.month < dob.month ||
+                                      (today.month == dob.month &&
+                                          today.day < dob.day)) {
+                                    age--;
+                                  }
+                                  if (age < 18) return 'Must be 18+ years old';
+                                } catch (e) {
+                                  return 'Invalid date';
+                                }
+                                return null;
+                              },
+                            ),
+  
+                            const SizedBox(height: 32),
+  
+                            SizedBox(
+                              height: 56,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitProfile,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF281C9D),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(
+                                        'Complete Setup',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
