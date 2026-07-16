@@ -37,8 +37,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   }
 
   Future<void> _initializeAndPlay() async {
-    // Safety net — always navigate after 12 seconds max
-    Future.delayed(const Duration(seconds: 12), () {
+    // Safety net — always navigate after 18 seconds max
+    Future.delayed(const Duration(seconds: 18), () {
       if (mounted && !_navigated) {
         debugPrint('VideoSplashScreen: Safety timeout reached, navigating.');
         _navigateAway();
@@ -51,9 +51,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       _controller = controller;
 
       await controller.initialize().timeout(
-        const Duration(seconds: 8),
+        const Duration(seconds: 15),
         onTimeout: () {
-          throw Exception('Video initialization timed out after 8s');
+          throw Exception('Video initialization timed out after 15s');
         },
       );
 
@@ -97,9 +97,12 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       if (mounted && !_navigated) {
         ctrl.removeListener(_videoListener);
         FlutterNativeSplash.remove();
-        setState(() => _showFallback = true);
+        setState(() {
+          _showFallback = true;
+          _videoReady = false; // hide video layer so fallback renders cleanly
+        });
         _animController.forward();
-        Future.delayed(const Duration(milliseconds: 1500), () {
+        Future.delayed(const Duration(milliseconds: 2500), () {
           if (mounted && !_navigated) _navigateAway();
         });
       }
