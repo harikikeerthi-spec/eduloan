@@ -303,7 +303,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     'South Korea',
     'UAE',
     'Malaysia',
-    'India',
     'Denmark',
     'Finland',
     'Norway',
