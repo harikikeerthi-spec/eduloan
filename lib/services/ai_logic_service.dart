@@ -1580,4 +1580,25 @@ class AiLogicService {
     }
     return [];
   }
+
+  Future<Map<String, dynamic>> verifyUniversity(String name, String country) async {
+    try {
+      final data = await _postRequest('verify-university', {
+        'name': name,
+        'country': country,
+      });
+      return {
+        'success': data['success'] ?? false,
+        'isReal': data['isReal'] ?? false,
+        'reason': data['reason'] ?? '',
+      };
+    } catch (e) {
+      debugPrint('Error verifying university: $e');
+      return {
+        'success': false,
+        'isReal': false,
+        'reason': e.toString(),
+      };
+    }
+  }
 }

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
+import '../services/ai_logic_service.dart';
 import 'main_navigation.dart';
 
 class ApplyLoanPage extends StatefulWidget {
@@ -74,6 +75,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _purposeController = TextEditingController();
   bool _isManualCountryEntry = false;
   String _selectedCountryFlag = '';
+
+  // University verification caching
+  String? _verifiedUniversityName;
+  String? _verifiedCountry;
+  bool _isVerifiedReal = false;
 
   // Static country → flag emoji map (no API needed, works fully offline)
   static const Map<String, String> _countryFlags = {
@@ -590,6 +596,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       return;
     }
 
+    final isReal = await _verifyUniversityName();
+    if (!isReal) {
+      _showError('Target University is not recognized in this country');
+      return;
+    }
+
     if (_instituteController.text.isEmpty ||
         _courseController.text.isEmpty ||
         _amountController.text.isEmpty) {
@@ -870,6 +882,31 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     }
+    return true;
+  }
+
+  Future<bool> _verifyUniversityName() async {
+    final name = _instituteController.text.trim();
+    final country = _countryController.text.trim();
+    if (name.isEmpty || country.isEmpty) return false;
+
+    if (_verifiedUniversityName == name && _verifiedCountry == country) {
+      return _isVerifiedReal;
+    }
+
+    try {
+      final aiService = AiLogicService();
+      final result = await aiService.verifyUniversity(name, country);
+      if (result['success'] == true) {
+        _verifiedUniversityName = name;
+        _verifiedCountry = country;
+        _isVerifiedReal = result['isReal'] ?? false;
+        return _isVerifiedReal;
+      }
+    } catch (e) {
+      debugPrint('Error verifying university name: $e');
+    }
+    // Fail permissive if server/network fails so user is not blocked
     return true;
   }
 
@@ -1291,8 +1328,49 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_validateStep(_currentStep)) {
+                  if (_currentStep == 3) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => const Center(
+                        child: Card(
+                          margin: EdgeInsets.all(24),
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'Verifying target university with AI...',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+
+                    final isReal = await _verifyUniversityName();
+
+                    if (context.mounted) {
+                      Navigator.pop(context); // Pop the progress dialog
+                    }
+
+                    if (!isReal) {
+                      setState(() => _fieldErrors[_instituteController] = 'Not recognized');
+                      _showError('Target University is not recognized in this country');
+                      return;
+                    }
+                  }
+
                   if (_currentStep < 4) {
                     setState(() => _currentStep += 1);
                   } else {

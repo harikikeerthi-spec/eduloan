@@ -928,5 +928,40 @@ Response MUST be strictly valid JSON in the following format:
       };
     }
   }
+
+  @Post('verify-university')
+  async verifyUniversity(
+    @Body() body: { name: string; country: string }
+  ) {
+    if (!body.name || !body.country) {
+      throw new BadRequestException('University name and country are required');
+    }
+
+    const cleanName = body.name.trim();
+    const cleanCountry = body.country.trim();
+
+    const prompt = `You are an expert in international education. Verify if the university "${cleanName}" exists and is a real, accredited, and recognized institution in the country "${cleanCountry}".
+Return a JSON object with exactly this structure:
+{
+  "isReal": true/false,
+  "reason": "Brief explanation of whether it exists in that country"
+}
+Return ONLY valid JSON.`;
+
+    try {
+      const result = await this.openRouterService.getJson<{ isReal: boolean; reason: string }>(prompt);
+      return {
+        success: true,
+        isReal: result.isReal,
+        reason: result.reason,
+      };
+    } catch (e) {
+      console.error('[AiController.verifyUniversity] Error:', e);
+      return {
+        success: false,
+        message: e.message || 'Failed to verify university',
+      };
+    }
+  }
 }
 
