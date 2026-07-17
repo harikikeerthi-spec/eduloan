@@ -91,7 +91,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       debugPrint('VideoSplashScreen: Video playing successfully.');
     } catch (error) {
       debugPrint('VideoSplashScreen: Video failed — $error. Showing fallback.');
-      // Clean up temp file on failure
       try { await tempVideoFile?.delete(); } catch (_) {}
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
