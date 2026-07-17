@@ -144,6 +144,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       // Clear session tokens on every app launch to force re-login
       await prefs.remove('auth_token');
       await prefs.remove('refresh_token');
+      await prefs.remove('latest_ai_recommendations');
+      await prefs.remove('user_profileImage');
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/login');
     } catch (e) {

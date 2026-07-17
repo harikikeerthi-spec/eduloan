@@ -63,6 +63,8 @@ class AuthService {
 
         // Save tokens and email
         final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('latest_ai_recommendations');
+        await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         if (token != null) {
           await prefs.setString('auth_token', token);
@@ -135,6 +137,8 @@ class AuthService {
 
         // Save tokens and email
         final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('latest_ai_recommendations');
+        await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         if (token != null) await prefs.setString('auth_token', token);
         if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
