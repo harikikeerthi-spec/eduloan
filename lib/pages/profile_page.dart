@@ -26,6 +26,18 @@ class _ProfilePageState extends State<ProfilePage> {
   String _userId = 'Loading...';
   String? _profileImage;
 
+  /// Only accept images explicitly set by the user.
+  /// Reject http/https URLs (Google/Firebase profile photos) so that
+  /// no photo shows until the user manually picks one.
+  String? _sanitizeProfileImage(dynamic raw) {
+    if (raw == null) return null;
+    final v = raw.toString().trim();
+    if (v.isEmpty) return null;
+    // Block any remote URL — these come from Google/Firebase, not from user
+    if (v.startsWith('http://') || v.startsWith('https://')) return null;
+    return v;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -35,10 +47,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadCachedProfileImage() async {
     final prefs = await SharedPreferences.getInstance();
-    final cachedImage = prefs.getString('user_profileImage');
-    if (cachedImage != null && mounted) {
+    final cached = _sanitizeProfileImage(prefs.getString('user_profileImage'));
+    if (cached != null && mounted) {
       setState(() {
-        _profileImage = cachedImage;
+        _profileImage = cached;
       });
     }
   }
@@ -98,7 +110,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   // If it's already DD-MM-YYYY, keep it as is
                 }
               }
-              _profileImage = user['profileImage'] ?? prefs.getString('user_profileImage');
+              _profileImage = _sanitizeProfileImage(
+                user['profileImage'] ?? prefs.getString('user_profileImage'),
+              );
               _isLoading = false;
             });
           } else {

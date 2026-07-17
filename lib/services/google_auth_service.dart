@@ -14,7 +14,11 @@ class GoogleAuthService {
   /// Handles Google Sign-In and returns the Firebase User
   Future<User?> signInWithGoogle() async {
     try {
-      // 1. Trigger the Google Authentication flow (v6 API)
+      // Force account picker to appear every time by clearing any cached session
+      await _googleSignIn.signOut().catchError((_) {});
+      await _googleSignIn.disconnect().catchError((_) {});
+
+      // 1. Trigger the Google Authentication flow — always shows account picker
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       // If user cancels the sign-in dialog, googleUser is null
