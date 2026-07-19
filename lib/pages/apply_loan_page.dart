@@ -1579,13 +1579,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 onChanged(val);
               }
             },
-            style: const TextStyle(color: Colors.black, fontSize: 16),
+            style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               hintText: isRequired ? '$hint *' : hint,
               hintStyle: TextStyle(
                 color: isRequired
                     ? Colors.black.withValues(alpha: 0.4)
                     : Colors.black.withValues(alpha: 0.4),
+                fontWeight: FontWeight.bold,
               ),
               border: InputBorder.none,
               prefix: keyboardType == TextInputType.phone 
@@ -1681,6 +1682,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                                 ? Colors.black.withValues(alpha: 0.4)
                                 : Colors.black,
                             fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         if (isRequired && controller.text.isEmpty)
@@ -1770,7 +1772,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                                 ? Colors.black
                                 : Colors.black.withValues(alpha: 0.4),
                             fontSize: 16,
-                            fontWeight: hasValue ? FontWeight.w500 : FontWeight.normal,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         if (!hasValue)
@@ -1861,7 +1863,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               Expanded(
                 child: TextField(
                   controller: _countryController,
-                  style: const TextStyle(color: Colors.black, fontSize: 16),
+                  style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
                   onChanged: (_) {
                     if (hasError) {
                       setState(() => _fieldErrors[_countryController] = null);
@@ -1870,7 +1872,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   decoration: InputDecoration(
                     hintText: 'Enter Target Country *',
                     hintStyle: TextStyle(
-                        color: Colors.black.withValues(alpha: 0.4)),
+                        color: Colors.black.withValues(alpha: 0.4),
+                        fontWeight: FontWeight.bold),
                     border: InputBorder.none,
                   ),
                 ),
