@@ -157,39 +157,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
           const SizedBox(height: 16),
           Row(
             children: [
-              if (_loans.isEmpty) ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ApplyLoanPage(
-                            onLoanSubmitted: () {
-                              MainNavigation.of(context)?.checkLoanStatus();
-                            },
-                          ),
-                        ),
-                      ).then((_) => _fetchLoans());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF311B92),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 1,
-                    ),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text(
-                      'Apply Loan',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
@@ -1064,48 +1031,11 @@ class _MyLoansPageState extends State<MyLoansPage> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Start a new application to track your progress',
+              'You have not submitted any loan applications yet.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.black.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ApplyLoanPage(
-                        onLoanSubmitted: () {
-                          MainNavigation.of(context)?.checkLoanStatus();
-                        },
-                      ),
-                    ),
-                  ).then((_) => _fetchLoans());
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF311B92),
-                  foregroundColor: Colors.white,
-                  elevation: 4,
-                  shadowColor: const Color(0xFF311B92).withValues(alpha: 0.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                icon: const Icon(Icons.add_circle_outline),
-                label: const Text(
-                  'Apply for Loan',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
               ),
             ),
           ],
