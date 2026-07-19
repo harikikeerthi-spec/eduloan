@@ -246,17 +246,30 @@ class HomeTabState extends State<HomeTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            onPressed: () {
-                              MainNavigation.of(context)?.openDrawer();
-                            },
-                            icon: const Icon(
-                              Icons.menu,
-                              color: Colors.black,
-                              size: 28,
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Image.asset(
+                                  'assets/images/app_icon.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
                           ),
                           Row(
                             children: [
@@ -350,12 +363,7 @@ class HomeTabState extends State<HomeTab> {
                   ),
                 ),
 
-                const SizedBox(height: 20),
-                if (_aiRecommendations.isNotEmpty ||
-                    _savedRecommendations.isNotEmpty) ...[
-                  _buildAiRecommendations(),
-                  const SizedBox(height: 20),
-                ],
+
 
                 // Active Loans Section
                 if (_activeLoans.isNotEmpty)
