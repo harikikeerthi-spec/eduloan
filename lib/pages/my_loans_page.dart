@@ -9,6 +9,8 @@ import '../services/loan_service.dart';
 import 'apply_loan_page.dart';
 import 'digilocker_auth_page.dart';
 import '../services/digilocker_service.dart';
+import 'main_navigation.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MyLoansPage extends StatefulWidget {
   const MyLoansPage({super.key});
@@ -162,7 +164,11 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ApplyLoanPage(),
+                          builder: (context) => ApplyLoanPage(
+                            onLoanSubmitted: () {
+                              MainNavigation.of(context)?.checkLoanStatus();
+                            },
+                          ),
                         ),
                       ).then((_) => _fetchLoans());
                     },
@@ -387,6 +393,84 @@ class _MyLoansPageState extends State<MyLoansPage> {
             const Divider(height: 1),
             const SizedBox(height: 12),
             _buildLoanDetails(loan),
+            if (loan.counselorName != null) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3E5F5), // Soft purple background
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFAB47BC).withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF311B92),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Assigned Counselor',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF311B92),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            loan.counselorName!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (loan.counselorPhone != null)
+                      IconButton(
+                        onPressed: () async {
+                          final Uri url = Uri.parse('tel:${loan.counselorPhone}');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url);
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: Color(0xFF10B981),
+                          size: 20,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.all(8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -996,7 +1080,11 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const ApplyLoanPage(),
+                      builder: (context) => ApplyLoanPage(
+                        onLoanSubmitted: () {
+                          MainNavigation.of(context)?.checkLoanStatus();
+                        },
+                      ),
                     ),
                   ).then((_) => _fetchLoans());
                 },

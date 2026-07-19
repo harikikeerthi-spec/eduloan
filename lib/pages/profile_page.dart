@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/avatar_selection_dialog.dart';
 import 'refer_and_earn_page.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

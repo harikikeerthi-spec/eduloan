@@ -15,8 +15,8 @@ class GoogleAuthService {
   Future<User?> signInWithGoogle() async {
     try {
       // Force account picker to appear every time by clearing any cached session
-      await _googleSignIn.signOut().catchError((_) {});
-      await _googleSignIn.disconnect().catchError((_) {});
+      await _googleSignIn.signOut().catchError((_) => null as GoogleSignInAccount?);
+      await _googleSignIn.disconnect().catchError((_) => null as GoogleSignInAccount?);
 
       // 1. Trigger the Google Authentication flow — always shows account picker
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();

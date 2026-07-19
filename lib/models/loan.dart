@@ -21,6 +21,9 @@ class Loan {
   final int progress;
   final DateTime date;
   final DateTime updatedAt;
+  final String? counselorName;
+  final String? counselorPhone;
+  final String? counselorEmail;
   final List<ApplicationDocument> documents;
 
   Loan({
@@ -44,6 +47,9 @@ class Loan {
     required this.progress,
     required this.date,
     required this.updatedAt,
+    this.counselorName,
+    this.counselorPhone,
+    this.counselorEmail,
     this.documents = const [],
   });
 
@@ -84,6 +90,9 @@ class Loan {
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'])
           : DateTime.now(),
+      counselorName: json['counselorName']?.toString(),
+      counselorPhone: json['counselorPhone']?.toString(),
+      counselorEmail: json['counselorEmail']?.toString(),
       documents: docsList,
     );
   }
@@ -110,6 +119,9 @@ class Loan {
       'progress': progress,
       'date': date.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'counselorName': counselorName,
+      'counselorPhone': counselorPhone,
+      'counselorEmail': counselorEmail,
       'documents': documents.map((doc) => doc.toJson()).toList(),
     };
   }

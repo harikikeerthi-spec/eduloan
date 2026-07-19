@@ -1280,6 +1280,18 @@ class AiLogicService {
     return lookupPincode(pincode);
   }
 
+  Future<Map<String, dynamic>?> lookupPincodeDetails(String pincode) async {
+    try {
+      final data = await _postRequest('pincode-lookup', {'pincode': pincode});
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+    } catch (e) {
+      debugPrint('Error looking up pincode details: $e');
+    }
+    return null;
+  }
+
   Future<Map<String, dynamic>> startMockInterview(
     String university,
     String program,

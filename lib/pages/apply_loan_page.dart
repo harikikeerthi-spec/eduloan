@@ -13,6 +13,7 @@ class ApplyLoanPage extends StatefulWidget {
   final String? initialCourse;
   final String? initialCountry;
   final String? initialBank;
+  final VoidCallback? onLoanSubmitted;
 
   const ApplyLoanPage({
     super.key,
@@ -20,6 +21,7 @@ class ApplyLoanPage extends StatefulWidget {
     this.initialCourse,
     this.initialCountry,
     this.initialBank,
+    this.onLoanSubmitted,
   });
 
   @override
@@ -49,6 +51,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _motherNameController = TextEditingController();
   final TextEditingController _motherPhoneController = TextEditingController();
   final TextEditingController _motherEmailController = TextEditingController();
+  
+  // Residential Details
+  final TextEditingController _pincodeController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _resCountryController = TextEditingController(text: 'India');
+  bool _isPincodeResolving = false;
 
   // Co-Applicant Details
   final TextEditingController _coApplicantNameController = TextEditingController();
@@ -412,115 +420,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
-  final List<String> _lendingPartners = [
-    'HDFC Credila',
-    'Avanse Financial Services',
-    'Auxilo',
-    'IDFC First Bank',
-    'Poonawalla Fincorp',
-  ];
-
-  void _showBankSelection() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Select Preferred Banks (Max 3)',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF311B92),
-                ),
-              ),
-            ),
-            Expanded(
-              child: StatefulBuilder(
-                builder: (context, setModalState) {
-                  final selectedBanks = _bankController.text
-                      .split(',')
-                      .where((s) => s.isNotEmpty)
-                      .toList();
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: _lendingPartners.length,
-                    itemBuilder: (context, index) {
-                      final bank = _lendingPartners[index];
-                      final isSelected = selectedBanks.contains(bank);
-
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: _getBankLogo(bank),
-                        title: Text(
-                          bank,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
-                            : const Icon(Icons.circle_outlined, color: Colors.grey),
-                        onTap: () {
-                          setModalState(() {
-                            if (isSelected) {
-                              selectedBanks.remove(bank);
-                            } else {
-                              if (selectedBanks.length < 3) {
-                                selectedBanks.add(bank);
-                              } else {
-                                // Optional: show a mini-snack or toast if max reached
-                              }
-                            }
-                            _bankController.text = selectedBanks.join(',');
-                          });
-                          setState(() {}); // Update the main UI field
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF311B92),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Done'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _showRelationSelection() {
     showModalBottomSheet(
@@ -696,6 +595,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         motherName: _motherNameController.text,
         motherPhone: _motherPhoneController.text,
         motherEmail: _motherEmailController.text,
+        city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
+        pincode: _pincodeController.text.trim().isEmpty ? null : _pincodeController.text.trim(),
+        country: _resCountryController.text.trim().isEmpty ? null : _resCountryController.text.trim(),
         hasCollateral: _hasCollateral,
         collateralDetails: _collateralController.text,
         hasCoApplicant: true,
@@ -710,12 +612,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
-      Navigator.pop(context); // Go back to main navigation
 
-      // Switch to My Loans tab (index 1)
       final mainNav = MainNavigation.of(context);
+      widget.onLoanSubmitted?.call();
+      
       if (mainNav != null) {
-        mainNav.switchToTab(1);
+        mainNav.switchToTab(1); // Switch to My Loans tab (which becomes index 1 after Apply is hidden)
+      } else {
+        Navigator.pop(context); // Go back to main navigation if pushed as a separate screen
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -733,6 +637,34 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           backgroundColor: Colors.redAccent,
         ),
       );
+    }
+  }
+
+  Future<void> _autoDetectCityCountry(String pincode) async {
+    if (pincode.isEmpty || _isPincodeResolving) return;
+
+    setState(() {
+      _isPincodeResolving = true;
+    });
+
+    try {
+      final res = await AiLogicService().lookupPincodeDetails(pincode);
+      if (res != null && res['success'] == true) {
+        setState(() {
+          if (res['city'] != null && res['city'].toString().isNotEmpty) {
+            _cityController.text = res['city'].toString();
+          }
+          if (res['country'] != null && res['country'].toString().isNotEmpty) {
+            _resCountryController.text = res['country'].toString();
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error auto-detecting city and country: $e');
+    } finally {
+      setState(() {
+        _isPincodeResolving = false;
+      });
     }
   }
 
@@ -814,6 +746,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       if (mPhone.split('').toSet().length < 3) {
         setState(() => _fieldErrors[_motherPhoneController] = 'Invalid pattern');
         _showError('Mother\'s phone number cannot be highly repetitive');
+        return false;
+      }
+      if (_pincodeController.text.trim().length < 4) {
+        setState(() => _fieldErrors[_pincodeController] = 'Required');
+        _showError('Please enter a valid pincode/zipcode');
+        return false;
+      }
+      if (_cityController.text.trim().length < 2) {
+        setState(() => _fieldErrors[_cityController] = 'Required');
+        _showError('Please enter a city');
+        return false;
+      }
+      if (_resCountryController.text.trim().length < 2) {
+        setState(() => _fieldErrors[_resCountryController] = 'Required');
+        _showError('Please enter a country');
         return false;
       }
     } else if (step == 2) {
@@ -1131,13 +1078,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Email',
-              icon: Icons.email_outlined,
-              controller: _fatherEmailController,
-              keyboardType: TextInputType.emailAddress,
-            ),
             const SizedBox(height: 20),
             const Text(
               "Mother's Details",
@@ -1158,12 +1098,50 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
+            const SizedBox(height: 20),
+            const Text(
+              "Residential Details",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            _buildTextInput(
+              hint: 'Pincode / ZIP Code',
+              icon: Icons.pin_drop_outlined,
+              controller: _pincodeController,
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              onChanged: (val) {
+                if (val.trim().length >= 6) {
+                  _autoDetectCityCountry(val.trim());
+                }
+              },
+              suffixIcon: _isPincodeResolving
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF311B92),
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
             const SizedBox(height: 12),
             _buildTextInput(
-              hint: 'Email',
-              icon: Icons.email_outlined,
-              controller: _motherEmailController,
-              keyboardType: TextInputType.emailAddress,
+              hint: 'City',
+              icon: Icons.location_city_outlined,
+              controller: _cityController,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Country',
+              icon: Icons.public_outlined,
+              controller: _resCountryController,
+              isRequired: true,
             ),
           ],
         );
@@ -1419,6 +1397,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow("Father's Phone", _fatherPhoneController.text),
             _buildReviewRow("Mother's Name", _motherNameController.text),
             _buildReviewRow("Mother's Phone", _motherPhoneController.text),
+            _buildReviewRow("Pincode / ZIP", _pincodeController.text),
+            _buildReviewRow("City", _cityController.text),
+            _buildReviewRow("Country", _resCountryController.text),
           ],
           onEdit: () => setState(() => _currentStep = 1),
         ),
@@ -1561,6 +1542,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     bool isRequired = false,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
+    ValueChanged<String>? onChanged,
+    Widget? suffixIcon,
   }) {
     final errorText = _fieldErrors[controller];
     final hasError = errorText != null;
@@ -1588,9 +1571,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             readOnly: readOnly,
             maxLines: maxLines,
             inputFormatters: inputFormatters,
-            onChanged: (_) {
+            onChanged: (val) {
               if (hasError) {
                 setState(() => _fieldErrors[controller] = null);
+              }
+              if (onChanged != null) {
+                onChanged(val);
               }
             },
             style: const TextStyle(color: Colors.black, fontSize: 16),
@@ -1626,7 +1612,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       ),
                     )
                   : null,
-              suffixIcon: Icon(
+              suffixIcon: suffixIcon ?? Icon(
                 icon,
                 color: hasError 
                     ? Colors.red 
@@ -1938,121 +1924,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           ),
       ],
     );
-  }
-
-  Widget _getBankLogo(String bankName) {
-    String? localAssetPath;
-    String? networkLogoUrl;
-
-    final name = bankName.toLowerCase();
-
-    if (name.contains('hdfc') || name.contains('credila')) {
-      localAssetPath = 'assets/images/credila_logo_final.png';
-    } else if (name.contains('avanse')) {
-      localAssetPath = 'assets/images/avanse_logo_final.png';
-    } else if (name.contains('auxilo')) {
-      localAssetPath = 'assets/images/auxilo_logo_final.png';
-    } else if (name.contains('idfc')) {
-      localAssetPath = 'assets/images/idfc_logo.png';
-    } else if (name.contains('poonawalla')) {
-      localAssetPath = 'assets/images/poonawalla_logo_final.jpg';
-    } else if (name.contains('sbi') || name.contains('state bank')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
-    } else if (name.contains('icici')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
-    } else if (name.contains('axis')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
-    } else if (name.contains('incred')) {
-      networkLogoUrl = 'https://incred.com/images/logo.png';
-    } else if (name.contains('bob') || name.contains('baroda')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
-    } else if (name.contains('pnb') || name.contains('punjab')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/500px-Punjab_National_Bank.svg.png';
-    }
-
-    Widget logoImage;
-    if (localAssetPath != null) {
-      logoImage = Image.asset(
-        localAssetPath,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          final domain = _getDomainForBank(bankName);
-          return Image.network(
-            'https://www.google.com/s2/favicons?domain=$domain&sz=128',
-            fit: BoxFit.contain,
-            errorBuilder: (context, error2, stackTrace2) => const Icon(
-              Icons.account_balance,
-              size: 24,
-              color: Colors.grey,
-            ),
-          );
-        },
-      );
-    } else if (networkLogoUrl != null) {
-      logoImage = Image.network(
-        networkLogoUrl,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) {
-          final domain = _getDomainForBank(bankName);
-          return Image.network(
-            'https://www.google.com/s2/favicons?domain=$domain&sz=128',
-            fit: BoxFit.contain,
-            errorBuilder: (context, error2, stackTrace2) => const Icon(
-              Icons.account_balance,
-              size: 24,
-              color: Colors.grey,
-            ),
-          );
-        },
-      );
-    } else {
-      final domain = _getDomainForBank(bankName);
-      logoImage = Image.network(
-        'https://www.google.com/s2/favicons?domain=$domain&sz=128',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const Icon(
-          Icons.account_balance,
-          size: 24,
-          color: Colors.grey,
-        ),
-      );
-    }
-
-    return Container(
-      width: 40,
-      height: 40,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha((0.05 * 255).toInt()),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: logoImage,
-      ),
-    );
-  }
-
-  String _getDomainForBank(String bankName) {
-    final name = bankName.toLowerCase();
-    if (name.contains('hdfc') || name.contains('credila')) return 'credila.com';
-    if (name.contains('sbi') || name.contains('state bank')) return 'sbi.co.in';
-    if (name.contains('icici')) return 'icicibank.com';
-    if (name.contains('axis')) return 'axisbank.com';
-    if (name.contains('avanse')) return 'avanse.com';
-    if (name.contains('incred')) return 'incred.com';
-    if (name.contains('auxilo')) return 'auxilo.com';
-    if (name.contains('idfc')) return 'idfcfirstbank.com';
-    if (name.contains('poonawalla')) return 'poonawallafincorp.com';
-    if (name.contains('bob') || name.contains('baroda')) return 'bankofbaroda.in';
-    if (name.contains('pnb') || name.contains('punjab')) return 'pnbindia.in';
-    return 'google.com';
   }
 }
 

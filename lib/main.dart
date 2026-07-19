@@ -69,15 +69,39 @@ class MyApp extends StatelessWidget {
           displayMedium: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: 28,
           ),
           titleLarge: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: 18,
           ),
-          bodyLarge: TextStyle(color: Colors.black),
-          bodyMedium: TextStyle(color: Color(0xFF374151)),
+          titleMedium: TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+          ),
+          bodyLarge: TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+          ),
+          bodyMedium: TextStyle(
+            color: Color(0xFF374151),
+            fontSize: 12,
+          ),
+          bodySmall: TextStyle(
+            color: Colors.grey,
+            fontSize: 10,
+          ),
         ),
       ),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(0.82),
+          ),
+          child: child!,
+        );
+      },
       home: const VideoSplashScreen(),
       routes: {
         '/login': (context) => const LoginPage(),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animated_notch_bottom_bar/animated_notch_bottom_bar/animated_notch_bottom_bar.dart';
 import 'home_tab.dart';
 import 'my_loans_page.dart';
 import 'profile_page.dart';
@@ -34,11 +35,21 @@ class MainNavigationState extends State<MainNavigation> {
   final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
   bool _hasAppliedForLoan = false;
 
+  /// Controller for AnimatedNotchBottomBar (required since v1.0.0)
+  late final NotchBottomBarController _notchController;
+
   @override
   void initState() {
     super.initState();
+    _notchController = NotchBottomBarController(index: _currentIndex);
     _checkOnboarding();
-    _checkLoanStatus();
+    checkLoanStatus();
+  }
+
+  @override
+  void dispose() {
+    _notchController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkOnboarding() async {
@@ -54,12 +65,18 @@ class MainNavigationState extends State<MainNavigation> {
     }
   }
 
-  Future<void> _checkLoanStatus() async {
+  Future<void> checkLoanStatus() async {
     try {
       final loans = await LoanService().getUserLoans();
       if (mounted) {
+        final hadApplied = _hasAppliedForLoan;
+        final hasApplied = loans.isNotEmpty;
         setState(() {
-          _hasAppliedForLoan = loans.isNotEmpty;
+          _hasAppliedForLoan = hasApplied;
+          // If the Apply tab (index 1) just got hidden, go back to Dashboard
+          if (!hadApplied && hasApplied && _currentIndex == 1) {
+            _currentIndex = 0;
+          }
         });
       }
     } catch (e) {
@@ -75,18 +92,40 @@ class MainNavigationState extends State<MainNavigation> {
     setState(() {
       _currentIndex = index;
     });
+    _notchController.jumpTo(index);
   }
 
   Widget _buildBody() {
-    switch (_currentIndex) {
-      case 0:
-        return HomeTab(key: _homeTabKey);
-      case 1:
-        return const MyLoansPage();
-      case 2:
-        return const ProfilePage();
-      default:
-        return HomeTab(key: _homeTabKey);
+    if (_hasAppliedForLoan) {
+      // 3 tabs: Dashboard(0), Loans(1), Profile(2)
+      switch (_currentIndex) {
+        case 0:
+          return HomeTab(key: _homeTabKey);
+        case 1:
+          return const MyLoansPage();
+        case 2:
+          return const ProfilePage();
+        default:
+          return HomeTab(key: _homeTabKey);
+      }
+    } else {
+      // 4 tabs: Dashboard(0), Apply(1), Loans(2), Profile(3)
+      switch (_currentIndex) {
+        case 0:
+          return HomeTab(key: _homeTabKey);
+        case 1:
+          return ApplyLoanPage(
+            onLoanSubmitted: () {
+              checkLoanStatus();
+            },
+          );
+        case 2:
+          return const MyLoansPage();
+        case 3:
+          return const ProfilePage();
+        default:
+          return HomeTab(key: _homeTabKey);
+      }
     }
   }
 
@@ -132,7 +171,7 @@ class MainNavigationState extends State<MainNavigation> {
         );
         if (mounted) {
           _homeTabKey.currentState?.refreshData();
-          _checkLoanStatus();
+          checkLoanStatus();
         }
       },
     );
@@ -302,54 +341,143 @@ class MainNavigationState extends State<MainNavigation> {
         ),
       ),
       body: _buildBody(),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+      extendBody: true, // Allows body to render behind the notch bar
+      bottomNavigationBar: AnimatedNotchBottomBar(
+        key: ValueKey(_hasAppliedForLoan), // Rebuild controller when tabs change
+        notchBottomBarController: NotchBottomBarController(index: _currentIndex),
+        color: Colors.white,
+        showLabel: true,
+        showShadow: true,
+        showBlurBottomBar: true,
+        blurOpacity: 0.5,
+        blurFilterX: 5.0,
+        blurFilterY: 10.0,
+        notchColor: const Color(0xFF311B92),
+        notchGradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF311B92), Color(0xFF7B1FA2)],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-            if (index == 0) {
-              _homeTabKey.currentState?.refreshData();
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white.withValues(alpha: 0.9),
-          selectedItemColor: const Color(0xFF311B92),
-          unselectedItemColor: Colors.black.withValues(alpha: 0.4),
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined, size: 28),
-              activeIcon: Icon(Icons.home, size: 28),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet_outlined, size: 28),
-              activeIcon: Icon(Icons.account_balance_wallet, size: 28),
-              label: 'My Loans',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline, size: 28),
-              activeIcon: Icon(Icons.person, size: 28),
-              label: 'Profile',
-            ),
-          ],
+        kIconSize: 24.0,
+        kBottomRadius: 28.0,
+        removeMargins: false,
+        bottomBarHeight: 62,
+        durationInMilliSeconds: 300,
+        elevation: 8,
+        itemLabelStyle: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF311B92),
+          letterSpacing: 0.3,
         ),
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+          if (index == 0) {
+            _homeTabKey.currentState?.refreshData();
+          }
+        },
+        bottomBarItems: _hasAppliedForLoan
+            // --- 3 tabs after loan applied ---
+            ? [
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.dashboard_outlined,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.dashboard_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Dashboard',
+                ),
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Loans',
+                ),
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.person_outline_rounded,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Profile',
+                ),
+              ]
+            // --- 4 tabs before loan applied ---
+            : [
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.dashboard_outlined,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.dashboard_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Dashboard',
+                ),
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.assignment_outlined,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.assignment_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Apply',
+                ),
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Loans',
+                ),
+                const BottomBarItem(
+                  inActiveItem: Icon(
+                    Icons.person_outline_rounded,
+                    color: Color(0xFF9E9E9E),
+                    size: 24,
+                  ),
+                  activeItem: Icon(
+                    Icons.person_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  itemLabel: 'Profile',
+                ),
+              ],
       ),
     );
   }
 }
+

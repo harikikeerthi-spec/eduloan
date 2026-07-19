@@ -14,7 +14,6 @@ import '../services/logo_service.dart';
 import '../services/wikipedia_service.dart';
 import '../services/notification_service.dart';
 import 'ai_tools/university_detail_page.dart';
-import 'ai_tools/visa_interview_page.dart';
 import '../services/blog_service.dart';
 import '../models/blog.dart';
 import 'blog_detail_page.dart';
@@ -352,75 +351,6 @@ class HomeTabState extends State<HomeTab> {
                 ),
 
                 const SizedBox(height: 32),
-
-                // Quick Actions
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'Quick Actions',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        children: [
-                          if (!_hasAppliedForLoan) ...[
-                            _buildActionCard(
-                              imagePath: 'assets/icons/3d/apply_loan.png',
-                              title: 'Apply for Loan',
-                              description: 'New application',
-                              color: const Color(0xFF10B981),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const ApplyLoanPage(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 16),
-                          ],
-                          _buildActionCard(
-                            imagePath: 'assets/icons/3d/emi_calculator.png',
-                            title: 'EMI Cal',
-                            description: 'Check EMI',
-                            color: const Color(0xFFF59E0B),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const EmiCalculatorPage(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 16),
-                          _buildActionCard(
-                            imagePath: 'assets/icons/3d_community/resources.png',
-                            title: 'Resources',
-                            description: 'Courses & Institutes',
-                            color: const Color(0xFF311B92),
-                            onTap: () => _showResourcesModal(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                  ],
-                ),
-
                 if (_aiRecommendations.isNotEmpty ||
                     _savedRecommendations.isNotEmpty) ...[
                   _buildAiRecommendations(),
@@ -1662,74 +1592,6 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildWideServiceCard({
-    required String title,
-    required String subtitle,
-    required IconData primaryIcon,
-    required Color bgColor,
-    required Color iconColor,
-    required Widget trailing,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(primaryIcon, color: iconColor, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF4B5563),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            trailing,
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildDefaultBg(String seed) {
     final List<String> defaultImages = [
