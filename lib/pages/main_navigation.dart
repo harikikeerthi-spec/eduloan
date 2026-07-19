@@ -352,11 +352,11 @@ class MainNavigationState extends State<MainNavigation> {
         blurOpacity: 0.5,
         blurFilterX: 5.0,
         blurFilterY: 10.0,
-        notchColor: const Color(0xFF311B92),
+        notchColor: const Color(0xFF281C9D),
         notchGradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF311B92), Color(0xFF7B1FA2)],
+          colors: [Color(0xFF281C9D), Color(0xFF281C9D)],
         ),
         kIconSize: 24.0,
         kBottomRadius: 28.0,

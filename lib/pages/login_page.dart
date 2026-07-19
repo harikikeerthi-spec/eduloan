@@ -228,13 +228,13 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Welcome Back',
+                    'VIDYALOAN',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.inter(
                       fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                       color: primaryColor,
-                      letterSpacing: -0.5,
+                      letterSpacing: 0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -247,12 +247,12 @@ class _LoginPageState extends State<LoginPage> {
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
 
                   // --- Main Content Card ---
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(32),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(32),
@@ -287,7 +287,7 @@ class _LoginPageState extends State<LoginPage> {
                             height: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
 
                         if (_errorMessage != null)
                           Container(
@@ -350,7 +350,7 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 20),
 
                           SizedBox(
                             height: 56,
@@ -382,7 +382,7 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
                           
                           Row(
                             children: [
@@ -402,7 +402,7 @@ class _LoginPageState extends State<LoginPage> {
                             ],
                           ),
                           
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
 
                           SizedBox(
                             height: 56,
