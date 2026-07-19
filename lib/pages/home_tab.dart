@@ -237,7 +237,7 @@ class HomeTabState extends State<HomeTab> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
-                    vertical: 32,
+                    vertical: 16,
                   ),
                   // Removed glass gradient decoration
                   child: Column(
@@ -288,7 +288,7 @@ class HomeTabState extends State<HomeTab> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Text(
                         'Welcome to',
                         style: TextStyle(
@@ -307,11 +307,11 @@ class HomeTabState extends State<HomeTab> {
                           letterSpacing: 1.0,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
 
                       // Quick Stats Card
                       Container(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
@@ -350,11 +350,11 @@ class HomeTabState extends State<HomeTab> {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
                 if (_aiRecommendations.isNotEmpty ||
                     _savedRecommendations.isNotEmpty) ...[
                   _buildAiRecommendations(),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                 ],
 
                 // Active Loans Section
@@ -372,16 +372,16 @@ class HomeTabState extends State<HomeTab> {
                             color: Colors.black,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         ..._activeLoans.map((loan) => _buildLoanCard(loan)),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 20),
                       ],
                     ),
                   ),
 
                 // ── Featured Blogs ──────────────────────────────────────
                 _buildFeaturedBlogsSection(),
-                const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
                 // Lending Partners
                 Padding(
@@ -406,7 +406,7 @@ class HomeTabState extends State<HomeTab> {
                           _buildSparkleIcon(isLeft: false),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       Text(
                         'Multiple lenders to choose from',
                         style: TextStyle(
@@ -415,7 +415,7 @@ class HomeTabState extends State<HomeTab> {
                           color: Colors.black.withValues(alpha: 0.5),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
                       Center(
                         child: Wrap(
                           spacing: 16,
@@ -446,14 +446,14 @@ class HomeTabState extends State<HomeTab> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 48),
+                      const SizedBox(height: 28),
                     ],
                   ),
                 ),
 
                 // Essential Services (Value Add)
                 _buildValueAddServices(),
-                const SizedBox(height: 40),
+                const SizedBox(height: 24),
               ],
             ),
           ),
