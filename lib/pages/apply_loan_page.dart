@@ -55,7 +55,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   // Residential Details
   final TextEditingController _pincodeController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _resCountryController = TextEditingController(text: 'India');
+  final TextEditingController _resCountryController = TextEditingController();
   bool _isPincodeResolving = false;
 
   // Co-Applicant Details
