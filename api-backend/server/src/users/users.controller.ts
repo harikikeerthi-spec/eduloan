@@ -97,6 +97,27 @@ export class UsersController {
         };
     }
 
+    @Post('delete-self')
+    async deleteSelf(@Body() body: { email: string }) {
+        if (!body || !body.email) {
+            return {
+                success: false,
+                message: 'Email is required',
+            };
+        }
+        try {
+            const user = await this.usersService.findOne(body.email);
+            if (!user) {
+                return { success: false, message: 'User not found' };
+            }
+            await this.usersService.deleteUser(user.id);
+            return { success: true, message: 'User deleted successfully' };
+        } catch (error) {
+            console.error('Error self-deleting user:', error);
+            return { success: false, message: 'Failed to delete user', error: error?.message };
+        }
+    }
+
     @Get('admin/stats')
     @UseGuards(AdminGuard)
     async getUserStats() {
