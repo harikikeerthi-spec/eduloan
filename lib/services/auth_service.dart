@@ -307,4 +307,37 @@ class AuthService {
       return {'success': false, 'message': 'Connection error: $e'};
     }
   }
+
+  /// Deletes the current user account
+  static Future<Map<String, dynamic>> deleteAccount(String email) async {
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/users/delete-self'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'email': email}),
+      ).timeout(const Duration(seconds: 30));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': data['success'] ?? false,
+          'message': data['message'] ?? 'Account deleted successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Failed to delete account',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
 }

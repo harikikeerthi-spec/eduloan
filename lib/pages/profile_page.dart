@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/avatar_selection_dialog.dart';
 import 'refer_and_earn_page.dart';
 import 'package:flutter/services.dart';
+import 'settings_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -394,10 +395,10 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.settings_outlined,
                         title: 'Settings',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Settings coming soon!'),
-                              backgroundColor: Color(0xFF311B92),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsPage(),
                             ),
                           );
                         },
@@ -431,45 +432,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                       ),
 
-                      const SizedBox(height: 24),
-
-                      // Logout Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.clear();
-                            try {
-                              await GoogleAuthService().signOut();
-                            } catch (e) {
-                              debugPrint('Error during Google/Firebase sign out: $e');
-                            }
-                            if (context.mounted) {
-                              Navigator.of(
-                                context,
-                              ).pushNamedAndRemoveUntil('/', (route) => false);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Logout',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 24),
                     ],
                   ),
