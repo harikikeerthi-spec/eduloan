@@ -246,30 +246,11 @@ class HomeTabState extends State<HomeTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Image.asset(
-                                  'assets/images/app_icon.png',
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                            ),
+                          Image.asset(
+                            'assets/images/app_icon.png',
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.contain,
                           ),
                           Row(
                             children: [
