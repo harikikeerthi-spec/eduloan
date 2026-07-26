@@ -191,10 +191,20 @@ let ApplicationService = class ApplicationService {
             estimatedCompletionAt: estimatedCompletionAt.toISOString(),
             updatedAt: new Date().toISOString(),
         })
-            .select('*, user:User!userId(id, email, firstName, lastName)')
+            .select('*')
             .single();
-        if (error)
-            throw error;
+        if (error) {
+            console.error('[ApplicationService.createApplication] DB Insert error:', error);
+            throw new common_1.BadRequestException(`Failed to create application: ${error.message || JSON.stringify(error)}`);
+        }
+        if (application) {
+            application.user = {
+                id: application.userId,
+                email: application.email,
+                firstName: application.firstName,
+                lastName: application.lastName,
+            };
+        }
         await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
         await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
         if (application.status !== 'draft') {

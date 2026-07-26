@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/mesh_background.dart';
 import '../services/auth_service.dart';
-import '../services/google_auth_service.dart';
 import 'user_details_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/avatar_selection_dialog.dart';
@@ -27,13 +27,10 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _profileImage;
 
   /// Only accept images explicitly set by the user.
-  /// Reject http/https URLs (Google/Firebase profile photos) so that
-  /// no photo shows until the user manually picks one.
   String? _sanitizeProfileImage(dynamic raw) {
     if (raw == null) return null;
     final v = raw.toString().trim();
     if (v.isEmpty) return null;
-    // Block any remote URL — these come from Google/Firebase, not from user
     if (v.startsWith('http://') || v.startsWith('https://')) return null;
     return v;
   }
@@ -61,13 +58,10 @@ class _ProfilePageState extends State<ProfilePage> {
       final email = prefs.getString('user_email');
       final cachedUserId = prefs.getString('userId') ?? 'Not set';
 
-      debugPrint('DEBUG: ProfilePage fetching for email: $email');
-
-        if (email != null && email.isNotEmpty) {
+      if (email != null && email.isNotEmpty) {
         final result = await AuthService.getUserDashboard(email);
         if (mounted) {
           if (result['success'] == true) {
-            // Extract user from nested response: result['user'] -> data -> user
             final responseData = result['user'] ?? {};
             final nestedData = responseData['data'] ?? {};
             final user = nestedData['user'] ?? responseData['user'] ?? responseData;
@@ -75,7 +69,6 @@ class _ProfilePageState extends State<ProfilePage> {
             final fname = user['firstName'] ?? '';
             final lname = user['lastName'] ?? '';
 
-            // Save to SharedPreferences so other pages stay in sync
             prefs.setString('user_firstName', fname);
             prefs.setString('user_lastName', lname);
             if (user['phoneNumber'] != null) {
@@ -92,22 +85,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
             setState(() {
               _name = '$fname $lname'.trim();
-              if (_name.isEmpty) _name = 'User';
+              if (_name.isEmpty) _name = 'Student User';
 
               _email = user['email'] ?? email;
               _phone = user['phoneNumber'] ?? 'Not set';
               _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
               _userId = user['id']?.toString() ?? cachedUserId;
-              
-              // Standardize DOB format to DD-MM-YYYY
+
               if (_dob.contains('-')) {
                 final parts = _dob.split('T')[0].split('-');
-                if (parts.length == 3) {
-                  // If format is YYYY-MM-DD, convert to DD-MM-YYYY
-                  if (parts[0].length == 4) {
-                    _dob = '${parts[2]}-${parts[1]}-${parts[0]}';
-                  } 
-                  // If it's already DD-MM-YYYY, keep it as is
+                if (parts.length == 3 && parts[0].length == 4) {
+                  _dob = '${parts[2]}-${parts[1]}-${parts[0]}';
                 }
               }
               _profileImage = _sanitizeProfileImage(
@@ -116,16 +104,13 @@ class _ProfilePageState extends State<ProfilePage> {
               _isLoading = false;
             });
           } else {
-            debugPrint('DEBUG: getUserDashboard failed: ${result['message']}');
             _handleError(result['message']);
           }
         }
       } else {
-        debugPrint('DEBUG: user_email not found in SharedPreferences');
         _handleError('User email not found. Please log in.');
       }
     } catch (e) {
-      debugPrint('DEBUG: Error in _fetchProfile: $e');
       _handleError('Error: $e');
     }
   }
@@ -155,7 +140,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Avatar updated successfully!'),
-                backgroundColor: Colors.green,
+                backgroundColor: Color(0xFF10B981),
               ),
             );
           }
@@ -166,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
               content: Text(
                 updateResult['message'] ?? 'Failed to update avatar',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFEF4444),
             ),
           );
         }
@@ -187,114 +172,298 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        body: MeshBackground(
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF311B92),
+            ),
+          ),
+        ),
+      );
     }
 
+    final isEditEnabled = !(_email == 'Loading...' ||
+        _email == 'Could not load profile' ||
+        _email.contains('Log Out') ||
+        !_email.contains('@') ||
+        _email.isEmpty);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: MeshBackground(
         child: SafeArea(
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header with Profile Info
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  // Removed glass gradient decoration
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFF6366F1,
-                              ).withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                            ),
-                            child: Builder(
-                              builder: (context) {
-                                if (_profileImage != null) {
-                                  // Check if it's a custom photo (Base64 string)
-                                  if (_profileImage!.startsWith('data:image/')) {
-                                    try {
-                                      final base64Str = _profileImage!.split(',').last;
-                                      final bytes = base64Decode(base64Str);
-                                      return ClipRRect(
-                                        borderRadius: BorderRadius.circular(50),
-                                        child: Image.memory(
-                                          bytes,
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      debugPrint('Error decoding base64 image: $e');
-                                    }
-                                  }
-
-                                  // Standard predefined avatar
-                                  final avatarData = AvatarSelectionDialog.avatars.firstWhere(
-                                    (a) => a['name'] == _profileImage,
-                                    orElse: () => AvatarSelectionDialog.avatars[0],
-                                  );
-                                  return Center(
-                                    child: Icon(
-                                      avatarData['icon'],
-                                      size: 50,
-                                      color: avatarData['color'],
-                                    ),
-                                  );
-                                }
-
-                                // Fallback icon
-                                return const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Color(0xFF311B92),
-                                );
-                              },
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: _changeAvatar,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF311B92),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.edit,
-                                  size: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                // ─── App Bar Title ──────────────────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Profile',
+                      style: GoogleFonts.outfit(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1E1B4B),
+                        letterSpacing: -0.5,
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _name,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsPage(),
+                          ),
+                        );
+                      },
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.settings_outlined,
+                          color: Color(0xFF311B92),
+                          size: 20,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _email,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black.withValues(alpha: 0.6),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // ─── HERO HEADER CARD ───────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF1A0A5E),
+                        Color(0xFF311B92),
+                        Color(0xFF4527A0),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.35),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      // Decorative background glow
+                      Positioned(
+                        right: -30,
+                        top: -30,
+                        child: Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.06),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: -40,
+                        bottom: -40,
+                        child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
+                          ),
+                        ),
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.all(22),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Avatar + Edit badge
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 90,
+                                  height: 90,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFB39DDB), Color(0xFF7C4DFF)],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
+                                        blurRadius: 20,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Container(
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF1A0A5E),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(45),
+                                        child: Builder(
+                                          builder: (context) {
+                                            if (_profileImage != null) {
+                                              if (_profileImage!.startsWith('data:image/')) {
+                                                try {
+                                                  final base64Str = _profileImage!.split(',').last;
+                                                  final bytes = base64Decode(base64Str);
+                                                  return Image.memory(
+                                                    bytes,
+                                                    width: 90,
+                                                    height: 90,
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                } catch (e) {
+                                                  debugPrint('Error decoding base64 image: $e');
+                                                }
+                                              }
+
+                                              final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+                                                (a) => a['name'] == _profileImage,
+                                                orElse: () => AvatarSelectionDialog.avatars[0],
+                                              );
+                                              return Center(
+                                                child: Icon(
+                                                  avatarData['icon'],
+                                                  size: 46,
+                                                  color: avatarData['color'],
+                                                ),
+                                              );
+                                            }
+
+                                            return const Center(
+                                              child: Icon(
+                                                Icons.person_rounded,
+                                                size: 48,
+                                                color: Color(0xFFB39DDB),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _changeAvatar,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF7C4DFF),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt_rounded,
+                                        size: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 14),
+
+                            // Name
+                            Text(
+                              _name,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+
+                            // Email
+                            Text(
+                              _email,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.75),
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+
+                            // Badge Pill
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.verified_rounded,
+                                    color: Color(0xFF00E676),
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Verified Student Account',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -303,74 +472,89 @@ class _ProfilePageState extends State<ProfilePage> {
 
                 const SizedBox(height: 24),
 
-                // Profile Details
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                // ─── PERSONAL INFORMATION CARD ──────────────────────────────
+                _buildSectionHeader('PERSONAL DETAILS', Icons.person_pin_rounded),
+                const SizedBox(height: 10),
+
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Personal Information',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      _buildInfoCard(
+                      _buildInfoTile(
                         icon: Icons.badge_outlined,
-                        title: 'User ID',
+                        iconColor: const Color(0xFF311B92),
+                        label: 'User ID',
                         value: _userId,
-                        showCopyButton: true,
+                        showCopy: true,
                       ),
-                      const SizedBox(height: 12),
-
-                      _buildInfoCard(
-                        icon: Icons.phone_outlined,
-                        title: 'Phone Number',
+                      const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                      _buildInfoTile(
+                        icon: Icons.phone_android_rounded,
+                        iconColor: const Color(0xFF10B981),
+                        label: 'Phone Number',
                         value: _phone,
                       ),
-                      const SizedBox(height: 12),
-
-                      _buildInfoCard(
-                        icon: Icons.email_outlined,
-                        title: 'Email Address',
+                      const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                      _buildInfoTile(
+                        icon: Icons.alternate_email_rounded,
+                        iconColor: const Color(0xFF3B82F6),
+                        label: 'Email Address',
                         value: _email,
                       ),
-                      const SizedBox(height: 12),
-
-                      _buildInfoCard(
-                        icon: Icons.calendar_today_outlined,
-                        title: 'Date of Birth',
+                      const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                      _buildInfoTile(
+                        icon: Icons.cake_outlined,
+                        iconColor: const Color(0xFFF59E0B),
+                        label: 'Date of Birth',
                         value: _dob,
                       ),
+                    ],
+                  ),
+                ),
 
-                      const SizedBox(height: 32),
+                const SizedBox(height: 24),
 
-                      const Text(
-                        'Quick Actions',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                // ─── QUICK ACTIONS CARD ──────────────────────────────────────
+                _buildSectionHeader('QUICK ACTIONS', Icons.bolt_rounded),
+                const SizedBox(height: 10),
+
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
                       ),
-                      const SizedBox(height: 16),
-
-                      _buildSettingItem(
-                        icon: Icons.edit_outlined,
-                        title: 'Edit Profile',
-                        onTap:
-                            (_email == 'Loading...' ||
-                                _email == 'Could not load profile' ||
-                                _email.contains('Log Out') ||
-                                !_email.contains('@') ||
-                                _email.isEmpty)
-                            ? null // Disable if email is invalid
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      _buildActionTile(
+                        icon: Icons.edit_note_rounded,
+                        iconColor: const Color(0xFF311B92),
+                        title: 'Edit Profile Details',
+                        subtitle: 'Update name, phone number, DOB',
+                        isEnabled: isEditEnabled,
+                        onTap: !isEditEnabled
+                            ? null
                             : () {
-                                // Navigate to Edit Profile (UserDetailsPage in edit mode)
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -384,44 +568,18 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ).then((val) {
                                   if (val == true) {
-                                    _fetchProfile(); // Refresh on return
+                                    _fetchProfile();
                                   }
                                 });
                               },
                       ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
-                        icon: Icons.settings_outlined,
-                        title: 'Settings',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SettingsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
-                        icon: Icons.help_outline,
-                        title: 'Help & Support',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Help & Support coming soon!'),
-                              backgroundColor: Color(0xFF311B92),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-
-                      _buildSettingItem(
-                        icon: Icons.stars_rounded,
+                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                      _buildActionTile(
+                        icon: Icons.card_giftcard_rounded,
+                        iconColor: const Color(0xFFEC4899),
                         title: 'Refer & Earn',
+                        subtitle: 'Share VidyaLoans & earn rewards',
+                        isEnabled: true,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -431,8 +589,42 @@ class _ProfilePageState extends State<ProfilePage> {
                           );
                         },
                       ),
-
-                      const SizedBox(height: 24),
+                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                      _buildActionTile(
+                        icon: Icons.settings_outlined,
+                        iconColor: const Color(0xFF6366F1),
+                        title: 'App Settings',
+                        subtitle: 'Notifications, account & security',
+                        isEnabled: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SettingsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                      _buildActionTile(
+                        icon: Icons.help_outline_rounded,
+                        iconColor: const Color(0xFF14B8A6),
+                        title: 'Help & Support',
+                        subtitle: 'FAQs, contact us & feedback',
+                        isEnabled: true,
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Help & Support coming soon!',
+                                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                              ),
+                              backgroundColor: const Color(0xFF311B92),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -444,69 +636,81 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    bool showCopyButton = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF311B92).withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: const Color(0xFF311B92)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF64748B),
+            letterSpacing: 1.0,
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+    bool showCopy = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
           Container(
-            width: 48,
-            height: 48,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF311B92).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: iconColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: const Color(0xFF311B92), size: 24),
+            child: Icon(icon, size: 20, color: iconColor),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black.withValues(alpha: 0.5),
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF1E1B4B),
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
           ),
-          if (showCopyButton)
+          if (showCopy)
             IconButton(
-              icon: const Icon(Icons.copy_all_rounded, color: Color(0xFF311B92), size: 20),
+              icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF311B92)),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: value));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('User ID copied to clipboard!'),
-                    backgroundColor: Color(0xFF311B92),
+                  SnackBar(
+                    content: Text(
+                      'User ID copied to clipboard!',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                    ),
+                    backgroundColor: const Color(0xFF311B92),
+                    behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
@@ -516,46 +720,61 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildSettingItem({
+  Widget _buildActionTile({
     required IconData icon,
+    required Color iconColor,
     required String title,
+    required String subtitle,
+    required bool isEnabled,
     required VoidCallback? onTap,
   }) {
-    // If onTap is null, assume disabled state
-    final isEnabled = onTap != null;
-
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Opacity(
-        opacity: isEnabled ? 1.0 : 0.5,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF311B92).withValues(alpha: 0.08),
-                blurRadius: 24,
-              ),
-            ],
-          ),
+        opacity: isEnabled ? 1.0 : 0.4,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFF311B92), size: 24),
-              const SizedBox(width: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, size: 22, color: iconColor),
+              ),
+              const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E1B4B),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, color: Colors.grey[400], size: 16),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Color(0xFF94A3B8),
+              ),
             ],
           ),
         ),

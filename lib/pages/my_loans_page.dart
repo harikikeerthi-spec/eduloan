@@ -1,15 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'apply_loan_page.dart';
 import 'document_vault_page.dart';
 import '../widgets/mesh_background.dart';
 import '../models/loan.dart';
 import '../services/loan_service.dart';
-import 'apply_loan_page.dart';
 import 'digilocker_auth_page.dart';
 import '../services/digilocker_service.dart';
-import 'main_navigation.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MyLoansPage extends StatefulWidget {
@@ -48,16 +46,11 @@ class _MyLoansPageState extends State<MyLoansPage> {
         });
       }
     } catch (e) {
-      final errorStr = e.toString();
-      if (errorStr.contains('401') || errorStr.toLowerCase().contains('session expired')) {
-        // Token expired or invalid, clear it
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('auth_token');
-      }
+      // Do not clear auth_token on API error to keep persistent user session
 
       if (mounted) {
         setState(() {
-          _error = errorStr;
+          _error = e.toString();
           _isLoading = false;
         });
       }
@@ -115,7 +108,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -126,8 +119,8 @@ class _MyLoansPageState extends State<MyLoansPage> {
           ],
         ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
         border: Border(
           bottom: BorderSide(
@@ -141,20 +134,20 @@ class _MyLoansPageState extends State<MyLoansPage> {
           const Text(
             'Welcome back!',
             style: TextStyle(
-              fontSize: 28,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             'Here\'s an overview of your loan applications.',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 12,
               color: Colors.black.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -188,20 +181,50 @@ class _MyLoansPageState extends State<MyLoansPage> {
                           ? Colors.grey.shade400
                           : const Color(0xFF311B92),
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   icon: Icon(
                     _loans.isEmpty
                         ? Icons.lock_outline
                         : Icons.folder_shared_outlined,
-                    size: 18,
+                    size: 16,
                   ),
                   label: Text(
                     _loans.isEmpty ? 'Doc Vault (Locked)' : 'Doc Vault',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ApplyLoanPage(
+                          onLoanSubmitted: _fetchLoans,
+                        ),
+                      ),
+                    );
+                    _fetchLoans();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF281C9D),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 2,
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text(
+                    'Apply for Loan',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -1009,33 +1032,61 @@ class _MyLoansPageState extends State<MyLoansPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                color: const Color(0xFF281C9D).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.description_outlined,
-                size: 64,
-                color: Color(0xFF311B92),
+                Icons.assignment_add,
+                size: 44,
+                color: Color(0xFF281C9D),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             const Text(
               'No active applications',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               'You have not submitted any loan applications yet.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 color: Colors.black.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ApplyLoanPage(
+                      onLoanSubmitted: _fetchLoans,
+                    ),
+                  ),
+                );
+                _fetchLoans();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF281C9D),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 4,
+              ),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: const Text(
+                'Apply for Loan',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ],

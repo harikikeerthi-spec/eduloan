@@ -39,6 +39,8 @@ android {
         release {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
             // ProGuard rules to keep video_player (ExoPlayer) classes from being stripped
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

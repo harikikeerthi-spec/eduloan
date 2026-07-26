@@ -5,6 +5,12 @@ import { DocumentVerificationService } from '../ai/services/document-verificatio
 import { ApplicationReviewService } from '../ai/services/application-review.service';
 import { EmailService } from '../auth/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+// @ts-ignore – evv-engine.ts exists in this directory; IDE resolution quirk
+import { EvvEngineService } from './evv-engine';
+import { BankWorkflowService } from '../bank/bank-workflow.service';
+import { S3Service } from '../document/s3.service';
+import * as path from 'path';
+import * as fs from 'fs';
 
 const APPLICATION_STAGES = {
   application_submitted: { order: 1, label: 'Application Submitted', progress: 10 },
@@ -70,6 +76,9 @@ export class ApplicationService {
     private applicationReviewService: ApplicationReviewService,
     private emailService: EmailService,
     private eventEmitter: EventEmitter2,
+    private s3Service: S3Service,
+    private evvEngine: EvvEngineService,
+    private workflowService: BankWorkflowService,
   ) { }
 
   private parseDate(dateStr: string | null | undefined): string | null {
@@ -195,10 +204,37 @@ export class ApplicationService {
         estimatedCompletionAt: estimatedCompletionAt.toISOString(),
         updatedAt: new Date().toISOString(),
       })
-      .select('*, user:User!userId(id, email, firstName, lastName)')
+      .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[ApplicationService.createApplication] DB Insert error:', error);
+      throw new BadRequestException(`Failed to create application: ${error.message || JSON.stringify(error)}`);
+    }
+
+    if (application) {
+      application.user = {
+        id: application.userId,
+        email: application.email,
+        firstName: application.firstName,
+        lastName: application.lastName,
+      };
+    }
+
+    // Sync target intake and destination to User profile
+    if (userId && (data.intakeSeason || data.country)) {
+      try {
+        await this.db
+          .from('User')
+          .update({
+            ...(data.intakeSeason ? { intakeSeason: data.intakeSeason } : {}),
+            ...(data.country ? { studyDestination: data.country } : {}),
+          })
+          .eq('id', userId);
+      } catch (err) {
+        console.error('Failed to sync target intake/destination to User profile:', err);
+      }
+    }
 
     await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
     await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
@@ -238,6 +274,34 @@ export class ApplicationService {
       } catch (e) {
         console.error('Failed to emit activity event for application creation:', e);
       }
+
+      // Send loan submission email to the student
+      try {
+        const email = application.user?.email || application.email;
+        if (email) {
+          const firstName = application.firstName || application.user?.firstName || '';
+          const lastName = application.lastName || application.user?.lastName || '';
+          const userName = `${firstName} ${lastName}`.trim() || 'Student';
+          const bankName = application.bank || 'our partner bank';
+          await this.emailService.sendLoanSubmissionEmail(email, userName, bankName, application);
+        }
+      } catch (e) {
+        console.error('Failed to send loan submission email on application creation:', e);
+      }
+
+      // Send loan tracking email to the registered student email
+      try {
+        const registeredEmail = application.user?.email || application.email;
+        if (registeredEmail) {
+          const firstName = application.user?.firstName || application.firstName || '';
+          const lastName = application.user?.lastName || application.lastName || '';
+          const userName = `${firstName} ${lastName}`.trim() || 'Student';
+          const bankName = application.bank || 'our partner bank';
+          await this.emailService.sendLoanTrackingEmail(registeredEmail, userName, bankName, application);
+        }
+      } catch (e) {
+        console.error('Failed to send loan tracking email on application creation:', e);
+      }
     }
 
     return { success: true, data: application, message: 'Application created successfully' };
@@ -250,7 +314,7 @@ export class ApplicationService {
 
     const { data: updated, error } = await this.db
       .from('LoanApplication')
-      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15, updatedAt: new Date().toISOString() })
+      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15 })
       .eq('id', applicationId)
       .select()
       .single();
@@ -287,13 +351,82 @@ export class ApplicationService {
       console.error('Failed to emit events for application submission:', e);
     }
 
+    // Send loan submission email to the student
+    try {
+      const email = application.user?.email || application.email;
+      if (email) {
+        const firstName = application.firstName || application.user?.firstName || '';
+        const lastName = application.lastName || application.user?.lastName || '';
+        const userName = `${firstName} ${lastName}`.trim() || 'Student';
+        const bankName = application.bank || 'our partner bank';
+        await this.emailService.sendLoanSubmissionEmail(email, userName, bankName, application);
+      }
+    } catch (e) {
+      console.error('Failed to send loan submission email on application submission:', e);
+    }
+
+    // Send loan tracking email to the registered student email
+    try {
+      const registeredEmail = application.user?.email || application.email;
+      if (registeredEmail) {
+        const firstName = application.user?.firstName || application.firstName || '';
+        const lastName = application.user?.lastName || application.lastName || '';
+        const userName = `${firstName} ${lastName}`.trim() || 'Student';
+        const bankName = application.bank || 'our partner bank';
+        await this.emailService.sendLoanTrackingEmail(registeredEmail, userName, bankName, application);
+      }
+    } catch (e) {
+      console.error('Failed to send loan tracking email on application submission:', e);
+    }
+
     return { success: true, data: updated, message: 'Application submitted successfully' };
+  }
+
+  async startApplicationReview(applicationId: string) {
+    const now = new Date().toISOString();
+    const { data: updated, error } = await this.db
+      .from('LoanApplication')
+      .update({ reviewStartedAt: now })
+      .eq('id', applicationId)
+      .select('*, user:User!userId(id, email, firstName, lastName, tests)')
+      .single();
+
+    if (error) throw error;
+
+    // Send the email to the student
+    try {
+      const email = updated.user?.email || updated.email;
+      if (email) {
+        const firstName = updated.firstName || updated.user?.firstName || '';
+        const lastName = updated.lastName || updated.user?.lastName || '';
+        const userName = `${firstName} ${lastName}`.trim() || 'Student';
+        await this.emailService.sendStaffReviewStartedEmail(email, userName, updated);
+      }
+    } catch (e) {
+      console.error('Failed to send staff review started email:', e);
+    }
+
+    // Also add to status history
+    try {
+      await this.createStatusHistory(applicationId, {
+        fromStatus: updated.status,
+        toStatus: updated.status,
+        fromStage: updated.stage,
+        toStage: updated.stage,
+        notes: 'VidyaLoan team started review of the application',
+        isAutomatic: true
+      });
+    } catch (e) {
+      console.error('Failed to record review start status history:', e);
+    }
+
+    return updated;
   }
 
   async getApplicationById(applicationId: string) {
     const { data: application } = await this.db
       .from('LoanApplication')
-      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason, tests, pincode), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*), notes:ApplicationNote(id, content, type, isInternal, createdAt)')
       .eq('id', applicationId)
       .single();
 
@@ -304,17 +437,103 @@ export class ApplicationService {
     if (application.statusHistory) application.statusHistory.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     if (application.notes) application.notes = application.notes.filter((n: any) => !n.isInternal).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    // Fetch related BankDecision and queries manually to prevent schema cache failures
+    try {
+      const [
+        { data: bankDecisions },
+        { data: queries },
+        { data: bankQueries },
+        { data: bankSubmissions }
+      ] = await Promise.all([
+        this.db.from('BankDecision').select('*').eq('applicationId', applicationId),
+        this.db.from('queries').select('*').eq('applicationId', applicationId),
+        this.db.from('BankQuery').select('*').eq('applicationId', applicationId),
+        this.db.from('BankSubmission').select('*').eq('applicationId', applicationId)
+      ]);
+      application.BankDecision = bankDecisions || [];
+      application.bankSubmissions = bankSubmissions || [];
+      
+      const allQueries = [...(queries || [])];
+      if (bankQueries && bankQueries.length > 0) {
+        bankQueries.forEach((bq: any) => {
+          if (!allQueries.some(q => q.id === bq.id)) {
+            allQueries.push({
+              id: bq.id,
+              authorName: bq.raisedBy || 'Banker',
+              content: bq.description,
+              status: bq.status?.toLowerCase() || 'open',
+              createdAt: bq.raisedAt || bq.createdAt,
+              resolvedAt: bq.resolvedAt,
+              queryType: bq.queryType
+            });
+          }
+        });
+      }
+      application.queries = allQueries;
+    } catch (e) {
+      console.error('Failed to load bank decisions and queries for application:', e);
+      application.BankDecision = [];
+      application.queries = [];
+      application.bankSubmissions = [];
+    }
+
+    if (application) {
+      const staffInfo = await this.getCounselorDetails(application.assignedStaffId);
+      application.counselorName = staffInfo.counselorName;
+      application.counselorPhone = staffInfo.counselorPhone;
+      application.counselorEmail = staffInfo.counselorEmail;
+    }
+
     return application;
+  }
+
+  async getCounselorDetails(assignedStaffId: string | null) {
+    if (!assignedStaffId) {
+      return {
+        counselorName: 'VidhyaLoan Support',
+        counselorPhone: '+91 9240209000',
+        counselorEmail: 'support@vidhyaloan.com'
+      };
+    }
+    try {
+      const { data: user } = await this.db
+        .from('User')
+        .select('firstName, lastName, phoneNumber, email')
+        .eq('id', assignedStaffId)
+        .single();
+      if (user) {
+        return {
+          counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
+          counselorPhone: user.phoneNumber || '+91 9240209000',
+          counselorEmail: user.email || 'support@vidhyaloan.com'
+        };
+      }
+    } catch (e) {
+      console.error('Error fetching counselor details:', e);
+    }
+    return {
+      counselorName: 'VidhyaLoan Support',
+      counselorPhone: '+91 9240209000',
+      counselorEmail: 'support@vidhyaloan.com'
+    };
   }
 
   async getApplicationByNumber(applicationNumber: string) {
     const { data: application } = await this.db
       .from('LoanApplication')
-      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
+      .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason, tests), documents:ApplicationDocument(*), statusHistory:ApplicationStatusHistory(*)')
       .eq('applicationNumber', applicationNumber)
       .single();
 
     if (!application) throw new NotFoundException('Application not found');
+
+    if (application) {
+      const staffInfo = await this.getCounselorDetails(application.assignedStaffId);
+      application.counselorName = staffInfo.counselorName;
+      application.counselorPhone = staffInfo.counselorPhone;
+      application.counselorEmail = staffInfo.counselorEmail;
+    }
+
     return application;
   }
 
@@ -330,6 +549,38 @@ export class ApplicationService {
     if (filters?.limit) query = query.limit(filters.limit);
 
     const { data: applications, count } = await query;
+
+    if (applications && applications.length > 0) {
+      const staffIds = Array.from(new Set(applications.map((app: any) => app.assignedStaffId).filter(id => !!id)));
+      const staffMap = new Map<string, any>();
+      if (staffIds.length > 0) {
+        try {
+          const { data: users } = await this.db
+            .from('User')
+            .select('id, firstName, lastName, phoneNumber, email')
+            .in('id', staffIds);
+          if (users) {
+            users.forEach((user: any) => {
+              staffMap.set(user.id, {
+                counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
+                counselorPhone: user.phoneNumber || '+91 9240209000',
+                counselorEmail: user.email || 'support@vidhyaloan.com'
+              });
+            });
+          }
+        } catch (e) {
+          console.error('Error fetching staff info for user applications:', e);
+        }
+      }
+
+      applications.forEach((app: any) => {
+        const staffInfo = app.assignedStaffId ? staffMap.get(app.assignedStaffId) : null;
+        app.counselorName = staffInfo?.counselorName || 'VidhyaLoan Support';
+        app.counselorPhone = staffInfo?.counselorPhone || '+91 9240209000';
+        app.counselorEmail = staffInfo?.counselorEmail || 'support@vidhyaloan.com';
+      });
+    }
+
     return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
   }
 
@@ -353,7 +604,6 @@ export class ApplicationService {
       courseStartDate: data.courseStartDate ? this.parseDate(data.courseStartDate) : undefined,
       universityName: data.universityName || data.university || undefined,
       courseName: data.courseName || data.courseType || data.course || undefined,
-      updatedAt: new Date().toISOString(),
     };
 
     const { data: updated, error } = await this.db
@@ -364,10 +614,26 @@ export class ApplicationService {
       .single();
 
     if (error) throw error;
+
+    // Sync target intake and destination to User profile on update
+    if (application.userId && (data.intakeSeason !== undefined || data.country !== undefined)) {
+      try {
+        await this.db
+          .from('User')
+          .update({
+            ...(data.intakeSeason !== undefined ? { intakeSeason: data.intakeSeason } : {}),
+            ...(data.country !== undefined ? { studyDestination: data.country } : {}),
+          })
+          .eq('id', application.userId);
+      } catch (err) {
+        console.error('Failed to sync target intake/destination to User profile on update:', err);
+      }
+    }
+
     return { success: true, data: updated, message: 'Application updated successfully' };
   }
 
-  async adminUpdateApplication(applicationId: string, data: any) {
+  async adminUpdateApplication(applicationId: string, data: any, user?: any) {
     const application = await this.getApplicationById(applicationId);
 
     const targetBank = data.bank !== undefined ? data.bank : application.bank;
@@ -376,7 +642,7 @@ export class ApplicationService {
 
     await this.validateApplicationConstraints(application.userId, applicationId, targetBank, targetCountry, targetUniversity);
 
-    const updatePayload: any = { ...data, updatedAt: new Date().toISOString() };
+    const updatePayload: any = { ...data };
 
     // Convert numeric fields if present
     if (data.amount !== undefined) updatePayload.amount = data.amount ? parseFloat(data.amount) : null;
@@ -408,6 +674,46 @@ export class ApplicationService {
       console.error('[ApplicationService.adminUpdateApplication] DB Error:', error);
       throw error;
     }
+
+    if (data.remarks !== undefined && data.remarks !== application.remarks) {
+      // Find the new notes that were added by splitting by newline
+      const oldRemarks = application.remarks || '';
+      const newRemarks = data.remarks || '';
+      
+      const oldLines = oldRemarks.split('\n');
+      const newLines = newRemarks.split('\n');
+      const addedLines = newLines.filter(line => !oldLines.includes(line) && line.trim());
+
+      if (addedLines.length > 0) {
+        // Emit event for notification
+        const addedRemarkText = addedLines.join('\n');
+        this.eventEmitter.emit('bank.note.added', {
+          applicationId: application.id,
+          applicationNumber: application.applicationNumber,
+          userId: application.userId,
+          candidateName: `${application.firstName || ''} ${application.lastName || ''}`.trim() || 'Candidate',
+          remarks: addedRemarkText,
+          updatedBy: user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : 'Bank Partner',
+          userRole: user?.role || 'bank'
+        });
+      }
+    }
+
+    // Sync target intake and destination to User profile on admin update
+    if (application.userId && (data.intakeSeason !== undefined || data.country !== undefined)) {
+      try {
+        await this.db
+          .from('User')
+          .update({
+            ...(data.intakeSeason !== undefined ? { intakeSeason: data.intakeSeason } : {}),
+            ...(data.country !== undefined ? { studyDestination: data.country } : {}),
+          })
+          .eq('id', application.userId);
+      } catch (err) {
+        console.error('Failed to sync target intake/destination to User profile on admin update:', err);
+      }
+    }
+
     return { success: true, data: updated, message: 'Application updated successfully' };
   }
 
@@ -416,7 +722,7 @@ export class ApplicationService {
     if (application.userId !== userId) throw new BadRequestException('Unauthorized to cancel this application');
     if (['approved', 'disbursed', 'cancelled'].includes(application.status)) throw new BadRequestException('Application cannot be cancelled in current status');
 
-    const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason, updatedAt: new Date().toISOString() }).eq('id', applicationId).select().single();
+    const { data: updated } = await this.db.from('LoanApplication').update({ status: 'cancelled', remarks: reason }).eq('id', applicationId).select().single();
     await this.createStatusHistory(applicationId, { fromStatus: application.status, toStatus: 'cancelled', notes: reason || 'Application cancelled by user', isAutomatic: false });
     return { success: true, data: updated, message: 'Application cancelled successfully' };
   }
@@ -695,7 +1001,7 @@ export class ApplicationService {
       
       let query = this.db
         .from('LoanApplication')
-        .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason), documents:ApplicationDocument(id, status)', { count: 'exact' });
+        .select('*, user:User!userId(id, email, firstName, lastName, phoneNumber, dateOfBirth, studyDestination, intakeSeason, tests), documents:ApplicationDocument(id, status), ProcessingFee(*)', { count: 'exact' });
 
       // Apply sorting
       const sortCol = filters?.sortBy || 'updatedAt';
@@ -707,7 +1013,7 @@ export class ApplicationService {
       if (filters?.stage) query = query.eq('stage', filters.stage);
       if (filters?.loanType) query = query.eq('loanType', filters.loanType);
       if (filters?.bank) {
-        query = query.eq('bank', filters.bank);
+        query = query.ilike('bank', `%${filters.bank}%`);
         query = query.not('status', 'in', '("submitted","pending","draft","docs_received","staff_verified","application_submitted")');
       }
       
@@ -757,7 +1063,7 @@ export class ApplicationService {
 
   async updateApplicationStatus(applicationId: string, adminId: string, adminName: string, data: { status?: string; stage?: string; progress?: number; remarks?: string; rejectionReason?: string; bank?: string }, role?: string) {
     const application = await this.getApplicationById(applicationId);
-    const updateData: any = { updatedAt: new Date().toISOString() };
+    const updateData: any = {};
     const historyData: any = { changedBy: adminId, changedByName: adminName };
 
     const isAuthorizedToChangeStatus = ['staff', 'admin', 'super_admin', 'bank', 'partner_bank'].includes(role || '');
@@ -831,29 +1137,160 @@ export class ApplicationService {
       }
     }
 
+    // Send email notifications to the student on status changes
+    try {
+      const { data: latestApp } = await this.db
+        .from('LoanApplication')
+        .select('*, user:User!userId(id, email, firstName, lastName)')
+        .eq('id', applicationId)
+        .single();
+
+      if (latestApp) {
+        const email = latestApp.user?.email || latestApp.email;
+        if (email) {
+          const firstName = latestApp.firstName || latestApp.user?.firstName || '';
+          const lastName = latestApp.lastName || latestApp.user?.lastName || '';
+          const userName = `${firstName} ${lastName}`.trim() || 'Student';
+          const bankName = latestApp.bank || 'our partner bank';
+
+          if (data.status === 'approved' || data.status === 'sanctioned') {
+            await this.emailService.sendApplicationAcceptedByBankEmail(email, userName, bankName, latestApp, data);
+          } else if (data.status === 'rejected') {
+            if (!latestApp.bank || latestApp.bank === 'Pending Partner' || role === 'staff' || role === 'admin' || role === 'super_admin') {
+              await this.emailService.sendApplicationRejectedByStaffEmail(email, userName, data.rejectionReason || data.remarks || '');
+            } else {
+              await this.emailService.sendApplicationRejectedByBankEmail(email, userName, bankName, data.rejectionReason || data.remarks || '');
+            }
+          } else if (data.status === 'submitted_to_bank') {
+            await this.emailService.sendApplicationSentToBankEmail(email, userName, bankName, latestApp);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[ApplicationService.updateApplicationStatus] Failed to send transition email:', err);
+    }
+
     return { success: true, data: updated, message: 'Application updated successfully' };
   }
 
   async verifyDocument(documentId: string, adminId: string, data: { status: 'verified' | 'rejected'; rejectionReason?: string }) {
     if (documentId.startsWith('vault_')) {
       const realId = documentId.replace('vault_', '');
-      const update: any = { status: data.status === 'verified' ? 'approved' : 'rejected' };
-      if (data.status === 'verified') update.updatedAt = new Date().toISOString();
-      
-      const { error } = await this.db.from('UserDocument').update(update).eq('id', realId);
+      const mappedStatus = data.status === 'verified' ? 'verified' : 'rejected';
+      const syncPayload: any = {
+        status: mappedStatus,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (mappedStatus === 'verified') {
+        syncPayload.verifiedAt = new Date().toISOString();
+        syncPayload.rejectionReason = null;
+        syncPayload.verificationMetadata = {
+          status: 'verified',
+          verifiedAt: new Date().toISOString(),
+          message: 'Document manually verified by staff from application',
+        };
+      } else if (mappedStatus === 'rejected') {
+        syncPayload.verifiedAt = null;
+        syncPayload.rejectionReason = data.rejectionReason || null;
+        syncPayload.verificationMetadata = {
+          status: 'rejected',
+          rejectedAt: new Date().toISOString(),
+          rejectionReason: data.rejectionReason || null,
+          message: data.rejectionReason ? `Document rejected by staff: ${data.rejectionReason}` : 'Document rejected by staff',
+        };
+      }
+
+      const { data: userDoc, error } = await this.db
+        .from('UserDocument')
+        .update(syncPayload)
+        .eq('id', realId)
+        .select()
+        .single();
       if (error) throw error;
+
+      if (userDoc) {
+        const docName = userDoc.verificationMetadata?.docName || userDoc.docType;
+        if (mappedStatus === 'rejected') {
+          this.eventEmitter.emit('document.rejected', {
+            userId: userDoc.userId,
+            documentId: userDoc.id,
+            documentType: userDoc.docType,
+            documentName: docName,
+            rejectionReason: data.rejectionReason,
+            rejectedAt: syncPayload.verificationMetadata.rejectedAt,
+          });
+        } else if (mappedStatus === 'verified') {
+          this.eventEmitter.emit('document.verified', {
+            userId: userDoc.userId,
+            documentId: userDoc.id,
+            documentType: userDoc.docType,
+            documentName: docName,
+            verifiedAt: syncPayload.verifiedAt,
+          });
+        }
+      }
       return { success: true, message: `Vault document ${data.status} successfully` };
     }
 
-    const { data: document } = await this.db.from('ApplicationDocument').select('id').eq('id', documentId).single();
-    if (!document) {
-      const { data: userDoc } = await this.db.from('UserDocument').select('id').eq('id', documentId).single();
+    const { data: appDoc } = await this.db.from('ApplicationDocument').select('id, applicationId, docType').eq('id', documentId).single();
+    if (!appDoc) {
+      const { data: userDoc } = await this.db.from('UserDocument').select('*').eq('id', documentId).single();
       if (userDoc) {
-        const update: any = { status: data.status === 'verified' ? 'approved' : 'rejected' };
-        if (data.status === 'verified') update.updatedAt = new Date().toISOString();
-        
-        const { error } = await this.db.from('UserDocument').update(update).eq('id', documentId);
+        const mappedStatus = data.status === 'verified' ? 'verified' : 'rejected';
+        const syncPayload: any = {
+          status: mappedStatus,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (mappedStatus === 'verified') {
+          syncPayload.verifiedAt = new Date().toISOString();
+          syncPayload.rejectionReason = null;
+          syncPayload.verificationMetadata = {
+            status: 'verified',
+            verifiedAt: new Date().toISOString(),
+            message: 'Document manually verified by staff from application',
+          };
+        } else if (mappedStatus === 'rejected') {
+          syncPayload.verifiedAt = null;
+          syncPayload.rejectionReason = data.rejectionReason || null;
+          syncPayload.verificationMetadata = {
+            status: 'rejected',
+            rejectedAt: new Date().toISOString(),
+            rejectionReason: data.rejectionReason || null,
+            message: data.rejectionReason ? `Document rejected by staff: ${data.rejectionReason}` : 'Document rejected by staff',
+          };
+        }
+
+        const { data: updatedUserDoc, error } = await this.db
+          .from('UserDocument')
+          .update(syncPayload)
+          .eq('id', documentId)
+          .select()
+          .single();
         if (error) throw error;
+
+        if (updatedUserDoc) {
+          const docName = updatedUserDoc.verificationMetadata?.docName || updatedUserDoc.docType;
+          if (mappedStatus === 'rejected') {
+            this.eventEmitter.emit('document.rejected', {
+              userId: updatedUserDoc.userId,
+              documentId: updatedUserDoc.id,
+              documentType: updatedUserDoc.docType,
+              documentName: docName,
+              rejectionReason: data.rejectionReason,
+              rejectedAt: syncPayload.verificationMetadata.rejectedAt,
+            });
+          } else if (mappedStatus === 'verified') {
+            this.eventEmitter.emit('document.verified', {
+              userId: updatedUserDoc.userId,
+              documentId: updatedUserDoc.id,
+              documentType: updatedUserDoc.docType,
+              documentName: docName,
+              verifiedAt: syncPayload.verifiedAt,
+            });
+          }
+        }
         return { success: true, message: `Vault document ${data.status} successfully` };
       }
       throw new NotFoundException('Document not found');
@@ -867,6 +1304,71 @@ export class ApplicationService {
       .single();
 
     if (error) throw error;
+
+    // Back-sync to UserDocument if there's a matching one
+    const { data: application } = await this.db
+      .from('LoanApplication')
+      .select('userId')
+      .eq('id', appDoc.applicationId)
+      .single();
+
+    if (application?.userId) {
+      const mappedStatus = data.status === 'verified' ? 'verified' : 'rejected';
+      const syncPayload: any = {
+        status: mappedStatus,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (mappedStatus === 'verified') {
+        syncPayload.verifiedAt = new Date().toISOString();
+        syncPayload.rejectionReason = null;
+        syncPayload.verificationMetadata = {
+          status: 'verified',
+          verifiedAt: new Date().toISOString(),
+          message: 'Document manually verified by staff from application',
+        };
+      } else if (mappedStatus === 'rejected') {
+        syncPayload.verifiedAt = null;
+        syncPayload.rejectionReason = data.rejectionReason || null;
+        syncPayload.verificationMetadata = {
+          status: 'rejected',
+          rejectedAt: new Date().toISOString(),
+          rejectionReason: data.rejectionReason || null,
+          message: data.rejectionReason ? `Document rejected by staff: ${data.rejectionReason}` : 'Document rejected by staff',
+        };
+      }
+
+      const { data: updatedUserDoc } = await this.db
+        .from('UserDocument')
+        .update(syncPayload)
+        .eq('userId', application.userId)
+        .eq('docType', appDoc.docType)
+        .select()
+        .single();
+
+      if (updatedUserDoc) {
+        const docName = updatedUserDoc.verificationMetadata?.docName || updatedUserDoc.docType;
+        if (mappedStatus === 'rejected') {
+          this.eventEmitter.emit('document.rejected', {
+            userId: updatedUserDoc.userId,
+            documentId: updatedUserDoc.id,
+            documentType: updatedUserDoc.docType,
+            documentName: docName,
+            rejectionReason: data.rejectionReason,
+            rejectedAt: syncPayload.verificationMetadata.rejectedAt,
+          });
+        } else if (mappedStatus === 'verified') {
+          this.eventEmitter.emit('document.verified', {
+            userId: updatedUserDoc.userId,
+            documentId: updatedUserDoc.id,
+            documentType: updatedUserDoc.docType,
+            documentName: docName,
+            verifiedAt: syncPayload.verifiedAt,
+          });
+        }
+      }
+    }
+
     return { success: true, data: updated, message: `Document ${data.status} successfully` };
   }
 
@@ -897,15 +1399,28 @@ export class ApplicationService {
       const isBank = (user?.role === 'bank' || user?.role === 'partner_bank');
       let bankName: string | null = null;
       if (isBank) {
-        const bId = bankId || user?.firstName;
-        if (bId) {
-          const lower = bId.toLowerCase();
-          if (lower.includes('credila')) bankName = 'HDFC Credila';
-          else if (lower.includes('poonawalla')) bankName = 'Poonawalla Fincorp';
-          else if (lower.includes('idfc')) bankName = 'IDFC First Bank';
-          else if (lower.includes('avanse')) bankName = 'Avanse Financial Services';
-          else if (lower.includes('auxilo')) bankName = 'Auxilo';
-          else bankName = bId;
+        // Try email first
+        const email = user?.email;
+        if (email) {
+          const lowerEmail = email.toLowerCase().trim();
+          if (lowerEmail.includes("auxilo") || lowerEmail === "luharika28@gmail.com") bankName = 'Auxilo';
+          else if (lowerEmail.includes("avanse") || lowerEmail === "ropayi2211@aspensif.com") bankName = 'Avanse';
+          else if (lowerEmail.includes("credila") || lowerEmail.includes("hdfc") || lowerEmail === "keerthichinnu0728@gmail.com") bankName = 'HDFC Credila';
+          else if (lowerEmail.includes("idfc") || lowerEmail === "abhimadasu4@gmail.com") bankName = 'IDFC';
+          else if (lowerEmail.includes("poonawalla") || lowerEmail === "farmatech@gmail.com") bankName = 'Poonawalla';
+        }
+
+        if (!bankName) {
+          const bId = bankId || user?.firstName;
+          if (bId) {
+            const lower = bId.toLowerCase();
+            if (lower.includes('credila')) bankName = 'HDFC Credila';
+            else if (lower.includes('poonawalla')) bankName = 'Poonawalla';
+            else if (lower.includes('idfc')) bankName = 'IDFC';
+            else if (lower.includes('avanse')) bankName = 'Avanse';
+            else if (lower.includes('auxilo')) bankName = 'Auxilo';
+            else bankName = bId;
+          }
         }
       }
 
@@ -1084,7 +1599,7 @@ export class ApplicationService {
       // 2. Get applications for these students
       const { data: applications } = await this.db
         .from('LoanApplication')
-        .select('*, user:User!userId(id, email, firstName, lastName)')
+        .select('*, user:User!userId(id, email, firstName, lastName, tests)')
         .in('userId', refereeIds)
         .order('submittedAt', { ascending: false });
 
@@ -1152,7 +1667,7 @@ export class ApplicationService {
       const userEmail = application.email || (application.user as any)?.email;
       if (!userEmail) throw new Error('Recipient email not found');
 
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://developer.vidyaloans.in';
       const statusColor = application.status === 'approved' ? '#10b981' : application.status === 'rejected' ? '#ef4444' : '#6366f1';
 
       const emailHtml = `
@@ -1239,5 +1754,280 @@ export class ApplicationService {
 
   getApplicationStages() {
     return { success: true, data: APPLICATION_STAGES };
+  }
+
+  async getDisbursements(applicationId: string) {
+    const { data, error } = await this.db
+      .from('disbursements')
+      .select('*')
+      .eq('applicationId', applicationId)
+      .order('disbursedAt', { ascending: false });
+    return { data: data || [], error };
+  }
+
+  async processBankStatementEvv(
+    applicationId: string,
+    file: Express.Multer.File,
+    adminId: string,
+    adminName: string
+  ) {
+    console.log(`[EVV Pipeline] Processing statement for application ${applicationId} by admin ${adminName}`);
+
+    // 1. Fetch application details
+    const application = await this.getApplicationById(applicationId);
+    if (!application) throw new NotFoundException('Application not found');
+    const userId = application.userId;
+
+    // 2. Upload statement to S3 (or local fallback)
+    const fileExt = path.extname(file.originalname);
+    const s3Key = `vault/${userId}/bank_statement${fileExt}`;
+    
+    try {
+      await this.s3Service.upload(s3Key, file.buffer, file.mimetype);
+      console.log(`[EVV Pipeline] Uploaded statement to S3: ${s3Key}`);
+    } catch (s3Error: any) {
+      console.warn(`[EVV Pipeline] AWS S3 Upload failed, saving local: ${s3Error.message}`);
+      try {
+        const localDir = path.join(process.cwd(), 'uploads', userId, 'bank_statement');
+        await fs.promises.mkdir(localDir, { recursive: true });
+        await fs.promises.writeFile(path.join(localDir, `file${fileExt}`), file.buffer);
+      } catch (localWriteError: any) {
+        console.error('[EVV Pipeline] Local fallback failed:', localWriteError.message);
+      }
+    }
+
+    // 3. Upsert document record in ApplicationDocument
+    const docData = {
+      applicationId,
+      docType: 'bank_statement',
+      docName: 'Bank Statements (6 months)',
+      fileName: file.originalname,
+      filePath: s3Key,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      status: 'uploaded',
+      uploadedAt: new Date().toISOString()
+    };
+
+    const { data: existingDoc } = await this.db
+      .from('ApplicationDocument')
+      .select('id')
+      .eq('applicationId', applicationId)
+      .eq('docType', 'bank_statement')
+      .maybeSingle();
+
+    if (existingDoc) {
+      const { error } = await this.db
+        .from('ApplicationDocument')
+        .update({ ...docData, status: 'uploaded' })
+        .eq('id', existingDoc.id);
+      if (error) throw new BadRequestException(`Failed to update statement document: ${error.message}`);
+    } else {
+      const { error } = await this.db
+        .from('ApplicationDocument')
+        .insert({
+          id: 'app-doc-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          ...docData,
+          isRequired: true
+        });
+      if (error) throw new BadRequestException(`Failed to insert statement document: ${error.message}`);
+    }
+
+    // 4. Mark application as PROCESSING so frontend can poll
+    await this.db
+      .from('LoanApplication')
+      .update({ evvStatus: 'PROCESSING', evvOverall: null, evvMonthlyBreakdown: [] })
+      .eq('id', applicationId);
+
+    // 5. Run EVV computation in the background (fire-and-forget) — do not await
+    //    This prevents HTTP request timeouts for large bank statement PDFs
+    this.computeEvvInBackground(applicationId, file, adminId, adminName, application, s3Key).catch(err => {
+      console.error(`[EVV Pipeline] Background computation error: ${err.message}`);
+    });
+
+    // 6. Respond immediately so the HTTP request does not time out
+    return {
+      success: true,
+      status: 'PROCESSING',
+      message: 'Bank statement uploaded. EVV calculation is running in the background. Please refresh in a minute.',
+    };
+  }
+
+  private async computeEvvInBackground(
+    applicationId: string,
+    file: Express.Multer.File,
+    adminId: string,
+    adminName: string,
+    application: any,
+    s3Key: string
+  ) {
+    // EVV Intelligence Engine — Full output fields
+    let evvOverall = 0;
+    let evvMonthlyBreakdown: any = [];
+    let evvStatus: 'COMPUTED' | 'FAILED' | 'MANUAL_REVIEW' = 'COMPUTED';
+    let evvTotalSnapshots = 0;
+    let evvTotalTransactions = 0;
+    let evvPeriod: { from: string; to: string } | null = null;
+    // Extended fields
+    let evvScore: number | null = null;
+    let evvGrade: string | null = null;
+    let evvDecision: string | null = null;
+    let evvDecisionReason: string | null = null;
+    let evvRiskFlags: any = null;
+    let evvBehaviours: any = null;
+    let evvMonthlyMetrics: any = null;
+    let evvValidation: any = null;
+    let evvWeightBreakdown: any = null;
+    let evvSnapshots: any = null;
+    let errorMessage = '';
+
+    try {
+      console.log(`[EVV Background] Starting full EVV analysis for application ${applicationId}`);
+
+      // Run the full EVV intelligence pipeline
+      const report = await this.evvEngine.computeFullEvv(
+        file.buffer,
+        file.mimetype,
+        file.originalname,
+        applicationId,
+      );
+
+      evvStatus = report.status;
+      evvOverall = report.overallEvv;
+      evvMonthlyBreakdown = report.monthly_evv;
+      evvTotalSnapshots = report.totalSnapshots;
+      evvTotalTransactions = report.totalTransactions;
+      evvPeriod = report.period;
+
+      // New intelligence fields
+      evvScore = report.evvScore?.score ?? null;
+      evvGrade = report.evvScore?.grade ?? null;
+      evvDecision = report.underwritingDecision?.decision ?? null;
+      evvDecisionReason = report.underwritingDecision?.reasons?.join(' | ') ?? null;
+      evvRiskFlags = report.riskFlags ?? null;
+      evvBehaviours = report.behaviours ?? null;
+      evvMonthlyMetrics = report.monthlyMetrics ?? null;
+      evvValidation = report.validation ?? null;
+      evvWeightBreakdown = report.evvScore?.breakdown ?? null;
+      // Store sampled snapshots (max 200 rows to avoid JSON size limits)
+      evvSnapshots = (report.snapshots || []).slice(0, 200);
+
+      console.log(
+        `[EVV Background] Analysis complete for ${applicationId}: ` +
+        `Score=${evvScore}/100 Grade=${evvGrade} Balance=₹${evvOverall} ` +
+        `Decision=${evvDecision} Flags=${evvRiskFlags?.length ?? 0} Status=${evvStatus}`
+      );
+
+      // Update docName dynamically
+      const numMonths = evvMonthlyBreakdown.length;
+      this.db
+        .from('ApplicationDocument')
+        .update({ docName: `Bank Statements (${numMonths} months)` })
+        .eq('applicationId', applicationId)
+        .eq('docType', 'bank_statement')
+        .then(({ error: docErr }) => {
+          if (docErr) console.error(`[EVV Background] docName update failed: ${docErr.message}`);
+        });
+
+    } catch (err: any) {
+      console.error(`[EVV Background] Full analysis exception: ${err.message}`);
+      evvStatus = 'MANUAL_REVIEW';
+      errorMessage = err.message?.includes('timeout') || err.message?.includes('aborted')
+        ? 'AI processing timed out — try a smaller/clearer PDF.'
+        : err.message || 'Error during EVV analysis.';
+    }
+
+    // Update database with all EVV intelligence results
+    const updateData: any = {
+      evvOverall,
+      evvMonthlyBreakdown,
+      evvStatus,
+      evvTotalSnapshots,
+      evvTotalTransactions,
+      evvPeriod,
+      // New intelligence fields
+      evvScore,
+      evvGrade,
+      evvDecision,
+      evvDecisionReason,
+      evvRiskFlags,
+      evvBehaviours,
+      evvMonthlyMetrics,
+      evvValidation,
+      evvWeightBreakdown,
+      evvSnapshots,
+    };
+
+    if (evvStatus === 'MANUAL_REVIEW' || evvStatus === 'FAILED') {
+      updateData.remarks = `EVV Calculation: Manual Review Required — ${errorMessage}`;
+    }
+
+    const { error: updateError } = await this.db
+      .from('LoanApplication')
+      .update(updateData)
+      .eq('id', applicationId);
+
+    if (updateError) {
+      console.error(`[EVV Background] Failed to update LoanApplication with EVV: ${updateError.message}`);
+    }
+
+    // Log notes & status history in parallel for speed
+    const auditNotes = evvStatus === 'COMPUTED'
+      ? `EVV Calculation completed. Overall balance: ₹${evvOverall.toLocaleString('en-IN')}. Monthly breakdowns saved.`
+      : `EVV Calculation: Manual Review Required — ${errorMessage}`;
+
+    await Promise.all([
+      this.db.from('ApplicationNote').insert({
+        id: 'note-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+        applicationId,
+        authorId: adminId,
+        authorName: 'EVV Engine',
+        content: auditNotes,
+        type: 'general',
+        isInternal: true
+      }),
+      this.createStatusHistory(applicationId, {
+        fromStatus: application.status,
+        toStatus: application.status,
+        changedBy: adminId,
+        changedByName: adminName,
+        notes: auditNotes,
+        isAutomatic: true
+      }),
+    ]);
+
+    // Auto-sharing routing rules
+    let autoShared = false;
+    if (evvStatus === 'COMPUTED' && evvOverall > 5000 && application.bank && application.bank !== 'Pending Partner') {
+      try {
+        console.log(`[EVV Background] Auto-sharing application ${applicationId} to partner banks (EVV = ₹${evvOverall})`);
+        await this.workflowService.submitApplicationToBank(
+          applicationId,
+          application.bank.toLowerCase().replace(/\s+/g, ''),
+          application.bank,
+          'System Automation'
+        );
+        autoShared = true;
+        await this.db
+          .from('LoanApplication')
+          .update({ evvStatus: 'ROUTED_TO_BANK' })
+          .eq('id', applicationId);
+      } catch (shareError: any) {
+        console.error(`[EVV Background] Auto-share failed: ${shareError.message}`);
+      }
+    }
+
+    // Emit real-time dashboard activity
+    this.eventEmitter.emit('dashboard.activity', {
+      type: 'verification',
+      msg: `EVV analyzed for Student #${application.applicationNumber || application.id.slice(-4)}. Overall: ₹${evvOverall.toLocaleString('en-IN')}. Status: ${evvStatus}.`,
+      icon: evvStatus === 'COMPUTED' ? 'payments' : 'warning',
+      color: evvStatus === 'COMPUTED' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-amber-50 text-amber-700 border-amber-100',
+      actorName: 'EVV Engine',
+      actorEmail: 'evv@vidyaloan.in',
+      createdAt: new Date().toISOString()
+    });
+
+    console.log(`[EVV Background] Completed for application ${applicationId}: status=${evvStatus}, overall=₹${evvOverall}`);
   }
 }

@@ -55,6 +55,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   // Residential Details
   final TextEditingController _pincodeController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
   final TextEditingController _resCountryController = TextEditingController();
   bool _isPincodeResolving = false;
 
@@ -496,6 +497,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
 
     final isReal = await _verifyUniversityName();
+    if (!mounted) return;
     if (!isReal) {
       _showError('Target University is not recognized in this country');
       return;
@@ -653,6 +655,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         setState(() {
           if (res['city'] != null && res['city'].toString().isNotEmpty) {
             _cityController.text = res['city'].toString();
+          }
+          if (res['state'] != null && res['state'].toString().isNotEmpty) {
+            _stateController.text = res['state'].toString();
           }
           if (res['country'] != null && res['country'].toString().isNotEmpty) {
             _resCountryController.text = res['country'].toString();
@@ -1138,6 +1143,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             ),
             const SizedBox(height: 12),
             _buildTextInput(
+              hint: 'State / Province',
+              icon: Icons.map_outlined,
+              controller: _stateController,
+              isRequired: false,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
               hint: 'Country',
               icon: Icons.public_outlined,
               controller: _resCountryController,
@@ -1296,9 +1308,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   foregroundColor: const Color(0xFF311B92),
                   side: const BorderSide(color: Color(0xFF311B92)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Back', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text('Back', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 16),
@@ -1338,7 +1350,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
                     final isReal = await _verifyUniversityName();
 
-                    if (context.mounted) {
+                    if (mounted) {
                       Navigator.pop(context); // Pop the progress dialog
                     }
 
@@ -1360,7 +1372,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 backgroundColor: const Color(0xFF311B92),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(
                 _currentStep == 4
@@ -1368,7 +1380,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     : _currentStep == 3
                         ? 'Review Details'
                         : 'Continue',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -1399,6 +1411,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow("Mother's Phone", _motherPhoneController.text),
             _buildReviewRow("Pincode / ZIP", _pincodeController.text),
             _buildReviewRow("City", _cityController.text),
+            _buildReviewRow("State", _stateController.text.isEmpty ? 'N/A' : _stateController.text),
             _buildReviewRow("Country", _resCountryController.text),
           ],
           onEdit: () => setState(() => _currentStep = 1),
@@ -1514,10 +1527,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
   Widget _buildStepContainer({required List<Widget> children}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF311B92).withValues(alpha: 0.08),
@@ -1552,12 +1565,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
             color: hasError 
                 ? Colors.red.withValues(alpha: 0.05) 
                 : const Color(0xFF311B92).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasError 
                   ? Colors.red 
@@ -1579,7 +1592,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 onChanged(val);
               }
             },
-            style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               hintText: isRequired ? '$hint *' : hint,
               hintStyle: TextStyle(
@@ -1587,11 +1600,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     ? Colors.black.withValues(alpha: 0.4)
                     : Colors.black.withValues(alpha: 0.4),
                 fontWeight: FontWeight.bold,
+                fontSize: 14,
               ),
               border: InputBorder.none,
               prefix: keyboardType == TextInputType.phone 
                   ? Container(
-                      margin: const EdgeInsets.only(right: 10),
+                      margin: const EdgeInsets.only(right: 8),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -1600,12 +1614,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             style: TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 14,
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 8),
                           Container(
-                            height: 20,
+                            height: 16,
                             width: 1.5,
                             color: Colors.black.withValues(alpha: 0.1),
                           ),
@@ -1618,6 +1632,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 color: hasError 
                     ? Colors.red 
                     : const Color(0xFF311B92).withValues(alpha: 0.4),
+                size: 20,
               ),
             ),
           ),
@@ -1656,12 +1671,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: hasError 
                   ? Colors.red.withValues(alpha: 0.05) 
                   : const Color(0xFF311B92).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: hasError 
                     ? Colors.red 
@@ -1681,14 +1696,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             color: controller.text.isEmpty
                                 ? Colors.black.withValues(alpha: 0.4)
                                 : Colors.black,
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         if (isRequired && controller.text.isEmpty)
                           const TextSpan(
                             text: ' *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
+                            style: TextStyle(color: Colors.red, fontSize: 14),
                           ),
                       ],
                     ),
@@ -1700,7 +1715,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   icon, 
                   color: hasError 
                       ? Colors.red 
-                      : const Color(0xFF311B92).withValues(alpha: 0.5)
+                      : const Color(0xFF311B92).withValues(alpha: 0.5),
+                  size: 20,
                 ),
               ],
             ),
@@ -1733,14 +1749,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             if (hasError) setState(() => _fieldErrors[_countryController] = null);
             _showCountrySelection();
           },
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: hasError
                   ? Colors.red.withValues(alpha: 0.05)
                   : const Color(0xFF311B92).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: hasError
                     ? Colors.red
@@ -1752,14 +1768,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               children: [
                 if (hasValue && flag.isNotEmpty) ...[
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFF311B92).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(flag, style: const TextStyle(fontSize: 22)),
+                    child: Text(flag, style: const TextStyle(fontSize: 16)),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                 ],
                 Expanded(
                   child: RichText(
@@ -1771,14 +1787,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             color: hasValue
                                 ? Colors.black
                                 : Colors.black.withValues(alpha: 0.4),
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         if (!hasValue)
                           const TextSpan(
                             text: ' *',
-                            style: TextStyle(color: Colors.red, fontSize: 16),
+                            style: TextStyle(color: Colors.red, fontSize: 14),
                           ),
                       ],
                     ),
@@ -1819,12 +1835,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
             color: hasError
                 ? Colors.red.withValues(alpha: 0.05)
                 : const Color(0xFF311B92).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: hasError
                   ? Colors.red
@@ -1840,30 +1856,30 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 child: flag.isNotEmpty
                     ? Container(
                         key: ValueKey(flag),
-                        margin: const EdgeInsets.only(right: 10),
+                        margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF311B92).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(flag,
-                            style: const TextStyle(fontSize: 22)),
+                            style: const TextStyle(fontSize: 16)),
                       )
                     : Container(
                         key: const ValueKey('globe'),
-                        margin: const EdgeInsets.only(right: 10),
+                        margin: const EdgeInsets.only(right: 8),
                         child: Icon(
                           Icons.public,
                           color: const Color(0xFF311B92).withValues(alpha: 0.4),
-                          size: 24,
+                          size: 20,
                         ),
                       ),
               ),
               Expanded(
                 child: TextField(
                   controller: _countryController,
-                  style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold),
                   onChanged: (_) {
                     if (hasError) {
                       setState(() => _fieldErrors[_countryController] = null);
@@ -1873,7 +1889,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     hintText: 'Enter Target Country *',
                     hintStyle: TextStyle(
                         color: Colors.black.withValues(alpha: 0.4),
-                        fontWeight: FontWeight.bold),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14),
                     border: InputBorder.none,
                   ),
                 ),

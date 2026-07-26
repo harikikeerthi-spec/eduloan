@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
 import 'main_navigation.dart';
+import 'onboarding_page.dart';
 import '../widgets/mesh_background.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   final String email;
+  final bool isNewUser;
 
-  const CompleteProfilePage({super.key, required this.email});
+  const CompleteProfilePage({
+    super.key,
+    required this.email,
+    this.isNewUser = false,
+  });
 
   @override
   State<CompleteProfilePage> createState() => _CompleteProfilePageState();
@@ -98,11 +104,19 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           const SnackBar(content: Text('Profile completed successfully!')),
         );
 
-        // Navigate to Home Page
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
-          (route) => false,
-        );
+        // Navigate after profile completion
+        if (widget.isNewUser) {
+          // First-time user — show onboarding
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const OnboardingPage()),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

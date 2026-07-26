@@ -498,7 +498,8 @@ export class AuthService {
         phoneNumber: user.phoneNumber || '',
         dateOfBirth: formattedDob || '',
         role: user.role,
-        picture: picture // Return Firebase profile picture if available
+        // NOTE: Google 'picture' is intentionally NOT returned.
+        // Profile images must be explicitly set by the user via updateUserDetails.
       };
     } catch (error) {
       console.error('[AuthService] Firebase authentication error:', error);

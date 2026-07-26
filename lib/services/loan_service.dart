@@ -135,11 +135,19 @@ class LoanService {
           throw Exception('Session expired. Please log in again.');
         }
       } else {
+        String serverMsg = '';
+        try {
+          final errBody = json.decode(response.body);
+          serverMsg = errBody['message'] ?? errBody['error'] ?? '';
+        } catch (_) {}
+        if (serverMsg.isNotEmpty) {
+          throw Exception(serverMsg);
+        }
         throw Exception('Failed to create loan: ${response.statusCode}');
       }
     } catch (e) {
       if (e is Exception && e.toString().contains('Session expired')) rethrow;
-      throw Exception('Error creating loan: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
 

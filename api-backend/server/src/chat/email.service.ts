@@ -180,6 +180,21 @@ export class EmailService {
     }
   }
 
+  async sendAiToolResultEmail(to: string, userName: string, toolName: string, emailHtml: string, textSummary: string) {
+    try {
+      await this.transporter.sendMail({
+        to,
+        subject: `Your ${toolName} Report - VidyaLoan AI`,
+        text: textSummary,
+        html: emailHtml,
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to send AI tool result email to ${to}:`, error);
+      return false;
+    }
+  }
+
   private escapeHtml(text: string): string {
     const map: { [key: string]: string } = {
       '&': '&amp;',

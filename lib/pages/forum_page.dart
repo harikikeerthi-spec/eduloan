@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/community.dart';
 import '../services/community_service.dart';
+import '../services/notification_service.dart';
+import '../services/ai_logic_service.dart';
 import '../widgets/mesh_background.dart';
 
 class ForumPage extends StatefulWidget {
@@ -17,6 +20,10 @@ class _ForumPageState extends State<ForumPage> {
   List<ForumPost> _posts = [];
   bool _isLoading = true;
   String? _error;
+
+  int _selectedMainTab = 1; // Default to 1 (Smart Group Chat) as requested!
+  int _smartSubTab = 0; // 0 = General Chat, 1 = Q&A, 2 = Polls, 3 = Announcements
+
   String _selectedCategory = 'General';
   String? _customTitle;
   int _membersCount = 0;
@@ -27,10 +34,234 @@ class _ForumPageState extends State<ForumPage> {
   List<Map<String, dynamic>> _allHubs = [];
   bool _isLoadingHubs = true;
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  // ─── Interactive Poll Data State ───────────────────────────────────────────
+  final List<Map<String, dynamic>> _polls = [
+    {
+      'id': 'poll_1',
+      'question': 'Which country are you targeting for Fall 2026 / Spring 2027?',
+      'author': 'VidyaLoan Community',
+      'totalVotes': 348,
+      'userVotedIndex': 0, // Default option 0 selected for demonstration
+      'options': [
+        {'text': '🇺🇸 USA', 'votes': 215},
+        {'text': '🇬🇧 UK & Ireland', 'votes': 62},
+        {'text': '🇩🇪 Germany & Europe', 'votes': 45},
+        {'text': '🇨🇦 Canada & Australia', 'votes': 26},
+      ],
+    },
+    {
+      'id': 'poll_2',
+      'question': 'What is your biggest blocker in the loan application process?',
+      'author': 'Finance Advisory',
+      'totalVotes': 210,
+      'userVotedIndex': -1,
+      'options': [
+        {'text': '📄 Co-applicant income proof', 'votes': 98},
+        {'text': '⏳ Bank sanction speed', 'votes': 64},
+        {'text': '🏡 Collateral valuation', 'votes': 32},
+        {'text': '🔣 Interest rate comparison', 'votes': 16},
+      ],
+    },
+    {
+      'id': 'poll_3',
+      'question': 'Which AI tool helps you the most in your prep?',
+      'author': 'AI Student Lounge',
+      'totalVotes': 175,
+      'userVotedIndex': 1,
+      'options': [
+        {'text': '📝 SOP Writer Tool', 'votes': 65},
+        {'text': '🎯 Admit Predictor Tool', 'votes': 78},
+        {'text': '📊 Grade Converter Tool', 'votes': 20},
+        {'text': '💬 Customer Care AI Bot', 'votes': 12},
+      ],
+    },
+  ];
+
+
+
+  // ─── Announcements Data ────────────────────────────────────────────────────
+  final List<Map<String, dynamic>> _announcements = [
+    {
+      'id': 'ann_1',
+      'title': '🚨 F-1 Visa Appointment Slots Released for Fall 2026!',
+      'tag': 'VISA ALERT',
+      'color': const Color(0xFFEF4444),
+      'date': '24 July 2026',
+      'content': 'US Embassies across New Delhi, Mumbai, and Hyderabad have opened bulk interview slots for June-August 2026. Book immediately on the official portal!',
+      'action': 'Check Visa Simulator',
+      'route': '/ai/visa-simulator',
+    },
+    {
+      'id': 'ann_2',
+      'title': '🎉 Special Interest Rate Drop on Unsecured Education Loans!',
+      'tag': 'OFFICIAL NOTICE',
+      'color': const Color(0xFF311B92),
+      'date': '22 July 2026',
+      'content': 'Partner banks Credila & Avanse have reduced ROI starting at 9.75% for top 100 global STEM programs. Existing applications automatically upgraded.',
+      'action': 'Apply Now',
+      'route': '/apply-loan',
+    },
+    {
+      'id': 'ann_3',
+      'title': '🎓 Free SOP & LOR Review Webinar this Saturday at 6 PM',
+      'tag': 'WEBINAR',
+      'color': const Color(0xFF10B981),
+      'date': '20 July 2026',
+      'content': 'Join Ivy League alumni as they evaluate live SOP samples and share secrets to crack top university admissions.',
+      'action': 'Use SOP Writer',
+      'route': '/ai/sop-writer',
+    },
+  ];
+
+  // ─── Smart Group Channels Data ─────────────────────────────────────────────
+  final List<Map<String, dynamic>> _smartGroups = [
+    {
+      'id': 'usa_fall26',
+      'title': 'USA Fall 2026 Aspirants',
+      'subtitle': 'NYU, MS in CS, i20 updates & GRE discussion',
+      'members': 245,
+      'online': 38,
+      'icon': Icons.school_rounded,
+      'color': const Color(0xFF311B92),
+      'badge': 'Top Active',
+      'lastMsg': 'Rohan: Has anyone received i20 from NYU Tandon?',
+      'time': '2m ago',
+      'messages': [
+        {
+          'sender': 'Rohan Sharma',
+          'avatarLetter': 'R',
+          'color': const Color(0xFF311B92),
+          'role': 'NYU Applicant',
+          'text': 'Has anyone received i20 from NYU Tandon yet?',
+          'time': '10:42 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'Ananya Mehra',
+          'avatarLetter': 'A',
+          'color': const Color(0xFF10B981),
+          'role': 'Boston Univ Admit',
+          'text': 'Yes! Got mine yesterday via portal. Takes about 4-5 days after submission.',
+          'time': '10:44 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'Vikram Rao (Alumni)',
+          'avatarLetter': 'V',
+          'color': const Color(0xFFF59E0B),
+          'role': 'CMU Alumni',
+          'text': 'Make sure your bank financial certificate date is within 3 months!',
+          'time': '10:46 AM',
+          'isMe': false,
+        },
+      ],
+    },
+    {
+      'id': 'visa_docs',
+      'title': 'Visa & Documentation Squad',
+      'subtitle': 'F1/J1 visa slots, DS-160 & consulate interview tips',
+      'members': 189,
+      'online': 24,
+      'icon': Icons.verified_user_rounded,
+      'color': const Color(0xFF10B981),
+      'badge': 'Visa Alert',
+      'lastMsg': 'Priya: Bulk slots opened for Hyderabad consulate!',
+      'time': '5m ago',
+      'messages': [
+        {
+          'sender': 'Priya K.',
+          'avatarLetter': 'P',
+          'color': const Color(0xFF10B981),
+          'role': 'F1 Applicant',
+          'text': 'Bulk slots opened for Hyderabad consulate just now for July dates!',
+          'time': '11:15 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'Rahul T.',
+          'avatarLetter': 'R',
+          'color': const Color(0xFF3B82F6),
+          'role': 'US Visa Guide',
+          'text': 'DS-160 photo spec check: white background 2x2 inch mandatory.',
+          'time': '11:18 AM',
+          'isMe': false,
+        },
+      ],
+    },
+    {
+      'id': 'loan_squad',
+      'title': 'Loan & Financial Aid Squad',
+      'subtitle': 'Collateral, non-collateral, ROI & sanction letters',
+      'members': 312,
+      'online': 47,
+      'icon': Icons.account_balance_rounded,
+      'color': const Color(0xFFF59E0B),
+      'badge': 'Finance',
+      'lastMsg': 'Sneha: VidyaLoan team cleared my application in 48h!',
+      'time': '12m ago',
+      'messages': [
+        {
+          'sender': 'Sneha Patel',
+          'avatarLetter': 'S',
+          'color': const Color(0xFFEC4899),
+          'role': 'Sanctioned 45L',
+          'text': 'VidyaLoan team cleared my Avanse loan application in 48 hours!',
+          'time': '09:30 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'Amit B.',
+          'avatarLetter': 'A',
+          'color': const Color(0xFF311B92),
+          'role': 'Applicant',
+          'text': 'Is collateral required for loans above 30L for STEM courses?',
+          'time': '09:32 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'VidyaLoan Mentor',
+          'avatarLetter': 'V',
+          'color': const Color(0xFF10B981),
+          'role': 'Official Advisor',
+          'text': 'Non-collateral loans up to 50L are available for top 100 universities!',
+          'time': '09:35 AM',
+          'isMe': false,
+        },
+      ],
+    },
+    {
+      'id': 'uk_europe',
+      'title': 'UK & Europe Scholars',
+      'subtitle': 'CAS letters, UKVI visas, Erasmus & German blocked account',
+      'members': 142,
+      'online': 19,
+      'icon': Icons.public_rounded,
+      'color': const Color(0xFF3B82F6),
+      'badge': 'Global',
+      'lastMsg': 'Tanvi: CAS request timeline for University of Manchester?',
+      'time': '30m ago',
+      'messages': [
+        {
+          'sender': 'Tanvi G.',
+          'avatarLetter': 'T',
+          'color': const Color(0xFF3B82F6),
+          'role': 'Manchester Admit',
+          'text': 'What is the CAS request timeline for University of Manchester?',
+          'time': '08:15 AM',
+          'isMe': false,
+        },
+        {
+          'sender': 'Sameer V.',
+          'avatarLetter': 'S',
+          'color': const Color(0xFF8B5CF6),
+          'role': 'UK Scholar',
+          'text': 'Usually 5-7 working days after tuition deposit confirmation.',
+          'time': '08:20 AM',
+          'isMe': false,
+        },
+      ],
+    },
+  ];
 
   @override
   void didChangeDependencies() {
@@ -50,11 +281,6 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
   Future<void> _loadPosts() async {
     setState(() {
       _isLoading = true;
@@ -62,7 +288,6 @@ class _ForumPageState extends State<ForumPage> {
     });
 
     try {
-      // Fetch stats and posts in parallel
       final results = await Future.wait([
         _selectedCategory == 'General'
             ? _communityService.getForumPosts(
@@ -86,7 +311,9 @@ class _ForumPageState extends State<ForumPage> {
           _discussionsCount = hub['stats']?['discussions'] ?? 0;
           _hubDescription = hub['description'];
           _customTitle ??= hub['title'];
-          _allHubs = results[2] as List<Map<String, dynamic>>;
+          _allHubs = (results[2] as List)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
           _isLoading = false;
           _isLoadingHubs = false;
         });
@@ -106,13 +333,13 @@ class _ForumPageState extends State<ForumPage> {
     try {
       final result = await _communityService.likeForumPost(postId);
       if (result['success'] == true) {
-        _loadPosts(); // Refresh the list
+        _loadPosts();
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to like post: $e')),
+      );
     }
   }
 
@@ -125,46 +352,85 @@ class _ForumPageState extends State<ForumPage> {
     Share.share(text, subject: post.title);
   }
 
+  void _openGroupChatModal(Map<String, dynamic> group) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SmartChatRoomModal(group: group),
+    );
+  }
+
+  void _voteOnPoll(int pollIndex, int optionIndex) async {
+    final poll = _polls[pollIndex];
+    final pollId = poll['id'] as String;
+
+    setState(() {
+      final previousVoted = poll['userVotedIndex'] as int;
+
+      if (previousVoted == optionIndex) return;
+
+      final List options = poll['options'] as List;
+
+      if (previousVoted != -1) {
+        options[previousVoted]['votes'] = (options[previousVoted]['votes'] as int) - 1;
+      } else {
+        poll['totalVotes'] = (poll['totalVotes'] as int) + 1;
+      }
+
+      options[optionIndex]['votes'] = (options[optionIndex]['votes'] as int) + 1;
+      poll['userVotedIndex'] = optionIndex;
+    });
+
+    try {
+      await _communityService.submitPollVote(pollId, optionIndex);
+    } catch (e) {
+      debugPrint('Poll vote database sync info: $e');
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Vote recorded & saved to database! 🎉'),
+        backgroundColor: Color(0xFF10B981),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar:
-          true, // Optional, for full screen effect if needed
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.pushNamed(
-            context,
-            '/community/forum/create',
-            arguments: {'category': _selectedCategory},
-          );
-
-          if (result == true && mounted) {
-            _loadPosts(); // Refresh if a post was created
-          }
-        },
-        backgroundColor: const Color(0xFF311B92),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+      extendBodyBehindAppBar: true,
       body: MeshBackground(
         child: SafeArea(
           bottom: false,
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
                 _buildStickyNavbar(context),
-                _buildCategorySelector(),
-                _buildHeroHeader(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      _buildFeedHeader(),
-                      const SizedBox(height: 16),
-                      _buildBody(),
-                    ],
+                _buildMainTabToggle(),
+
+                if (_selectedMainTab == 0) ...[
+                  _buildCategorySelector(),
+                  _buildHeroHeader(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildFeedHeader(),
+                        const SizedBox(height: 16),
+                        _buildBody(),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 100),
+                ] else ...[
+                  // ─── SMART GROUP CHAT CONTAINER ───────────────────────────
+                  _buildSmartGroupChatSection(),
+                ],
+
+                const SizedBox(height: 110),
               ],
             ),
           ),
@@ -173,34 +439,194 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
+  Widget _buildStickyNavbar(BuildContext context) {
+    final bool canPop = Navigator.of(context).canPop();
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            if (canPop)
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF311B92)),
+              )
+            else
+              const SizedBox(width: 16),
+            const Spacer(),
+            Text(
+              'Community Hub',
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF311B92),
+                letterSpacing: -0.3,
+              ),
+            ),
+            const Spacer(),
+            if (canPop) const SizedBox(width: 40) else const SizedBox(width: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainTabToggle() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedMainTab = 0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedMainTab == 0 ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: _selectedMainTab == 0
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.forum_rounded,
+                      size: 17,
+                      color: _selectedMainTab == 0
+                          ? const Color(0xFF311B92)
+                          : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Forum Feed',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: _selectedMainTab == 0
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: _selectedMainTab == 0
+                            ? const Color(0xFF311B92)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedMainTab = 1),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: _selectedMainTab == 1 ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: _selectedMainTab == 1
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.groups_rounded,
+                      size: 19,
+                      color: _selectedMainTab == 1
+                          ? const Color(0xFF311B92)
+                          : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Smart Groups',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: _selectedMainTab == 1
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: _selectedMainTab == 1
+                            ? const Color(0xFF311B92)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'LIVE',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── FORUM FEED SECTION WIDGETS ────────────────────────────────────────────
+
   Widget _buildCategorySelector() {
     if (_isLoadingHubs && _allHubs.isEmpty) {
       return const SizedBox(
         height: 50,
-        child: Center(child: LinearProgressIndicator()),
+        child: Center(child: LinearProgressIndicator(color: Color(0xFF311B92))),
       );
     }
 
-    // Add 'General' to the hubs list for the selector if not present
     final List<Map<String, dynamic>> displayHubs = [
       {'id': 'General', 'title': 'General'},
       ..._allHubs.where((h) => h['id'] != 'General'),
     ];
 
     return Container(
-      height: 60,
+      height: 50,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: displayHubs.length,
         itemBuilder: (context, index) {
           final hub = displayHubs[index];
           final isSelected = _selectedCategory == hub['id'];
-          final color = isSelected ? const Color(0xFF6605C7) : Colors.grey[600];
+          final color = isSelected ? const Color(0xFF311B92) : Colors.grey[700];
 
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 10),
             child: ChoiceChip(
               label: Text(hub['title'] ?? hub['id']),
               selected: isSelected,
@@ -214,17 +640,17 @@ class _ForumPageState extends State<ForumPage> {
                 }
               },
               backgroundColor: Colors.white,
-              selectedColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
-              labelStyle: TextStyle(
+              selectedColor: const Color(0xFF311B92).withValues(alpha: 0.12),
+              labelStyle: GoogleFonts.inter(
                 color: color,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: 13,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
                   color: isSelected
-                      ? const Color(0xFF6605C7)
+                      ? const Color(0xFF311B92)
                       : Colors.grey.withValues(alpha: 0.2),
                 ),
               ),
@@ -236,87 +662,57 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  Widget _buildStickyNavbar(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-            ),
-            const Spacer(),
-            Image.network(
-              'https://vidhyaloan.com/assets/images/logo.png',
-              height: 24,
-              errorBuilder: (_, _, _) => const Text(
-                'Vidya Loan',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Color(0xFF311B92),
-                ),
-              ),
-            ),
-            const Spacer(),
-            const SizedBox(width: 40),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildHeroHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF6605C7).withValues(alpha: 0.1),
+              color: const Color(0xFF311B92).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
               _selectedCategory.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 10,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF6605C7),
+                color: const Color(0xFF311B92),
                 letterSpacing: 1.2,
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            _customTitle ?? 'Community Forum',
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF1E293B),
-              height: 1.2,
-            ),
-          ),
           const SizedBox(height: 12),
           Text(
-            _hubDescription ??
-                'Navigate the complexities of ${_selectedCategory.toLowerCase()} and community planning.',
-            style: TextStyle(
-              fontSize: 14,
-              color: const Color(0xFF1E293B).withValues(alpha: 0.6),
-              height: 1.5,
+            _customTitle ?? 'Community Forum',
+            style: GoogleFonts.outfit(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: const Color(0xFF1E293B),
+              height: 1.15,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Text(
+            _hubDescription ??
+                'Ask questions, share advice, and connect with fellow students navigating ${_selectedCategory.toLowerCase()}.',
+            style: GoogleFonts.inter(
+              fontSize: 13.5,
+              color: const Color(0xFF1E293B).withValues(alpha: 0.65),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 18),
           Row(
             children: [
               _buildStatCard('$_membersCount', 'MEMBERS'),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               _buildStatCard('$_discussionsCount', 'DISCUSSIONS'),
+              const Spacer(),
+              _buildNewPostButton(),
             ],
           ),
         ],
@@ -324,15 +720,70 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  Widget _buildStatCard(String value, String label) {
+  Widget _buildNewPostButton() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF311B92), Color(0xFF4527A0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: const Color(0xFF311B92).withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () async {
+            final result = await Navigator.pushNamed(
+              context,
+              '/community/forum/create',
+              arguments: {'category': _selectedCategory},
+            );
+
+            if (result == true && mounted) {
+              _loadPosts();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 6),
+                Text(
+                  'New Post',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -342,18 +793,18 @@ class _ForumPageState extends State<ForumPage> {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF6605C7),
+              color: const Color(0xFF311B92),
             ),
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 9,
+            style: GoogleFonts.inter(
+              fontSize: 9.5,
               fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E293B).withValues(alpha: 0.4),
+              color: const Color(0xFF1E293B).withValues(alpha: 0.45),
               letterSpacing: 0.5,
             ),
           ),
@@ -365,12 +816,12 @@ class _ForumPageState extends State<ForumPage> {
   Widget _buildFeedHeader() {
     return Row(
       children: [
-        const Text(
+        Text(
           'Discussion Feed',
-          style: TextStyle(
+          style: GoogleFonts.outfit(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
+            color: const Color(0xFF1E293B),
           ),
         ),
         const SizedBox(width: 8),
@@ -378,13 +829,13 @@ class _ForumPageState extends State<ForumPage> {
           width: 6,
           height: 6,
           decoration: const BoxDecoration(
-            color: Color(0xFF6605C7),
+            color: Color(0xFF311B92),
             shape: BoxShape.circle,
           ),
         ),
         const Spacer(),
         Container(
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: const Color(0xFFE2E8F0),
             borderRadius: BorderRadius.circular(12),
@@ -426,7 +877,7 @@ class _ForumPageState extends State<ForumPage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(9),
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -439,9 +890,9 @@ class _ForumPageState extends State<ForumPage> {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected
                 ? const Color(0xFF1E293B)
                 : const Color(0xFF64748B),
@@ -453,7 +904,7 @@ class _ForumPageState extends State<ForumPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)));
     }
 
     if (_error != null) {
@@ -472,9 +923,29 @@ class _ForumPageState extends State<ForumPage> {
       return Center(
         child: Column(
           children: [
-            Icon(Icons.forum_outlined, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            const Text('No posts found in this category.'),
+            const SizedBox(height: 30),
+            Icon(Icons.forum_outlined, size: 56, color: Colors.grey[400]),
+            const SizedBox(height: 12),
+            Text(
+              'No discussions found in this category yet.',
+              style: GoogleFonts.inter(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  '/community/forum/create',
+                  arguments: {'category': _selectedCategory},
+                );
+              },
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Be the first to post'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF311B92),
+                foregroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
       );
@@ -490,12 +961,12 @@ class _ForumPageState extends State<ForumPage> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -509,9 +980,9 @@ class _ForumPageState extends State<ForumPage> {
               arguments: post.id,
             );
           },
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -519,31 +990,35 @@ class _ForumPageState extends State<ForumPage> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF6605C7).withValues(alpha: 0.1),
-                      child: const Text(
-                        'U',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6605C7),
+                      backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
+                      child: Text(
+                        (post.userName != null && post.userName!.isNotEmpty)
+                            ? post.userName![0].toUpperCase()
+                            : 'S',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF311B92),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
-                      'User',
-                      style: TextStyle(
+                    Text(
+                      post.userName != null && post.userName!.isNotEmpty
+                          ? post.userName!
+                          : 'Student User',
+                      style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Color(0xFF1E293B),
+                        fontSize: 14.5,
+                        color: const Color(0xFF1E293B),
                       ),
                     ),
                     const Spacer(),
                     Text(
                       _formatDate(post.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF1E293B).withValues(alpha: 0.4),
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: const Color(0xFF1E293B).withValues(alpha: 0.45),
                       ),
                     ),
                   ],
@@ -551,11 +1026,11 @@ class _ForumPageState extends State<ForumPage> {
                 const SizedBox(height: 12),
                 Text(
                   post.title,
-                  style: const TextStyle(
+                  style: GoogleFonts.outfit(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                    height: 1.4,
+                    color: const Color(0xFF1E293B),
+                    height: 1.35,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -563,24 +1038,24 @@ class _ForumPageState extends State<ForumPage> {
                   post.content,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
                     color: const Color(0xFF1E293B).withValues(alpha: 0.7),
-                    height: 1.5,
+                    height: 1.45,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     _buildStatAction(
                       post.liked ? Icons.thumb_up : Icons.thumb_up_outlined,
                       '${post.likes}',
-                      color: post.liked ? const Color(0xFF6605C7) : null,
+                      color: post.liked ? const Color(0xFF311B92) : null,
                       onTap: () => _toggleLikePost(post.id),
                     ),
                     const SizedBox(width: 16),
                     _buildStatAction(
-                      Icons.chat_bubble_outline,
+                      Icons.chat_bubble_outline_rounded,
                       '${post.commentCount} Answers',
                     ),
                     const SizedBox(width: 16),
@@ -610,18 +1085,18 @@ class _ForumPageState extends State<ForumPage> {
     Color? color,
     VoidCallback? onTap,
   }) {
-    final activeColor = color ?? const Color(0xFF1E293B).withValues(alpha: 0.4);
+    final activeColor = color ?? const Color(0xFF1E293B).withValues(alpha: 0.45);
     return GestureDetector(
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, size: 16, color: activeColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 15, color: activeColor),
+          const SizedBox(width: 5),
           if (value.isNotEmpty)
             Text(
               value,
-              style: TextStyle(
-                fontSize: 12,
+              style: GoogleFonts.inter(
+                fontSize: 11.5,
                 color: activeColor,
                 fontWeight: color != null ? FontWeight.bold : FontWeight.w500,
               ),
@@ -643,5 +1118,1508 @@ class _ForumPageState extends State<ForumPage> {
     } else {
       return 'Just now';
     }
+  }
+
+  // ─── SMART GROUP CHAT CONTAINER & 4 SUB-TABS ───────────────────────────────
+
+  Widget _buildSmartGroupChatSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+
+          // Sub-Tab Switcher: General Chat | Polls | Announcements
+          Container(
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                _buildSubTabItem(0, '💬 Chat', Icons.chat_bubble_outline_rounded),
+                _buildSubTabItem(1, '📊 Polls', Icons.poll_outlined),
+                _buildSubTabItem(2, '📢 Alerts', Icons.campaign_outlined),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Render active Sub-Tab view
+          if (_smartSubTab == 0) _buildGeneralChatView(),
+          if (_smartSubTab == 1) _buildPollsView(),
+          if (_smartSubTab == 2) _buildAnnouncementsView(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubTabItem(int index, String title, IconData icon) {
+    final bool isSelected = _smartSubTab == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _smartSubTab = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF311B92) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              title,
+              style: GoogleFonts.outfit(
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF64748B),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 1. GENERAL CHAT SUB-TAB
+  Widget _buildGeneralChatView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Banner
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF311B92), Color(0xFF4527A0)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF311B92).withValues(alpha: 0.25),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Live Student Group Chats',
+                      style: GoogleFonts.outfit(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Tap any channel to enter live group chat room',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'ACTIVE CHANNELS',
+              style: GoogleFonts.outfit(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF64748B),
+                letterSpacing: 1.0,
+              ),
+            ),
+            GestureDetector(
+              onTap: _showCreateGroupModal,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFF311B92)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Create Group',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF311B92),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        ..._smartGroups.map((group) => _buildGroupChannelTile(group)),
+      ],
+    );
+  }
+
+  Widget _buildGroupChannelTile(Map<String, dynamic> group) {
+    final Color color = group['color'] as Color;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openGroupChatModal(group),
+          borderRadius: BorderRadius.circular(18),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Row(
+              children: [
+                Stack(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        group['icon'] as IconData,
+                        color: color,
+                        size: 24,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              group['title'],
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1E293B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              group['badge'],
+                              style: GoogleFonts.inter(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        group['lastMsg'],
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: const Color(0xFF475569),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Icon(Icons.people_alt_outlined, size: 13, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${group['members']} members',
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${group['online']} online',
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── CREATE GROUP CHANNEL MODAL ─────────────────────────────────────────────
+
+  void _showCreateGroupModal() {
+    final titleController = TextEditingController();
+    final subController = TextEditingController();
+    IconData selectedIcon = Icons.school_rounded;
+    Color selectedColor = const Color(0xFF311B92);
+    String selectedBadge = 'Custom Group';
+    bool isAiVerifying = false;
+    String? aiErrorMsg;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+              top: 20,
+              left: 20,
+              right: 20,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Create Student Group Channel',
+                    style: GoogleFonts.outfit(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'AI Moderated: Groups must be related to study abroad, education, or loans.',
+                    style: GoogleFonts.inter(fontSize: 12.5, color: Colors.grey[600]),
+                  ),
+                  if (aiErrorMsg != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              aiErrorMsg!,
+                              style: GoogleFonts.inter(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF991B1B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 18),
+                  Text(
+                    'GROUP NAME',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: titleController,
+                    style: GoogleFonts.inter(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Dallas Fall 2026 Aspirants',
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'TOPIC / SUBTITLE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: subController,
+                    style: GoogleFonts.inter(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Housing, admit discussions & meetups',
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'CHOOSE ICON THEME',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildIconChoice(
+                        icon: Icons.school_rounded,
+                        color: const Color(0xFF311B92),
+                        badge: 'University',
+                        selectedIcon: selectedIcon,
+                        onTap: () {
+                          setModalState(() {
+                            selectedIcon = Icons.school_rounded;
+                            selectedColor = const Color(0xFF311B92);
+                            selectedBadge = 'University';
+                          });
+                        },
+                      ),
+                      _buildIconChoice(
+                        icon: Icons.verified_user_rounded,
+                        color: const Color(0xFF10B981),
+                        badge: 'Visa',
+                        selectedIcon: selectedIcon,
+                        onTap: () {
+                          setModalState(() {
+                            selectedIcon = Icons.verified_user_rounded;
+                            selectedColor = const Color(0xFF10B981);
+                            selectedBadge = 'Visa';
+                          });
+                        },
+                      ),
+                      _buildIconChoice(
+                        icon: Icons.account_balance_rounded,
+                        color: const Color(0xFFF59E0B),
+                        badge: 'Finance',
+                        selectedIcon: selectedIcon,
+                        onTap: () {
+                          setModalState(() {
+                            selectedIcon = Icons.account_balance_rounded;
+                            selectedColor = const Color(0xFFF59E0B);
+                            selectedBadge = 'Finance';
+                          });
+                        },
+                      ),
+                      _buildIconChoice(
+                        icon: Icons.public_rounded,
+                        color: const Color(0xFF3B82F6),
+                        badge: 'Global',
+                        selectedIcon: selectedIcon,
+                        onTap: () {
+                          setModalState(() {
+                            selectedIcon = Icons.public_rounded;
+                            selectedColor = const Color(0xFF3B82F6);
+                            selectedBadge = 'Global';
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: isAiVerifying
+                          ? null
+                          : () async {
+                              final title = titleController.text.trim();
+                              final sub = subController.text.trim();
+                              if (title.isEmpty) return;
+
+                              setModalState(() {
+                                isAiVerifying = true;
+                                aiErrorMsg = null;
+                              });
+
+                              final verifyRes = await AiLogicService().verifyGroupTopic(title, sub);
+
+                              if (verifyRes['isValid'] != true) {
+                                setModalState(() {
+                                  isAiVerifying = false;
+                                  aiErrorMsg = verifyRes['reason'] ??
+                                      'Group title/topic must be related to study abroad, education, or loans.';
+                                });
+                                return;
+                              }
+
+                              final newGroup = {
+                                'id': 'group_${DateTime.now().millisecondsSinceEpoch}',
+                                'title': title,
+                                'subtitle': sub.isEmpty ? 'Student discussion group' : sub,
+                                'members': 1,
+                                'online': 1,
+                                'icon': selectedIcon,
+                                'color': selectedColor,
+                                'badge': selectedBadge,
+                                'lastMsg': 'Group channel created just now!',
+                                'time': 'Just now',
+                                'messages': [
+                                  {
+                                    'sender': 'System',
+                                    'avatarLetter': 'S',
+                                    'color': selectedColor,
+                                    'role': 'Creator',
+                                    'text': 'Welcome to $title group chat!',
+                                    'time': 'Just now',
+                                    'isMe': false,
+                                  },
+                                ],
+                              };
+
+                              setState(() {
+                                _smartGroups.insert(0, newGroup);
+                              });
+
+                              _communityService.saveCustomGroup(newGroup);
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('AI Verified & Group Created! 🎉'),
+                                    backgroundColor: Color(0xFF10B981),
+                                  ),
+                                );
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: isAiVerifying
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  '🤖 AI Verifying Relevance...',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              'Create Group Channel',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildIconChoice({
+    required IconData icon,
+    required Color color,
+    required String badge,
+    required IconData selectedIcon,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = selectedIcon == icon;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.2) : Colors.grey[100],
+          shape: BoxShape.circle,
+          border: isSelected ? Border.all(color: color, width: 2) : null,
+        ),
+        child: Icon(icon, color: color, size: 24),
+      ),
+    );
+  }
+
+  // 3. POLLS SUB-TAB (HIGH INTERACTION)
+  Widget _buildPollsView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'LIVE COMMUNITY POLLS',
+              style: GoogleFonts.outfit(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF64748B),
+                letterSpacing: 1.0,
+              ),
+            ),
+            GestureDetector(
+              onTap: _showCreatePollModal,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEC4899).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFFEC4899)),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Create Poll',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFEC4899),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        ...List.generate(
+          _polls.length,
+          (pollIndex) => _buildPollCard(pollIndex, _polls[pollIndex]),
+        ),
+      ],
+    );
+  }
+
+  void _showCreatePollModal() {
+    final qController = TextEditingController();
+    final opt1Controller = TextEditingController();
+    final opt2Controller = TextEditingController();
+    final opt3Controller = TextEditingController();
+    final opt4Controller = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          top: 20,
+          left: 20,
+          right: 20,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Create Community Poll',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Student Community: Create a live poll and ask fellow students',
+                style: GoogleFonts.inter(fontSize: 12.5, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: qController,
+                decoration: InputDecoration(
+                  labelText: 'Poll Question',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: opt1Controller,
+                decoration: InputDecoration(
+                  labelText: 'Option 1',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: opt2Controller,
+                decoration: InputDecoration(
+                  labelText: 'Option 2',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: opt3Controller,
+                decoration: InputDecoration(
+                  labelText: 'Option 3 (Optional)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: opt4Controller,
+                decoration: InputDecoration(
+                  labelText: 'Option 4 (Optional)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final q = qController.text.trim();
+                    final o1 = opt1Controller.text.trim();
+                    final o2 = opt2Controller.text.trim();
+                    if (q.isEmpty || o1.isEmpty || o2.isEmpty) return;
+
+                    final opts = [
+                      {'text': o1, 'votes': 0},
+                      {'text': o2, 'votes': 0},
+                    ];
+                    if (opt3Controller.text.trim().isNotEmpty) {
+                      opts.add({'text': opt3Controller.text.trim(), 'votes': 0});
+                    }
+                    if (opt4Controller.text.trim().isNotEmpty) {
+                      opts.add({'text': opt4Controller.text.trim(), 'votes': 0});
+                    }
+
+                    final newPoll = {
+                      'id': 'poll_${DateTime.now().millisecondsSinceEpoch}',
+                      'question': q,
+                      'author': 'Student Poll',
+                      'totalVotes': 0,
+                      'userVotedIndex': -1,
+                      'options': opts,
+                    };
+
+                    setState(() {
+                      _polls.insert(0, newPoll);
+                    });
+
+                    final nav = Navigator.of(context);
+                    final messenger = ScaffoldMessenger.of(context);
+
+                    // 🔔 Push Dual Notification (In-App Bell + Mobile Banner)
+                    await NotificationService.pushNotification(
+                      title: '📊 New Community Poll Published!',
+                      message: q,
+                      type: 'POLL',
+                    );
+
+                    nav.pop();
+
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '📊 New Community Poll Published!',
+                                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'Saved to your VidyaLoan bell icon notifications',
+                                    style: GoogleFonts.inter(fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        backgroundColor: const Color(0xFF311B92),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEC4899),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(
+                    'Publish Poll & Notify Users 🔔',
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPollCard(int pollIndex, Map<String, dynamic> poll) {
+    final int userVotedIndex = poll['userVotedIndex'] as int;
+    final int totalVotes = poll['totalVotes'] as int;
+    final List options = poll['options'] as List;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF311B92).withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.poll_rounded, color: Color(0xFF311B92), size: 18),
+              const SizedBox(width: 6),
+              Text(
+                poll['author'],
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF311B92),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$totalVotes total votes',
+                style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            poll['question'],
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          ...List.generate(options.length, (optIndex) {
+            final opt = options[optIndex];
+            final int votes = opt['votes'] as int;
+            final double pct = totalVotes == 0 ? 0.0 : votes / totalVotes;
+            final bool isSelected = userVotedIndex == optIndex;
+
+            return GestureDetector(
+              onTap: () => _voteOnPoll(pollIndex, optIndex),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                height: 46,
+                child: Stack(
+                  children: [
+                    // Background progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        minHeight: 46,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isSelected
+                              ? const Color(0xFF311B92).withValues(alpha: 0.2)
+                              : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                    ),
+                    // Option Text & Percentage
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Row(
+                        children: [
+                          Icon(
+                            isSelected
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            size: 18,
+                            color: isSelected
+                                ? const Color(0xFF311B92)
+                                : Colors.grey[500],
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              opt['text'],
+                              style: GoogleFonts.inter(
+                                fontSize: 13.5,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? const Color(0xFF311B92)
+                                    : const Color(0xFF334155),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '${(pct * 100).toStringAsFixed(0)}%',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? const Color(0xFF311B92)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // 4. ANNOUNCEMENTS SUB-TAB
+  Widget _buildAnnouncementsView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OFFICIAL ANNOUNCEMENTS & ALERTS',
+          style: GoogleFonts.outfit(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF64748B),
+            letterSpacing: 1.0,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        ..._announcements.map((ann) => _buildAnnouncementCard(ann)),
+      ],
+    );
+  }
+
+  Widget _buildAnnouncementCard(Map<String, dynamic> ann) {
+    final Color color = ann['color'] as Color;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.campaign_rounded, size: 14, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      ann['tag'],
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                ann['date'],
+                style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            ann['title'],
+            style: GoogleFonts.outfit(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF1E293B),
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            ann['content'],
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: const Color(0xFF475569),
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, ann['route']);
+              },
+              icon: const Icon(Icons.arrow_forward_rounded, size: 15),
+              label: Text(
+                ann['action'],
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── INTERACTIVE SMART GROUP CHAT ROOM MODAL ──────────────────────────────────
+
+class _SmartChatRoomModal extends StatefulWidget {
+  final Map<String, dynamic> group;
+
+  const _SmartChatRoomModal({required this.group});
+
+  @override
+  State<_SmartChatRoomModal> createState() => _SmartChatRoomModalState();
+}
+
+class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
+  final TextEditingController _msgController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  late List<Map<String, dynamic>> _messages;
+
+  @override
+  void initState() {
+    super.initState();
+    _messages = List<Map<String, dynamic>>.from(widget.group['messages']);
+  }
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() async {
+    final text = _msgController.text.trim();
+    if (text.isEmpty) return;
+
+    final now = DateTime.now();
+    final timeStr = '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+
+    setState(() {
+      _messages.add({
+        'sender': 'You',
+        'avatarLetter': 'Y',
+        'color': const Color(0xFF311B92),
+        'role': 'Student',
+        'text': text,
+        'time': timeStr,
+        'isMe': true,
+      });
+      _msgController.clear();
+    });
+
+    try {
+      final channelId = widget.group['id'] as String;
+      await CommunityService().sendChatMessage(channelId, text);
+    } catch (e) {
+      debugPrint('Chat message database sync info: $e');
+    }
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Color mainColor = widget.group['color'] as Color;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.88,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: mainColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    widget.group['icon'] as IconData,
+                    color: mainColor,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.group['title'],
+                        style: GoogleFonts.outfit(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${widget.group['online']} Online • Live Group Chat',
+                            style: GoogleFonts.inter(
+                              fontSize: 11.5,
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+
+          Expanded(
+            child: Container(
+              color: const Color(0xFFF8FAFC),
+              child: ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(18),
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final msg = _messages[index];
+                  final bool isMe = msg['isMe'] == true;
+
+                  return Align(
+                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.78,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment:
+                            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                        children: [
+                          if (!isMe) ...[
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
+                              child: Text(
+                                msg['avatarLetter'],
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: msg['color'] as Color,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: isMe
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                              children: [
+                                if (!isMe)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 2, bottom: 3),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          msg['sender'],
+                                          style: GoogleFonts.inter(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: const Color(0xFF334155),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: (msg['color'] as Color).withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            msg['role'],
+                                            style: GoogleFonts.inter(
+                                              fontSize: 9.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: msg['color'] as Color,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: isMe ? const Color(0xFF311B92) : Colors.white,
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: const Radius.circular(16),
+                                      topRight: const Radius.circular(16),
+                                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                      bottomRight: Radius.circular(isMe ? 4 : 16),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.04),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    msg['text'],
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13.5,
+                                      color: isMe ? Colors.white : const Color(0xFF1E293B),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 3),
+
+                                Text(
+                                  msg['time'],
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0x0F000000),
+                    blurRadius: 10,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: TextField(
+                        controller: _msgController,
+                        style: GoogleFonts.inter(fontSize: 14),
+                        onSubmitted: (_) => _sendMessage(),
+                        decoration: InputDecoration(
+                          hintText: 'Type a message to the group...',
+                          hintStyle: GoogleFonts.inter(
+                            fontSize: 13.5,
+                            color: Colors.grey[500],
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF311B92),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

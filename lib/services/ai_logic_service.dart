@@ -1283,9 +1283,7 @@ class AiLogicService {
   Future<Map<String, dynamic>?> lookupPincodeDetails(String pincode) async {
     try {
       final data = await _postRequest('pincode-lookup', {'pincode': pincode});
-      if (data is Map) {
-        return Map<String, dynamic>.from(data);
-      }
+      return Map<String, dynamic>.from(data);
     } catch (e) {
       debugPrint('Error looking up pincode details: $e');
     }
@@ -1610,6 +1608,62 @@ class AiLogicService {
         'success': false,
         'isReal': false,
         'reason': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyGroupTopic(String title, String topic) async {
+    final text = '$title $topic'.toLowerCase();
+    
+    // Explicit blacklist of irrelevant / prohibited topics
+    final banned = [
+      'movie', 'torrent', 'pubg', 'free fire', 'game', 'gaming', 'crypto', 'bitcoin',
+      'gambling', 'betting', 'gossip', 'dating', 'singles', 'casual', 'hack', 'crack',
+      'mod apk', 'porn', 'adult', 'rumor'
+    ];
+    for (final b in banned) {
+      if (text.contains(b)) {
+        return {
+          'isValid': false,
+          'reason': 'Topic "$b" is irrelevant. Group topics must be related to study abroad, education, or loans.',
+        };
+      }
+    }
+
+    // Required domain keywords
+    final allowedKeywords = [
+      'study', 'abroad', 'university', 'uni', 'college', 'campus', 'admit', 'admission',
+      'application', 'intake', 'fall', 'spring', 'summer', '2024', '2025', '2026', '2027',
+      'loan', 'bank', 'hdfc', 'sbi', 'icici', 'axis', 'prodigy', 'mpower', 'nbfc', 'collateral',
+      'interest', 'sanction', 'disburse', 'finance', 'budget', 'money', 'scholarship', 'grant',
+      'visa', 'f1', 'j1', 'cas', 'i20', 'vfs', 'embassy', 'interview', 'consulate', 'passport',
+      'gre', 'gmat', 'ielts', 'toefl', 'duolingo', 'sat', 'pte', 'exam', 'prep',
+      'usa', 'us', 'uk', 'canada', 'germany', 'australia', 'ireland', 'france', 'europe', 'dallas',
+      'boston', 'new york', 'london', 'toronto', 'munich', 'sydney', 'housing', 'roommate',
+      'accommodation', 'flat', 'flight', 'travel', 'sop', 'lor', 'resume', 'cv', 'career',
+      'internship', 'ta', 'ra', 'assistantship', 'student', 'aspirants', 'batch', 'group',
+      'connect', 'meetup', 'discussion', 'advice', 'guidance', 'eduloan', 'vidyaloan'
+    ];
+
+    bool hasKeyword = allowedKeywords.any((k) => text.contains(k));
+    if (hasKeyword) {
+      return {'isValid': true, 'reason': 'Topic is relevant to study abroad & education loans.'};
+    }
+
+    // If keywords match didn't catch it, attempt AI backend endpoint check
+    try {
+      final data = await _postRequest('verify-group-topic', {
+        'title': title,
+        'topic': topic,
+      });
+      return {
+        'isValid': data['isValid'] ?? false,
+        'reason': data['reason'] ?? 'Topic must be related to study abroad, education, or loans.',
+      };
+    } catch (e) {
+      return {
+        'isValid': false,
+        'reason': 'Group title/topic must be related to study abroad, education, or loans.',
       };
     }
   }

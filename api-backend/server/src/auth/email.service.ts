@@ -1738,6 +1738,25 @@ export class EmailService {
     }
   }
 
+  async sendAiToolResultEmail(email: string, toolName: string, resultData: any) {
+    try {
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || '"VidyaLoan" <noreply@vidyaloan.com>',
+        to: email,
+        subject: `Your ${toolName} Report - VidyaLoan AI`,
+        text: `Here is your ${toolName} report: ${JSON.stringify(resultData)}`,
+        html: `<div><h2>${toolName} Report</h2><pre>${JSON.stringify(resultData, null, 2)}</pre></div>`,
+      };
+      await this.transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error(`[EmailService] Failed to send AI tool result email to ${email}:`, error);
+    }
+  }
+
+  async sendApplicationRejectedByStaffEmail(email: string, userName: string, reason: string) {
+    return this.sendApplicationRejectedByBankEmail(email, userName, 'VidyaLoan Review Team', reason);
+  }
+
   async sendApplicationRejectedByBankEmail(email: string, userName: string, bankName: string, reason: string) {
     const frontendUrl = 'https://developer.vidyaloans.in';
     const year = new Date().getFullYear();

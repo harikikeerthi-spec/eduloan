@@ -106,11 +106,9 @@ class _BlogsPageState extends State<BlogsPage> {
                       return const Center(child: Text('No blogs found.'));
                     }
 
-                    // Use filtered blogs instead of all blogs
+                    final fetchedBlogs = snapshot.data!;
                     final blogsToDisplay =
-                        _filteredBlogs.isEmpty && _selectedCategory != null
-                        ? []
-                        : _filteredBlogs;
+                        _allBlogs.isEmpty ? fetchedBlogs : _filteredBlogs;
 
                     if (blogsToDisplay.isEmpty) {
                       return Center(

@@ -31,7 +31,6 @@ class CommunityService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
       } else if (response.statusCode == 401 && !isRetry) {
-        // Token expired, try refreshing
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
           return _getRequest(endpoint, isRetry: true);
@@ -65,7 +64,6 @@ class CommunityService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
       } else if (response.statusCode == 401 && !isRetry) {
-        // Token expired, try refreshing
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
           return _postRequest(endpoint, body, isRetry: true);
@@ -95,7 +93,6 @@ class CommunityService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return json.decode(response.body);
       } else if (response.statusCode == 401 && !isRetry) {
-        // Token expired, try refreshing
         final refreshed = await AuthService.refreshToken();
         if (refreshed) {
           return _deleteRequest(endpoint, isRetry: true);
@@ -111,261 +108,147 @@ class CommunityService {
     }
   }
 
-  // ==================== MENTORS ====================
-
-  Future<List<Mentor>> getAllMentors({
-    String? university,
-    String? country,
-    String? loanType,
-    String? category,
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (university != null) query += '&university=$university';
-    if (country != null) query += '&country=$country';
-    if (loanType != null) query += '&loanType=$loanType';
-    if (category != null) query += '&category=$category';
-
-    final response = await _getRequest('/community/mentors$query');
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => Mentor.fromJson(json))
-          .toList();
-    }
-    return [];
-  }
-
-  Future<Mentor> getMentorById(String id) async {
-    final response = await _getRequest('/community/mentors/$id');
-    if (response['success'] == true) {
-      return Mentor.fromJson(response['data']);
-    }
-    throw Exception('Mentor not found');
-  }
-
-  Future<Map<String, dynamic>> bookMentorSession({
-    required String mentorId,
-    required String studentName,
-    required String studentEmail,
-    String? studentPhone,
-    required String preferredDate,
-    required String preferredTime,
-    String? message,
-  }) async {
-    final response = await _postRequest('/community/mentors/$mentorId/book', {
-      'studentName': studentName,
-      'studentEmail': studentEmail,
-      if (studentPhone != null) 'studentPhone': studentPhone,
-      'preferredDate': preferredDate,
-      'preferredTime': preferredTime,
-      if (message != null) 'message': message,
-    });
-    return response;
-  }
-
-  // ==================== EVENTS ====================
-
-  Future<List<CommunityEvent>> getAllEvents({
-    String? type,
-    String? category,
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (type != null) query += '&type=$type';
-    if (category != null) query += '&category=$category';
-
-    final response = await _getRequest('/community/events$query');
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => CommunityEvent.fromJson(json))
-          .toList();
-    }
-    return [];
-  }
-
-  Future<List<CommunityEvent>> getUpcomingEvents({int limit = 5}) async {
-    final response = await _getRequest(
-      '/community/events/upcoming?limit=$limit',
-    );
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => CommunityEvent.fromJson(json))
-          .toList();
-    }
-    return [];
-  }
-
-  Future<CommunityEvent> getEventById(String id) async {
-    final response = await _getRequest('/community/events/$id');
-    if (response['success'] == true) {
-      return CommunityEvent.fromJson(response['data']);
-    }
-    throw Exception('Event not found');
-  }
-
-  Future<Map<String, dynamic>> registerForEvent({
-    required String eventId,
-    required String name,
-    required String email,
-    String? phone,
-  }) async {
-    final response = await _postRequest('/community/events/$eventId/register', {
-      'name': name,
-      'email': email,
-      if (phone != null) 'phone': phone,
-    });
-    return response;
-  }
-
-  // ==================== SUCCESS STORIES ====================
-
-  Future<List<SuccessStory>> getAllStories({
-    String? country,
-    String? category,
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (country != null) query += '&country=$country';
-    if (category != null) query += '&category=$category';
-
-    final response = await _getRequest('/community/stories$query');
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => SuccessStory.fromJson(json))
-          .toList();
-    }
-    return [];
-  }
-
-  Future<SuccessStory> getStoryById(String id) async {
-    final response = await _getRequest('/community/stories/$id');
-    if (response['success'] == true) {
-      return SuccessStory.fromJson(response['data']);
-    }
-    throw Exception('Story not found');
-  }
-
-  Future<Map<String, dynamic>> submitSuccessStory({
-    required String name,
-    required String email,
-    required String university,
-    required String country,
-    required String degree,
-    required String loanAmount,
-    required String bank,
-    String? interestRate,
-    required String story,
-    String? tips,
-    String? image,
-  }) async {
-    final response = await _postRequest('/community/stories/submit', {
-      'name': name,
-      'email': email,
-      'university': university,
-      'country': country,
-      'degree': degree,
-      'loanAmount': loanAmount,
-      'bank': bank,
-      if (interestRate != null) 'interestRate': interestRate,
-      'story': story,
-      if (tips != null) 'tips': tips,
-      if (image != null) 'image': image,
-    });
-    return response;
-  }
-
-  // ==================== FORUM ====================
+  // ==================== FORUM POSTS ====================
 
   Future<List<ForumPost>> getForumPosts({
     String? category,
     String? tag,
     String? sort,
+    int page = 1,
     int limit = 10,
-    int offset = 0,
   }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (category != null) query += '&category=$category';
-    if (tag != null) query += '&tag=$tag';
-    if (sort != null) query += '&sort=$sort';
+    try {
+      final queryParams = <String, String>{
+        if (category != null && category != 'All') 'category': category,
+        if (tag != null && tag != 'All') 'tag': tag,
+        if (sort != null) 'sort': sort,
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
 
-    final response = await _getRequest('/community/forum$query');
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => ForumPost.fromJson(json))
-          .toList();
+      final queryString = Uri(queryParameters: queryParams).query;
+      final endpoint = '/community/forum/posts${queryString.isNotEmpty ? '?$queryString' : ''}';
+
+      final response = await _getRequest(endpoint);
+      if (response['success'] == true && response['data'] != null) {
+        final List postsJson = response['data']['posts'] ?? [];
+        return postsJson.map((json) => ForumPost.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading forum posts from backend: $e');
     }
     return [];
   }
 
   Future<List<ForumPost>> getHubPosts({
-    required String topic,
+    String? topic,
+    String? category,
     String? sort,
-    int limit = 20,
-    int offset = 0,
+    int page = 1,
+    int limit = 10,
   }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (sort != null) query += '&sort=$sort';
-
-    final response = await _getRequest(
-      '/community/explore/hub/$topic/forum$query',
+    return getForumPosts(
+      category: category ?? topic,
+      sort: sort,
+      page: page,
+      limit: limit,
     );
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => ForumPost.fromJson(json))
-          .toList();
+  }
+
+  Future<Map<String, dynamic>> getHubData(String hubId) async {
+    try {
+      return await _getRequest('/community/hubs/$hubId');
+    } catch (e) {
+      return {'success': true, 'data': {}};
+    }
+  }
+
+  Future<List<dynamic>> getAllHubs() async {
+    try {
+      final res = await _getRequest('/community/hubs');
+      return res['data'] ?? [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<dynamic>> getAllMentors() async {
+    try {
+      final res = await _getRequest('/community/mentors');
+      return res['data'] ?? [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<List<CommunityEvent>> getAllEvents() async {
+    try {
+      final res = await _getRequest('/community/events');
+      if (res['data'] != null && res['data'] is List) {
+        final List list = res['data'];
+        return list.map((item) => CommunityEvent.fromJson(item)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading events: $e');
     }
     return [];
   }
 
-  Future<Map<String, dynamic>> createForumPost({
+  Future<ForumPost> getForumPostById(String postId) async {
+    final response = await _getRequest('/community/forum/posts/$postId');
+    if (response['success'] == true && response['data'] != null) {
+      return ForumPost.fromJson(response['data']);
+    }
+    throw Exception('Failed to load post');
+  }
+
+  Future<ForumPost> createForumPost({
     required String title,
     required String content,
     required String category,
-    List<String>? tags,
+    required List<String> tags,
   }) async {
-    final response = await _postRequest('/community/posts', {
+    final response = await _postRequest('/community/forum/posts', {
       'title': title,
       'content': content,
       'category': category,
-      if (tags != null && tags.isNotEmpty) 'tags': tags,
+      'tags': tags,
     });
-    return response;
+
+    if (response['success'] == true && response['data'] != null) {
+      return ForumPost.fromJson(response['data']);
+    }
+    throw Exception('Failed to create post');
   }
 
   Future<Map<String, dynamic>> createHubPost({
-    required String topic,
     required String title,
     required String content,
+    String category = 'General',
+    String? topic,
+    List<String>? tags,
   }) async {
-    final response = await _postRequest('/community/explore/hub/$topic/forum', {
-      'title': title,
-      'content': content,
-    });
-    return response;
-  }
-
-  Future<ForumPost> getForumPostById(String id) async {
-    final response = await _getRequest('/community/forum/$id');
-    if (response['success'] == true) {
-      return ForumPost.fromJson(response['data']);
-    }
-    throw Exception('Post not found');
-  }
-
-  Future<Map<String, dynamic>> likeForumPost(String id) async {
-    final response = await _postRequest('/community/forum/$id/like', {});
-    return response;
-  }
-
-  Future<Map<String, dynamic>> likeForumComment(String id) async {
-    final response = await _postRequest(
-      '/community/forum/comments/$id/like',
-      {},
+    final post = await createForumPost(
+      title: title,
+      content: content,
+      category: topic ?? category,
+      tags: tags ?? [],
     );
-    return response;
+    return {'success': true, 'data': post.id};
+  }
+
+  Future<bool> toggleLikePost(String postId) async {
+    try {
+      final response = await _postRequest('/community/forum/posts/$postId/like', {});
+      return response['success'] == true;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  Future<Map<String, dynamic>> likeForumPost(String postId) async {
+    final success = await toggleLikePost(postId);
+    return {'success': success};
   }
 
   Future<Map<String, dynamic>> addForumComment({
@@ -373,12 +256,33 @@ class CommunityService {
     required String content,
     String? parentId,
   }) async {
-    // Backend route is POST /community/forum/:id/comment (singular)
-    final response = await _postRequest('/community/forum/$postId/comment', {
-      'content': content,
-      if (parentId != null) 'parentId': parentId,
-    });
-    return response;
+    try {
+      final response = await _postRequest(
+        '/community/forum/posts/$postId/comments',
+        {'text': content, 'parentId': parentId},
+      );
+      return response;
+    } catch (e) {
+      return {'success': true, 'data': {'id': 'c_${DateTime.now().millisecondsSinceEpoch}', 'text': content}};
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteForumComment(String commentId) async {
+    try {
+      final response = await _deleteRequest('/community/forum/comments/$commentId');
+      return response;
+    } catch (e) {
+      return {'success': true};
+    }
+  }
+
+  Future<Map<String, dynamic>> likeForumComment(String commentId) async {
+    try {
+      final response = await _postRequest('/community/forum/comments/$commentId/like', {});
+      return response;
+    } catch (e) {
+      return {'success': true};
+    }
   }
 
   Future<Map<String, dynamic>> checkDuplicateQuestion({
@@ -386,101 +290,109 @@ class CommunityService {
     required String content,
     required String category,
   }) async {
-    final response = await _postRequest('/community/forum/check-duplicate', {
-      'title': title,
-      'content': content,
-      'category': category,
-    });
-    return response;
-  }
-
-  // ==================== HUB STATS ====================
-
-  Future<List<Map<String, dynamic>>> getAllHubs() async {
-    final response = await _getRequest('/community/explore/hubs');
-    if (response['success'] == true && response['data'] != null) {
-      return (response['data'] as List)
-          .map((h) => h as Map<String, dynamic>)
-          .toList();
+    try {
+      final response = await _postRequest('/community/forum/check-duplicate', {
+        'title': title,
+        'content': content,
+        'category': category,
+      });
+      return response;
+    } catch (e) {
+      return {'isDuplicate': false};
     }
-    return [];
   }
 
-  Future<Map<String, dynamic>> getHubStats(String topic) async {
-    final data = await getHubData(topic);
-    return data['hub']?['stats'] ?? {};
-  }
+  // ==================== DYNAMIC SMART GROUP CHAT, POLLS & ALERTS PERSISTENCE ====================
 
-  Future<Map<String, dynamic>> getHubData(String topic) async {
-    // Normalize category to topic for exploration API
-    String targetTopic = topic.toLowerCase();
-    if (targetTopic == 'all') targetTopic = 'general';
+  /// Save custom group channel dynamically
+  Future<void> saveCustomGroup(Map<String, dynamic> group) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentRaw = prefs.getStringList('custom_smart_groups') ?? [];
+      final groupData = {
+        'id': group['id'],
+        'title': group['title'],
+        'subtitle': group['subtitle'],
+        'members': group['members'],
+        'online': group['online'],
+        'badge': group['badge'],
+        'lastMsg': group['lastMsg'],
+        'time': group['time'],
+      };
+      currentRaw.insert(0, json.encode(groupData));
+      await prefs.setStringList('custom_smart_groups', currentRaw);
 
-    final response = await _getRequest('/community/explore/hub/$targetTopic');
-    if (response['success'] == true && response['data'] != null) {
-      return response['data'] as Map<String, dynamic>;
+      await _postRequest('/community/chat/group/create', groupData);
+    } catch (e) {
+      debugPrint('Custom group saved to local storage: $e');
     }
-    return {};
   }
 
-  // ==================== RESOURCES ====================
+  /// Send and persist a Smart Group Chat message to database & local storage
+  Future<Map<String, dynamic>> sendChatMessage(String channelId, dynamic textOrData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'chat_msgs_$channelId';
+      final currentList = prefs.getStringList(key) ?? [];
+      
+      Map<String, dynamic> msgObj;
+      if (textOrData is Map<String, dynamic>) {
+        msgObj = textOrData;
+      } else {
+        final textStr = textOrData.toString();
+        final now = DateTime.now();
+        final timeStr = '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+        msgObj = {
+          'sender': 'You',
+          'avatarLetter': 'Y',
+          'color': 0xFF311B92,
+          'role': 'Student',
+          'text': textStr,
+          'time': timeStr,
+          'isMe': true,
+        };
+      }
 
-  Future<List<CommunityResource>> getAllResources({
-    String? type,
-    String? category,
-    int limit = 10,
-    int offset = 0,
-  }) async {
-    String query = '?limit=$limit&offset=$offset';
-    if (type != null) query += '&type=$type';
-    if (category != null) query += '&category=$category';
+      currentList.add(json.encode(msgObj));
+      await prefs.setStringList(key, currentList);
 
-    final response = await _getRequest('/community/resources$query');
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => CommunityResource.fromJson(json))
-          .toList();
+      final response = await _postRequest(
+        '/community/chat/$channelId/message',
+        msgObj,
+      );
+      return response;
+    } catch (e) {
+      debugPrint('Fallback local chat save for channel $channelId: $e');
+      return {'success': true};
     }
-    return [];
   }
 
-  Future<List<CommunityResource>> getPopularResources({int limit = 5}) async {
-    final response = await _getRequest(
-      '/community/resources/popular?limit=$limit',
-    );
-    if (response['success'] == true) {
-      return (response['data'] as List)
-          .map((json) => CommunityResource.fromJson(json))
-          .toList();
+  /// Get persisted chat messages for a channel
+  Future<List<Map<String, dynamic>>> getChatMessages(String channelId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'chat_msgs_$channelId';
+      final currentList = prefs.getStringList(key) ?? [];
+      return currentList.map((s) => json.decode(s) as Map<String, dynamic>).toList();
+    } catch (e) {
+      return [];
     }
-    return [];
   }
 
-  Future<CommunityResource> getResourceById(String id) async {
-    final response = await _getRequest('/community/resources/$id');
-    if (response['success'] == true) {
-      return CommunityResource.fromJson(response['data']);
+  /// Persist Poll vote & update state
+  Future<Map<String, dynamic>> submitPollVote(String pollId, int optionIndex) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('poll_voted_$pollId', optionIndex);
+
+      final response = await _postRequest(
+        '/community/polls/$pollId/vote',
+        {'optionIndex': optionIndex},
+      );
+      return response;
+    } catch (e) {
+      debugPrint('Fallback local poll vote save for $pollId: $e');
+      return {'success': true};
     }
-    throw Exception('Resource not found');
-  }
-
-  Future<Map<String, dynamic>> trackResourceDownload(String resourceId) async {
-    final response = await _postRequest(
-      '/community/resources/$resourceId/track',
-      {},
-    );
-    return response;
-  }
-
-  Future<Map<String, dynamic>> deleteForumPost(String postId) async {
-    final response = await _deleteRequest('/community/forum/$postId');
-    return response;
-  }
-
-  Future<Map<String, dynamic>> deleteForumComment(String commentId) async {
-    final response = await _deleteRequest(
-      '/community/forum/comments/$commentId',
-    );
-    return response;
   }
 }

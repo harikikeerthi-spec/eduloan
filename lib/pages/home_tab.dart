@@ -3,9 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/institute_selection_modal.dart';
-import 'emi_calculator_page.dart';
-import 'apply_loan_page.dart';
-import 'main_navigation.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../models/loan.dart';
@@ -28,6 +25,7 @@ class HomeTab extends StatefulWidget {
 class HomeTabState extends State<HomeTab> {
   final LoanService _loanService = LoanService();
   List<Loan> _activeLoans = [];
+  // ignore: unused_field
   bool _hasAppliedForLoan = false;
   List<UniversityRecommendation> _aiRecommendations = [];
   List<UniversityRecommendation> _savedRecommendations = [];
@@ -246,11 +244,14 @@ class HomeTabState extends State<HomeTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Image.asset(
-                            'assets/images/app_icon.png',
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.contain,
+                          ClipPath(
+                            clipper: TriangleClipper(),
+                            child: Image.asset(
+                              'assets/images/app_icon_foreground.png',
+                              width: 44,
+                              height: 44,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                           Row(
                             children: [
@@ -373,71 +374,82 @@ class HomeTabState extends State<HomeTab> {
                 const SizedBox(height: 20),
 
                 // Lending Partners
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _buildSparkleIcon(isLeft: true),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Our Lending Partners',
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildSparkleIcon(isLeft: true),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Our Lending Partners',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2D3436),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildSparkleIcon(isLeft: false),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Multiple lenders to choose from',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2D3436),
-                              letterSpacing: -0.5,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black.withValues(alpha: 0.5),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          _buildSparkleIcon(isLeft: false),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Multiple lenders to choose from',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black.withValues(alpha: 0.5),
-                        ),
+                    ),
+                    const SizedBox(height: 14),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          _buildRectangularPartner(
+                            'AUXILO',
+                            assetPath: 'assets/images/auxilo_logo_final.png',
+                          ),
+                          const SizedBox(width: 14),
+                          _buildRectangularPartner(
+                            'AVANSE',
+                            assetPath: 'assets/images/avanse_logo_final.png',
+                          ),
+                          const SizedBox(width: 14),
+                          _buildRectangularPartner(
+                            'Credila',
+                            assetPath: 'assets/images/credila_logo_final.png',
+                          ),
+                          const SizedBox(width: 14),
+                          _buildRectangularPartner(
+                            'IDFC FIRST Bank',
+                            assetPath: 'assets/images/idfc_logo.png',
+                          ),
+                          const SizedBox(width: 14),
+                          _buildRectangularPartner(
+                            'Poonawalla Fincorp',
+                            assetPath:
+                                'assets/images/poonawalla_logo_final.jpg',
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          alignment: WrapAlignment.center,
-                          children: [
-                            _buildRectangularPartner(
-                              'AUXILO',
-                              assetPath: 'assets/images/auxilo_logo_final.png',
-                            ),
-                            _buildRectangularPartner(
-                              'AVANSE',
-                              assetPath: 'assets/images/avanse_logo_final.png',
-                            ),
-                            _buildRectangularPartner(
-                              'Credila',
-                              assetPath: 'assets/images/credila_logo_final.png',
-                            ),
-                            _buildRectangularPartner(
-                              'IDFC FIRST Bank',
-                              assetPath: 'assets/images/idfc_logo.png',
-                            ),
-                            _buildRectangularPartner(
-                              'Poonawalla Fincorp',
-                              assetPath:
-                                  'assets/images/poonawalla_logo_final.jpg',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
                 ),
 
                 // Essential Services (Value Add)
@@ -526,12 +538,12 @@ class HomeTabState extends State<HomeTab> {
   Widget _buildStatItem(String label, String value, IconData icon) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFF311B92), size: 28), // Darker icon
-        const SizedBox(height: 8),
+        Icon(icon, color: const Color(0xFF311B92), size: 22), // Darker icon
+        const SizedBox(height: 4),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: Colors.black, // Solid black
           ),
@@ -539,7 +551,7 @@ class HomeTabState extends State<HomeTab> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: Colors.black.withValues(alpha: 0.6), // Darker for clarity
             letterSpacing: 0.5,
           ),
@@ -548,6 +560,7 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildActionCard({
     required String imagePath,
     required String title,
@@ -781,6 +794,7 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
+  // ignore: unused_element
   void _showResourcesModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -831,14 +845,14 @@ class HomeTabState extends State<HomeTab> {
             onTap: () => Navigator.pushNamed(context, '/blogs'),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF311B92), Color(0xFF6605C7)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: const Color(0xFF311B92).withValues(alpha: 0.3),
@@ -870,17 +884,17 @@ class HomeTabState extends State<HomeTab> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         const Text(
                           'Education Loan Tips, Study Abroad Guides & More',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 10),
                         Row(
                           children: [
                             const Text(
@@ -888,7 +902,7 @@ class HomeTabState extends State<HomeTab> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                                fontSize: 12,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -1050,6 +1064,7 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildAiRecommendations() {
     final bool isSavedMode = _activeRecommendationTab == 'Saved';
     final recommendations = isSavedMode
@@ -1704,4 +1719,19 @@ class HomeTabState extends State<HomeTab> {
             ),
     );
   }
+}
+
+class TriangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.moveTo(size.width * 0.1, size.height * 0.22);
+    path.lineTo(size.width * 0.9, size.height * 0.22);
+    path.lineTo(size.width * 0.5, size.height * 0.88);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
