@@ -7,7 +7,6 @@ import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../models/loan.dart';
 import '../services/ai_logic_service.dart';
-import '../services/logo_service.dart';
 import '../services/notification_service.dart';
 import 'ai_tools/university_detail_page.dart';
 import '../services/blog_service.dart';
