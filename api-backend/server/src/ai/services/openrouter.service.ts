@@ -202,18 +202,28 @@ export class OpenRouterService {
         let finalQuery = query;
         let finalContext = { ...context };
 
-        // Force abroad search and block India
-        if (finalType === 'ug_university') {
-            finalType = 'university';
-        }
-        if (finalContext && finalContext.country === 'India') {
-            finalContext.country = undefined;
-        }
-        if (finalQuery && /india|iit|iim|bits|iisc/i.test(finalQuery)) {
-            finalQuery = "Top Global Universities";
-        }
+        const isUgUniversity = finalType === 'ug_university' || 
+          finalContext?.degree === "Bachelor's" || 
+          finalContext?.degree === 'bachelors' || 
+          finalContext?.degree === 'ug_university';
 
-        if (finalType === 'university') {
+        if (isUgUniversity) {
+            const country = finalContext?.country || 'India';
+
+            prompt = `Search for REAL, ACCREDITED Indian colleges and universities where students complete their Bachelor's degree (undergraduate studies).
+            ${finalQuery ? `Return Indian universities/colleges matching or relevant to "${finalQuery}" (e.g. IITs, NITs, BITS, Osmania University, Anna University, JNTU, Delhi University, Mumbai University, VTU, SRM, VIT, Manipal, LPU, Amity, Pune University, etc.).` : 'Return popular Indian universities.'}
+
+            STRICT REQUIREMENT: Focus PRIMARILY on Indian universities and colleges (located in India).
+
+            Context Details: ${JSON.stringify(finalContext || {})}
+
+            Requirement: Return a JSON object with a "universities" key.
+            The "universities" key should be an array of up to 12 objects.
+            For each university, provide:
+            - name, loc, slug, rank, accept, tuition, country, description, website, courses
+
+            MUST respond ONLY with JSON.`;
+        } else if (finalType === 'university') {
             const country = finalContext?.country || '';
             const course = finalContext?.course || '';
 
@@ -237,20 +247,45 @@ export class OpenRouterService {
             const university = context?.university || '';
             const degree = context?.degree || 'masters';
             const isBachelors = degree.toLowerCase().includes('bachelor') || degree.toLowerCase().includes('ug') || degree.toLowerCase().includes('undergrad');
-            const examples = isBachelors 
-                ? '"B.Tech Computer Science", "B.Sc Physics", "BBA"' 
-                : '"MS Computer Science", "MBA"';
-            prompt = `Provide a comprehensive list of popular and valid courses/fields of study ${university ? `offered at ${university}` : ''} ${degree ? `for a ${degree} degree` : ''} ${query ? `matching or relevant to "${query}"` : ''}.
-            Return a JSON object with a "courses" key.
-            The "courses" key should be an array of up to 15-20 distinct and high-demand courses/programs.
-            For each course, provide an object with a "name" key containing the course title (e.g., ${examples}).
-            MUST respond ONLY with JSON.`;
+
+            if (isBachelors) {
+                prompt = `Provide a comprehensive list of popular and valid BACHELOR'S degree courses/programs ${university ? `offered at ${university}` : 'for undergraduate students'} ${query ? `matching or relevant to "${query}"` : ''}.
+                EXPLICIT REQUIREMENT: Return ONLY Bachelor's level degrees such as:
+                - "B.Tech in Computer Science and Engineering (CSE)"
+                - "B.E. in Computer Science"
+                - "B.Sc in Computer Science"
+                - "B.C.A. (Bachelor of Computer Applications)"
+                - "B.Tech in Information Technology"
+                - "B.Tech in Electrical & Electronics Engineering"
+                - "B.Tech in Mechanical Engineering"
+                - "B.Com", "B.B.A.", "B.Arch"
+                DO NOT return any Master's degree titles (such as MS, M.Tech, MBA, BS).
+
+                Return a JSON object with a "courses" key.
+                The "courses" key should be an array of up to 15-20 distinct Bachelor's courses.
+                For each course, provide an object with a "name" key containing the course title.
+                MUST respond ONLY with JSON.`;
+            } else {
+                prompt = `Provide a comprehensive list of popular and valid MASTER'S degree courses/programs ${university ? `offered at ${university}` : 'for graduate/master students'} ${query ? `matching or relevant to "${query}"` : ''}.
+                EXPLICIT REQUIREMENT: Return ONLY Master's level degrees such as:
+                - "MS in Computer Science"
+                - "MS in Data Science and Analytics"
+                - "MS in Software Engineering"
+                - "M.Tech in Computer Science"
+                - "MBA"
+                DO NOT return any Bachelor's degree titles (such as B.Tech, B.E., B.Sc, B.C.A., BS).
+
+                Return a JSON object with a "courses" key.
+                The "courses" key should be an array of up to 15-20 distinct Master's courses.
+                For each course, provide an object with a "name" key containing the course title.
+                MUST respond ONLY with JSON.`;
+            }
         }
 
         const res = await this.getJson<any>(prompt);
         const list = ((res && (res.universities || res.courses)) || []) as any[];
 
-        if (finalType === 'university') {
+        if (finalType === 'university' && !isUgUniversity) {
             return list.filter((uni: any) => {
                 if (!uni) return false;
                 const uniCountry = (uni.country || '').toLowerCase();
