@@ -156,46 +156,54 @@ export class ApplicationService {
     const estimatedCompletionAt = new Date();
     estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
 
+    const parseNum = (val: any): number | null => {
+      if (val === null || val === undefined || val === '') return null;
+      if (typeof val === 'number') return isNaN(val) ? null : val;
+      const cleaned = String(val).replace(/[^0-9.]/g, '');
+      const parsed = parseFloat(cleaned);
+      return isNaN(parsed) ? null : parsed;
+    };
+
     const { data: application, error } = await this.db
       .from('LoanApplication')
       .insert({
         applicationNumber,
         userId,
-        bank: data.bank,
-        loanType: data.loanType,
-        amount: parseFloat(data.amount),
-        tenure: data.tenure ? parseInt(data.tenure) : null,
-        purpose: data.purpose,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
+        bank: data.bank || 'HDFC Credila',
+        loanType: data.loanType || 'Education Loan',
+        amount: parseNum(data.amount) || 1000000,
+        tenure: parseNum(data.tenure) ? Math.round(parseNum(data.tenure)!) : 84,
+        purpose: data.purpose || 'Higher Education',
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        email: data.email || '',
+        phone: data.phone || '',
         dateOfBirth: this.parseDate(data.dateOfBirth),
 
         gender: data.gender,
-        nationality: data.nationality,
+        nationality: data.nationality || 'Indian',
         address: data.address,
         city: data.city,
         state: data.state,
         pincode: data.pincode,
-        country: data.country,
+        country: data.country || data.targetCountry || 'USA',
         employmentType: data.employmentType,
         employerName: data.employerName,
         jobTitle: data.jobTitle,
-        annualIncome: data.annualIncome ? parseFloat(data.annualIncome) : null,
-        workExperience: data.workExperience ? parseInt(data.workExperience) : null,
-        universityName: data.universityName || data.university,
-        courseName: data.courseName || data.courseType || data.course,
-        courseDuration: data.courseDuration ? parseInt(data.courseDuration) : null,
+        annualIncome: parseNum(data.annualIncome),
+        workExperience: parseNum(data.workExperience) ? Math.round(parseNum(data.workExperience)!) : null,
+        universityName: data.universityName || data.university || 'Target University',
+        courseName: data.courseName || data.courseType || data.course || 'Master of Science',
+        courseDuration: parseNum(data.courseDuration) ? Math.round(parseNum(data.courseDuration)!) : 24,
         courseStartDate: this.parseDate(data.courseStartDate),
 
-        admissionStatus: data.admissionStatus,
+        admissionStatus: data.admissionStatus || 'Applied',
         hasCoApplicant: data.hasCoApplicant || false,
         coApplicantName: data.coApplicantName,
         coApplicantRelation: data.coApplicantRelation,
         coApplicantPhone: data.coApplicantPhone,
         coApplicantEmail: data.coApplicantEmail,
-        coApplicantIncome: data.coApplicantIncome ? parseFloat(data.coApplicantIncome) : null,
+        coApplicantIncome: parseNum(data.coApplicantIncome),
         fatherName: data.fatherName,
         fatherPhone: data.fatherPhone,
         fatherEmail: data.fatherEmail,
@@ -204,7 +212,7 @@ export class ApplicationService {
         motherEmail: data.motherEmail,
         hasCollateral: data.hasCollateral || false,
         collateralType: data.collateralType,
-        collateralValue: data.collateralValue ? parseFloat(data.collateralValue) : null,
+        collateralValue: parseNum(data.collateralValue),
         collateralDetails: data.collateralDetails,
         status: data.status === 'draft' ? 'draft' : (data.status || 'submitted'),
         stage: 'application_submitted',
