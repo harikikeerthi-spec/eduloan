@@ -123,17 +123,21 @@ class HomeTabState extends State<HomeTab> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? userId = prefs.getString('userId');
-      String? cachedRecs = prefs.getString('latest_ai_recommendations');
 
-      if ((cachedRecs == null || cachedRecs.isEmpty) && userId != null) {
-        // Try fetching from backend
+      if (userId != null) {
         final backendRecs = await _aiService.getSavedAiRecommendations(userId);
         if (backendRecs.isNotEmpty) {
-          cachedRecs = jsonEncode(backendRecs.map((e) => e.toJson()).toList());
-          await prefs.setString('latest_ai_recommendations', cachedRecs);
+          if (mounted) {
+            setState(() {
+              _aiRecommendations = backendRecs;
+            });
+            _startAutoScroll();
+          }
+          return;
         }
       }
 
+      String? cachedRecs = prefs.getString('latest_ai_recommendations');
       if (cachedRecs != null && cachedRecs.isNotEmpty) {
         final List<dynamic> decoded = jsonDecode(cachedRecs);
         if (mounted) {
@@ -147,46 +151,6 @@ class HomeTabState extends State<HomeTab> {
                 .toList();
           });
 
-          // Pre-fetch images to populate cache
-          for (var uni in _aiRecommendations) {
-            _getUniversityLogo(uni).then((logo) {
-              if (mounted) {
-                setState(() {
-                  _logoCache[uni.name] = logo;
-                });
-              }
-            });
-
-            final query = uni.name;
-            // Extract city from location (e.g. "Leeds, UK" -> "Leeds")
-            String? city;
-            if (uni.location.contains(',')) {
-              city = uni.location.split(',').first.trim();
-            } else if (uni.location.isNotEmpty) {
-              city = uni.location.trim();
-            }
-
-            WikipediaService.fetchImages(query, cityName: city)
-                .then((images) {
-                  if (mounted) {
-                    if (images.isNotEmpty) {
-                      setState(() {
-                        _bgCache[uni.name] = images.first;
-                      });
-                      debugPrint(
-                        'Wiki SUCCESS for ${uni.name}: ${images.first}',
-                      );
-                    } else {
-                      debugPrint('Wiki EMPTY for ${uni.name}');
-                    }
-                  }
-                })
-                .catchError((e) {
-                  debugPrint('Wiki ERROR for ${uni.name}: $e');
-                });
-          }
-
-          // Start auto-scroll once we have the recommendations
           if (_aiRecommendations.isNotEmpty) {
             _startAutoScroll();
           }

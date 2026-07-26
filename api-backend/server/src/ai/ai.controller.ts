@@ -371,6 +371,37 @@ export class AiController {
     }
   }
 
+  @Post('shortlist/save-chat')
+  async saveShortlistChat(
+    @Body()
+    data: {
+      userId: string;
+      messages: any[];
+      recommendations?: any[];
+    },
+  ) {
+    try {
+      if (!data || !data.userId) {
+        return { success: false, message: 'userId is required' };
+      }
+      const chat = await this.shortlistingService.saveShortlistChat(
+        data.userId,
+        data.messages || [],
+        data.recommendations
+      );
+      return {
+        success: true,
+        chat
+      };
+    } catch (error) {
+      console.error('Save shortlist chat failed:', error);
+      return {
+        success: false,
+        message: 'Failed to save chat'
+      };
+    }
+  }
+
   @Get('shortlist/:userId')
   async getShortlistChat(@Param('userId') userId: string) {
     try {
@@ -384,6 +415,74 @@ export class AiController {
       return {
         success: false,
         chat: null
+      };
+    }
+  }
+
+  @Get('recommendations/:userId')
+  async getSavedRecommendations(@Param('userId') userId: string) {
+    try {
+      const chat = await this.shortlistingService.getLatestShortlistChat(userId);
+      const recs = chat?.recommendations || [];
+      return {
+        success: true,
+        recommendations: recs
+      };
+    } catch (error) {
+      console.error('Get saved recommendations failed:', error);
+      return {
+        success: false,
+        recommendations: []
+      };
+    }
+  }
+
+  @Post('university/favorite')
+  async favoriteUniversity(
+    @Body()
+    data: {
+      userId: string;
+      universityName: string;
+      universityData?: any;
+    },
+  ) {
+    try {
+      if (!data || !data.userId || !data.universityName) {
+        return { success: false, message: 'userId and universityName are required' };
+      }
+      const result = await this.shortlistingService.toggleFavoriteUniversity(
+        data.userId,
+        data.universityName,
+        data.universityData
+      );
+      return {
+        success: true,
+        saved: result.saved
+      };
+    } catch (error) {
+      console.error('Toggle favorite university failed:', error);
+      return {
+        success: false,
+        saved: false
+      };
+    }
+  }
+
+  @Get('university/favorites/:userId')
+  async getFavoriteUniversities(@Param('userId') userId: string) {
+    try {
+      const favorites = await this.shortlistingService.getFavoriteUniversities(userId);
+      return {
+        success: true,
+        data: favorites,
+        favorites
+      };
+    } catch (error) {
+      console.error('Get favorite universities failed:', error);
+      return {
+        success: false,
+        data: [],
+        favorites: []
       };
     }
   }

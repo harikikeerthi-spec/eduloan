@@ -337,19 +337,20 @@ IMPORTANT: Return ONLY a valid JSON object matching this exact structure:
     return { recommendations: recs };
   }
 
-  async saveShortlistChat(userId: string, messages: any[], recommendations: any[]) {
+  async saveShortlistChat(userId: string, messages: any[], recommendations?: any[]) {
     try {
+      const payload: any = {
+        userId,
+        messages: messages || [],
+        updatedAt: new Date().toISOString(),
+      };
+      if (recommendations && Array.isArray(recommendations) && recommendations.length > 0) {
+        payload.recommendations = recommendations;
+      }
+
       const { data, error } = await this.supabase.getClient()
         .from('UniversityShortlistChat')
-        .upsert(
-          {
-            userId,
-            messages: messages || [],
-            recommendations: recommendations || [],
-            updatedAt: new Date().toISOString(),
-          },
-          { onConflict: 'userId' }
-        )
+        .upsert(payload, { onConflict: 'userId' })
         .select()
         .maybeSingle();
 
@@ -379,6 +380,57 @@ IMPORTANT: Return ONLY a valid JSON object matching this exact structure:
     } catch (error) {
       this.logger.error(`Failed to get shortlist chat for user ${userId}`, error);
       return null;
+    }
+  }
+
+  async toggleFavoriteUniversity(userId: string, universityName: string, universityData: any) {
+    try {
+      const client = this.supabase.getClient();
+      const { data: existing } = await client
+        .from('UserFavoriteUniversity')
+        .select('*')
+        .eq('userId', userId)
+        .eq('universityName', universityName)
+        .maybeSingle();
+
+      if (existing) {
+        await client
+          .from('UserFavoriteUniversity')
+          .delete()
+          .eq('id', existing.id);
+        return { saved: false };
+      } else {
+        const { data: inserted } = await client
+          .from('UserFavoriteUniversity')
+          .insert({
+            userId,
+            universityName,
+            universityData: universityData || { name: universityName },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          .select()
+          .maybeSingle();
+        return { saved: true, data: inserted };
+      }
+    } catch (error) {
+      this.logger.error(`Failed to toggle favorite university for user ${userId}:`, error);
+      return { saved: false };
+    }
+  }
+
+  async getFavoriteUniversities(userId: string) {
+    try {
+      const { data, error } = await this.supabase.getClient()
+        .from('UserFavoriteUniversity')
+        .select('*')
+        .eq('userId', userId);
+
+      if (error || !data) return [];
+      return data;
+    } catch (error) {
+      this.logger.error(`Failed to get favorite universities for user ${userId}:`, error);
+      return [];
     }
   }
 }

@@ -267,6 +267,25 @@ class _UniversityShortlistingPageState
       );
     });
     _scrollToBottom();
+    _saveChatToDb();
+  }
+
+  void _saveChatToDb([List<UniversityRecommendation>? recommendations]) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? userId = prefs.getString('userId');
+      if (userId != null && _messages.isNotEmpty) {
+        final messagesJson = _messages.map((m) => m.toJson()).toList();
+        final recsJson = recommendations?.map((r) => r.toJson()).toList();
+        await AiLogicService().saveShortlistChatToDb(
+          userId,
+          messagesJson,
+          recommendations: recsJson,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _saveChatToDb: $e');
+    }
   }
 
   void _scrollToBottom() {
@@ -425,6 +444,9 @@ class _UniversityShortlistingPageState
           messages: chatMessages,
         );
       }
+
+      // Save both chat and AI recommendations to database
+      _saveChatToDb(result.recommendations);
 
       if (mounted) {
         // Cache the recommendations for the Home Tab

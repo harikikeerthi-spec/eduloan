@@ -1104,6 +1104,48 @@ class AiLogicService {
     return null;
   }
 
+  Future<bool> saveShortlistChatToDb(
+    String userId,
+    List<dynamic> messages, {
+    List<dynamic>? recommendations,
+  }) async {
+    try {
+      final body = {
+        'userId': userId,
+        'messages': messages,
+        if (recommendations != null) 'recommendations': recommendations,
+      };
+      final data = await _postRequest('shortlist/save-chat', body);
+      return data['success'] == true;
+    } catch (e) {
+      debugPrint('Error saving shortlist chat to DB: $e');
+      return false;
+    }
+  }
+
+  Future<List<UniversityRecommendation>> getSavedAiRecommendations(String userId) async {
+    try {
+      final data = await _getRequest('recommendations/$userId');
+      if (data['success'] == true && data['recommendations'] is List) {
+        final List<dynamic> list = data['recommendations'];
+        return list.map((json) => UniversityRecommendation.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching saved AI recommendations: $e');
+    }
+    
+    try {
+      final chat = await getLatestShortlistChat(userId);
+      if (chat != null && chat['recommendations'] is List) {
+        final List<dynamic> list = chat['recommendations'];
+        return list.map((json) => UniversityRecommendation.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Fallback error fetching AI recommendations: $e');
+    }
+    return [];
+  }
+
   Future<List<Map<String, String>>> searchGlobalUniversities(
     String query, {
     String degree = 'masters',
@@ -1798,11 +1840,15 @@ class AiLogicService {
     if (userId != null) {
       try {
         final data = await _getRequest('university/favorites/$userId');
-        if (data is List) {
-          final serverList = data
+        final List<dynamic>? listData = data is List 
+            ? data 
+            : (data is Map ? (data['data'] as List? ?? data['favorites'] as List?) : null);
+        
+        if (listData != null) {
+          final serverList = listData
               .map(
                 (json) =>
-                    UniversityRecommendation.fromJson(json['universityData']),
+                    UniversityRecommendation.fromJson(json['universityData'] ?? json),
               )
               .toList();
 
@@ -1815,7 +1861,6 @@ class AiLogicService {
         }
       } catch (e) {
         debugPrint('Error getting saved universities from backend: $e');
-        // Let it fall through to local cache
       }
     }
 
