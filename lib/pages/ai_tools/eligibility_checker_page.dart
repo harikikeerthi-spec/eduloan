@@ -42,6 +42,23 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
 
+      final creditScore = int.tryParse(_creditController.text) ?? 0;
+      if (creditScore < 700) {
+        setState(() {
+          _isLoading = false;
+          _result = EligibilityResult(
+            score: ((creditScore / 700) * 40).clamp(10, 45).toInt(),
+            status: 'unlikely',
+            ratio: 0.0,
+            rateRange: 'N/A',
+            coverage: '0%',
+            summary:
+                'CIBIL score below 700 ($creditScore) is NOT eligible for loan approval. Minimum 700 CIBIL score is required by financial institutions.',
+          );
+        });
+        return;
+      }
+
       setState(() {
         _isLoading = true;
         _result = null;
@@ -49,7 +66,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
 
       final dto = EligibilityCheckDto(
         age: int.parse(_ageController.text),
-        credit: int.parse(_creditController.text),
+        credit: creditScore,
         income: double.parse(_incomeController.text),
         loan: double.parse(_loanController.text),
         employment: _employment,

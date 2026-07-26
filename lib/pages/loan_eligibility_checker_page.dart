@@ -41,6 +41,23 @@ class _LoanEligibilityCheckerPageState
 
   Future<void> _checkEligibility() async {
     if (_formKey.currentState!.validate()) {
+      final creditScore = int.tryParse(_creditScoreController.text) ?? 0;
+      if (creditScore < 700) {
+        setState(() {
+          _isLoading = false;
+          _result = EligibilityResult(
+            score: ((creditScore / 700) * 40).clamp(10, 45).toInt(),
+            status: 'unlikely',
+            ratio: 0.0,
+            rateRange: 'N/A',
+            coverage: '0%',
+            summary:
+                'CIBIL score below 700 ($creditScore) is NOT eligible for loan approval. Minimum 700 CIBIL score is required by financial institutions.',
+          );
+        });
+        return;
+      }
+
       setState(() {
         _isLoading = true;
         _result = null;
@@ -49,7 +66,7 @@ class _LoanEligibilityCheckerPageState
       try {
         final dto = EligibilityCheckDto(
           age: int.parse(_ageController.text),
-          credit: int.parse(_creditScoreController.text),
+          credit: creditScore,
           income: double.parse(_incomeController.text),
           loan: double.parse(_loanAmountController.text),
           employment: _employment,

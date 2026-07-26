@@ -31,6 +31,23 @@ export class EligibilityService {
   ) {}
 
   async calculateEligibilityScore(data: EligibilityCheckDto): Promise<EligibilityResult> {
+    // Strict rule: CIBIL / Credit score below 700 is NOT eligible
+    if (data.credit < 700) {
+      return {
+        score: Math.max(15, Math.round((data.credit / 700) * 40)),
+        status: 'unlikely',
+        ratio: data.income > 0 ? Number((data.loan / data.income).toFixed(2)) : 0,
+        rateRange: 'N/A',
+        coverage: '0%',
+        summary: `CIBIL score below 700 (${data.credit}) is not eligible for loan approval. A minimum CIBIL score of 700 is required by financial institutions.`,
+        recommendations: [
+          'Improve your CIBIL score to 700+ by clearing active credit dues',
+          'Add a financial co-applicant with a CIBIL score of 750+',
+          'Provide high-value collateral to offset credit score deficit'
+        ],
+      };
+    }
+
     const prompt = `
     Evaluate the loan eligibility for the following applicant:
     - Age: ${data.age}
@@ -44,7 +61,7 @@ export class EligibilityService {
 
     Perform a strict risk assessment.
     1. Calculate a risk score (0-100), where 100 is perfectly safe and 0 is high risk.
-    2. Determine status (eligible, borderline, unlikely).
+    2. Determine status (eligible, borderline, unlikely). Note: Credit score below 700 is NOT eligible.
     3. Calculate Income-to-Loan Ratio.
     4. Estimate Rate Range and Coverage based on risk.
     5. Provide a professional summary explaining the decision.
@@ -60,8 +77,6 @@ export class EligibilityService {
       "summary": "string",
       "recommendations": ["string"]
     }
-
-    Note: Credit score < 600 is generally risky. High loan vs low income is risky.
     `;
 
     try {
