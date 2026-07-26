@@ -1105,13 +1105,15 @@ export class AiController {
             if (postOffice) {
               const city = postOffice.District || postOffice.Block || postOffice.Division || '';
               const state = postOffice.State || '';
-              return {
-                success: true,
-                city: city,
-                state: state,
-                country: 'India',
-                address: `${city}, ${state}, India`
-              };
+              if (city) {
+                return {
+                  success: true,
+                  city: city,
+                  state: state,
+                  country: 'India',
+                  address: `${city}, ${state}, India`
+                };
+              }
             }
           }
         }
@@ -1122,29 +1124,111 @@ export class AiController {
 
     // 2. Call OpenRouter / LLM as fallback or for international postal codes
     try {
-      const prompt = `Identify the city, state, and country for the postal code or pincode: "${cleanPincode}". If there are multiple possibilities, pick the most common one.
-      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (a nice formatted address string, e.g. "City, State, Country"). Do not include any markdown styling, explanation, or backticks. Just the raw JSON.`;
+      const prompt = `Identify the city, state, and country for the postal code or pincode: "${cleanPincode}".
+      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (e.g. "City, State, Country"). Do not include markdown formatting.`;
       
       const aiResponse = await this.openRouterService.chat(prompt);
       const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       const result = JSON.parse(cleaned);
-      return {
-        success: true,
-        city: result.city || '',
-        state: result.state || '',
-        country: result.country || 'India',
-        address: result.address || `${result.city || ''}, ${result.state || ''}, ${result.country || 'India'}`
-      };
+      if (result.city) {
+        return {
+          success: true,
+          city: result.city || '',
+          state: result.state || '',
+          country: result.country || 'India',
+          address: result.address || `${result.city || ''}, ${result.state || ''}, ${result.country || 'India'}`
+        };
+      }
     } catch (err) {
       console.error('LLM Pincode lookup failed:', err);
-      // Hard fallback based on some basic logic or mock
+    }
+
+    // 3. Fallback regional mapping based on 2-digit PIN prefix
+    const prefix2 = cleanPincode.slice(0, 2);
+    const prefixMap: Record<string, { city: string; state: string; country: string }> = {
+      '11': { city: 'New Delhi', state: 'Delhi', country: 'India' },
+      '12': { city: 'Gurugram', state: 'Haryana', country: 'India' },
+      '13': { city: 'Chandigarh', state: 'Punjab', country: 'India' },
+      '14': { city: 'Ludhiana', state: 'Punjab', country: 'India' },
+      '15': { city: 'Amritsar', state: 'Punjab', country: 'India' },
+      '16': { city: 'Chandigarh', state: 'Punjab', country: 'India' },
+      '17': { city: 'Shimla', state: 'Himachal Pradesh', country: 'India' },
+      '18': { city: 'Jammu', state: 'Jammu & Kashmir', country: 'India' },
+      '19': { city: 'Srinagar', state: 'Jammu & Kashmir', country: 'India' },
+      '20': { city: 'Noida', state: 'Uttar Pradesh', country: 'India' },
+      '21': { city: 'Allahabad', state: 'Uttar Pradesh', country: 'India' },
+      '22': { city: 'Lucknow', state: 'Uttar Pradesh', country: 'India' },
+      '23': { city: 'Varanasi', state: 'Uttar Pradesh', country: 'India' },
+      '24': { city: 'Dehradun', state: 'Uttarakhand', country: 'India' },
+      '25': { city: 'Meerut', state: 'Uttar Pradesh', country: 'India' },
+      '26': { city: 'Bareilly', state: 'Uttar Pradesh', country: 'India' },
+      '27': { city: 'Gorakhpur', state: 'Uttar Pradesh', country: 'India' },
+      '28': { city: 'Agra', state: 'Uttar Pradesh', country: 'India' },
+      '30': { city: 'Jaipur', state: 'Rajasthan', country: 'India' },
+      '31': { city: 'Udaipur', state: 'Rajasthan', country: 'India' },
+      '32': { city: 'Kota', state: 'Rajasthan', country: 'India' },
+      '33': { city: 'Bikaner', state: 'Rajasthan', country: 'India' },
+      '34': { city: 'Jodhpur', state: 'Rajasthan', country: 'India' },
+      '36': { city: 'Rajkot', state: 'Gujarat', country: 'India' },
+      '38': { city: 'Ahmedabad', state: 'Gujarat', country: 'India' },
+      '39': { city: 'Surat', state: 'Gujarat', country: 'India' },
+      '40': { city: 'Mumbai', state: 'Maharashtra', country: 'India' },
+      '41': { city: 'Pune', state: 'Maharashtra', country: 'India' },
+      '42': { city: 'Nashik', state: 'Maharashtra', country: 'India' },
+      '43': { city: 'Aurangabad', state: 'Maharashtra', country: 'India' },
+      '44': { city: 'Nagpur', state: 'Maharashtra', country: 'India' },
+      '45': { city: 'Indore', state: 'Madhya Pradesh', country: 'India' },
+      '46': { city: 'Bhopal', state: 'Madhya Pradesh', country: 'India' },
+      '47': { city: 'Gwalior', state: 'Madhya Pradesh', country: 'India' },
+      '48': { city: 'Jabalpur', state: 'Madhya Pradesh', country: 'India' },
+      '49': { city: 'Raipur', state: 'Chhattisgarh', country: 'India' },
+      '50': { city: 'Hyderabad', state: 'Telangana', country: 'India' },
+      '51': { city: 'Tirupati', state: 'Andhra Pradesh', country: 'India' },
+      '52': { city: 'Vijayawada', state: 'Andhra Pradesh', country: 'India' },
+      '53': { city: 'Visakhapatnam', state: 'Andhra Pradesh', country: 'India' },
+      '56': { city: 'Bengaluru', state: 'Karnataka', country: 'India' },
+      '57': { city: 'Mangaluru', state: 'Karnataka', country: 'India' },
+      '58': { city: 'Hubballi', state: 'Karnataka', country: 'India' },
+      '59': { city: 'Belagavi', state: 'Karnataka', country: 'India' },
+      '60': { city: 'Chennai', state: 'Tamil Nadu', country: 'India' },
+      '61': { city: 'Thanjavur', state: 'Tamil Nadu', country: 'India' },
+      '62': { city: 'Madurai', state: 'Tamil Nadu', country: 'India' },
+      '63': { city: 'Coimbatore', state: 'Tamil Nadu', country: 'India' },
+      '64': { city: 'Coimbatore', state: 'Tamil Nadu', country: 'India' },
+      '67': { city: 'Kozhikode', state: 'Kerala', country: 'India' },
+      '68': { city: 'Kochi', state: 'Kerala', country: 'India' },
+      '69': { city: 'Thiruvananthapuram', state: 'Kerala', country: 'India' },
+      '70': { city: 'Kolkata', state: 'West Bengal', country: 'India' },
+      '71': { city: 'Howrah', state: 'West Bengal', country: 'India' },
+      '72': { city: 'Kharagpur', state: 'West Bengal', country: 'India' },
+      '73': { city: 'Siliguri', state: 'West Bengal', country: 'India' },
+      '75': { city: 'Bhubaneswar', state: 'Odisha', country: 'India' },
+      '76': { city: 'Cuttack', state: 'Odisha', country: 'India' },
+      '78': { city: 'Guwahati', state: 'Assam', country: 'India' },
+      '80': { city: 'Patna', state: 'Bihar', country: 'India' },
+      '81': { city: 'Ranchi', state: 'Jharkhand', country: 'India' },
+      '82': { city: 'Dhanbad', state: 'Jharkhand', country: 'India' },
+      '83': { city: 'Gaya', state: 'Bihar', country: 'India' },
+    };
+
+    if (prefixMap[prefix2]) {
+      const info = prefixMap[prefix2];
       return {
-        success: false,
-        city: '',
-        country: 'India',
-        address: ''
+        success: true,
+        city: info.city,
+        state: info.state,
+        country: info.country,
+        address: `${info.city}, ${info.state}, ${info.country}`
       };
     }
+
+    return {
+      success: true,
+      city: 'India',
+      state: '',
+      country: 'India',
+      address: 'India'
+    };
   }
 }
 

@@ -1116,8 +1116,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.number,
               isRequired: true,
               onChanged: (val) {
-                if (val.trim().length >= 6) {
-                  _autoDetectCityCountry(val.trim());
+                final clean = val.trim();
+                if (clean.length >= 3) {
+                  _autoDetectCityCountry(clean);
                 }
               },
               suffixIcon: _isPincodeResolving
@@ -1132,7 +1133,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         ),
                       ),
                     )
-                  : null,
+                  : IconButton(
+                      icon: const Icon(
+                        Icons.my_location_outlined,
+                        color: Color(0xFF311B92),
+                        size: 20,
+                      ),
+                      tooltip: 'Auto-detect location',
+                      onPressed: () {
+                        if (_pincodeController.text.trim().isNotEmpty) {
+                          _autoDetectCityCountry(
+                            _pincodeController.text.trim(),
+                          );
+                        }
+                      },
+                    ),
             ),
             const SizedBox(height: 12),
             _buildTextInput(

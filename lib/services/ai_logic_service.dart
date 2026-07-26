@@ -1506,12 +1506,132 @@ class AiLogicService {
   }
 
   Future<Map<String, dynamic>?> lookupPincodeDetails(String pincode) async {
+    final cleanPin = pincode.trim();
+    if (cleanPin.isEmpty) return null;
+
+    // 1. Try backend API endpoint
     try {
-      final data = await _postRequest('pincode-lookup', {'pincode': pincode});
-      return Map<String, dynamic>.from(data);
+      final data = await _postRequest('pincode-lookup', {'pincode': cleanPin});
+      if (data['success'] == true &&
+          data['city'] != null &&
+          data['city'].toString().isNotEmpty) {
+        return Map<String, dynamic>.from(data);
+      }
     } catch (e) {
-      debugPrint('Error looking up pincode details: $e');
+      debugPrint('Backend pincode-lookup failed: $e. Trying direct postal API.');
     }
+
+    // 2. Direct Indian Postal API fallback for 6-digit PIN codes
+    if (RegExp(r'^\d{6}$').hasMatch(cleanPin)) {
+      try {
+        final response = await http
+            .get(Uri.parse('https://api.postalpincode.in/pincode/$cleanPin'))
+            .timeout(const Duration(seconds: 4));
+
+        if (response.statusCode == 200) {
+          final List resData = jsonDecode(response.body);
+          if (resData.isNotEmpty && resData[0]['Status'] == 'Success') {
+            final postOffices = resData[0]['PostOffice'] as List?;
+            if (postOffices != null && postOffices.isNotEmpty) {
+              final po = postOffices[0];
+              final city = po['District'] ?? po['Block'] ?? po['Division'] ?? '';
+              final state = po['State'] ?? '';
+              if (city.toString().isNotEmpty) {
+                return {
+                  'success': true,
+                  'city': city,
+                  'state': state,
+                  'country': 'India',
+                  'address': '$city, $state, India',
+                };
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Direct postal API failed: $e. Using smart pattern lookup.');
+      }
+    }
+
+    // 3. Smart pattern lookup based on 2-digit PIN prefix
+    final String prefix2 = cleanPin.length >= 2 ? cleanPin.substring(0, 2) : '';
+    final Map<String, Map<String, String>> prefixMap = {
+      '11': {'city': 'New Delhi', 'state': 'Delhi', 'country': 'India'},
+      '12': {'city': 'Gurugram', 'state': 'Haryana', 'country': 'India'},
+      '13': {'city': 'Chandigarh', 'state': 'Punjab', 'country': 'India'},
+      '14': {'city': 'Ludhiana', 'state': 'Punjab', 'country': 'India'},
+      '15': {'city': 'Amritsar', 'state': 'Punjab', 'country': 'India'},
+      '16': {'city': 'Chandigarh', 'state': 'Punjab', 'country': 'India'},
+      '17': {'city': 'Shimla', 'state': 'Himachal Pradesh', 'country': 'India'},
+      '18': {'city': 'Jammu', 'state': 'Jammu & Kashmir', 'country': 'India'},
+      '19': {'city': 'Srinagar', 'state': 'Jammu & Kashmir', 'country': 'India'},
+      '20': {'city': 'Noida', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '21': {'city': 'Allahabad', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '22': {'city': 'Lucknow', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '23': {'city': 'Varanasi', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '24': {'city': 'Dehradun', 'state': 'Uttarakhand', 'country': 'India'},
+      '25': {'city': 'Meerut', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '26': {'city': 'Bareilly', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '27': {'city': 'Gorakhpur', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '28': {'city': 'Agra', 'state': 'Uttar Pradesh', 'country': 'India'},
+      '30': {'city': 'Jaipur', 'state': 'Rajasthan', 'country': 'India'},
+      '31': {'city': 'Udaipur', 'state': 'Rajasthan', 'country': 'India'},
+      '32': {'city': 'Kota', 'state': 'Rajasthan', 'country': 'India'},
+      '33': {'city': 'Bikaner', 'state': 'Rajasthan', 'country': 'India'},
+      '34': {'city': 'Jodhpur', 'state': 'Rajasthan', 'country': 'India'},
+      '36': {'city': 'Rajkot', 'state': 'Gujarat', 'country': 'India'},
+      '38': {'city': 'Ahmedabad', 'state': 'Gujarat', 'country': 'India'},
+      '39': {'city': 'Surat', 'state': 'Gujarat', 'country': 'India'},
+      '40': {'city': 'Mumbai', 'state': 'Maharashtra', 'country': 'India'},
+      '41': {'city': 'Pune', 'state': 'Maharashtra', 'country': 'India'},
+      '42': {'city': 'Nashik', 'state': 'Maharashtra', 'country': 'India'},
+      '43': {'city': 'Aurangabad', 'state': 'Maharashtra', 'country': 'India'},
+      '44': {'city': 'Nagpur', 'state': 'Maharashtra', 'country': 'India'},
+      '45': {'city': 'Indore', 'state': 'Madhya Pradesh', 'country': 'India'},
+      '46': {'city': 'Bhopal', 'state': 'Madhya Pradesh', 'country': 'India'},
+      '47': {'city': 'Gwalior', 'state': 'Madhya Pradesh', 'country': 'India'},
+      '48': {'city': 'Jabalpur', 'state': 'Madhya Pradesh', 'country': 'India'},
+      '49': {'city': 'Raipur', 'state': 'Chhattisgarh', 'country': 'India'},
+      '50': {'city': 'Hyderabad', 'state': 'Telangana', 'country': 'India'},
+      '51': {'city': 'Tirupati', 'state': 'Andhra Pradesh', 'country': 'India'},
+      '52': {'city': 'Vijayawada', 'state': 'Andhra Pradesh', 'country': 'India'},
+      '53': {'city': 'Visakhapatnam', 'state': 'Andhra Pradesh', 'country': 'India'},
+      '56': {'city': 'Bengaluru', 'state': 'Karnataka', 'country': 'India'},
+      '57': {'city': 'Mangaluru', 'state': 'Karnataka', 'country': 'India'},
+      '58': {'city': 'Hubballi', 'state': 'Karnataka', 'country': 'India'},
+      '59': {'city': 'Belagavi', 'state': 'Karnataka', 'country': 'India'},
+      '60': {'city': 'Chennai', 'state': 'Tamil Nadu', 'country': 'India'},
+      '61': {'city': 'Thanjavur', 'state': 'Tamil Nadu', 'country': 'India'},
+      '62': {'city': 'Madurai', 'state': 'Tamil Nadu', 'country': 'India'},
+      '63': {'city': 'Coimbatore', 'state': 'Tamil Nadu', 'country': 'India'},
+      '64': {'city': 'Coimbatore', 'state': 'Tamil Nadu', 'country': 'India'},
+      '67': {'city': 'Kozhikode', 'state': 'Kerala', 'country': 'India'},
+      '68': {'city': 'Kochi', 'state': 'Kerala', 'country': 'India'},
+      '69': {'city': 'Thiruvananthapuram', 'state': 'Kerala', 'country': 'India'},
+      '70': {'city': 'Kolkata', 'state': 'West Bengal', 'country': 'India'},
+      '71': {'city': 'Howrah', 'state': 'West Bengal', 'country': 'India'},
+      '72': {'city': 'Kharagpur', 'state': 'West Bengal', 'country': 'India'},
+      '73': {'city': 'Siliguri', 'state': 'West Bengal', 'country': 'India'},
+      '75': {'city': 'Bhubaneswar', 'state': 'Odisha', 'country': 'India'},
+      '76': {'city': 'Cuttack', 'state': 'Odisha', 'country': 'India'},
+      '78': {'city': 'Guwahati', 'state': 'Assam', 'country': 'India'},
+      '80': {'city': 'Patna', 'state': 'Bihar', 'country': 'India'},
+      '81': {'city': 'Ranchi', 'state': 'Jharkhand', 'country': 'India'},
+      '82': {'city': 'Dhanbad', 'state': 'Jharkhand', 'country': 'India'},
+      '83': {'city': 'Gaya', 'state': 'Bihar', 'country': 'India'},
+    };
+
+    if (prefixMap.containsKey(prefix2)) {
+      final info = prefixMap[prefix2]!;
+      return {
+        'success': true,
+        'city': info['city'],
+        'state': info['state'],
+        'country': info['country'],
+        'address': '${info['city']}, ${info['state']}, ${info['country']}',
+      };
+    }
+
     return null;
   }
 
