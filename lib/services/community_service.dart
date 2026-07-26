@@ -166,10 +166,25 @@ class CommunityService {
   Future<List<dynamic>> getAllHubs() async {
     try {
       final res = await _getRequest('/community/hubs');
-      return res['data'] ?? [];
+      if (res['data'] != null && (res['data'] as List).isNotEmpty) {
+        return res['data'];
+      }
     } catch (e) {
-      return [];
+      debugPrint('Error loading hubs from backend: $e');
     }
+
+    return [
+      {'id': 'General', 'title': 'General'},
+      {'id': 'Education Loans', 'title': 'Education Loans'},
+      {'id': 'Universities', 'title': 'Universities'},
+      {'id': 'Courses & Programs', 'title': 'Courses & Programs'},
+      {'id': 'Exams & Test Prep', 'title': 'Exams & Test Prep'},
+      {'id': 'GRE / GMAT', 'title': 'GRE / GMAT'},
+      {'id': 'IELTS / TOEFL', 'title': 'IELTS / TOEFL'},
+      {'id': 'Scholarships', 'title': 'Scholarships'},
+      {'id': 'Visa & Immigration', 'title': 'Visa & Immigration'},
+      {'id': 'Career & Jobs', 'title': 'Career & Jobs'},
+    ];
   }
 
   Future<List<dynamic>> getAllMentors() async {
@@ -208,17 +223,28 @@ class CommunityService {
     required String category,
     required List<String> tags,
   }) async {
-    final response = await _postRequest('/community/forum/posts', {
-      'title': title,
-      'content': content,
-      'category': category,
-      'tags': tags,
-    });
+    dynamic response;
+    try {
+      response = await _postRequest('/community/forum/posts', {
+        'title': title,
+        'content': content,
+        'category': category,
+        'tags': tags,
+      });
+    } catch (e) {
+      debugPrint('Primary endpoint failed ($e), trying fallback /community/posts');
+      response = await _postRequest('/community/posts', {
+        'title': title,
+        'content': content,
+        'category': category,
+        'tags': tags,
+      });
+    }
 
     if (response['success'] == true && response['data'] != null) {
       return ForumPost.fromJson(response['data']);
     }
-    throw Exception('Failed to create post');
+    throw Exception(response['message'] ?? 'Failed to create post');
   }
 
   Future<Map<String, dynamic>> createHubPost({

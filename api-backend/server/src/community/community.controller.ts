@@ -664,9 +664,10 @@ export class CommunityController {
 
     /**
      * Get all forum posts (Admin/Public)
-     * GET /community/forum
+     * GET /community/forum & GET /community/forum/posts
      */
     @Get('forum')
+    @Get('forum/posts')
     async getForumPosts(
         @Query('category') category?: string,
         @Query('tag') tag?: string,
@@ -718,14 +719,20 @@ export class CommunityController {
         return this.communityService.getForumPosts({ category, limit: 20, offset }, userId);
     }
 
-
-
     /**
      * GET /community/hubs - list of available hub categories
      */
     @Get('hubs')
     async getHubs() {
         return this.communityService.getHubs();
+    }
+
+    /**
+     * GET /community/hubs/:id - get single hub details
+     */
+    @Get('hubs/:id')
+    async getHubData(@Param('id') id: string) {
+        return this.communityService.getHubData(id);
     }
 
     /**
@@ -749,9 +756,11 @@ export class CommunityController {
     }
 
     /**
-     * Compatibility: POST /community/posts to create a new forum post (requires auth)
+     * POST /community/posts & POST /community/forum/posts & POST /community/forum to create a new forum post
      */
     @Post('posts')
+    @Post('forum/posts')
+    @Post('forum')
     @UseGuards(UserGuard)
     async createPostAlias(@Request() req, @Body() body: any) {
         // Enforce allowed categories server-side to prevent off-topic posts
@@ -759,10 +768,13 @@ export class CommunityController {
             'Education Loans',
             'Universities',
             'Courses',
+            'Courses & Programs',
             'Exams',
+            'Exams & Test Prep',
             'GRE / GMAT',
             'IELTS / TOEFL',
             'Scholarship',
+            'Scholarships',
             'Visa & Immigration',
             'Career & Jobs',
             'General'
