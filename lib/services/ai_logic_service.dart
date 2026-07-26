@@ -1963,24 +1963,6 @@ class AiLogicService {
     }
   }
 
-  Future<List<UniversityRecommendation>> getSavedAiRecommendations(
-    String userId,
-  ) async {
-    try {
-      final data = await _getRequest('shortlist/$userId');
-      if (data['success'] == true && data['chat'] != null) {
-        final chat = data['chat'];
-        if (chat['recommendations'] != null) {
-          final List<dynamic> list = chat['recommendations'];
-          return list.map((e) => UniversityRecommendation.fromJson(e)).toList();
-        }
-      }
-    } catch (e) {
-      debugPrint('Error getting saved AI recommendations: $e');
-    }
-    return [];
-  }
-
   Future<Map<String, dynamic>> verifyUniversity(String name, String country) async {
     try {
       final data = await _postRequest('verify-university', {

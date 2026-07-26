@@ -8,7 +8,6 @@ import '../services/loan_service.dart';
 import '../models/loan.dart';
 import '../services/ai_logic_service.dart';
 import '../services/logo_service.dart';
-import '../services/wikipedia_service.dart';
 import '../services/notification_service.dart';
 import 'ai_tools/university_detail_page.dart';
 import '../services/blog_service.dart';
@@ -1148,33 +1147,7 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
-  Future<String?> _getUniversityLogo(UniversityRecommendation uni) async {
-    // Try 1: Call AutoComplete/HipoLabs API with name to hunt down the reliable clearbit logo dynamically
-    // We prioritize this because AI logoUrl strings are often hallucinated 404s!
-    final fallbackLogo = await LogoService.getLogoByName(uni.name);
-    if (fallbackLogo != null && fallbackLogo.isNotEmpty) {
-      return fallbackLogo;
-    }
 
-    // Try 2: Construct validated logo from plain websiteUrl domain
-    if (uni.websiteUrl.isNotEmpty) {
-      String domain = uni.websiteUrl;
-      domain = domain.replaceAll(RegExp(r'^https?://'), '');
-      domain = domain.replaceAll(RegExp(r'^www\.'), '');
-      domain = domain.split('/')[0];
-      final logo = await LogoService.getValidLogoForDomain(domain);
-      if (logo != null) return logo;
-    }
-
-    // Try 3: AI provided logo Url directly (Lowest priority fallback) with verification
-    if (uni.logoUrl.isNotEmpty && uni.logoUrl.startsWith('http')) {
-      if (await LogoService.isUrlValid(uni.logoUrl)) {
-        return uni.logoUrl;
-      }
-    }
-
-    return null;
-  }
 
   Widget _buildAiRecommendationCard(
     UniversityRecommendation uni,
