@@ -38,14 +38,14 @@ export class AuthService {
       role: user.role
     };
 
-    // Generate access token (short-lived)
+    // Generate access token (long-lived 30-day session)
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '30m') as any,
+      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '30d') as any,
     });
 
-    // Generate refresh token (long-lived)
+    // Generate refresh token (long-lived 180-day token)
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION') || '7d') as any,
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION') || '180d') as any,
     });
 
     // Store refresh token in database

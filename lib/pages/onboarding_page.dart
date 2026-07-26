@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main_navigation.dart';
 import 'dart:math' as math;
 
 class OnboardingPage extends StatefulWidget {
@@ -112,16 +111,7 @@ class _OnboardingPageState extends State<OnboardingPage>
     await prefs.setBool('onboarding_shown', true);
 
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => const MainNavigation(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-      (route) => false,
-    );
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override

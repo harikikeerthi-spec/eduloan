@@ -155,8 +155,17 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
         // ✅ Persistent login — skip login page, go straight to dashboard
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
-        // 🔐 No session — go to login
-        Navigator.of(context).pushReplacementNamed('/login');
+        // Check if onboarding 3 slides have already been shown or user registered
+        final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+        final bool hasRegistered = prefs.getBool('has_registered') ?? false;
+
+        if (!onboardingShown && !hasRegistered) {
+          // 🌟 First time registration/install — show 3 slides ONLY ONCE
+          Navigator.of(context).pushReplacementNamed('/onboarding');
+        } else {
+          // 🔐 Fresh install / app launch with no active session — ask user to log in directly
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
       }
     } catch (e) {
       debugPrint('VideoSplashScreen: Navigation error — $e');

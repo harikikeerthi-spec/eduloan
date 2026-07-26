@@ -22,6 +22,7 @@ import 'pages/forum_post_detail_page.dart';
 import 'pages/create_post_page.dart';
 import 'pages/notifications_page.dart';
 import 'pages/blogs_page.dart';
+import 'pages/onboarding_page.dart';
 
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
@@ -105,6 +106,7 @@ class MyApp extends StatelessWidget {
       home: const VideoSplashScreen(),
       routes: {
         '/login': (context) => const LoginPage(),
+        '/onboarding': (context) => const OnboardingPage(),
         '/home': (context) => const MainNavigation(),
         '/apply-loan': (context) => const ApplyLoanPage(),
         '/emi-calculator': (context) => const EmiCalculatorPage(),
