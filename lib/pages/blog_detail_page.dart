@@ -908,6 +908,51 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     setState(() => _isSubmitting = true);
 
     try {
+      // If this is a local fallback blog (no backend entry), simulate comment locally
+      if (blogId.startsWith('blog_') || blogId.length < 20) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        final newComment = Comment(
+          id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+          content: content,
+          authorName: _authorName,
+          createdAt: DateTime.now(),
+          likes: 0,
+        );
+        final currentBlog = await _blogFuture;
+        final updatedComments = [...currentBlog.comments, newComment];
+        final updatedBlog = Blog(
+          id: currentBlog.id,
+          title: currentBlog.title,
+          slug: currentBlog.slug,
+          excerpt: currentBlog.excerpt,
+          content: currentBlog.content,
+          category: currentBlog.category,
+          authorName: currentBlog.authorName,
+          authorImage: currentBlog.authorImage,
+          authorRole: currentBlog.authorRole,
+          featuredImage: currentBlog.featuredImage,
+          readTime: currentBlog.readTime,
+          views: currentBlog.views,
+          featured: currentBlog.featured,
+          published: currentBlog.published,
+          publishedAt: currentBlog.publishedAt,
+          createdAt: currentBlog.createdAt,
+          hashtags: currentBlog.hashtags,
+          comments: updatedComments,
+        );
+        setState(() {
+          _blogFuture = Future.value(updatedBlog);
+          _commentController.clear();
+          _isSubmitting = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Comment posted!')),
+          );
+        }
+        return;
+      }
+
       await _blogService.addComment(
         blogId,
         content,

@@ -12,6 +12,7 @@ import { OpenRouterService } from './services/openrouter.service';
 import { UniversitySearchService, University, UniversityDetails } from './services/university-search.service';
 import { VisaInterviewService, InterviewMessage, EvaluationResult } from './services/visa-interview.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { ShortlistingService } from './services/shortlisting.service';
 
 @Controller('ai')
 export class AiController {
@@ -25,6 +26,7 @@ export class AiController {
     private readonly openRouterService: OpenRouterService,
     private readonly universitySearchService: UniversitySearchService,
     private readonly visaInterviewService: VisaInterviewService,
+    private readonly shortlistingService: ShortlistingService,
     private readonly supabase: SupabaseService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -334,6 +336,56 @@ export class AiController {
       success: true,
       data: result,
     };
+  }
+
+  @Post('shortlist')
+  async shortlist(
+    @Body()
+    data: {
+      profile: any;
+      userId?: string;
+      messages?: any[];
+    },
+  ) {
+    try {
+      const result = await this.shortlistingService.shortlist(data.profile, data.messages);
+      if (data.userId && result?.recommendations) {
+        await this.shortlistingService.saveShortlistChat(
+          data.userId,
+          data.messages || [],
+          result.recommendations
+        );
+      }
+      return {
+        success: true,
+        recommendations: result.recommendations || [],
+        data: result
+      };
+    } catch (error) {
+      console.error('Shortlisting failed in controller:', error);
+      return {
+        success: false,
+        message: 'Failed to generate recommendations',
+        recommendations: []
+      };
+    }
+  }
+
+  @Get('shortlist/:userId')
+  async getShortlistChat(@Param('userId') userId: string) {
+    try {
+      const chat = await this.shortlistingService.getLatestShortlistChat(userId);
+      return {
+        success: true,
+        chat: chat || null
+      };
+    } catch (error) {
+      console.error('Get shortlist chat failed:', error);
+      return {
+        success: false,
+        chat: null
+      };
+    }
   }
 
   @Post('predict-admission')

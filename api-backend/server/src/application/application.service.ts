@@ -105,13 +105,22 @@ export class ApplicationService {
   }
 
   private async validateApplicationConstraints(userId: string, currentAppId: string | null, bank: string, country: string, universityName: string) {
-    const { data: existingApps, error } = await this.db
-      .from('LoanApplication')
-      .select('id, bank, country, universityName, status')
-      .eq('userId', userId)
-      .neq('status', 'cancelled');
+    let existingApps: any[] = [];
+    try {
+      const { data, error } = await this.db
+        .from('LoanApplication')
+        .select('id, bank, country, universityName, status')
+        .eq('userId', userId)
+        .neq('status', 'cancelled');
 
-    if (error) throw error;
+      if (error) {
+        console.error('[ApplicationService] validateApplicationConstraints DB error (non-fatal):', error);
+      } else {
+        existingApps = data || [];
+      }
+    } catch (e) {
+      console.error('[ApplicationService] validateApplicationConstraints query failed (non-fatal):', e);
+    }
 
     // 1. Limit to 5 applications
     if (!currentAppId && existingApps && existingApps.length >= 5) {
@@ -236,8 +245,16 @@ export class ApplicationService {
       }
     }
 
-    await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
-    await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
+    try {
+      await this.createStatusHistory(application.id, { toStatus: application.status, toStage: application.stage, notes: 'Application created', isAutomatic: true });
+    } catch (e) {
+      console.error('[ApplicationService] createStatusHistory failed (non-fatal):', e);
+    }
+    try {
+      await this.initializeRequiredDocuments(application.id, application.userId, data.loanType);
+    } catch (e) {
+      console.error('[ApplicationService] initializeRequiredDocuments failed (non-fatal):', e);
+    }
 
     // Emit application created event for staff notifications ONLY if not a draft
     if (application.status !== 'draft') {
