@@ -8,7 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 // @ts-ignore – evv-engine.ts exists in this directory; IDE resolution quirk
 import { EvvEngineService } from './evv-engine';
 import { BankWorkflowService } from '../bank/bank-workflow.service';
-import { S3Service } from '../document/s3.service';
+import { S3Service } from '../s3/s3.service';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -1818,7 +1818,7 @@ export class ApplicationService {
     const s3Key = `vault/${userId}/bank_statement${fileExt}`;
     
     try {
-      await this.s3Service.upload(s3Key, file.buffer, file.mimetype);
+      await this.s3Service.uploadFile(file, s3Key);
       console.log(`[EVV Pipeline] Uploaded statement to S3: ${s3Key}`);
     } catch (s3Error: any) {
       console.warn(`[EVV Pipeline] AWS S3 Upload failed, saving local: ${s3Error.message}`);
