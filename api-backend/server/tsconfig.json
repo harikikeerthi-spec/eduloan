@@ -19,6 +19,7 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "forceConsistentCasingInFileNames": false,
+    "noEmitOnError": false,
     "esModuleInterop": true,
     "rootDir": "./src"
   },
