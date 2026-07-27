@@ -77,7 +77,10 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+      }
 
       // CRITICAL FIX: The backend might return 201 Created but with { success: false } body
       // We must check data['success'] explicitly.
@@ -93,53 +96,42 @@ class AuthService {
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
         await prefs.setBool('onboarding_shown', true);
-        if (token != null) {
-          await prefs.setString('auth_token', token);
-        }
-        if (refreshToken != null) {
-          await prefs.setString('refresh_token', refreshToken);
-        }
+        if (token != null) await prefs.setString('auth_token', token);
+        if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
+        if (data['userId'] != null) await prefs.setString('userId', data['userId']);
 
-        // Save userId if available
-        if (data['userId'] != null) {
-          await prefs.setString('userId', data['userId']);
-        }
-
-        // Save user details if available
-        if (data['firstName'] != null) {
-          await prefs.setString('user_firstName', data['firstName']);
-        }
-        if (data['lastName'] != null) {
-          await prefs.setString('user_lastName', data['lastName']);
-        }
-        if (data['phoneNumber'] != null) {
-          await prefs.setString('user_phone', data['phoneNumber']);
-        }
-        if (data['dateOfBirth'] != null) {
-          await prefs.setString('user_dob', data['dateOfBirth']);
-        }
+        // Save details
+        if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
+        if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
+        if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
 
         return {
           'success': true,
-          'message': data['message'] ?? 'Verification successful',
-          'access_token': token,
-          'refresh_token': refreshToken,
           'userExists': data['userExists'] ?? false,
           'hasUserDetails': data['hasUserDetails'] ?? false,
-          'firstName': data['firstName'],
-          'lastName': data['lastName'],
-          'userId': data['userId'],
+          'message': data['message'] ?? 'OTP verified successfully',
         };
       } else {
-        return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
+        return {
+          'success': false,
+          'message': data['message'] ?? 'Invalid OTP',
+        };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please try again.'};
     }
   }
 
   /// Logs in with Google (via Firebase ID Token)
   static Future<Map<String, dynamic>> googleLogin({
+    required String idToken,
+    required String email,
+  }) async {
+    return loginWithFirebaseToken(idToken: idToken, email: email);
+  }
+
+  /// Authenticates using Firebase ID token (Google Sign-In or Phone Auth)
+  static Future<Map<String, dynamic>> loginWithFirebaseToken({
     required String idToken,
     required String email,
   }) async {
@@ -155,7 +147,10 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+      }
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           data['success'] == true) {
@@ -191,7 +186,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please try again.'};
     }
   }
 
@@ -214,7 +209,10 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return false;
+      }
 
       if (response.statusCode == 200 && data['success'] == true) {
         final newToken = data['access_token'];
@@ -269,7 +267,11 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Update local prefs
         final prefs = await SharedPreferences.getInstance();
@@ -296,7 +298,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please try again.'};
     }
   }
 
@@ -306,16 +308,17 @@ class AuthService {
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await http
           .post(
-            // Changed to POST as per some backend conventions, or assumes GET if modifying.
-            // Wait, backend auth.controller.ts: @Post('dashboard') async dashboard(@Body() body: { email: string })
-            // So it is POST /auth/dashboard
             Uri.parse('$baseUrl/auth/dashboard'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'email': email}),
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': true,
@@ -333,7 +336,7 @@ class AuthService {
         return {'success': false, 'message': 'Failed to fetch dashboard data'};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please try again.'};
     }
   }
 
@@ -353,7 +356,11 @@ class AuthService {
         body: jsonEncode({'email': email}),
       ).timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
           'success': data['success'] ?? false,
@@ -366,7 +373,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please try again.'};
     }
   }
 }

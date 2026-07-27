@@ -966,7 +966,7 @@ export class StaffProfileService {
 
         const { data: newApp, error: createAppErr } = await this.db
           .from('LoanApplication')
-          .insert(insertApp)
+          .insert(insertApp as any)
           .select()
           .single();
 
