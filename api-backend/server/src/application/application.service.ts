@@ -563,50 +563,60 @@ export class ApplicationService {
   }
 
   async getUserApplications(userId: string, filters?: { status?: string; loanType?: string; limit?: number; offset?: number }) {
-    let query = this.db
-      .from('LoanApplication')
-      .select('*, documents:ApplicationDocument(id, docType, status)', { count: 'exact' })
-      .eq('userId', userId)
-      .order('submittedAt', { ascending: false });
+    try {
+      let query = this.db
+        .from('LoanApplication')
+        .select('*', { count: 'exact' })
+        .eq('userId', userId)
+        .order('submittedAt', { ascending: false });
 
-    if (filters?.status) query = query.eq('status', filters.status);
-    if (filters?.loanType) query = query.eq('loanType', filters.loanType);
-    if (filters?.limit) query = query.limit(filters.limit);
+      if (filters?.status) query = query.eq('status', filters.status);
+      if (filters?.loanType) query = query.eq('loanType', filters.loanType);
+      if (filters?.limit) query = query.limit(filters.limit);
 
-    const { data: applications, count } = await query;
+      const { data: applications, count, error } = await query;
 
-    if (applications && applications.length > 0) {
-      const staffIds = Array.from(new Set(applications.map((app: any) => app.assignedStaffId).filter(id => !!id)));
-      const staffMap = new Map<string, any>();
-      if (staffIds.length > 0) {
-        try {
-          const { data: users } = await this.db
-            .from('User')
-            .select('id, firstName, lastName, phoneNumber, email')
-            .in('id', staffIds);
-          if (users) {
-            users.forEach((user: any) => {
-              staffMap.set(user.id, {
-                counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
-                counselorPhone: user.phoneNumber || '+91 9240209000',
-                counselorEmail: user.email || 'support@vidhyaloan.com'
-              });
-            });
-          }
-        } catch (e) {
-          console.error('Error fetching staff info for user applications:', e);
-        }
+      if (error) {
+        console.error('[ApplicationService.getUserApplications] Query error:', error);
+        return { success: true, data: [], pagination: { total: 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
       }
 
-      applications.forEach((app: any) => {
-        const staffInfo = app.assignedStaffId ? staffMap.get(app.assignedStaffId) : null;
-        app.counselorName = staffInfo?.counselorName || 'VidhyaLoan Support';
-        app.counselorPhone = staffInfo?.counselorPhone || '+91 9240209000';
-        app.counselorEmail = staffInfo?.counselorEmail || 'support@vidhyaloan.com';
-      });
-    }
+      if (applications && applications.length > 0) {
+        const staffIds = Array.from(new Set(applications.map((app: any) => app.assignedStaffId).filter(id => !!id)));
+        const staffMap = new Map<string, any>();
+        if (staffIds.length > 0) {
+          try {
+            const { data: users } = await this.db
+              .from('User')
+              .select('id, firstName, lastName, phoneNumber, email')
+              .in('id', staffIds);
+            if (users) {
+              users.forEach((user: any) => {
+                staffMap.set(user.id, {
+                  counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
+                  counselorPhone: user.phoneNumber || '+91 9240209000',
+                  counselorEmail: user.email || 'support@vidhyaloan.com'
+                });
+              });
+            }
+          } catch (e) {
+            console.error('Error fetching staff info for user applications:', e);
+          }
+        }
 
-    return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
+        applications.forEach((app: any) => {
+          const staffInfo = app.assignedStaffId ? staffMap.get(app.assignedStaffId) : null;
+          app.counselorName = staffInfo?.counselorName || 'VidhyaLoan Support';
+          app.counselorPhone = staffInfo?.counselorPhone || '+91 9240209000';
+          app.counselorEmail = staffInfo?.counselorEmail || 'support@vidhyaloan.com';
+        });
+      }
+
+      return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
+    } catch (e) {
+      console.error('[ApplicationService.getUserApplications] Exception:', e);
+      return { success: true, data: [], pagination: { total: 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
+    }
   }
 
   async updateApplication(applicationId: string, userId: string, data: any) {

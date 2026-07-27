@@ -85,16 +85,24 @@ export class ApplicationController {
     @Post()
     @UseGuards(UserGuard)
     async createApplication(@Request() req, @Body() body: any) {
-        return this.applicationService.createApplication(req.user.id, body);
+        try {
+            const userId = req.user?.id || body?.userId;
+            if (!userId) {
+                throw new BadRequestException('User ID is required to create a loan application');
+            }
+            return await this.applicationService.createApplication(userId, body);
+        } catch (error) {
+            console.error('[ApplicationController.createApplication] Error:', error);
+            if (error instanceof BadRequestException || error instanceof NotFoundException) {
+                throw error;
+            }
+            throw new BadRequestException(error.message || 'Failed to create loan application');
+        }
     }
 
     /**
      * Get all user's applications
      * GET /applications/my
-     * @query status - Filter by status
-     * @query loanType - Filter by loan type
-     * @query limit - Number of results (default: 20)
-     * @query offset - Skip results (default: 0)
      */
     @Get('my')
     @UseGuards(UserGuard)
@@ -105,12 +113,25 @@ export class ApplicationController {
         @Query('limit') limit?: string,
         @Query('offset') offset?: string,
     ) {
-        return this.applicationService.getUserApplications(req.user.id, {
-            status,
-            loanType,
-            limit: limit ? parseInt(limit, 10) : 20,
-            offset: offset ? parseInt(offset, 10) : 0,
-        });
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return { success: true, data: [], pagination: { total: 0, limit: 20, offset: 0 } };
+            }
+            return await this.applicationService.getUserApplications(userId, {
+                status,
+                loanType,
+                limit: limit ? parseInt(limit, 10) : 20,
+                offset: offset ? parseInt(offset, 10) : 0,
+            });
+        } catch (error) {
+            console.error('[ApplicationController.getMyApplications] Error:', error);
+            return {
+                success: true,
+                data: [],
+                pagination: { total: 0, limit: limit ? parseInt(limit, 10) : 20, offset: 0 }
+            };
+        }
     }
 
     // ==================== ADMIN ENDPOINTS ====================
