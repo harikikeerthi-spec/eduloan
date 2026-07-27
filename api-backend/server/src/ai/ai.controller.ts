@@ -487,6 +487,28 @@ export class AiController {
     }
   }
 
+  @Post('search-countries')
+  async searchCountries(@Body() body: { query?: string }) {
+    const countries = await this.shortlistingService.searchCountries(body?.query);
+    return { success: true, countries };
+  }
+
+  @Get('popular-countries')
+  async popularCountries() {
+    const countries = await this.shortlistingService.searchCountries();
+    return { success: true, countries };
+  }
+
+  @Post('search-courses')
+  async searchCourses(@Body() body: { university?: string; query?: string; degree?: string }) {
+    const courses = await this.shortlistingService.searchCourses(
+      body?.university || '',
+      body?.query || '',
+      body?.degree || 'masters'
+    );
+    return { success: true, courses };
+  }
+
   @Post('predict-admission')
   async predictAdmission(
     @Req() req: any,
@@ -630,83 +652,28 @@ export class AiController {
     data: any,
   ): Promise<{ success: boolean; universities: any[]; totalCount: number; source: string; message?: string }> {
     try {
-      // If query is provided (including empty string)
-      if (data && typeof data.query === 'string') {
-        const degree = data.degree || "Master's";
-        const country = data.country;
-        
-        // Determine search type: Indian colleges/universities for Bachelor's degree,
-        // International universities for Master's/other degrees
-        const type = (degree === "Bachelor's" || degree === 'bachelors' || degree === 'ug_university' || (country === 'India' && degree !== "Master's")) 
-          ? 'ug_university' 
-          : 'university';
-          
-        const context = {
-          country,
-          degree,
-        };
-        
-        const universities = await this.openRouterService.searchAdvice(
-          data.query,
-          type,
-          context,
-        );
+      const degree = data?.degree || "Master's";
+      const country = data?.country;
+      const query = data?.query ?? '';
 
-        // Normalize output locations for display on frontend
-        const formatted = (universities || []).map((uni: any) => ({
-          ...uni,
-          location: uni.loc || uni.location || '',
-          country: type === 'ug_university' ? 'India' : (uni.country || country || ''),
-        }));
-        
-        return {
-          success: true,
-          universities: formatted,
-          totalCount: formatted.length,
-          source: 'ai',
-        };
-      }
-
-      // Fallback: Search by country list
-      let countries = data.countries;
-      if (!countries && data.country) {
-        countries = [data.country];
-      }
-
-      if (!countries || countries.length === 0) {
-        throw new BadRequestException('At least one country is required');
-      }
-
-      const universities = await this.universitySearchService.searchUniversitiesByCountry(
-        countries,
-        data.limit || 10,
-      );
-
-      const validUniversities = await this.universitySearchService.validateUniversityRealness(universities);
-
-      // Normalize locations for fallback search as well
-      const formatted = (validUniversities || []).map((uni: any) => ({
-        ...uni,
-        location: uni.loc || uni.location || '',
-      }));
-
+      const universities = await this.shortlistingService.searchUniversities(query, degree, country);
       return {
         success: true,
-        universities: formatted,
-        totalCount: formatted.length,
-        source: 'ai',
+        universities,
+        totalCount: universities.length,
+        source: 'curated-ai',
       };
     } catch (error) {
-      console.error('University search failed:', error);
+      console.error('searchUniversities failed:', error);
       return {
         success: false,
-        message: error.message || 'Failed to search universities',
         universities: [],
         totalCount: 0,
-        source: 'ai',
+        source: 'error',
       };
     }
   }
+
 
   @Get('university-details/:name/:country')
   async getUniversityDetails(

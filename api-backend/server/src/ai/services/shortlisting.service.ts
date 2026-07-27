@@ -29,6 +29,57 @@ export class ShortlistingService {
     { name: 'Spain', flag: '🇪🇸' },
   ];
 
+  private readonly indianUniversities = [
+    { name: 'Indian Institute of Technology Bombay (IIT Bombay)', country: 'India', location: 'Mumbai, Maharashtra' },
+    { name: 'Indian Institute of Technology Delhi (IIT Delhi)', country: 'India', location: 'New Delhi' },
+    { name: 'Indian Institute of Technology Madras (IIT Madras)', country: 'India', location: 'Chennai, Tamil Nadu' },
+    { name: 'Indian Institute of Technology Kharagpur (IIT Kharagpur)', country: 'India', location: 'Kharagpur, West Bengal' },
+    { name: 'Indian Institute of Technology Kanpur (IIT Kanpur)', country: 'India', location: 'Kanpur, Uttar Pradesh' },
+    { name: 'BITS Pilani', country: 'India', location: 'Pilani, Rajasthan' },
+    { name: 'BITS Pilani Hyderabad Campus', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'National Institute of Technology Trichy (NIT Trichy)', country: 'India', location: 'Tiruchirappalli, Tamil Nadu' },
+    { name: 'National Institute of Technology Warangal (NIT Warangal)', country: 'India', location: 'Warangal, Telangana' },
+    { name: 'National Institute of Technology Surathkal (NITK)', country: 'India', location: 'Surathkal, Karnataka' },
+    { name: 'Osmania University', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'JNTU Hyderabad (Jawaharlal Nehru Technological University)', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'Anna University', country: 'India', location: 'Chennai, Tamil Nadu' },
+    { name: 'Delhi University (DU)', country: 'India', location: 'New Delhi' },
+    { name: 'Visvesvaraya Technological University (VTU)', country: 'India', location: 'Belagavi, Karnataka' },
+    { name: 'SRM Institute of Science and Technology', country: 'India', location: 'Chennai, Tamil Nadu' },
+    { name: 'Vellore Institute of Technology (VIT)', country: 'India', location: 'Vellore, Tamil Nadu' },
+    { name: 'Manipal Academy of Higher Education (MAHE)', country: 'India', location: 'Manipal, Karnataka' },
+    { name: 'Lovely Professional University (LPU)', country: 'India', location: 'Phagwara, Punjab' },
+    { name: 'Chandigarh University', country: 'India', location: 'Mohali, Punjab' },
+    { name: 'Christ University', country: 'India', location: 'Bengaluru, Karnataka' },
+    { name: 'Amity University', country: 'India', location: 'Noida, Uttar Pradesh' },
+    { name: 'Thapar Institute of Engineering and Technology', country: 'India', location: 'Patiala, Punjab' },
+    { name: 'PSG College of Technology', country: 'India', location: 'Coimbatore, Tamil Nadu' },
+    { name: 'Chaitanya Bharathi Institute of Technology (CBIT)', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'VNR Vignana Jyothi Institute of Engineering and Technology (VNRVJIET)', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'Gokaraju Rangaraju Institute of Engineering and Technology (GRIET)', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'Vasavi College of Engineering', country: 'India', location: 'Hyderabad, Telangana' },
+  ];
+
+  private readonly bachelorsCourses = [
+    'B.Tech in Computer Science & Engineering (CSE)',
+    'B.E. in Computer Science & Engineering',
+    'B.Tech in Artificial Intelligence & Data Science',
+    'B.Tech in Information Technology (IT)',
+    'B.Tech in Electronics & Communication Engineering (ECE)',
+    'B.Tech in Electrical & Electronics Engineering (EEE)',
+    'B.Tech in Mechanical Engineering',
+    'B.Tech in Civil Engineering',
+    'B.Tech in Biotechnology',
+    'B.Sc in Computer Science',
+    'B.Sc in Data Science & Analytics',
+    'B.C.A. (Bachelor of Computer Applications)',
+    'Bachelor of Business Administration (BBA)',
+    'Bachelor of Commerce (B.Com Hons)',
+    'B.Sc in Physics / Mathematics',
+    'B.Pharm (Bachelor of Pharmacy)',
+    'B.Arch (Bachelor of Architecture)',
+  ];
+
   async searchCountries(query?: string) {
     if (!query) return this.popularCountries;
     return this.popularCountries.filter((c) =>
@@ -59,28 +110,66 @@ export class ShortlistingService {
   }
 
   async searchUniversities(query: string, degree: string, country?: string) {
+    const qLower = (query || '').toLowerCase().trim();
+    const isBachelors = (degree || '').toLowerCase().includes('bachelor') || (degree || '').toLowerCase().includes('ug');
+    const isIndiaTarget = isBachelors || (country || '').toLowerCase().includes('india');
+
+    if (isIndiaTarget) {
+      const matches = this.indianUniversities.filter((u) =>
+        !qLower || u.name.toLowerCase().includes(qLower) || u.location.toLowerCase().includes(qLower)
+      );
+      if (matches.length > 0) return matches;
+    }
+
     try {
-      const prompt = `List 10 real universities/colleges matching '${query}' for ${degree} in ${country || 'any'}.
+      const prompt = `List 10 real universities/colleges matching '${query}' for ${degree} in ${country || (isBachelors ? 'India' : 'any')}.
 Include exact matches for specific names.
 JSON array: [{"name": "Name", "country": "Country", "location": "City, State"}]`;
       const result = await this.openRouterService.getJson<any[]>(prompt);
-      return Array.isArray(result) ? result : [];
+      if (Array.isArray(result) && result.length > 0) {
+        return result;
+      }
     } catch (error) {
       this.logger.error('University search failed', error);
-      return [];
     }
+
+    if (isIndiaTarget) return this.indianUniversities;
+    return [];
   }
 
   async searchCourses(university: string, query: string, degree: string) {
+    const isBachelors = (degree || '').toLowerCase().includes('bachelor') || (degree || '').toLowerCase().includes('ug');
+    const qLower = (query || '').toLowerCase().trim();
+
+    if (isBachelors) {
+      const matches = this.bachelorsCourses
+        .filter((c) => !qLower || c.toLowerCase().includes(qLower))
+        .map((c) => ({ name: c, programName: c }));
+      return matches;
+    }
+
     try {
       const prompt = `Return a list of 10 real courses/programs matching '${query}' at ${university} for ${degree} degree.
 Return ONLY a JSON array of strings or objects: ["Program Name"]`;
       const result = await this.openRouterService.getJson<any[]>(prompt);
-      return Array.isArray(result) ? result : [];
+      if (Array.isArray(result) && result.length > 0) {
+        // Strictly filter out Master's if Bachelor's was requested
+        if (isBachelors) {
+          return result.filter((item) => {
+            const name = typeof item === 'string' ? item : item.name || item.programName || '';
+            const nLower = name.toLowerCase();
+            return !nLower.includes('master') && !nLower.includes('ms ') && !nLower.includes('m.tech') && !nLower.includes('mba');
+          });
+        }
+        return result;
+      }
     } catch (error) {
       this.logger.error('Course search failed', error);
-      return [];
     }
+
+    return isBachelors 
+      ? this.bachelorsCourses.map((c) => ({ name: c, programName: c }))
+      : [];
   }
 
   async shortlist(profile: any, messages: any[] = []) {
