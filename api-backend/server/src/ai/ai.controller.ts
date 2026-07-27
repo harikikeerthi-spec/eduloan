@@ -1,4 +1,5 @@
 import { Controller, Post, Body, BadRequestException, Get, Param, Req } from '@nestjs/common';
+// @ts-ignore
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../chat/email.service';

@@ -74,7 +74,7 @@ export class OpenRouterService {
 
             const data = await response.json();
             return data.choices?.[0]?.message?.content || '';
-        } catch (error) {
+        } catch (error: any) {
             console.error('OpenRouter request failed:', error?.message || error);
             // Handle timeout errors
             if (error?.name === 'TimeoutError' || error?.name === 'AbortError' || error?.message?.includes('timed out')) {

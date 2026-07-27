@@ -80,9 +80,9 @@ export class OpenRouterService {
         return text;
 
         return text;
-      } catch (error) {
+      } catch (error: any) {
         lastError = error;
-        this.logger.error(`Attempt ${attempts} failed: ${error.message}`);
+        this.logger.error(`Attempt ${attempts} failed: ${error?.message || error}`);
         // Continue to next attempt
       }
     }
