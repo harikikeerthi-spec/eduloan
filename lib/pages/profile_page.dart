@@ -255,218 +255,370 @@ class _ProfilePageState extends State<ProfilePage> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Color(0xFF1A0A5E),
+                        Color(0xFF0F172A),
+                        Color(0xFF1E1B4B),
                         Color(0xFF311B92),
-                        Color(0xFF4527A0),
+                        Color(0xFF4C1D95),
                       ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF311B92).withValues(alpha: 0.35),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.4),
+                        blurRadius: 28,
+                        spreadRadius: -4,
+                        offset: const Offset(0, 12),
                       ),
                     ],
                   ),
-                  child: Stack(
-                    children: [
-                      // Decorative background glow
-                      Positioned(
-                        right: -30,
-                        top: -30,
-                        child: Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.06),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: Stack(
+                      children: [
+                        // Decorative glowing ambient shapes
+                        Positioned(
+                          right: -40,
+                          top: -40,
+                          child: Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  const Color(0xFF7C4DFF).withValues(alpha: 0.35),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: -40,
-                        bottom: -40,
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
+                        Positioned(
+                          left: -50,
+                          bottom: -50,
+                          child: Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  const Color(0xFF00E676).withValues(alpha: 0.2),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
 
-                      Padding(
-                        padding: const EdgeInsets.all(22),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Avatar + Edit badge
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 90,
-                                  height: 90,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFFB39DDB), Color(0xFF7C4DFF)],
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF7C4DFF).withValues(alpha: 0.5),
-                                        blurRadius: 20,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3.0),
-                                    child: Container(
-                                      decoration: const BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Color(0xFF1A0A5E),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(45),
-                                        child: Builder(
-                                          builder: (context) {
-                                            if (_profileImage != null) {
-                                              if (_profileImage!.startsWith('data:image/')) {
-                                                try {
-                                                  final base64Str = _profileImage!.split(',').last;
-                                                  final bytes = base64Decode(base64Str);
-                                                  return Image.memory(
-                                                    bytes,
-                                                    width: 90,
-                                                    height: 90,
-                                                    fit: BoxFit.cover,
-                                                  );
-                                                } catch (e) {
-                                                  debugPrint('Error decoding base64 image: $e');
-                                                }
-                                              }
-
-                                              final avatarData = AvatarSelectionDialog.avatars.firstWhere(
-                                                (a) => a['name'] == _profileImage,
-                                                orElse: () => AvatarSelectionDialog.avatars[0],
-                                              );
-                                              return Center(
-                                                child: Icon(
-                                                  avatarData['icon'],
-                                                  size: 46,
-                                                  color: avatarData['color'],
-                                                ),
-                                              );
-                                            }
-
-                                            return const Center(
-                                              child: Icon(
-                                                Icons.person_rounded,
-                                                size: 48,
-                                                color: Color(0xFFB39DDB),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: _changeAvatar,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF7C4DFF),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 2),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.3),
-                                            blurRadius: 8,
-                                          ),
-                                        ],
-                                      ),
-                                      child: const Icon(
-                                        Icons.camera_alt_rounded,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 14),
-
-                            // Name
-                            Text(
-                              _name,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-
-                            // Email
-                            Text(
-                              _email,
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: Colors.white.withValues(alpha: 0.75),
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            // Badge Pill
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                          child: Column(
+                            children: [
+                              // Top ID bar inside card
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Icon(
-                                    Icons.verified_rounded,
-                                    color: Color(0xFF00E676),
-                                    size: 16,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.2),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.badge_outlined,
+                                          color: Color(0xFFB39DDB),
+                                          size: 14,
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'STUDENT PASS',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFFD1C4E9),
+                                            letterSpacing: 1.0,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Verified Student Account',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 6,
+                                          height: 6,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFF00E676),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'ACTIVE',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFF00E676),
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+
+                              const SizedBox(height: 18),
+
+                              // Avatar with glowing neon rings
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 96,
+                                    height: 96,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF7C4DFF),
+                                          Color(0xFF00E676),
+                                        ],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.45),
+                                          blurRadius: 22,
+                                          spreadRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3.5),
+                                      child: Container(
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Color(0xFF0F172A),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(48),
+                                          child: Builder(
+                                            builder: (context) {
+                                              if (_profileImage != null) {
+                                                if (_profileImage!.startsWith('data:image/')) {
+                                                  try {
+                                                    final base64Str = _profileImage!.split(',').last;
+                                                    final bytes = base64Decode(base64Str);
+                                                    return Image.memory(
+                                                      bytes,
+                                                      width: 96,
+                                                      height: 96,
+                                                      fit: BoxFit.cover,
+                                                    );
+                                                  } catch (e) {
+                                                    debugPrint('Error decoding base64 image: $e');
+                                                  }
+                                                }
+
+                                                final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+                                                  (a) => a['name'] == _profileImage,
+                                                  orElse: () => AvatarSelectionDialog.avatars[0],
+                                                );
+                                                return Center(
+                                                  child: Icon(
+                                                    avatarData['icon'],
+                                                    size: 48,
+                                                    color: avatarData['color'],
+                                                  ),
+                                                );
+                                              }
+
+                                              return const Center(
+                                                child: Icon(
+                                                  Icons.person_rounded,
+                                                  size: 50,
+                                                  color: Color(0xFFB39DDB),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: _changeAvatar,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
+                                          ),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: Colors.white, width: 2),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(alpha: 0.35),
+                                              blurRadius: 10,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_rounded,
+                                          size: 15,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Name
+                              Text(
+                                _name,
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: -0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+
+                              // Email
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.email_outlined,
+                                    size: 13,
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _email,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 18),
+
+                              // Bottom Info Strip
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.verified_user_rounded,
+                                          color: Color(0xFF00E676),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Verified Account',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 16,
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                    ),
+                                    GestureDetector(
+                                      onTap: isEditEnabled
+                                          ? () async {
+                                              final updated = await Navigator.push<bool>(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => UserDetailsPage(
+                                                    currentName: _name,
+                                                    currentEmail: _email,
+                                                    currentPhone: _phone,
+                                                    currentDob: _dob,
+                                                  ),
+                                                ),
+                                              );
+                                              if (updated == true) {
+                                                _fetchProfile();
+                                              }
+                                            }
+                                          : null,
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.edit_note_rounded,
+                                            color: Color(0xFFB39DDB),
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'Edit Details',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFFD1C4E9),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
