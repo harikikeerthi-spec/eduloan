@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { ConfigModule } from '@nestjs/config';
 import { AiController } from './ai.controller';
 import { EligibilityService } from './services/eligibility.service';
 import { LoanRecommendationService } from './services/loan-recommendation.service';
@@ -15,7 +18,7 @@ import { KycService } from './services/kyc.service';
 import { ShortlistingService } from './services/shortlisting.service';
 
 @Module({
-  imports: [],
+  imports: [AuthModule, SupabaseModule, ConfigModule],
   controllers: [AiController],
   providers: [
     OpenRouterService,
