@@ -5,6 +5,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
 
 class AuthService {
+  static dynamic _parseJsonResponse(http.Response response) {
+    final body = response.body.trim();
+    if (body.isEmpty) {
+      return {'success': false, 'message': 'Empty response from server (${response.statusCode})'};
+    }
+    if (body.startsWith('<') || body.startsWith('Internal Server Error') || body.startsWith('Bad Gateway')) {
+      return {
+        'success': false,
+        'message': 'Server is updating (${response.statusCode}). Please try again in a few seconds.',
+      };
+    }
+    try {
+      return jsonDecode(body);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Invalid response format (${response.statusCode}). Please try again.',
+      };
+    }
+  }
+
   /// Sends a Unified OTP (handles both login and signup)
   static Future<Map<String, dynamic>> sendOtp(String email) async {
     try {
@@ -17,7 +38,11 @@ class AuthService {
           )
           .timeout(const Duration(seconds: 30));
 
-      final data = jsonDecode(response.body);
+      final data = _parseJsonResponse(response);
+      if (data is! Map<String, dynamic>) {
+        return {'success': false, 'message': 'Unexpected server response'};
+      }
+
       // Check both status code AND the 'success' flag from backend
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           data['success'] == true) {
@@ -33,7 +58,7 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error: $e'};
+      return {'success': false, 'message': 'Connection error. Please check your internet connection.'};
     }
   }
 
