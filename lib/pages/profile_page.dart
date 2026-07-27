@@ -580,8 +580,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 context,
                                                 MaterialPageRoute(
                                                   builder: (context) => UserDetailsPage(
+                                                    email: _email,
+                                                    isEdit: true,
                                                     currentName: _name,
-                                                    currentEmail: _email,
                                                     currentPhone: _phone,
                                                     currentDob: _dob,
                                                   ),
