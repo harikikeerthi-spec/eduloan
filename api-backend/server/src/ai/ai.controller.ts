@@ -67,8 +67,8 @@ export class AiController {
             name: `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() || 'Student',
           };
         }
-      } catch (e) {
-        console.warn('Failed to resolve user from body userId:', e.message);
+      } catch (e: any) {
+        console.warn('Failed to resolve user from body userId:', e?.message || e);
       }
     }
 
@@ -691,11 +691,11 @@ export class AiController {
         success: true,
         details,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch university details:', error);
       return {
         success: false,
-        message: error.message || 'Failed to fetch university details',
+        message: error?.message || 'Failed to fetch university details',
         details: null,
       };
     }
@@ -739,9 +739,9 @@ export class AiController {
         isInterviewOver: result.isInterviewOver || false,
         sections: this.visaInterviewService.getSections(),
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Visa interview start failed:', error);
-      return { success: false, message: error.message || 'Failed to start interview' };
+      return { success: false, message: error?.message || 'Failed to start interview' };
     }
   }
 
@@ -775,9 +775,9 @@ export class AiController {
         completedSections: result.completedSections,
         isInterviewOver: result.isInterviewOver,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Visa interview continue failed:', error);
-      return { success: false, message: error.message || 'Failed to continue interview' };
+      return { success: false, message: error?.message || 'Failed to continue interview' };
     }
   }
 
@@ -797,9 +797,9 @@ export class AiController {
         data.transcript,
       );
       return { success: true, evaluation };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Visa answer evaluation failed:', error);
-      return { success: false, message: error.message || 'Failed to evaluate answer' };
+      return { success: false, message: error?.message || 'Failed to evaluate answer' };
     }
   }
 
@@ -819,9 +819,9 @@ export class AiController {
         data.evaluations || [],
       );
       return { success: true, report };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Final report generation failed:', error);
-      return { success: false, message: error.message || 'Failed to generate report' };
+      return { success: false, message: error?.message || 'Failed to generate report' };
     }
   }
 
