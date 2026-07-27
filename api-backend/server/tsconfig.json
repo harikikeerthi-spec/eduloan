@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "esModuleInterop": true,
-    "isolatedModules": true,
+    "module": "commonjs",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -16,10 +13,11 @@
     "skipLibCheck": true,
     "strictNullChecks": false,
     "useUnknownInCatchVariables": false,
-    "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
+    "forceConsistentCasingInFileNames": false,
+    "esModuleInterop": true,
     "rootDir": "./src"
   },
   "include": [
