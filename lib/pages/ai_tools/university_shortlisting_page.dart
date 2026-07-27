@@ -57,16 +57,16 @@ class _UniversityShortlistingPageState
   void initState() {
     super.initState();
     if (widget.initialFlow == 'recommendations') {
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         _startRecommendationsFlow();
       });
     } else {
-      Future.delayed(const Duration(milliseconds: 500), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         _addAiMessage(
           'Looking for answers to your studies abroad questions?',
           isHeader: true,
         );
-        Future.delayed(const Duration(milliseconds: 800), () {
+        Future.delayed(const Duration(milliseconds: 150), () {
           _addAiMessage('How can we support you today?');
           setState(() {
             _flow = 'recommendations_type';
@@ -109,7 +109,7 @@ class _UniversityShortlistingPageState
               });
             }
 
-            Future.delayed(const Duration(milliseconds: 1500), () {
+            Future.delayed(const Duration(milliseconds: 150), () {
               if (mounted) {
                 Navigator.push(
                   context,
@@ -151,7 +151,7 @@ class _UniversityShortlistingPageState
             });
           }
 
-          Future.delayed(const Duration(milliseconds: 1500), () {
+          Future.delayed(const Duration(milliseconds: 150), () {
             if (mounted) {
               Navigator.push(
                 context,
@@ -192,7 +192,7 @@ class _UniversityShortlistingPageState
             });
           }
 
-          Future.delayed(const Duration(milliseconds: 1500), () {
+          Future.delayed(const Duration(milliseconds: 150), () {
             if (mounted) {
               Navigator.push(
                 context,
@@ -211,7 +211,7 @@ class _UniversityShortlistingPageState
     }
 
     // No history found, start fresh
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       _addAiMessage(
         "Welcome! It looks like we haven't created a plan yet. Let's start fresh!",
       );
@@ -230,7 +230,7 @@ class _UniversityShortlistingPageState
     });
     _scrollToBottom();
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) {
         if (option == "Help me on my Master's plan") {
           _activeFlow = 'masters';
@@ -914,7 +914,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             _addAiMessage(
               "Great choice. Now, which field interests you the most?",
             );
@@ -942,7 +942,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             _addAiMessage(
               "Nice! When do you plan to start your ${_activeFlow == 'bachelors' ? "Bachelor's" : "Master's"}?",
             );
@@ -964,7 +964,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1200), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
               _addAiMessage(
                 "Almost there! To find the perfect programs, I need a bit more about your academic background. Which high school or 12th board school did you study in?",
@@ -994,7 +994,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_admitStatus == 'Yet to Apply') {
               _addAiMessage("Next up. Which country do you want to study in?");
               setState(() => _flow = 'loan_country');
@@ -1440,7 +1440,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
               _addAiMessage(
                 "Almost there! To find the perfect programs, I need a bit more about your academic background. Which school/college did you study in for 12th/High School?",
@@ -1477,7 +1477,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
               _addAiMessage("Noted. What was your stream/major in 12th class? (e.g. Science, Commerce, Arts)");
             } else {
@@ -1513,7 +1513,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
               _addAiMessage(
                 "Got it. What was your 12th board percentage/GPA?",
@@ -1538,7 +1538,7 @@ class _UniversityShortlistingPageState
             _flow = 'processing';
           });
 
-          Future.delayed(const Duration(milliseconds: 1000), () {
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
               _addAiMessage(
                 "Final check: Have you taken any entrance/language exams like SAT, ACT, IELTS, or TOEFL?",
@@ -3359,6 +3359,7 @@ class _TestScoresInputState extends State<_TestScoresInput> {
 
 class _SearchableListState extends State<_SearchableList> {
   final TextEditingController _controller = TextEditingController();
+  static final Map<String, List<dynamic>> _searchCache = {};
   List<dynamic> _items = [];
   bool _isLoading = false;
   Timer? _debounce;
@@ -3374,16 +3375,29 @@ class _SearchableListState extends State<_SearchableList> {
 
   void _onTextChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
+    _debounce = Timer(const Duration(milliseconds: 150), () {
       _performSearch(_controller.text);
     });
   }
 
   Future<void> _performSearch(String query) async {
     if (!mounted) return;
+
+    final cacheKey = '${widget.hintText}_${query.trim().toLowerCase()}';
+    if (_searchCache.containsKey(cacheKey)) {
+      setState(() {
+        _items = _searchCache[cacheKey]!;
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final results = await widget.onSearch(query);
+      if (results.isNotEmpty) {
+        _searchCache[cacheKey] = results;
+      }
       if (mounted) {
         setState(() {
           _items = results;
