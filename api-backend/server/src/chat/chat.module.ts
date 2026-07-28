@@ -18,7 +18,7 @@ import { DocumentModule } from '../document/document.module';
   imports: [
       EventEmitterModule,
       UsersModule,
-      DocumentModule,
+      forwardRef(() => DocumentModule),
       ConfigModule,
       JwtModule.registerAsync({
         imports: [ConfigModule],
