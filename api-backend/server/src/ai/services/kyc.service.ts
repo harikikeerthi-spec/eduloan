@@ -55,6 +55,28 @@ export interface KycExtractionResult {
     error?: string;
 }
 
+export function getFriendlyDocLabel(type: string): string {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('pan')) return 'PAN Card';
+    if (t.includes('aadhar') || t.includes('aadhaar')) return 'Aadhar Card';
+    if (t.includes('passport')) return 'Passport Copy';
+    if (t.includes('10th') || t.includes('ssc') || t.includes('marksheet_10')) return '10th Marksheet';
+    if (t.includes('12th') || t.includes('hsc') || t.includes('intermediate') || t.includes('marksheet_12')) return '12th Marksheet';
+    if (t.includes('degree') || t.includes('ug') || t.includes('undergrad') || t.includes('marksheet_ug')) return 'Degree Marksheet';
+    if (t.includes('pg') || t.includes('postgrad') || t.includes('master') || t.includes('marksheet_pg')) return 'Postgraduate Marksheet';
+    if (t.includes('test_score')) return 'Test Score Card';
+    if (t.includes('offer_letter')) return 'Offer Letter';
+    if (t.includes('salary_slip')) return 'Salary Slip';
+    if (t.includes('bank_statement_salary')) return 'Salary Bank Statement';
+    if (t.includes('form16_itr')) return 'Form 16 / ITR';
+    if (t.includes('electricity_bill')) return 'Electricity Bill';
+    if (t.includes('itr_computation')) return 'ITR with Computation';
+    if (t.includes('balance_sheet')) return 'Balance Sheet & P&L';
+    if (t.includes('business_proof')) return 'Business Registration Proof';
+    if (t.includes('bank_statement_business')) return 'Business Bank Statement';
+    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 @Injectable()
 export class KycService {
     constructor(private readonly openRouterService: OpenRouterService) { }
@@ -250,6 +272,34 @@ export class KycService {
         }
 
         const clean = text.toLowerCase();
+
+        // Strict mismatch checks for academic documents vs identity documents
+        const hasAadhaarKeywords = clean.includes('unique identification') || clean.includes('aadhaar') || clean.includes('uidai') || /\b\d{4}\s?\d{4}\s?\d{4}\b/.test(clean);
+        const hasPassportKeywords = clean.includes('passport') || clean.includes('p<ind') || clean.includes('mrz');
+        const hasPanKeywords = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
+
+        if (isAcademicDoc) {
+            if (hasPanKeywords || hasAadhaarKeywords || hasPassportKeywords) {
+                const detected = hasPanKeywords ? 'PAN Card' : (hasAadhaarKeywords ? 'Aadhar Card' : 'Passport Copy');
+                const expected = getFriendlyDocLabel(docType);
+                return {
+                    is_valid: false,
+                    error: `Uploaded wrong document (uploaded ${detected} instead of ${expected})`
+                };
+            }
+        }
+
+        if (isIdentityDoc) {
+            const hasMarksheetKeywords = clean.includes('marks') || clean.includes('grade') || clean.includes('cbse') || clean.includes('roll no') || clean.includes('marksheet');
+            if (hasMarksheetKeywords) {
+                const expected = getFriendlyDocLabel(docType);
+                return {
+                    is_valid: false,
+                    error: `Uploaded wrong document (uploaded Marksheet instead of ${expected})`
+                };
+            }
+        }
+
         let matches = false;
         let expectedLabel = '';
 
@@ -754,7 +804,9 @@ export class KycService {
             // Check for fraud_reason indicating wrong document type
             if (parsed.fraud_reason === 'WRONG_DOCUMENT_TYPE_UPLOADED') {
                 isValid = false;
-                validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but the uploaded document appears to be a ${String(parsed.document_type || 'different document').toUpperCase()}. Please upload the correct document.`;
+                const expectedLabel = getFriendlyDocLabel(docType);
+                const detectedLabel = getFriendlyDocLabel(parsed.document_type || 'unknown');
+                validationError = `Uploaded wrong document (uploaded ${detectedLabel} instead of ${expectedLabel})`;
             } else {
                 // Strict document type validation check
                 const expectedNorm = this.normalizeDocTypeForComparison(docType);
@@ -762,7 +814,9 @@ export class KycService {
 
                 if (expectedNorm !== detectedNorm) {
                     isValid = false;
-                    validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but detected a ${String(parsed.document_type || 'different document type').toUpperCase()}. Please upload the correct document.`;
+                    const expectedLabel = getFriendlyDocLabel(docType);
+                    const detectedLabel = getFriendlyDocLabel(parsed.document_type || 'unknown');
+                    validationError = `Uploaded wrong document (uploaded ${detectedLabel} instead of ${expectedLabel})`;
                 } else {
                     if (isAadhaar) {
                         const aadhaarValidation = this.validateAadhaarDocument(parsed, extracted);

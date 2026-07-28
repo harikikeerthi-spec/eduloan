@@ -87,6 +87,10 @@ export class DocumentController {
 
         if (!integrityCheck.is_valid) {
           console.warn(`[UPLOAD] Rejecting invalid ${docType} on KYC service exception. Error: ${integrityCheck.error}`);
+          const errorMsg = integrityCheck.error || '';
+          if (errorMsg.includes('Uploaded wrong document')) {
+            throw new BadRequestException(errorMsg);
+          }
           throw new BadRequestException(
             `Document verification failed: The uploaded file was not recognized as a valid ${docType.toUpperCase().replace(/_/g, ' ')}. ` +
             `Details: ${integrityCheck.error}. Please check your document and re-upload the correct file.`
@@ -109,9 +113,14 @@ export class DocumentController {
 
       // If document is not valid (AI service processed successfully and rejected it), immediately abort
       if (!kycResult.is_valid) {
-        const docLabel = docType.toUpperCase().replace(/_/g, ' ');
         const errorMessage = kycResult.error || 'The uploaded file does not match the expected document type or has validation errors.';
         console.warn(`[UPLOAD] Rejecting invalid ${docType}. OCR Error: ${errorMessage}`);
+        
+        if (errorMessage.includes('Uploaded wrong document')) {
+          throw new BadRequestException(errorMessage);
+        }
+
+        const docLabel = docType.toUpperCase().replace(/_/g, ' ');
         throw new BadRequestException(
           `Document verification failed: The uploaded file was not recognized as a valid ${docLabel}. ` +
           `Details: ${errorMessage}. Please check your document and re-upload the correct file.`
