@@ -20,6 +20,8 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   final Set<String> _savedUniversityNames = {};
   final AiLogicService _aiService = AiLogicService();
 
+  List<UniversityRecommendation> _savedRecommendations = [];
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +50,7 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   Future<void> _loadSavedStatus() async {
     final saved = await _aiService.getSavedUniversities();
     setState(() {
+      _savedRecommendations = saved;
       _savedUniversityNames.clear();
       _savedUniversityNames.addAll(saved.map((u) => u.name));
       _filteredRecommendations = _getFilteredList();
@@ -76,9 +79,7 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
     } else if (_activeTab == "All programs") {
       list = _allRecommendations;
     } else if (_activeTab == "Saved") {
-      list = _allRecommendations
-          .where((u) => _savedUniversityNames.contains(u.name))
-          .toList();
+      list = _savedRecommendations;
     }
 
     final query = _searchController.text.toLowerCase().trim();

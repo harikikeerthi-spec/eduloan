@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { OpenRouterService } from './openrouter.service';
 import { SupabaseService } from '../../supabase/supabase.service';
 
@@ -434,7 +435,16 @@ IMPORTANT: Return ONLY a valid JSON object matching this exact structure:
 
   async saveShortlistChat(userId: string, messages: any[], recommendations?: any[]) {
     try {
+      // Find existing chat to reuse id and prevent null id constraint violation on insert
+      const client = this.supabase.getClient();
+      const { data: existing } = await client
+        .from('UniversityShortlistChat')
+        .select('id')
+        .eq('userId', userId)
+        .maybeSingle();
+
       const payload: any = {
+        id: existing?.id || randomUUID(),
         userId,
         messages: messages || [],
         updatedAt: new Date().toISOString(),
@@ -443,7 +453,7 @@ IMPORTANT: Return ONLY a valid JSON object matching this exact structure:
         payload.recommendations = recommendations;
       }
 
-      const { data, error } = await this.supabase.getClient()
+      const { data, error } = await client
         .from('UniversityShortlistChat')
         .upsert(payload, { onConflict: 'userId' })
         .select()
@@ -498,6 +508,7 @@ IMPORTANT: Return ONLY a valid JSON object matching this exact structure:
         const { data: inserted } = await client
           .from('UserFavoriteUniversity')
           .insert({
+            id: randomUUID(),
             userId,
             universityName,
             universityData: universityData || { name: universityName },

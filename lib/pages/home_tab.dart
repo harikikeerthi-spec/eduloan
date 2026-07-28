@@ -335,6 +335,10 @@ class HomeTabState extends State<HomeTab> {
                 _buildFeaturedBlogsSection(),
                 const SizedBox(height: 20),
 
+                // ── AI Recommendations ──────────────────────────────────
+                _buildAiRecommendations(),
+                const SizedBox(height: 28),
+
                 // Lending Partners
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
