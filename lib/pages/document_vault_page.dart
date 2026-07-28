@@ -461,7 +461,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     bool isRejected = doc != null && (doc.status == 'rejected' || doc.status == 'requires_resubmission');
     
     bool isAvailable = doc != null && (isFromDigilocker || hasFile);
-    bool isUploaded = isAvailable && !isRejected;
+    bool isUploaded = (isAvailable || isVerified) && !isRejected;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -471,9 +471,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         border: Border.all(
           color: isRejected
               ? const Color(0xFFEF5350).withValues(alpha: 0.25)
-              : isUploaded 
-                  ? Colors.green.withValues(alpha: 0.15) 
-                  : const Color(0xFF311B92).withValues(alpha: 0.08),
+              : isVerified
+                  ? const Color(0xFF4CAF50).withValues(alpha: 0.25)
+                  : isUploaded 
+                      ? Colors.green.withValues(alpha: 0.15) 
+                      : const Color(0xFF311B92).withValues(alpha: 0.08),
           width: 1,
         ),
         boxShadow: [
@@ -497,22 +499,28 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 decoration: BoxDecoration(
                   color: isRejected
                       ? const Color(0xFFFFEBEE)
-                      : isUploaded
+                      : isVerified
                           ? const Color(0xFFE8F5E9)
-                          : const Color(0xFFEDE7F6),
+                          : isUploaded
+                              ? const Color(0xFFE8F5E9)
+                              : const Color(0xFFEDE7F6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   isRejected
                       ? Icons.cancel_rounded
-                      : isUploaded
+                      : isVerified
                           ? Icons.verified_user_rounded
-                          : Icons.file_present_rounded,
+                          : isUploaded
+                              ? Icons.verified_user_rounded
+                              : Icons.file_present_rounded,
                   color: isRejected
                       ? const Color(0xFFC62828)
-                      : isUploaded
+                      : isVerified
                           ? const Color(0xFF2E7D32)
-                          : const Color(0xFF6200EA),
+                          : isUploaded
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFF6200EA),
                   size: 18,
                 ),
               ),
@@ -541,32 +549,38 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                           decoration: BoxDecoration(
                             color: isRejected
                                 ? const Color(0xFFFFEBEE)
-                                : isUploaded
+                                : isVerified
                                     ? const Color(0xFFE8F5E9)
-                                    : const Color(0xFFFFF3E0),
+                                    : isUploaded
+                                        ? const Color(0xFFE8F5E9)
+                                        : const Color(0xFFFFF3E0),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isRejected
                                 ? 'Rejected'
-                                : isUploaded 
-                                    ? (isFromDigilocker ? 'DigiLocker' : (isVerified ? 'Verified' : 'Uploaded'))
-                                    : 'Pending',
+                                : isVerified
+                                    ? 'Approved'
+                                    : isUploaded 
+                                        ? (isFromDigilocker ? 'DigiLocker' : 'Uploaded')
+                                        : 'Pending',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: isRejected
                                   ? const Color(0xFFC62828)
-                                  : isUploaded 
-                                      ? const Color(0xFF2E7D32) 
-                                      : const Color(0xFFE65100),
+                                  : isVerified
+                                      ? const Color(0xFF2E7D32)
+                                      : isUploaded 
+                                          ? const Color(0xFF2E7D32) 
+                                          : const Color(0xFFE65100),
                             ),
                           ),
                         ),
-                        if (isUploaded && doc.uploadedAt != null) ...[
+                        if (isUploaded && doc?.uploadedAt != null) ...[
                           const SizedBox(width: 6),
                           Text(
-                            doc.uploadedAt!.toIso8601String().split('T')[0],
+                            doc!.uploadedAt!.toIso8601String().split('T')[0],
                             style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                           ),
                         ],
@@ -659,40 +673,42 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         }
                       },
                     ),
-                    const SizedBox(width: 6),
-                    _buildCompactActionButton(
-                      icon: Icons.delete_outline_rounded,
-                      color: const Color(0xFFE53935),
-                      onTap: () async {
-                        bool? confirm = await showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text('Delete Document'),
-                            content: Text('Are you sure you want to delete $name?'),
-                            actions: [
-                              TextButton(
-                                child: const Text('Cancel'),
-                                onPressed: () => Navigator.pop(context, false),
-                              ),
-                              TextButton(
-                                child: const Text(
-                                  'Delete',
-                                  style: TextStyle(color: Colors.red),
+                    if (!isVerified) ...[
+                      const SizedBox(width: 6),
+                      _buildCompactActionButton(
+                        icon: Icons.delete_outline_rounded,
+                        color: const Color(0xFFE53935),
+                        onTap: () async {
+                          bool? confirm = await showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Text('Delete Document'),
+                              content: Text('Are you sure you want to delete $name?'),
+                              actions: [
+                                TextButton(
+                                  child: const Text('Cancel'),
+                                  onPressed: () => Navigator.pop(context, false),
                                 ),
-                                onPressed: () => Navigator.pop(context, true),
-                              ),
-                            ],
-                          ),
-                        );
+                                TextButton(
+                                  child: const Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                  onPressed: () => Navigator.pop(context, true),
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirm == true) {
-                          setState(() => _isLoading = true);
-                          await UserService.deleteDocument(type);
-                          _fetchDocuments();
-                        }
-                      },
-                    ),
+                          if (confirm == true) {
+                            setState(() => _isLoading = true);
+                            await UserService.deleteDocument(type);
+                            _fetchDocuments();
+                          }
+                        },
+                      ),
+                    ],
                   ],
                 )
               else
