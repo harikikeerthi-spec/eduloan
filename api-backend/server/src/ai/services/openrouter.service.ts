@@ -135,8 +135,8 @@ export class OpenRouterService {
                         console.warn(`Model ${currentModel} not found (404). Trying fallback model...`);
                         lastError = new Error(`Model not found: ${currentModel}`);
                         continue; // Try next model
-                    } else if (response.status === 400 && errorBody.includes('json_validate_failed')) {
-                        console.warn(`Model ${currentModel}: Native JSON mode failed. Retrying with standard mode...`);
+                    } else if (response.status === 400) {
+                        console.warn(`Model ${currentModel}: Native JSON mode failed (400). Retrying with standard mode...`);
                         content = await this.chat(jsonPrompt, currentModel);
                     } else if (response.status === 429 || errorBody.includes('rate_limit')) {
                         console.warn(`Model ${currentModel}: Rate limited. Trying fallback...`);
@@ -189,6 +189,9 @@ export class OpenRouterService {
 
         if (lastError) {
             console.error('All getJson models failed. Returning empty result or throwing.');
+            if (prompt.toLowerCase().includes('json array') || prompt.toLowerCase().includes('array of')) {
+                return [] as any;
+            }
             if (prompt.includes('universities')) return { recommendations: [], universities: [] } as any;
             if (prompt.includes('courses')) return { courses: [] } as any;
             throw lastError;

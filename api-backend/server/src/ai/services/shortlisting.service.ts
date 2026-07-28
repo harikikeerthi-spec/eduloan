@@ -58,6 +58,12 @@ export class ShortlistingService {
     { name: 'VNR Vignana Jyothi Institute of Engineering and Technology (VNRVJIET)', country: 'India', location: 'Hyderabad, Telangana' },
     { name: 'Gokaraju Rangaraju Institute of Engineering and Technology (GRIET)', country: 'India', location: 'Hyderabad, Telangana' },
     { name: 'Vasavi College of Engineering', country: 'India', location: 'Hyderabad, Telangana' },
+    { name: 'SRKR Engineering College (Sagi Ramakrishnam Raju Engineering College)', country: 'India', location: 'Bhimavaram, Andhra Pradesh' },
+    { name: 'GMR Institute of Technology (GMRIT)', country: 'India', location: 'Rajam, Andhra Pradesh' },
+    { name: 'MVGR College of Engineering', country: 'India', location: 'Vizianagaram, Andhra Pradesh' },
+    { name: 'RVR & JC College of Engineering', country: 'India', location: 'Guntur, Andhra Pradesh' },
+    { name: 'Vignan Foundation for Science, Technology and Research', country: 'India', location: 'Guntur, Andhra Pradesh' },
+    { name: 'GITAM University', country: 'India', location: 'Visakhapatnam, Andhra Pradesh' },
   ];
 
   private readonly bachelorsCourses = [
@@ -133,7 +139,7 @@ JSON array: [{"name": "Name", "country": "Country", "location": "City, State"}]`
       this.logger.error('University search failed', error);
     }
 
-    if (isIndiaTarget) return this.indianUniversities;
+    if (isIndiaTarget && !qLower) return this.indianUniversities;
     return [];
   }
 
