@@ -19,7 +19,12 @@ import { KycService } from './services/kyc.service';
 import { ShortlistingService } from './services/shortlisting.service';
 
 @Module({
-  imports: [AuthModule, SupabaseModule, ConfigModule, ChatModule],
+  imports: [
+    AuthModule,
+    SupabaseModule,
+    ConfigModule,
+    forwardRef(() => ChatModule),
+  ],
   controllers: [AiController],
   providers: [
     OpenRouterService,
