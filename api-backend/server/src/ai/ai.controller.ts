@@ -1161,57 +1161,7 @@ export class AiController {
 
     const cleanPincode = pincode.trim();
 
-    // 1. Try Indian Post API if pincode looks like a 6-digit Indian PIN
-    if (/^\d{6}$/.test(cleanPincode)) {
-      try {
-        const response = await fetch(`https://api.postalpincode.in/pincode/${cleanPincode}`);
-        if (response.ok) {
-          const resData = await response.json();
-          if (resData && resData[0] && resData[0].Status === 'Success') {
-            const postOffice = resData[0].PostOffice?.[0];
-            if (postOffice) {
-              const city = postOffice.District || postOffice.Block || postOffice.Division || '';
-              const state = postOffice.State || '';
-              if (city) {
-                return {
-                  success: true,
-                  city: city,
-                  state: state,
-                  country: 'India',
-                  address: `${city}, ${state}, India`
-                };
-              }
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Indian PIN code API call failed:', err);
-      }
-    }
-
-    // 2. Call OpenRouter / LLM as fallback or for international postal codes
-    try {
-      const prompt = `Identify the city, state, and country for the postal code or pincode: "${cleanPincode}".
-      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (e.g. "City, State, Country"). Do not include markdown formatting.`;
-      
-      const aiResponse = await this.openRouterService.chat(prompt);
-      const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-      const result = JSON.parse(cleaned);
-      if (result.city) {
-        return {
-          success: true,
-          city: result.city || '',
-          state: result.state || '',
-          country: result.country || 'India',
-          address: result.address || `${result.city || ''}, ${result.state || ''}, ${result.country || 'India'}`
-        };
-      }
-    } catch (err) {
-      console.error('LLM Pincode lookup failed:', err);
-    }
-
-    // 3. Fallback regional mapping based on 2-digit PIN prefix
-    const prefix2 = cleanPincode.slice(0, 2);
+    // Regional mapping based on 2-digit PIN prefix
     const prefixMap: Record<string, { city: string; state: string; country: string }> = {
       '11': { city: 'New Delhi', state: 'Delhi', country: 'India' },
       '12': { city: 'Gurugram', state: 'Haryana', country: 'India' },
@@ -1278,6 +1228,71 @@ export class AiController {
       '83': { city: 'Gaya', state: 'Bihar', country: 'India' },
     };
 
+    // 1. Try Indian Post API if pincode looks like a 6-digit Indian PIN
+    if (/^\d{6}$/.test(cleanPincode)) {
+      try {
+        const response = await fetch(`https://api.postalpincode.in/pincode/${cleanPincode}`);
+        if (response.ok) {
+          const resData = await response.json();
+          if (resData && resData[0] && resData[0].Status === 'Success') {
+            const postOffice = resData[0].PostOffice?.[0];
+            if (postOffice) {
+              const city = postOffice.District || postOffice.Block || postOffice.Division || '';
+              const state = postOffice.State || '';
+              if (city) {
+                return {
+                  success: true,
+                  city: city,
+                  state: state,
+                  country: 'India',
+                  address: `${city}, ${state}, India`
+                };
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Indian PIN code API call failed:', err);
+      }
+
+      // If Indian Post API fails, try local prefix map first before LLM
+      const prefix2 = cleanPincode.slice(0, 2);
+      if (prefixMap[prefix2]) {
+        const info = prefixMap[prefix2];
+        return {
+          success: true,
+          city: info.city,
+          state: info.state,
+          country: info.country,
+          address: `${info.city}, ${info.state}, ${info.country}`
+        };
+      }
+    }
+
+    // 2. Call OpenRouter / LLM as fallback or for international postal codes
+    try {
+      const prompt = `Identify the city, state, and country for the postal code or pincode: "${cleanPincode}".
+      ${/^\d{6}$/.test(cleanPincode) ? 'Note: This is a 6-digit Indian PIN code. Ensure you resolve it to the correct city/district and state in India.' : ''}
+      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (e.g. "City, State, Country"). Do not include markdown formatting.`;
+      
+      const aiResponse = await this.openRouterService.chat(prompt);
+      const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      const result = JSON.parse(cleaned);
+      if (result.city) {
+        return {
+          success: true,
+          city: result.city || '',
+          state: result.state || '',
+          country: result.country || 'India',
+          address: result.address || `${result.city || ''}, ${result.state || ''}, ${result.country || 'India'}`
+        };
+      }
+    } catch (err) {
+      console.error('LLM Pincode lookup failed:', err);
+    }
+
+    // 3. Fallback regional mapping based on 2-digit PIN prefix
+    const prefix2 = cleanPincode.slice(0, 2);
     if (prefixMap[prefix2]) {
       const info = prefixMap[prefix2];
       return {
