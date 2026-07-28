@@ -458,9 +458,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     bool isFromDigilocker = (doc?.isDigilocker ?? false) || doc?.status == 'available_in_digilocker';
     bool hasFile = doc?.filePath != null && doc!.filePath!.isNotEmpty;
     bool isVerified = doc?.status == 'verified';
+    bool isRejected = doc != null && (doc.status == 'rejected' || doc.status == 'requires_resubmission');
     
     bool isAvailable = doc != null && (isFromDigilocker || hasFile);
-    bool isUploaded = isAvailable;
+    bool isUploaded = isAvailable && !isRejected;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -468,9 +469,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isUploaded 
-              ? Colors.green.withValues(alpha: 0.15) 
-              : const Color(0xFF311B92).withValues(alpha: 0.08),
+          color: isRejected
+              ? const Color(0xFFEF5350).withValues(alpha: 0.25)
+              : isUploaded 
+                  ? Colors.green.withValues(alpha: 0.15) 
+                  : const Color(0xFF311B92).withValues(alpha: 0.08),
           width: 1,
         ),
         boxShadow: [
@@ -492,14 +495,24 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: isUploaded
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFEDE7F6),
+                  color: isRejected
+                      ? const Color(0xFFFFEBEE)
+                      : isUploaded
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFEDE7F6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  isUploaded ? Icons.verified_user_rounded : Icons.file_present_rounded,
-                  color: isUploaded ? const Color(0xFF2E7D32) : const Color(0xFF6200EA),
+                  isRejected
+                      ? Icons.cancel_rounded
+                      : isUploaded
+                          ? Icons.verified_user_rounded
+                          : Icons.file_present_rounded,
+                  color: isRejected
+                      ? const Color(0xFFC62828)
+                      : isUploaded
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFF6200EA),
                   size: 18,
                 ),
               ),
@@ -526,21 +539,27 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: isUploaded
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFFFF3E0),
+                            color: isRejected
+                                ? const Color(0xFFFFEBEE)
+                                : isUploaded
+                                    ? const Color(0xFFE8F5E9)
+                                    : const Color(0xFFFFF3E0),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            isUploaded 
-                                ? (isFromDigilocker ? 'DigiLocker' : (isVerified ? 'Verified' : 'Uploaded'))
-                                : 'Pending',
+                            isRejected
+                                ? 'Rejected'
+                                : isUploaded 
+                                    ? (isFromDigilocker ? 'DigiLocker' : (isVerified ? 'Verified' : 'Uploaded'))
+                                    : 'Pending',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
-                              color: isUploaded 
-                                  ? const Color(0xFF2E7D32) 
-                                  : const Color(0xFFE65100),
+                              color: isRejected
+                                  ? const Color(0xFFC62828)
+                                  : isUploaded 
+                                      ? const Color(0xFF2E7D32) 
+                                      : const Color(0xFFE65100),
                             ),
                           ),
                         ),
@@ -553,12 +572,71 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         ],
                       ],
                     ),
+                    if (isRejected && doc.rejectionReason != null && doc.rejectionReason!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Reason: ${doc.rejectionReason}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFFC62828),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
               const SizedBox(width: 8),
               // Action Buttons
-              if (isUploaded)
+              if (isRejected)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (hasFile) ...[
+                      _buildCompactActionButton(
+                        icon: Icons.visibility_rounded,
+                        color: const Color(0xFF1E88E5),
+                        onTap: () async {
+                          final token = await _getToken();
+                          final url = await UserService.getDocumentViewUrl(type);
+                          final uri = Uri.parse('$url?token=$token');
+
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not open document')),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    ElevatedButton(
+                      onPressed: () => _uploadDocument(type, name),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        minimumSize: const Size(0, 32),
+                      ),
+                      child: const Text(
+                        'Re-upload',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                )
+              else if (isUploaded)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

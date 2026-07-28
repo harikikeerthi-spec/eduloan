@@ -7,6 +7,7 @@ class UserDocument {
   final String? filePath;
   final DateTime? uploadedAt;
   final bool isDigilocker;
+  final String? rejectionReason;
 
   UserDocument({
     required this.id,
@@ -17,12 +18,21 @@ class UserDocument {
     this.filePath,
     this.uploadedAt,
     this.isDigilocker = false,
+    this.rejectionReason,
   });
 
   factory UserDocument.fromJson(Map<String, dynamic> json) {
     // Check if verificationMetadata mentions DigiLocker or if digilockerTxId exists
     bool fromDigilocker = json['digilockerTxId'] != null || 
                           (json['verificationMetadata']?.toString().contains('DigiLocker') ?? false);
+
+    String? reason = json['rejectionReason']?.toString();
+    if (reason == null && json['verificationMetadata'] != null) {
+      final meta = json['verificationMetadata'];
+      if (meta is Map) {
+        reason = meta['rejectionReason']?.toString();
+      }
+    }
 
     return UserDocument(
       id: json['id']?.toString() ?? '',
@@ -35,6 +45,7 @@ class UserDocument {
           ? DateTime.tryParse(json['uploadedAt'].toString())
           : null,
       isDigilocker: fromDigilocker,
+      rejectionReason: reason,
     );
   }
 
