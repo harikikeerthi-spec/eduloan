@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/direct_chat_service.dart';
+import '../widgets/mesh_background.dart';
 import 'direct_chat_detail_page.dart';
 
 class DirectChatsPage extends StatefulWidget {
@@ -79,9 +80,9 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white.withValues(alpha: 0.85),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
@@ -132,7 +133,8 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
           ),
         ],
       ),
-      body: Column(
+      body: MeshBackground(
+        child: Column(
         children: [
           // Security / Privacy Notice Banner
           Container(
@@ -379,6 +381,7 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
           ),
         ],
       ),
+    ),
     );
   }
 

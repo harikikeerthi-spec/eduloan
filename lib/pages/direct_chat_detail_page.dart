@@ -28,6 +28,7 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
   final ScrollController _scrollController = ScrollController();
   List<DirectChatMessage> _messages = [];
   bool _isLoading = true;
+  bool _showPhoneAlertBanner = false;
 
   @override
   void initState() {
@@ -88,6 +89,9 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
 
     setState(() {
       _messages.add(sentMsg);
+      if (containsPhone) {
+        _showPhoneAlertBanner = true;
+      }
     });
     _scrollToBottom();
 
@@ -233,27 +237,87 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
       ),
       body: Column(
         children: [
-          // Security Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFFF1F5F9),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF64748B)),
-                const SizedBox(width: 6),
-                Text(
-                  'Direct 1-on-1 Chat • Phone numbers are masked as XXXXXXXXXX',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF64748B),
+          // Dynamic Top Security Alert Banner when phone number is sent or detected
+          if (_showPhoneAlertBanner || _messages.any((m) => RegExp(r'XXXXXXXXXX').hasMatch(m.displayText)))
+            Container(
+              margin: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFCA5A5), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFEF4444),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.shield_rounded, color: Colors.white, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '⚠️ Phone Number Auto-Masked',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF991B1B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Phone number detected & automatically masked as XXXXXXXXXX for member privacy & protection.',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF7F1D1D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _showPhoneAlertBanner = false),
+                    child: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF991B1B)),
+                  ),
+                ],
+              ),
+            )
+          else
+            // Security Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: const Color(0xFFF1F5F9),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline_rounded, size: 13, color: Color(0xFF64748B)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Direct 1-on-1 Chat • Phone numbers are masked as XXXXXXXXXX',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
           // Messages List
           Expanded(
