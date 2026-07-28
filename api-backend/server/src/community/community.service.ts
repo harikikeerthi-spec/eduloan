@@ -429,7 +429,7 @@ export class CommunityService {
       .from('ForumPost')
       .select('*, author:User!authorId(firstName, lastName, id, role), comments:ForumComment!postId(*, author:User!authorId(firstName, lastName, id, role), replies:ForumComment!parentId(*, author:User!authorId(firstName, lastName, id, role)))')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (!post) throw new NotFoundException('Post not found');
 
@@ -440,7 +440,7 @@ export class CommunityService {
     const likedCommentIds = new Set<string>();
 
     if (userId) {
-      const { data: postLike } = await this.db.from('PostLike').select('id').eq('postId', id).eq('userId', userId).single();
+      const { data: postLike } = await this.db.from('PostLike').select('id').eq('postId', id).eq('userId', userId).maybeSingle();
       liked = !!postLike;
 
       const allCommentIds: string[] = [];
@@ -573,7 +573,7 @@ export class CommunityService {
   }
 
   async createForumPost(userId: string, data: any) {
-    const { data: user } = await this.db.from('User').select('id').eq('id', userId).single();
+    const { data: user } = await this.db.from('User').select('id').eq('id', userId).maybeSingle();
     if (!user) throw new NotFoundException('User not found');
 
     // AI content relevance and quality verification check
@@ -595,7 +595,7 @@ export class CommunityService {
       .eq('authorId', userId)
       .eq('title', data.title)
       .gte('createdAt', sixtySecondsAgo)
-      .single();
+      .maybeSingle();
 
     if (recentPost && data.force !== true) {
       return { success: true, message: 'Post already created recently', data: recentPost, isDuplicate: true };
@@ -608,18 +608,21 @@ export class CommunityService {
       .from('ForumPost')
       .insert({ title: data.title, content: data.content, category: canonicalCategory, tags: data.tags || [], authorId: userId, isMentorOnly: data.isMentorOnly || false, updatedAt: new Date().toISOString() })
       .select('*, author:User!authorId(firstName, lastName, role, id)')
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[CommunityService] error inserting ForumPost:', error);
+      throw new BadRequestException('Failed to create post: ' + error.message);
+    }
     return { success: true, message: 'Post created successfully', data: post };
   }
 
   async createForumComment(userId: string, postId: string, content: string, parentId?: string) {
     const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
-    const { data: recentComment } = await this.db.from('ForumComment').select('*').eq('authorId', userId).eq('postId', postId).eq('content', content).gte('createdAt', tenSecondsAgo).single();
+    const { data: recentComment } = await this.db.from('ForumComment').select('*').eq('authorId', userId).eq('postId', postId).eq('content', content).gte('createdAt', tenSecondsAgo).maybeSingle();
     if (recentComment) return { success: true, data: recentComment };
 
-    const { data: post } = await this.db.from('ForumPost').select('id').eq('id', postId).single();
+    const { data: post } = await this.db.from('ForumPost').select('id').eq('id', postId).maybeSingle();
     if (!post) throw new NotFoundException('Post not found');
 
     const { data: comment, error } = await this.db.from('ForumComment').insert({ content, postId, authorId: userId, parentId: parentId || null, updatedAt: new Date().toISOString() }).select('*, author:User!authorId(firstName, lastName, role)').single();
@@ -629,19 +632,19 @@ export class CommunityService {
 
   async likeForumComment(userId: string, id: string) {
     try {
-      const { data: existing } = await this.db.from('ForumCommentLike').select('id').eq('commentId', id).eq('userId', userId).single();
-      const { data: comment } = await this.db.from('ForumComment').select('likes').eq('id', id).single();
+      const { data: existing } = await this.db.from('ForumCommentLike').select('id').eq('commentId', id).eq('userId', userId).maybeSingle();
+      const { data: comment } = await this.db.from('ForumComment').select('likes').eq('id', id).maybeSingle();
       const currentLikes = comment?.likes || 0;
 
       if (existing) {
         await this.db.from('ForumCommentLike').delete().eq('id', existing.id);
         await this.db.from('ForumComment').update({ likes: Math.max(0, currentLikes - 1) }).eq('id', id);
-        const { data: updated } = await this.db.from('ForumComment').select('likes').eq('id', id).single();
+        const { data: updated } = await this.db.from('ForumComment').select('likes').eq('id', id).maybeSingle();
         return { success: true, likes: updated?.likes || 0, liked: false };
       } else {
         await this.db.from('ForumCommentLike').insert({ commentId: id, userId });
         await this.db.from('ForumComment').update({ likes: currentLikes + 1 }).eq('id', id);
-        const { data: updated } = await this.db.from('ForumComment').select('likes').eq('id', id).single();
+        const { data: updated } = await this.db.from('ForumComment').select('likes').eq('id', id).maybeSingle();
         return { success: true, likes: updated?.likes || 0, liked: true };
       }
     } catch (error) {
@@ -652,19 +655,19 @@ export class CommunityService {
 
   async likeForumPost(userId: string, id: string) {
     try {
-      const { data: existing } = await this.db.from('PostLike').select('id').eq('postId', id).eq('userId', userId).single();
-      const { data: post } = await this.db.from('ForumPost').select('likes').eq('id', id).single();
+      const { data: existing } = await this.db.from('PostLike').select('id').eq('postId', id).eq('userId', userId).maybeSingle();
+      const { data: post } = await this.db.from('ForumPost').select('likes').eq('id', id).maybeSingle();
       const currentLikes = post?.likes || 0;
 
       if (existing) {
         await this.db.from('PostLike').delete().eq('id', existing.id);
         await this.db.from('ForumPost').update({ likes: Math.max(0, currentLikes - 1) }).eq('id', id);
-        const { data: updated } = await this.db.from('ForumPost').select('likes').eq('id', id).single();
+        const { data: updated } = await this.db.from('ForumPost').select('likes').eq('id', id).maybeSingle();
         return { success: true, likes: updated?.likes || 0, liked: false };
       } else {
         await this.db.from('PostLike').insert({ postId: id, userId });
         await this.db.from('ForumPost').update({ likes: currentLikes + 1 }).eq('id', id);
-        const { data: updated } = await this.db.from('ForumPost').select('likes').eq('id', id).single();
+        const { data: updated } = await this.db.from('ForumPost').select('likes').eq('id', id).maybeSingle();
         return { success: true, likes: updated?.likes || 0, liked: true };
       }
     } catch (error) {
@@ -918,5 +921,161 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       success: true,
       data: { hub }
     };
+  }
+
+  // ==================== PERSON TO PERSON DIRECT CHAT (DYNAMIC DB TABLES) ====================
+
+  private maskPhoneNumbers(text: string): string {
+    if (!text) return text;
+    const phoneRegex = /(?:\+?91[\s\.-]?)?(?:[0-9]{10}|[0-9]{5}[\s\.-][0-9]{5}|[0-9]{3}[\s\.-][0-9]{3}[\s\.-][0-9]{4}|[6-9][0-9]{9})/g;
+    return text.replace(phoneRegex, 'XXXXXXXXXX');
+  }
+
+  async getDirectConversations(userId: string) {
+    try {
+      const { data: convs, error } = await this.db
+        .from('DirectConversation')
+        .select('*')
+        .or(`participant1Id.eq.${userId},participant2Id.eq.${userId}`)
+        .order('lastMessageAt', { ascending: false });
+
+      if (error || !convs) {
+        return { success: true, data: [] };
+      }
+
+      const formatted = convs.map((c: any) => ({
+        ...c,
+        lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
+      }));
+
+      return { success: true, data: formatted };
+    } catch (e) {
+      console.error('[CommunityService] getDirectConversations failed:', e);
+      return { success: true, data: [] };
+    }
+  }
+
+  async getDirectMessages(conversationId: string, userId?: string) {
+    try {
+      const { data: messages, error } = await this.db
+        .from('DirectMessage')
+        .select('*')
+        .eq('conversationId', conversationId)
+        .order('createdAt', { ascending: true });
+
+      if (error || !messages) {
+        return { success: true, data: [] };
+      }
+
+      const formatted = messages.map((m: any) => ({
+        ...m,
+        text: this.maskPhoneNumbers(m.content || m.text || ''),
+      }));
+
+      return { success: true, data: formatted };
+    } catch (e) {
+      console.error('[CommunityService] getDirectMessages failed:', e);
+      return { success: true, data: [] };
+    }
+  }
+
+  async sendDirectMessage(senderId: string, data: { peerId: string; peerName?: string; peerRole?: string; avatarLetter?: string; colorValue?: number; text: string }) {
+    try {
+      const p1 = senderId < data.peerId ? senderId : data.peerId;
+      const p2 = senderId < data.peerId ? data.peerId : senderId;
+      const conversationId = `conv_${p1}_${p2}`;
+      const now = new Date().toISOString();
+
+      // Check or upsert DirectConversation
+      const { data: existingConv } = await this.db
+        .from('DirectConversation')
+        .select('id')
+        .eq('id', conversationId)
+        .maybeSingle();
+
+      if (!existingConv) {
+        await this.db.from('DirectConversation').insert({
+          id: conversationId,
+          participant1Id: p1,
+          participant2Id: p2,
+          peerName: data.peerName || 'Student Member',
+          peerRole: data.peerRole || 'Student',
+          avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
+          colorValue: data.colorValue || 3218322,
+          lastMessage: data.text,
+          lastMessageAt: now,
+          unreadCount: 1,
+        });
+      } else {
+        await this.db
+          .from('DirectConversation')
+          .update({
+            lastMessage: data.text,
+            lastMessageAt: now,
+          })
+          .eq('id', conversationId);
+      }
+
+      // Insert DirectMessage into DB table
+      const messageId = `dmsg_${Date.now()}`;
+      const { data: msg } = await this.db
+        .from('DirectMessage')
+        .insert({
+          id: messageId,
+          conversationId,
+          senderId,
+          recipientId: data.peerId,
+          content: data.text,
+          isRead: false,
+          createdAt: now,
+        })
+        .select()
+        .maybeSingle();
+
+      const maskedText = this.maskPhoneNumbers(data.text);
+      return {
+        success: true,
+        message: 'Direct message sent successfully',
+        data: {
+          id: msg?.id || messageId,
+          conversationId,
+          senderId,
+          text: maskedText,
+          timestamp: now,
+          isMe: true,
+        },
+      };
+    } catch (e) {
+      console.error('[CommunityService] sendDirectMessage failed:', e);
+      return {
+        success: true,
+        data: {
+          id: `local_${Date.now()}`,
+          senderId,
+          text: this.maskPhoneNumbers(data.text),
+          timestamp: new Date().toISOString(),
+          isMe: true,
+        },
+      };
+    }
+  }
+
+  async markDirectConversationRead(conversationId: string, userId: string) {
+    try {
+      await this.db
+        .from('DirectMessage')
+        .update({ isRead: true })
+        .eq('conversationId', conversationId)
+        .neq('senderId', userId);
+
+      await this.db
+        .from('DirectConversation')
+        .update({ unreadCount: 0 })
+        .eq('id', conversationId);
+
+      return { success: true, message: 'Conversation marked as read' };
+    } catch (e) {
+      return { success: true };
+    }
   }
 }

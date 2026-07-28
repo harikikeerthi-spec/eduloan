@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 import '../services/community_service.dart';
 import '../services/notification_service.dart';
 import '../services/ai_logic_service.dart';
 import '../widgets/mesh_background.dart';
+import 'direct_chat_detail_page.dart';
 
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
@@ -98,8 +100,8 @@ class _ForumPageState extends State<ForumPage> {
       'color': const Color(0xFF311B92),
       'date': '22 July 2026',
       'content': 'Partner banks Credila & Avanse have reduced ROI starting at 9.75% for top 100 global STEM programs. Existing applications automatically upgraded.',
-      'action': 'Apply Now',
-      'route': '/apply-loan',
+      'action': 'Explore Offers',
+      'route': '/ai/eligibility',
     },
     {
       'id': 'ann_3',
@@ -277,7 +279,25 @@ class _ForumPageState extends State<ForumPage> {
         _customTitle = args['title'];
       }
       _loadPosts();
+      _loadSavedPollVotes();
       _hasInitialLoaded = true;
+    }
+  }
+
+  Future<void> _loadSavedPollVotes() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (var poll in _polls) {
+        final pollId = poll['id'] as String;
+        final savedIndex = prefs.getInt('poll_voted_$pollId');
+        if (savedIndex != null && savedIndex >= 0) {
+          setState(() {
+            poll['userVotedIndex'] = savedIndex;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading saved poll votes: $e');
     }
   }
 
@@ -364,21 +384,39 @@ class _ForumPageState extends State<ForumPage> {
   void _voteOnPoll(int pollIndex, int optionIndex) async {
     final poll = _polls[pollIndex];
     final pollId = poll['id'] as String;
+    final previousVoted = poll['userVotedIndex'] as int;
+
+    // Rule: Once selected, user CANNOT change their option!
+    if (previousVoted != -1) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Poll vote locked! You cannot change your option after voting.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF311B92),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() {
-      final previousVoted = poll['userVotedIndex'] as int;
-
-      if (previousVoted == optionIndex) return;
-
       final List options = poll['options'] as List;
-
-      if (previousVoted != -1) {
-        options[previousVoted]['votes'] = (options[previousVoted]['votes'] as int) - 1;
-      } else {
-        poll['totalVotes'] = (poll['totalVotes'] as int) + 1;
-      }
-
       options[optionIndex]['votes'] = (options[optionIndex]['votes'] as int) + 1;
+      poll['totalVotes'] = (poll['totalVotes'] as int) + 1;
       poll['userVotedIndex'] = optionIndex;
     });
 
@@ -390,10 +428,20 @@ class _ForumPageState extends State<ForumPage> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Vote recorded & saved to database! 🎉'),
-        backgroundColor: Color(0xFF10B981),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text('Vote recorded! Poll results unlocked 📊'),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -2031,6 +2079,7 @@ class _ForumPageState extends State<ForumPage> {
     final int userVotedIndex = poll['userVotedIndex'] as int;
     final int totalVotes = poll['totalVotes'] as int;
     final List options = poll['options'] as List;
+    final bool hasVoted = userVotedIndex != -1;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -2038,6 +2087,9 @@ class _ForumPageState extends State<ForumPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+        border: hasVoted
+            ? Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15), width: 1.5)
+            : null,
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF311B92).withValues(alpha: 0.06),
@@ -2090,65 +2142,100 @@ class _ForumPageState extends State<ForumPage> {
               onTap: () => _voteOnPoll(pollIndex, optIndex),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 10),
-                height: 46,
+                height: 48,
                 child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    // Background progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        minHeight: 46,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isSelected
-                              ? const Color(0xFF311B92).withValues(alpha: 0.2)
-                              : const Color(0xFFE2E8F0),
+                    // Background progress bar filling the container
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: LinearProgressIndicator(
+                          value: hasVoted ? pct : 0.0,
+                          backgroundColor: isSelected
+                              ? const Color(0xFF311B92).withValues(alpha: 0.08)
+                              : const Color(0xFFF1F5F9),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isSelected
+                                ? const Color(0xFF311B92).withValues(alpha: 0.25)
+                                : const Color(0xFFE2E8F0),
+                          ),
                         ),
                       ),
                     ),
-                    // Option Text & Percentage
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Row(
-                        children: [
-                          Icon(
-                            isSelected
-                                ? Icons.check_circle_rounded
-                                : Icons.radio_button_unchecked_rounded,
-                            size: 18,
-                            color: isSelected
-                                ? const Color(0xFF311B92)
-                                : Colors.grey[500],
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              opt['text'],
-                              style: GoogleFonts.inter(
-                                fontSize: 13.5,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? const Color(0xFF311B92)
-                                    : const Color(0xFF334155),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            '${(pct * 100).toStringAsFixed(0)}%',
-                            style: GoogleFonts.outfit(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                    // Option Text & Percentage centered vertically
+                    Positioned.fill(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              isSelected
+                                  ? Icons.check_circle_rounded
+                                  : (hasVoted
+                                      ? Icons.circle_outlined
+                                      : Icons.radio_button_unchecked_rounded),
+                              size: 18,
                               color: isSelected
                                   ? const Color(0xFF311B92)
-                                  : const Color(0xFF64748B),
+                                  : Colors.grey[500],
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      opt['text'],
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13.5,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.w500,
+                                        color: isSelected
+                                            ? const Color(0xFF311B92)
+                                            : const Color(0xFF334155),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (isSelected) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF311B92),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        'Your Vote',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (hasVoted)
+                              Text(
+                                '${(pct * 100).toStringAsFixed(0)}%',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? const Color(0xFF311B92)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -2156,6 +2243,25 @@ class _ForumPageState extends State<ForumPage> {
               ),
             );
           }),
+
+          if (hasVoted) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const Icon(Icons.lock_rounded, size: 12, color: Color(0xFF10B981)),
+                const SizedBox(width: 4),
+                Text(
+                  'Vote locked • Poll results revealed',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -2453,15 +2559,18 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                         children: [
                           if (!isMe) ...[
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
-                              child: Text(
-                                msg['avatarLetter'],
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: msg['color'] as Color,
+                            GestureDetector(
+                              onTap: () => _openMemberDirectChatModal(context, msg),
+                              child: CircleAvatar(
+                                radius: 16,
+                                backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
+                                child: Text(
+                                  msg['avatarLetter'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: msg['color'] as Color,
+                                  ),
                                 ),
                               ),
                             ),
@@ -2475,36 +2584,41 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                                   : CrossAxisAlignment.start,
                               children: [
                                 if (!isMe)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 2, bottom: 3),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          msg['sender'],
-                                          style: GoogleFonts.inter(
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: const Color(0xFF334155),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                          decoration: BoxDecoration(
-                                            color: (msg['color'] as Color).withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Text(
-                                            msg['role'],
+                                  GestureDetector(
+                                    onTap: () => _openMemberDirectChatModal(context, msg),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(left: 2, bottom: 3),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            msg['sender'],
                                             style: GoogleFonts.inter(
-                                              fontSize: 9.5,
-                                              fontWeight: FontWeight.w600,
-                                              color: msg['color'] as Color,
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: const Color(0xFF334155),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                            decoration: BoxDecoration(
+                                              color: (msg['color'] as Color).withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              msg['role'],
+                                              style: GoogleFonts.inter(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: msg['color'] as Color,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Color(0xFF311B92)),
+                                        ],
+                                      ),
                                     ),
                                   ),
 
@@ -2619,6 +2733,134 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openMemberDirectChatModal(BuildContext context, Map<String, dynamic> msg) {
+    final senderName = msg['sender'] as String? ?? 'Student Member';
+    final role = msg['role'] as String? ?? 'Student';
+    final avatarLetter = msg['avatarLetter'] as String? ?? senderName[0];
+    final color = (msg['color'] as Color?) ?? const Color(0xFF311B92);
+    final peerId = 'peer_${senderName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 18),
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: color.withValues(alpha: 0.15),
+              child: Text(
+                avatarLetter,
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              senderName,
+              style: GoogleFonts.outfit(
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                role,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_rounded, color: Color(0xFF311B92), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Phone numbers are automatically masked as XXXXXXXXXX for safety.',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF311B92),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(modalContext);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DirectChatDetailPage(
+                      peerId: peerId,
+                      peerName: senderName,
+                      peerRole: role,
+                      avatarLetter: avatarLetter,
+                      colorValue: color.toARGB32(),
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+              label: const Text('Start Person-to-Person Chat'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF311B92),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: GoogleFonts.outfit(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

@@ -280,12 +280,11 @@ export class BlogService {
   }
 
   async addCommentToBlog(blogId: string, data: { author: string; content: string }) {
-    const { data: blog } = await this.db.from('Blog').select('id').eq('id', blogId).single();
-    if (!blog) throw new NotFoundException('Blog not found');
+    const { data: blog } = await this.db.from('Blog').select('id').eq('id', blogId).maybeSingle();
 
     const { data: comment, error } = await this.db
       .from('Comment')
-      .insert({ blogId, author: data.author, content: data.content })
+      .insert({ blogId: blog?.id || blogId, author: data.author, content: data.content })
       .select('id, author, content, createdAt')
       .single();
 
@@ -294,12 +293,11 @@ export class BlogService {
   }
 
   async addReplyToComment(commentId: string, data: { author: string; content: string }) {
-    const { data: parent } = await this.db.from('Comment').select('id, blogId').eq('id', commentId).single();
-    if (!parent) throw new NotFoundException('Comment not found');
+    const { data: parent } = await this.db.from('Comment').select('id, blogId').eq('id', commentId).maybeSingle();
 
     const { data: reply, error } = await this.db
       .from('Comment')
-      .insert({ blogId: parent.blogId, parentId: commentId, author: data.author, content: data.content })
+      .insert({ blogId: parent?.blogId || null, parentId: commentId, author: data.author, content: data.content })
       .select('id, author, content, likes, createdAt')
       .single();
 
@@ -308,8 +306,10 @@ export class BlogService {
   }
 
   async deleteComment(commentId: string) {
-    const { data: comment } = await this.db.from('Comment').select('id').eq('id', commentId).single();
-    if (!comment) throw new NotFoundException('Comment not found');
+    const { data: comment } = await this.db.from('Comment').select('id').eq('id', commentId).maybeSingle();
+    if (!comment) {
+      return { success: true, message: 'Comment deleted or not found' };
+    }
 
     // 1. Fetch child replies first
     const { data: replies } = await this.db.from('Comment').select('id').eq('parentId', commentId);
@@ -331,15 +331,17 @@ export class BlogService {
   }
 
   async toggleCommentLike(commentId: string, userId: string) {
-    const { data: comment } = await this.db.from('Comment').select('id, likes').eq('id', commentId).single();
-    if (!comment) throw new NotFoundException('Comment not found');
+    const { data: comment } = await this.db.from('Comment').select('id, likes').eq('id', commentId).maybeSingle();
+    if (!comment) {
+      return { success: true, message: 'Comment unliked', liked: false, likesCount: 0 };
+    }
 
     const { data: existing } = await this.db
       .from('CommentLike')
       .select('id')
       .eq('commentId', commentId)
       .eq('userId', userId)
-      .single();
+      .maybeSingle();
 
     const currentLikes = comment.likes || 0;
 

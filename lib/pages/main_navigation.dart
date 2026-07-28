@@ -7,6 +7,7 @@ import 'ai_tools/ai_tools_page.dart';
 import 'profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
+import '../services/loan_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -21,6 +22,7 @@ class MainNavigation extends StatefulWidget {
 class MainNavigationState extends State<MainNavigation> {
   // Index mapping: 0=Dashboard, 1=Community, 2=Loans(notch), 3=Explore, 4=Profile
   int _currentIndex = 0;
+  bool _hasAppliedForLoan = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
 
@@ -31,6 +33,18 @@ class MainNavigationState extends State<MainNavigation> {
     super.initState();
     _notchController = NotchBottomBarController(index: _currentIndex);
     _checkOnboarding();
+    _checkLoanStatus();
+  }
+
+  Future<void> _checkLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (mounted) {
+        setState(() {
+          _hasAppliedForLoan = loans.isNotEmpty;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -57,6 +71,7 @@ class MainNavigationState extends State<MainNavigation> {
   }
 
   void switchToTab(int index) {
+    _checkLoanStatus();
     setState(() {
       _currentIndex = index;
     });
@@ -109,6 +124,7 @@ class MainNavigationState extends State<MainNavigation> {
           letterSpacing: 0.2,
         ),
         onTap: (index) {
+          _checkLoanStatus();
           setState(() {
             _currentIndex = index;
           });
@@ -116,9 +132,9 @@ class MainNavigationState extends State<MainNavigation> {
             _homeTabKey.currentState?.refreshData();
           }
         },
-        bottomBarItems: const [
+        bottomBarItems: [
           // 0 - Dashboard
-          BottomBarItem(
+          const BottomBarItem(
             inActiveItem: Icon(
               Icons.dashboard_outlined,
               color: Color(0xFF9E9E9E),
@@ -132,7 +148,7 @@ class MainNavigationState extends State<MainNavigation> {
             itemLabel: 'Dashboard',
           ),
           // 1 - Community
-          BottomBarItem(
+          const BottomBarItem(
             inActiveItem: Icon(
               Icons.people_outline_rounded,
               color: Color(0xFF9E9E9E),
@@ -147,17 +163,17 @@ class MainNavigationState extends State<MainNavigation> {
           ),
           // 2 - Loans (Center notch active item)
           BottomBarItem(
-            inActiveItem: Icon(
+            inActiveItem: const Icon(
               Icons.account_balance_outlined,
               color: Color(0xFF9E9E9E),
               size: 24,
             ),
-            activeItem: Icon(
+            activeItem: const Icon(
               Icons.account_balance_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: 'Apply',
+            itemLabel: _hasAppliedForLoan ? 'My Loans' : 'Apply',
           ),
           // 3 - Explore (AI Tools)
           BottomBarItem(

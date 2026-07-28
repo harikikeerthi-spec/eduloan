@@ -13,6 +13,8 @@ import '../services/blog_service.dart';
 import '../models/blog.dart';
 import 'blog_detail_page.dart';
 
+import '../services/direct_chat_service.dart';
+
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
@@ -31,6 +33,7 @@ class HomeTabState extends State<HomeTab> {
   final AiLogicService _aiService = AiLogicService();
   final NotificationService _notificationService = NotificationService();
   int _unreadCount = 0;
+  int _directChatUnreadCount = 0;
 
   // Auto-scroll logic for recommendations
   final ScrollController _aiScrollController = ScrollController();
@@ -46,6 +49,7 @@ class HomeTabState extends State<HomeTab> {
     _loadActiveLoans();
     _loadRecommendations();
     _loadNotificationCount();
+    _loadDirectChatUnreadCount();
   }
 
   @override
@@ -92,6 +96,7 @@ class HomeTabState extends State<HomeTab> {
     _loadSavedRecommendations();
     _loadActiveLoans();
     _loadNotificationCount();
+    _loadDirectChatUnreadCount();
   }
 
   Future<void> _loadNotificationCount() async {
@@ -104,6 +109,19 @@ class HomeTabState extends State<HomeTab> {
       }
     } catch (e) {
       debugPrint('Error loading notification count: $e');
+    }
+  }
+
+  Future<void> _loadDirectChatUnreadCount() async {
+    try {
+      final count = await DirectChatService().getTotalUnreadCount();
+      if (mounted) {
+        setState(() {
+          _directChatUnreadCount = count;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading direct chat count: $e');
     }
   }
 
@@ -217,7 +235,31 @@ class HomeTabState extends State<HomeTab> {
                           ),
                           Row(
                             children: [
-                              const SizedBox(width: 16),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/direct-chats').then((_) {
+                                    _loadDirectChatUnreadCount();
+                                  });
+                                },
+                                icon: _directChatUnreadCount > 0
+                                    ? Badge(
+                                        label: Text('$_directChatUnreadCount'),
+                                        backgroundColor: const Color(0xFF311B92),
+                                        child: const Icon(
+                                          Icons.chat_bubble_outline_rounded,
+                                          color: Colors.black54,
+                                          size: 25,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.chat_bubble_outline_rounded,
+                                        color: Colors.black54,
+                                        size: 25,
+                                      ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              const SizedBox(width: 14),
                               IconButton(
                                 onPressed: () {
                                   Navigator.pushNamed(context, '/notifications').then((_) {

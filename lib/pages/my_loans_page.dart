@@ -198,36 +198,38 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ApplyLoanPage(
-                          onLoanSubmitted: _fetchLoans,
+              if (_loans.isEmpty) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ApplyLoanPage(
+                            onLoanSubmitted: _fetchLoans,
+                          ),
                         ),
+                      );
+                      _fetchLoans();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF281C9D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                    _fetchLoans();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF281C9D),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      elevation: 2,
                     ),
-                    elevation: 2,
-                  ),
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text(
-                    'Apply for Loan',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    icon: const Icon(Icons.add_rounded, size: 16),
+                    label: const Text(
+                      'Apply for Loan',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

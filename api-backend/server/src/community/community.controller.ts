@@ -986,4 +986,50 @@ export class CommunityController {
     ) {
         return this.communityService.updateMentorProfile(mentorId, body);
     }
+
+    /**
+     * GET /community/direct-chats
+     * Get all 1-on-1 direct conversations for user
+     */
+    @Get('direct-chats')
+    async getDirectConversations(@Query('userId') userId: string) {
+        return this.communityService.getDirectConversations(userId || 'user_me');
+    }
+
+    /**
+     * GET /community/direct-chats/:conversationId/messages
+     * Get messages for a specific 1-on-1 direct chat
+     */
+    @Get('direct-chats/:conversationId/messages')
+    async getDirectMessages(
+        @Param('conversationId') conversationId: string,
+        @Query('userId') userId?: string,
+    ) {
+        return this.communityService.getDirectMessages(conversationId, userId);
+    }
+
+    /**
+     * POST /community/direct-chats/send
+     * Send a 1-on-1 direct message (persisted into DB table & masked)
+     */
+    @Post('direct-chats/send')
+    async sendDirectMessage(@Request() req, @Body() body: any) {
+        const senderId = req.user?.id || body.senderId || 'user_me';
+        return this.communityService.sendDirectMessage(senderId, body);
+    }
+
+    /**
+     * POST /community/direct-chats/:conversationId/read
+     * Mark a 1-on-1 conversation as read in DB
+     */
+    @Post('direct-chats/:conversationId/read')
+    async markDirectConversationRead(
+        @Param('conversationId') conversationId: string,
+        @Body() body: any,
+    ) {
+        return this.communityService.markDirectConversationRead(
+            conversationId,
+            body?.userId || 'user_me',
+        );
+    }
 }

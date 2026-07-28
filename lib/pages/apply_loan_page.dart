@@ -201,6 +201,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   @override
   void initState() {
     super.initState();
+    _checkExistingLoan();
     _amountController.addListener(_updateAmountLabel);
     _loadUserData();
     if (widget.initialUniversity != null) {
@@ -232,6 +233,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         }
       }
     });
+  }
+
+  Future<void> _checkExistingLoan() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (loans.isNotEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already submitted a loan application.'),
+            backgroundColor: Color(0xFF311B92),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadUserData() async {
@@ -619,7 +635,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       widget.onLoanSubmitted?.call();
       
       if (mainNav != null) {
-        mainNav.switchToTab(1); // Switch to My Loans tab (which becomes index 1 after Apply is hidden)
+        mainNav.switchToTab(2); // Switch to My Loans tab
       } else {
         Navigator.pop(context); // Go back to main navigation if pushed as a separate screen
       }

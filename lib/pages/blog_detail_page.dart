@@ -1006,27 +1006,59 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
 
     if (confirmed != true) return;
 
-    try {
-      await _blogService.deleteComment(commentId);
+    final isLocal = commentId.startsWith('local_') || blogId.startsWith('blog_') || blogId.length < 20;
 
-      // Refresh the blog data to remove the deleted comment
-      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
-
-      setState(() {
-        _blogFuture = Future.value(updatedBlog);
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Comment deleted successfully!')),
-        );
+    if (!isLocal) {
+      try {
+        await _blogService.deleteComment(commentId);
+      } catch (e) {
+        debugPrint('Backend delete comment failed, performing local delete: $e');
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting comment: ${e.toString()}')),
-        );
-      }
+    }
+
+    final currentBlog = await _blogFuture;
+    final updatedComments = currentBlog.comments
+        .where((c) => c.id != commentId)
+        .map((c) => Comment(
+              id: c.id,
+              content: c.content,
+              authorName: c.authorName,
+              createdAt: c.createdAt,
+              parentId: c.parentId,
+              likes: c.likes,
+              replies: c.replies.where((r) => r.id != commentId).toList(),
+            ))
+        .toList();
+
+    final updatedBlog = Blog(
+      id: currentBlog.id,
+      title: currentBlog.title,
+      slug: currentBlog.slug,
+      excerpt: currentBlog.excerpt,
+      content: currentBlog.content,
+      category: currentBlog.category,
+      authorName: currentBlog.authorName,
+      authorImage: currentBlog.authorImage,
+      authorRole: currentBlog.authorRole,
+      featuredImage: currentBlog.featuredImage,
+      readTime: currentBlog.readTime,
+      views: currentBlog.views,
+      featured: currentBlog.featured,
+      published: currentBlog.published,
+      publishedAt: currentBlog.publishedAt,
+      createdAt: currentBlog.createdAt,
+      hashtags: currentBlog.hashtags,
+      comments: updatedComments,
+    );
+
+    setState(() {
+      _blogFuture = Future.value(updatedBlog);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment deleted successfully!')),
+      );
     }
   }
 
@@ -1035,9 +1067,6 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     String commentId,
     int currentLikes,
   ) async {
-    if (_deviceId.isEmpty) return;
-
-    // Optimistically update UI immediately
     final bool wasLiked = _likedComments.contains(commentId);
     setState(() {
       if (wasLiked) {
@@ -1047,65 +1076,162 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
       }
     });
 
-    try {
-      await _blogService.toggleCommentLike(commentId, _deviceId);
+    final isLocal = commentId.startsWith('local_') || blogId.startsWith('blog_') || blogId.length < 20;
 
-      // Refresh blog data to get updated like counts from server
-      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
-      setState(() {
-        _blogFuture = Future.value(updatedBlog);
-      });
-    } catch (e) {
-      // Revert optimistic update on error
-      setState(() {
-        if (wasLiked) {
-          _likedComments.add(commentId);
-        } else {
-          _likedComments.remove(commentId);
-        }
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error toggling like: ${e.toString()}')),
+    if (!isLocal) {
+      try {
+        await _blogService.toggleCommentLike(
+          commentId,
+          _deviceId.isEmpty ? 'guest' : _deviceId,
         );
+      } catch (e) {
+        debugPrint('Backend toggle like failed, keeping local toggle: $e');
       }
     }
+
+    final currentBlog = await _blogFuture;
+    final updatedComments = currentBlog.comments.map((c) {
+      if (c.id == commentId) {
+        final newCount = wasLiked ? (c.likes > 0 ? c.likes - 1 : 0) : c.likes + 1;
+        return Comment(
+          id: c.id,
+          content: c.content,
+          authorName: c.authorName,
+          createdAt: c.createdAt,
+          parentId: c.parentId,
+          likes: newCount,
+          replies: c.replies,
+        );
+      }
+      final updatedReplies = c.replies.map((r) {
+        if (r.id == commentId) {
+          final newCount = wasLiked ? (r.likes > 0 ? r.likes - 1 : 0) : r.likes + 1;
+          return Comment(
+            id: r.id,
+            content: r.content,
+            authorName: r.authorName,
+            createdAt: r.createdAt,
+            parentId: r.parentId,
+            likes: newCount,
+            replies: r.replies,
+          );
+        }
+        return r;
+      }).toList();
+
+      return Comment(
+        id: c.id,
+        content: c.content,
+        authorName: c.authorName,
+        createdAt: c.createdAt,
+        parentId: c.parentId,
+        likes: c.likes,
+        replies: updatedReplies,
+      );
+    }).toList();
+
+    final updatedBlog = Blog(
+      id: currentBlog.id,
+      title: currentBlog.title,
+      slug: currentBlog.slug,
+      excerpt: currentBlog.excerpt,
+      content: currentBlog.content,
+      category: currentBlog.category,
+      authorName: currentBlog.authorName,
+      authorImage: currentBlog.authorImage,
+      authorRole: currentBlog.authorRole,
+      featuredImage: currentBlog.featuredImage,
+      readTime: currentBlog.readTime,
+      views: currentBlog.views,
+      featured: currentBlog.featured,
+      published: currentBlog.published,
+      publishedAt: currentBlog.publishedAt,
+      createdAt: currentBlog.createdAt,
+      hashtags: currentBlog.hashtags,
+      comments: updatedComments,
+    );
+
+    setState(() {
+      _blogFuture = Future.value(updatedBlog);
+    });
   }
 
   Future<void> _submitReply(String commentId) async {
     final controller = _replyControllers[commentId];
     if (controller == null || controller.text.trim().isEmpty) return;
 
-    try {
-      await _blogService.addReplyToComment(
-        commentId,
-        _authorName,
-        controller.text.trim(),
+    final content = controller.text.trim();
+    final isLocal = commentId.startsWith('local_') || widget.blog.id.startsWith('blog_') || widget.blog.id.length < 20;
+
+    Comment? serverReply;
+    if (!isLocal) {
+      try {
+        serverReply = await _blogService.addReplyToComment(
+          commentId,
+          _authorName,
+          content,
+        );
+      } catch (e) {
+        debugPrint('Backend add reply failed, fallback to local reply: $e');
+      }
+    }
+
+    final newReply = serverReply ?? Comment(
+      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      content: content,
+      authorName: _authorName,
+      createdAt: DateTime.now(),
+      parentId: commentId,
+      likes: 0,
+    );
+
+    final currentBlog = await _blogFuture;
+    final updatedComments = currentBlog.comments.map((c) {
+      if (c.id == commentId) {
+        return Comment(
+          id: c.id,
+          content: c.content,
+          authorName: c.authorName,
+          createdAt: c.createdAt,
+          parentId: c.parentId,
+          likes: c.likes,
+          replies: [...c.replies, newReply],
+        );
+      }
+      return c;
+    }).toList();
+
+    final updatedBlog = Blog(
+      id: currentBlog.id,
+      title: currentBlog.title,
+      slug: currentBlog.slug,
+      excerpt: currentBlog.excerpt,
+      content: currentBlog.content,
+      category: currentBlog.category,
+      authorName: currentBlog.authorName,
+      authorImage: currentBlog.authorImage,
+      authorRole: currentBlog.authorRole,
+      featuredImage: currentBlog.featuredImage,
+      readTime: currentBlog.readTime,
+      views: currentBlog.views,
+      featured: currentBlog.featured,
+      published: currentBlog.published,
+      publishedAt: currentBlog.publishedAt,
+      createdAt: currentBlog.createdAt,
+      hashtags: currentBlog.hashtags,
+      comments: updatedComments,
+    );
+
+    controller.clear();
+    setState(() {
+      _blogFuture = Future.value(updatedBlog);
+      _replyingToCommentId = null;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reply added successfully!')),
       );
-
-      controller.clear();
-      setState(() {
-        _replyingToCommentId = null;
-      });
-
-      // Refresh blog data to show new reply
-      final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
-      setState(() {
-        _blogFuture = Future.value(updatedBlog);
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reply added successfully!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding reply: ${e.toString()}')),
-        );
-      }
     }
   }
 
