@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { TwilioService } from './twilio.service';
 import { ChatGateway } from './chat.gateway';
