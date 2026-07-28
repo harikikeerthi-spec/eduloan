@@ -140,4 +140,28 @@ class Loan {
         return status;
     }
   }
+
+  String get displayBank {
+    final statusLower = status.toLowerCase();
+    final stageLower = stage.toLowerCase();
+    final bool isSentToBank = statusLower == 'submitted_to_bank' ||
+        statusLower == 'file_logged' ||
+        statusLower == 'under_bank_review' ||
+        statusLower == 'query_raised' ||
+        statusLower == 'conditional_sanction' ||
+        statusLower == 'partial_sanction' ||
+        statusLower == 'counter_offer' ||
+        statusLower == 'approved' ||
+        statusLower == 'sanctioned' ||
+        statusLower == 'disbursement_confirmed' ||
+        statusLower == 'closed' ||
+        stageLower == 'credit_check' ||
+        stageLower == 'bank_review' ||
+        stageLower == 'sanction' ||
+        stageLower == 'sanctioned' ||
+        stageLower == 'disbursement' ||
+        stageLower == 'disbursed';
+
+    return isSentToBank ? bank : 'Matching Lenders...';
+  }
 }

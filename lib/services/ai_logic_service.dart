@@ -1576,7 +1576,7 @@ class AiLogicService {
             final postOffices = resData[0]['PostOffice'] as List?;
             if (postOffices != null && postOffices.isNotEmpty) {
               final po = postOffices[0];
-              final city = po['District'] ?? po['Block'] ?? po['Division'] ?? '';
+              final city = po['Block'] ?? po['Name'] ?? po['District'] ?? po['Division'] ?? '';
               final state = po['State'] ?? '';
               if (city.toString().isNotEmpty) {
                 return {

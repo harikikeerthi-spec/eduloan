@@ -1237,7 +1237,7 @@ export class AiController {
           if (resData && resData[0] && resData[0].Status === 'Success') {
             const postOffice = resData[0].PostOffice?.[0];
             if (postOffice) {
-              const city = postOffice.District || postOffice.Block || postOffice.Division || '';
+              const city = postOffice.Block || postOffice.Name || postOffice.District || postOffice.Division || '';
               const state = postOffice.State || '';
               if (city) {
                 return {
@@ -1271,9 +1271,9 @@ export class AiController {
 
     // 2. Call OpenRouter / LLM as fallback or for international postal codes
     try {
-      const prompt = `Identify the city, state, and country for the postal code or pincode: "${cleanPincode}".
-      ${/^\d{6}$/.test(cleanPincode) ? 'Note: This is a 6-digit Indian PIN code. Ensure you resolve it to the correct city/district and state in India.' : ''}
-      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (e.g. "City, State, Country"). Do not include markdown formatting.`;
+      const prompt = `Identify the exact city/town/village, state/province, and country for the postal code or pincode: "${cleanPincode}".
+      ${/^\d{6}$/.test(cleanPincode) ? 'Note: This is a 6-digit Indian PIN code. Resolve it to the exact correct city/town/district (e.g. Tadepalligudem, Bhimavaram, Eluru, etc.) and state in India.' : ''}
+      Return the response STRICTLY as a JSON object with keys: "city", "state", "country", and "address" (e.g. "Tadepalligudem, Andhra Pradesh, India"). Do not include markdown formatting.`;
       
       const aiResponse = await this.openRouterService.chat(prompt);
       const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();

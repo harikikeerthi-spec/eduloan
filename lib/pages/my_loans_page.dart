@@ -509,7 +509,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                               ),
                             ),
                             Text(
-                              loan.bank,
+                              loan.displayBank,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
@@ -988,7 +988,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
           'Amount',
           '₹${(loan.amount / 100000).toStringAsFixed(1)}L',
         ),
-        _buildDetailRow('Bank', loan.bank),
+        _buildDetailRow('Bank', loan.displayBank),
         _buildDetailRow('Status', loan.statusDisplay),
       ],
     );
