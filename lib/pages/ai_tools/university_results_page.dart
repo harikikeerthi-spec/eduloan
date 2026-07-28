@@ -13,7 +13,7 @@ class UniversityResultsPage extends StatefulWidget {
 }
 
 class _UniversityResultsPageState extends State<UniversityResultsPage> {
-  String _activeTab = "AI mode";
+  String _activeTab = "All programs";
   final TextEditingController _searchController = TextEditingController();
   List<UniversityRecommendation> _allRecommendations = [];
   List<UniversityRecommendation> _filteredRecommendations = [];
@@ -26,22 +26,6 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   void initState() {
     super.initState();
     _allRecommendations = List.from(widget.recommendations);
-    
-    if (_allRecommendations.isNotEmpty) {
-      final aiModeList = _allRecommendations.where((u) {
-        final t = u.type.toLowerCase().trim();
-        return t.contains('safe') ||
-            t.contains('target') ||
-            t.contains('ambitious') ||
-            t.contains('recommended');
-      }).toList();
-
-      if (aiModeList.isEmpty) {
-        _activeTab = "All programs";
-      }
-    } else {
-      _activeTab = "All programs";
-    }
     
     _filteredRecommendations = _getFilteredList();
     _loadSavedStatus();
@@ -65,18 +49,7 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   List<UniversityRecommendation> _getFilteredList() {
     List<UniversityRecommendation> list = [];
 
-    if (_activeTab == "AI mode") {
-      list = _allRecommendations.where((u) {
-        final t = u.type.toLowerCase().trim();
-        // Be inclusive: show everything in AI mode if it's the only thing we have
-        // or if it matches our categories
-        return t.contains('safe') ||
-            t.contains('target') ||
-            t.contains('ambitious') ||
-            t.contains('recommended') ||
-            _allRecommendations.length <= 10; // If small list, just show all in AI mode
-      }).toList();
-    } else if (_activeTab == "All programs") {
+    if (_activeTab == "All programs") {
       list = _allRecommendations;
     } else if (_activeTab == "Saved") {
       list = _savedRecommendations;
@@ -278,7 +251,6 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildTabButton("AI mode"),
                       _buildTabButton("All programs"),
                       _buildTabButton("Saved"),
                     ],
