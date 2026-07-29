@@ -111,7 +111,18 @@ class _OnboardingPageState extends State<OnboardingPage>
     await prefs.setBool('onboarding_shown', true);
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
+
+    // Check if user is already logged in (has both auth_token and userId)
+    final String? token = prefs.getString('auth_token');
+    final String? userId = prefs.getString('userId');
+    final bool isLoggedIn = token != null && token.isNotEmpty &&
+                            userId != null && userId.isNotEmpty;
+
+    if (isLoggedIn) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override
