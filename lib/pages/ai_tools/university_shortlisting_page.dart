@@ -3405,7 +3405,12 @@ class _SearchableListState extends State<_SearchableList> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _items = [];
+          _isLoading = false;
+        });
+      }
     }
   }
 

@@ -5,11 +5,12 @@ import { Injectable } from '@nestjs/common';
 export class OpenRouterService {
     private readonly apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
     private readonly apiKey = process.env.OPENROUTER_API_KEY;
-    private readonly REQUEST_TIMEOUT_MS = 6_000; // 6 seconds timeout for lightning fast responses
+    private readonly REQUEST_TIMEOUT_MS = 15_000; // 15 seconds timeout for reliable responses
     private readonly searchCache = new Map<string, { data: any; timestamp: number }>();
     
-    // Prioritize fast low-latency models first (gpt-4o-mini / gemini-2.0-flash-lite)
+    // Prioritize fast low-latency models first (gemini-2.5-flash / gpt-4o-mini)
     private readonly FALLBACK_MODELS = [
+        'google/gemini-2.5-flash',
         'openai/gpt-4o-mini',
         'google/gemini-2.0-flash-lite-001',
         'meta-llama/llama-3.1-8b-instruct:free',
@@ -17,6 +18,7 @@ export class OpenRouterService {
     ];
     
     private readonly VISION_FALLBACK_MODELS = [
+        'google/gemini-2.5-flash',
         'openai/gpt-4o-mini',
         'google/gemini-2.0-flash-lite-001',
         'openrouter/free',
@@ -27,7 +29,7 @@ export class OpenRouterService {
         return AbortSignal.timeout(this.REQUEST_TIMEOUT_MS);
     }
 
-    async chat(prompt: string, model: string = 'openai/gpt-4o-mini'): Promise<string> {
+    async chat(prompt: string, model: string = 'google/gemini-2.5-flash'): Promise<string> {
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
             console.warn('OPENROUTER_API_KEY is not set. Using mock response or failing.');
             throw new Error('OPENROUTER_API_KEY is not configured in environment variables.');
@@ -98,7 +100,7 @@ export class OpenRouterService {
         }
     }
 
-    async getJson<T>(prompt: string, model: string = 'openai/gpt-4o-mini'): Promise<T> {
+    async getJson<T>(prompt: string, model: string = 'google/gemini-2.5-flash'): Promise<T> {
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. Do not include markdown formatting.`;
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') throw new Error('OPENROUTER_API_KEY is not configured');
 
@@ -303,7 +305,7 @@ export class OpenRouterService {
         return list;
     }
 
-    async chatWithVision(prompt: string, imageUrl: string, model: string = 'openai/gpt-4o-mini'): Promise<string> {
+    async chatWithVision(prompt: string, imageUrl: string, model: string = 'google/gemini-2.5-flash'): Promise<string> {
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
             throw new Error('OPENROUTER_API_KEY is not configured');
         }
