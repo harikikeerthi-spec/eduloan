@@ -4080,8 +4080,9 @@ class _PhoneInputState extends State<_PhoneInput> {
                 hintStyle: TextStyle(color: Colors.grey),
                 prefixText: '+91 ',
                 prefixStyle: TextStyle(
+                  fontSize: 16,
                   color: Colors.black,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               onSubmitted: (value) {

@@ -1801,8 +1801,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             '+91',
                             style: TextStyle(
                               color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
                             ),
                           ),
                           const SizedBox(width: 8),

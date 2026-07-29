@@ -413,8 +413,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                 ).copyWith(
                                   prefixText: '+91 ',
                                   prefixStyle: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
                                     color: Colors.black,
-                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 keyboardType: TextInputType.phone,

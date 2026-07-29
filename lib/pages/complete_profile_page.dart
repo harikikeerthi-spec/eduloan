@@ -394,7 +394,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           prefixIcon: Icon(icon, color: Colors.grey),
           prefixText: inputType == TextInputType.phone ? '+91 ' : null,
           prefixStyle: inputType == TextInputType.phone 
-              ? GoogleFonts.inter(color: Colors.black, fontWeight: FontWeight.bold)
+              ? GoogleFonts.inter(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w600)
               : null,
         ),
         validator:

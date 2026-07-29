@@ -319,27 +319,27 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   Widget _buildBadge(_OnboardingSlide slide) {
     return Container(
-      width: 88,
-      height: 88,
+      width: 92,
+      height: 92,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withValues(alpha: 0.12),
         border: Border.all(
-          color: slide.accentColor.withValues(alpha: 0.4),
-          width: 1.5,
+          color: slide.accentColor.withValues(alpha: 0.5),
+          width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: slide.glowColor.withValues(alpha: 0.4),
-            blurRadius: 30,
-            spreadRadius: 5,
+            color: slide.glowColor.withValues(alpha: 0.5),
+            blurRadius: 36,
+            spreadRadius: 6,
           ),
         ],
       ),
       child: Center(
         child: Text(
           slide.badge,
-          style: const TextStyle(fontSize: 40),
+          style: const TextStyle(fontSize: 44),
         ),
       ),
     );
@@ -347,18 +347,27 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   Widget _buildFeatureRow(
       _Feature feature, Color accentColor, Color glowColor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.12),
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              color: accentColor.withValues(alpha: 0.2),
               border: Border.all(
-                color: accentColor.withValues(alpha: 0.25),
+                color: accentColor.withValues(alpha: 0.4),
                 width: 1,
               ),
             ),
@@ -366,7 +375,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 feature.symbol,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   color: accentColor,
                   fontWeight: FontWeight.bold,
                 ),
@@ -381,16 +390,17 @@ class _OnboardingPageState extends State<OnboardingPage>
                 Text(
                   feature.title,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   feature.subtitle,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.55),
+                    color: Colors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ],
