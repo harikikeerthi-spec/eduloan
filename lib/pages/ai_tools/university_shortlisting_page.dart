@@ -1790,7 +1790,6 @@ class _UniversityShortlistingPageState
                   initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
                   initialCourse: _bachelorCourse ?? _tempCourse,
                   initialCountry: _selectedCountry,
-                  initialBank: bank,
                 ),
               ),
             );
@@ -2195,7 +2194,6 @@ class _UniversityShortlistingPageState
                   initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
                   initialCourse: _bachelorCourse ?? _tempCourse,
                   initialCountry: _selectedCountry,
-                  initialBank: bank,
                 ),
               ),
             );

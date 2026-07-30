@@ -600,9 +600,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         targetCountry: _countryController.text,
         universityName: _instituteController.text,
         courseName: _courseController.text,
-        bank: _bankController.text.isEmpty
-            ? 'HDFC Credila'
-            : _bankController.text,
+        bank: 'Pending Bank Assignment',
         loanType: _loanTypeController.text,
         amount: double.parse(_amountController.text.replaceAll(',', '')),
         tenure: 12, // Default tenure since field was removed
