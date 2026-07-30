@@ -137,33 +137,39 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   Future<void> _uploadDocument(String type, String name) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'heif', 'doc', 'docx', 'webp'],
     );
 
-    if (result != null) {
+    if (result != null && result.files.single.path != null) {
       File file = File(result.files.single.path!);
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Uploading $name...')));
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Uploading $name...'),
+            duration: const Duration(minutes: 2),
+          ),
+        );
       }
 
       String? errorMessage = await UserService.uploadDocument(file, type);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         if (errorMessage == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Upload successful!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: Text('$name uploaded'),
+              backgroundColor: const Color(0xFF10B981),
+              duration: const Duration(seconds: 4),
             ),
           );
           _fetchDocuments();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(errorMessage),
+              content: Text('$name upload failed: $errorMessage'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 6),
               action: SnackBarAction(
