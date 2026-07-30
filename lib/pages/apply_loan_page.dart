@@ -1133,7 +1133,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               isRequired: true,
               onChanged: (val) {
                 final clean = val.trim();
-                if (clean.length == 6 || clean.length == 5) {
+                if (clean.isEmpty) {
+                  setState(() {
+                    _cityController.clear();
+                    _stateController.clear();
+                    _resCountryController.clear();
+                  });
+                } else if (clean.length == 6 || clean.length == 5) {
                   _autoDetectCityCountry(clean);
                 }
               },

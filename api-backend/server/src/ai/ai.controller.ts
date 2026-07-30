@@ -1237,7 +1237,10 @@ export class AiController {
           if (resData && resData[0] && resData[0].Status === 'Success') {
             const postOffice = resData[0].PostOffice?.[0];
             if (postOffice) {
-              const city = postOffice.Block || postOffice.Name || postOffice.District || postOffice.Division || '';
+              const name = postOffice.Name && postOffice.Name !== 'NA' ? postOffice.Name : '';
+              const block = postOffice.Block && postOffice.Block !== 'NA' ? postOffice.Block : '';
+              const district = postOffice.District && postOffice.District !== 'NA' ? postOffice.District : '';
+              const city = name || block || district;
               const state = postOffice.State || '';
               if (city) {
                 return {
@@ -1253,19 +1256,6 @@ export class AiController {
         }
       } catch (err) {
         console.error('Indian PIN code API call failed:', err);
-      }
-
-      // If Indian Post API fails, try local prefix map first before LLM
-      const prefix2 = cleanPincode.slice(0, 2);
-      if (prefixMap[prefix2]) {
-        const info = prefixMap[prefix2];
-        return {
-          success: true,
-          city: info.city,
-          state: info.state,
-          country: info.country,
-          address: `${info.city}, ${info.state}, ${info.country}`
-        };
       }
     }
 
