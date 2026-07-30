@@ -79,6 +79,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
       await controller.setLooping(false);
       await controller.setVolume(0.0);
+      await _controller?.setVolume(0.0);
       controller.addListener(_videoListener);
 
       FlutterNativeSplash.remove();
@@ -87,6 +88,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
         _videoReady = true;
       });
 
+      await _controller?.setVolume(0.0);
       await controller.play();
       debugPrint('VideoSplashScreen: Video playing successfully.');
     } catch (error) {
