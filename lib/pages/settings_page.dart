@@ -108,7 +108,19 @@ class _SettingsPageState extends State<SettingsPage> {
     if (confirm == true) {
       setState(() => _isLoading = true);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
+      await prefs.remove('userId');
+      await prefs.remove('user_email');
+      await prefs.remove('user_firstName');
+      await prefs.remove('user_lastName');
+      await prefs.remove('user_phone');
+      await prefs.remove('user_profileImage');
+      await prefs.remove('latest_ai_recommendations');
+
+      // Preserve flags so the 3 slides are never shown again in their lifetime
+      await prefs.setBool('onboarding_shown', true);
+      await prefs.setBool('has_registered', true);
       try {
         await GoogleAuthService().signOut();
       } catch (e) {
