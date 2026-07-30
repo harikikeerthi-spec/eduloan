@@ -463,6 +463,44 @@ class _MyLoansPageState extends State<MyLoansPage> {
                 ),
               ),
             ],
+            if (loan.status.toLowerCase() == 'rejected' || loan.stage.toLowerCase() == 'rejected') ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ApplyLoanPage(
+                          initialUniversity: loan.universityName,
+                          initialCourse: loan.courseName,
+                          initialCountry: loan.targetCountry,
+                          onLoanSubmitted: _fetchLoans,
+                        ),
+                      ),
+                    );
+                    _fetchLoans();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFDC2626), // Red accent
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 1,
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Re-apply Loan',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -663,7 +701,70 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              if (loan.status.toLowerCase() == 'rejected' || loan.stage.toLowerCase() == 'rejected') ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFEF5350).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: Color(0xFFC62828), size: 20),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'This application was rejected. You can re-apply to another bank or submit updated details.',
+                          style: TextStyle(fontSize: 12, color: Color(0xFFC62828), height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context); // Close details dialog
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ApplyLoanPage(
+                            initialUniversity: loan.universityName,
+                            initialCourse: loan.courseName,
+                            initialCountry: loan.targetCountry,
+                            onLoanSubmitted: _fetchLoans,
+                          ),
+                        ),
+                      );
+                      _fetchLoans();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626), // Red Re-apply accent
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 1,
+                    ),
+                    icon: const Icon(Icons.refresh_rounded, size: 20),
+                    label: const Text(
+                      'Re-apply Loan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
