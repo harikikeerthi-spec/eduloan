@@ -637,14 +637,47 @@ class EvaluationResult {
     required this.improvements,
   });
 
-  factory EvaluationResult.fromJson(Map<String, dynamic> json) {
+  factory EvaluationResult.fromJson(
+    Map<String, dynamic> json, {
+    String defaultQuestion = '',
+    String defaultAnswer = '',
+  }) {
+    final int parsedScore = json['score'] != null
+        ? (json['score'] is num
+            ? (json['score'] as num).toInt()
+            : int.tryParse(json['score'].toString()) ?? 0)
+        : (json['overallScore'] is num
+            ? (json['overallScore'] as num).toInt()
+            : int.tryParse(json['overallScore']?.toString() ?? '0') ?? 0);
+
+    final String questionText =
+        (json['question'] != null && json['question'].toString().isNotEmpty)
+            ? json['question'].toString()
+            : defaultQuestion;
+
+    final String answerText =
+        (json['answer'] != null && json['answer'].toString().isNotEmpty)
+            ? json['answer'].toString()
+            : (json['transcript'] != null ? json['transcript'].toString() : defaultAnswer);
+
+    final String feedbackText =
+        json['feedback'] != null && json['feedback'].toString().isNotEmpty
+            ? json['feedback'].toString()
+            : (json['quickTip'] != null ? json['quickTip'].toString() : '');
+
+    final List<String> improvementsList = json['improvements'] != null
+        ? List<String>.from(json['improvements'])
+        : (json['suggestedImprovement'] != null
+            ? List<String>.from(json['suggestedImprovement'])
+            : []);
+
     return EvaluationResult(
-      question: json['question'] ?? '',
-      answer: json['answer'] ?? '',
-      score: json['score'] ?? 0,
-      feedback: json['feedback'] ?? '',
+      question: questionText,
+      answer: answerText,
+      score: parsedScore,
+      feedback: feedbackText,
       strengths: List<String>.from(json['strengths'] ?? []),
-      improvements: List<String>.from(json['improvements'] ?? []),
+      improvements: improvementsList,
     );
   }
 
@@ -707,20 +740,32 @@ class AiLogicService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final name = prefs.getString('name') ?? 'Student';
-      final email = prefs.getString('email') ?? '';
+      final firstName = prefs.getString('user_firstName') ?? prefs.getString('name') ?? '';
+      final lastName = prefs.getString('user_lastName') ?? '';
+      final name = '$firstName $lastName'.trim().isNotEmpty ? '$firstName $lastName'.trim() : 'Student';
+      final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
+      final phone = prefs.getString('user_phone') ?? 'N/A';
       final userId = prefs.getString('userId') ?? '';
+      final token = prefs.getString('auth_token') ?? '';
 
       final String baseUrl = await ApiConfig.getBaseUrl();
       final url = Uri.parse('$baseUrl/university-inquiry');
+
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+      if (token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
         body: jsonEncode({
           'name': name,
           'email': email,
           'userId': userId,
-          'mobile': 'N/A',
+          'mobile': phone,
           'universityName': universityName,
           'type': type,
         }),
@@ -728,7 +773,7 @@ class AiLogicService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        return data['success'] == true || data['id'] != null;
+        return data['success'] == true || data['id'] != null || data['inquiry'] != null;
       }
       return false;
     } catch (e) {
@@ -743,8 +788,9 @@ class AiLogicService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString('email') ?? '';
+      final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
       final userId = prefs.getString('userId') ?? '';
+      final token = prefs.getString('auth_token') ?? '';
 
       if (email.isEmpty && userId.isEmpty) return false;
 
@@ -753,9 +799,16 @@ class AiLogicService {
         '$baseUrl/university-inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
       );
 
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+      };
+      if (token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
       final response = await http.get(
         url,
-        headers: {'Content-Type': 'application/json'},
+        headers: headers,
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1752,7 +1805,15 @@ class AiLogicService {
       'transcript': transcript,
       'visaType': visaType,
     });
-    return EvaluationResult.fromJson(data['evaluation'] ?? data);
+    final evalMap = (data['evaluation'] is Map)
+        ? Map<String, dynamic>.from(data['evaluation'])
+        : data;
+
+    return EvaluationResult.fromJson(
+      evalMap,
+      defaultQuestion: question,
+      defaultAnswer: transcript,
+    );
   }
 
   Future<String> getVisaFinalReport({

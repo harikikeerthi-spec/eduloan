@@ -15,29 +15,42 @@ export class UniversityInquiryService {
 
   async createInquiry(data: {
     userId?: string;
-    name: string;
-    email: string;
-    mobile: string;
+    name?: string;
+    email?: string;
+    mobile?: string;
     universityName: string;
-    type: 'callback' | 'fasttrack';
+    type?: string;
   }) {
+    const name = data.name && data.name.trim() ? data.name : 'Student';
+    const email = data.email && data.email.trim() ? data.email : 'student@vidyaloan.com';
+    const mobile = data.mobile && data.mobile.trim() ? data.mobile : 'N/A';
+    const type = data.type ? data.type : 'callback';
+
     const { data: inquiry, error } = await this.db
       .from('UniversityInquiry')
       .insert({
-        userId: data.userId,
-        name: data.name,
-        email: data.email,
-        mobile: data.mobile,
+        userId: data.userId || null,
+        name,
+        email,
+        mobile,
         universityName: data.universityName,
-        type: data.type,
+        type,
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting UniversityInquiry:', error);
+      throw error;
+    }
 
-    await this.sendInquiryEmails(data);
-    return inquiry;
+    try {
+      await this.sendInquiryEmails({ ...data, name, email, mobile, type });
+    } catch (e) {
+      console.error('Non-fatal error sending inquiry emails:', e);
+    }
+
+    return { success: true, inquiry };
   }
 
   async getInquiriesByUser(userId: string) {
