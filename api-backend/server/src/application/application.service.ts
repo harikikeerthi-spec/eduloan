@@ -147,8 +147,8 @@ export class ApplicationService {
 
   async createApplication(userId: string, data: any) {
     const targetBank = data.bank;
-    const targetCountry = data.country;
-    const targetUniversity = data.universityName || data.university;
+    const targetCountry = data.targetCountry || data.country;
+    const targetUniversity = data.universityName || data.university || data.targetUniversity;
 
     await this.validateApplicationConstraints(userId, null, targetBank, targetCountry, targetUniversity);
 

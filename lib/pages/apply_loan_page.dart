@@ -615,7 +615,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         motherEmail: _motherEmailController.text,
         city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
         pincode: _pincodeController.text.trim().isEmpty ? null : _pincodeController.text.trim(),
-        country: _resCountryController.text.trim().isEmpty ? null : _resCountryController.text.trim(),
+        country: _countryController.text.trim().isEmpty ? null : _countryController.text.trim(),
         hasCollateral: _hasCollateral,
         collateralDetails: _collateralController.text,
         hasCoApplicant: true,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import 'api_config.dart';
@@ -60,11 +61,27 @@ class UserService {
         'POST',
         Uri.parse('$baseUrl/documents/upload'),
       );
-
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['docType'] = docType;
       request.fields['userId'] = userId;
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final filePath = file.path.toLowerCase();
+      MediaType? contentType;
+      if (filePath.endsWith('.pdf')) {
+        contentType = MediaType('application', 'pdf');
+      } else if (filePath.endsWith('.png')) {
+        contentType = MediaType('image', 'png');
+      } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        contentType = MediaType('image', 'jpeg');
+      } else if (filePath.endsWith('.heic') || filePath.endsWith('.heif')) {
+        contentType = MediaType('image', 'heic');
+      } else if (filePath.endsWith('.doc')) {
+        contentType = MediaType('application', 'msword');
+      } else if (filePath.endsWith('.docx')) {
+        contentType = MediaType('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document');
+      }
+
+      request.files.add(await http.MultipartFile.fromPath('file', file.path, contentType: contentType));
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

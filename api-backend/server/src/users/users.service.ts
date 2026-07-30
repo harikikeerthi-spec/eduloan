@@ -620,6 +620,7 @@ export class UsersService {
       program?: string;
       programFocus?: string;
       country?: string;
+      targetCountry?: string;
       university?: string;
       universityName?: string;
       targetUniversity?: string;
@@ -638,7 +639,7 @@ export class UsersService {
     },
   ) {
     const universityName = data.universityName || data.targetUniversity || data.university || null;
-    const country = data.country || null;
+    const country = data.targetCountry || data.country || null;
     const bank = data.bank || null;
 
     await this.validateApplicationConstraints(userId, bank, country, universityName);
