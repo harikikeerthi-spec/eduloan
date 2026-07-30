@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'complete_profile_page.dart';
 import 'main_navigation.dart';
-import 'onboarding_page.dart';
 import '../widgets/mesh_background.dart';
 
 class LoginPage extends StatefulWidget {
@@ -84,21 +82,11 @@ class _LoginPageState extends State<LoginPage> {
         final bool hasUserDetails = result['hasUserDetails'] ?? false;
 
         if (hasUserDetails) {
-          // Returning user — check if onboarding already shown
-          final prefs = await SharedPreferences.getInstance();
-          final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
-          if (!mounted) return;
-          if (!onboardingShown) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const OnboardingPage()),
-              (route) => false,
-            );
-          } else {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const MainNavigation()),
-              (route) => false,
-            );
-          }
+          // Returning user — go straight to dashboard
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
         } else {
           // New user — complete profile first, then onboarding
           Navigator.of(context).pushAndRemoveUntil(
@@ -186,21 +174,11 @@ class _LoginPageState extends State<LoginPage> {
         final bool isNewUser = _isNewUser;
 
         if (hasUserDetails) {
-          // Returning user — check if onboarding was already shown
-          final prefs = await SharedPreferences.getInstance();
-          final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
-          if (!mounted) return;
-          if (!onboardingShown) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const OnboardingPage()),
-              (route) => false,
-            );
-          } else {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const MainNavigation()),
-              (route) => false,
-            );
-          }
+          // Returning user — go straight to dashboard
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            (route) => false,
+          );
         } else {
           // New user — Complete Profile Page first, then onboarding
           Navigator.of(context).pushAndRemoveUntil(
