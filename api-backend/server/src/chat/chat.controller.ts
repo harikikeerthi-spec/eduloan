@@ -119,16 +119,7 @@ export class ChatController {
       storage,
       limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB limit for chat
       fileFilter: (req, file, cb) => {
-        const ext = file.originalname.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx'];
-        const isMimeValid = file.mimetype.match(/\/(jpg|jpeg|png|pdf|msword|vnd.openxmlformats-officedocument.wordprocessingml.document|vnd.ms-excel|vnd.openxmlformats-officedocument.spreadsheetml.sheet)$/) || file.mimetype === 'application/octet-stream';
-        const isExtValid = ext && allowedExtensions.includes(ext);
-
-        if (isMimeValid || isExtValid) {
-          cb(null, true);
-        } else {
-          cb(new BadRequestException('Unsupported file type for chat attachment'), false);
-        }
+        cb(null, true);
       },
     }),
   )
