@@ -139,110 +139,12 @@ class DirectChatService {
       debugPrint('Error loading direct chats: $e');
     }
 
-    // Seed initial mock conversations if empty
-    if (_conversations.isEmpty) {
-      _seedDefaultConversations();
-      await _saveToStorage();
-    }
+    // Filter out legacy mock conversations if present
+    _conversations.remove('peer_rohan_101');
+    _conversations.remove('peer_priya_102');
+    _conversations.remove('peer_arun_103');
+    await _saveToStorage();
     _initialized = true;
-  }
-
-  void _seedDefaultConversations() {
-    final now = DateTime.now();
-
-    final c1 = DirectChatConversation(
-      peerId: 'peer_rohan_101',
-      peerName: 'Rohan Sharma',
-      peerRole: 'US Admit (FALL 2026)',
-      avatarLetter: 'R',
-      colorValue: 0xFF311B92,
-      isOnline: true,
-      lastMessage: 'Hey! Are you also applying for HDFC Credila loan?',
-      lastTimestamp: now.subtract(const Duration(minutes: 12)),
-      unreadCount: 1,
-      messages: [
-        DirectChatMessage(
-          id: 'm1',
-          senderId: 'peer_rohan_101',
-          senderName: 'Rohan Sharma',
-          text: 'Hi there! I saw your post in the US admit group.',
-          timestamp: now.subtract(const Duration(minutes: 25)),
-          isMe: false,
-        ),
-        DirectChatMessage(
-          id: 'm2',
-          senderId: 'user_me',
-          senderName: 'You',
-          text: 'Hello Rohan! Yes, I am preparing my loan documents.',
-          timestamp: now.subtract(const Duration(minutes: 20)),
-          isMe: true,
-        ),
-        DirectChatMessage(
-          id: 'm3',
-          senderId: 'peer_rohan_101',
-          senderName: 'Rohan Sharma',
-          text: 'Hey! Are you also applying for HDFC Credila loan?',
-          timestamp: now.subtract(const Duration(minutes: 12)),
-          isMe: false,
-        ),
-      ],
-    );
-
-    final c2 = DirectChatConversation(
-      peerId: 'peer_priya_102',
-      peerName: 'Priya Patel',
-      peerRole: 'STEM Scholar',
-      avatarLetter: 'P',
-      colorValue: 0xFF10B981,
-      isOnline: true,
-      lastMessage: 'Sure, call me at 9876543210 for GRE prep tips!',
-      lastTimestamp: now.subtract(const Duration(hours: 2)),
-      unreadCount: 2,
-      messages: [
-        DirectChatMessage(
-          id: 'm4',
-          senderId: 'peer_priya_102',
-          senderName: 'Priya Patel',
-          text: 'Hi! Let me know if you need help with GRE verbal notes.',
-          timestamp: now.subtract(const Duration(hours: 3)),
-          isMe: false,
-        ),
-        DirectChatMessage(
-          id: 'm5',
-          senderId: 'peer_priya_102',
-          senderName: 'Priya Patel',
-          text: 'Sure, call me at 9876543210 for GRE prep tips!', // Contains phone number -> will be masked as XXXXXXXXXX for recipient
-          timestamp: now.subtract(const Duration(hours: 2)),
-          isMe: false,
-        ),
-      ],
-    );
-
-    final c3 = DirectChatConversation(
-      peerId: 'peer_arun_103',
-      peerName: 'Dr. Arun Kumar',
-      peerRole: 'Education Mentor',
-      avatarLetter: 'A',
-      colorValue: 0xFFD97706,
-      isOnline: false,
-      lastMessage: 'Your visa slot strategy looks solid. Best of luck!',
-      lastTimestamp: now.subtract(const Duration(days: 1)),
-      unreadCount: 0,
-      messages: [
-        DirectChatMessage(
-          id: 'm6',
-          senderId: 'peer_arun_103',
-          senderName: 'Dr. Arun Kumar',
-          text: 'Your visa slot strategy looks solid. Best of luck!',
-          timestamp: now.subtract(const Duration(days: 1)),
-          isMe: false,
-        ),
-      ],
-    );
-
-    _conversations[c1.peerId] = c1;
-    _conversations[c2.peerId] = c2;
-    _conversations[c3.peerId] = c3;
   }
 
   Future<void> _saveToStorage() async {

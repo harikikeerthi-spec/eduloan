@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/direct_chat_service.dart';
+import '../widgets/mesh_background.dart';
 
 class DirectChatDetailPage extends StatefulWidget {
   final String peerId;
@@ -98,15 +99,7 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
     if (containsPhone && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.shield_rounded, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text('Phone number detected & masked as XXXXXXXXXX for privacy.'),
-              ),
-            ],
-          ),
+          content: const Text('Phone numbers are masked to protect member privacy.'),
           backgroundColor: const Color(0xFF311B92),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -120,17 +113,19 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
   Widget build(BuildContext context) {
     final Color mainColor = Color(widget.colorValue);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        titleSpacing: 0,
-        title: Row(
+    return MeshBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+            onPressed: () => Navigator.pop(context),
+          ),
+          titleSpacing: 0,
+          title: Row(
           children: [
             Stack(
               children: [
@@ -477,6 +472,7 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
           ),
         ],
       ),
+    ),
     );
   }
 
