@@ -8,8 +8,10 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../apply_loan_page.dart';
 import '../../services/loan_service.dart';
+import '../../models/loan.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   final String? initialFlow;
@@ -52,10 +54,41 @@ class _UniversityShortlistingPageState
   final List<Map<String, String>> _selectedUniversities = [];
   String? _tempUniversity;
   String? _tempCourse;
+  bool _checkingLoanStatus = true;
+  bool _hasActiveSubmittedLoan = false;
+  Loan? _activeLoan;
 
   @override
   void initState() {
     super.initState();
+    _checkActiveLoanStatus();
+  }
+
+  Future<void> _checkActiveLoanStatus() async {
+    try {
+      final loans = await LoanService().getUserLoans();
+      final activeLoans = loans.where((loan) => loan.status.toLowerCase() != 'rejected').toList();
+      if (activeLoans.isNotEmpty && mounted) {
+        setState(() {
+          _hasActiveSubmittedLoan = true;
+          _activeLoan = activeLoans.first;
+          _checkingLoanStatus = false;
+        });
+        return;
+      }
+    } catch (e) {
+      debugPrint('UniversityShortlisting: Error checking active loan status: $e');
+    }
+    if (mounted) {
+      setState(() {
+        _hasActiveSubmittedLoan = false;
+        _checkingLoanStatus = false;
+      });
+      _initFlow();
+    }
+  }
+
+  void _initFlow() {
     if (widget.initialFlow == 'recommendations') {
       Future.delayed(const Duration(milliseconds: 100), () {
         _startRecommendationsFlow();
@@ -543,6 +576,143 @@ class _UniversityShortlistingPageState
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingLoanStatus) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "VL Advisor",
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF1F2937),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: const MeshBackground(
+          child: Center(
+            child: CircularProgressIndicator(color: Color(0xFF311B92)),
+          ),
+        ),
+      );
+    }
+
+    if (_hasActiveSubmittedLoan) {
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "VL Advisor",
+            style: GoogleFonts.outfit(
+              color: const Color(0xFF1F2937),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: MeshBackground(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.assignment_turned_in_rounded,
+                        size: 48,
+                        color: Color(0xFF311B92),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Application Already Submitted',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.outfit(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'You have an active loan application submitted for ${_activeLoan?.universityName ?? "your selected university"} (${(_activeLoan?.status ?? "Submitted").toUpperCase()}).\n\nUniversity shortlisting is hidden while your application is under processing. If your application status changes to rejected, shortlisting will automatically reopen.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: const Color(0xFF475569),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(context, '/my-loans');
+                        },
+                        icon: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
+                        label: Text(
+                          'Track My Application',
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF311B92),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
