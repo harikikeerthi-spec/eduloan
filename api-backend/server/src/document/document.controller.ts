@@ -46,19 +46,8 @@ export class DocumentController {
       storage,
       limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
       fileFilter: (req, file, cb) => {
-        const name = (file.originalname || '').toLowerCase();
-        const mime = (file.mimetype || '').toLowerCase();
-
-        const isAllowedExt = /\.(jpg|jpeg|png|pdf|heic|heif|webp|doc|docx)$/i.test(name);
-        const isAllowedMime = /(jpg|jpeg|png|pdf|heic|heif|webp|doc|docx|octet-stream)$/i.test(mime) ||
-                              mime.startsWith('image/') ||
-                              mime.startsWith('application/');
-
-        if (isAllowedExt || isAllowedMime) {
-          cb(null, true);
-        } else {
-          cb(new BadRequestException('Unsupported file type. Please upload a PDF, JPG, PNG, or Word document.'), false);
-        }
+        // Accept all files — the AI KYC verification step below handles document validation
+        cb(null, true);
       },
     }),
   )
