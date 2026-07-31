@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -58,6 +59,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _stateController = TextEditingController();
   final TextEditingController _resCountryController = TextEditingController();
   bool _isPincodeResolving = false;
+  Timer? _pincodeLookupTimer;
 
   // Co-Applicant Details
   final TextEditingController _coApplicantNameController = TextEditingController();
@@ -195,6 +197,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     _coApplicantIncomeController.dispose();
     _collateralController.dispose();
     _purposeController.dispose();
+    _pincodeLookupTimer?.cancel();
     super.dispose();
   }
 
@@ -231,6 +234,25 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         if (flag != _selectedCountryFlag) {
           setState(() => _selectedCountryFlag = flag);
         }
+      }
+    });
+    // Auto-fetch location when exactly 6 digits entered (debounced)
+    _pincodeController.addListener(() {
+      final clean = _pincodeController.text.trim();
+      if (clean.isEmpty) {
+        _pincodeLookupTimer?.cancel();
+        setState(() {
+          _cityController.clear();
+          _stateController.clear();
+          _resCountryController.clear();
+        });
+        return;
+      }
+      if (clean.length == 6 && RegExp(r'^\d{6}$').hasMatch(clean)) {
+        _pincodeLookupTimer?.cancel();
+        _pincodeLookupTimer = Timer(const Duration(milliseconds: 300), () {
+          _autoDetectCityCountry(clean);
+        });
       }
     });
   }
@@ -1129,18 +1151,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               controller: _pincodeController,
               keyboardType: TextInputType.number,
               isRequired: true,
-              onChanged: (val) {
-                final clean = val.trim();
-                if (clean.isEmpty) {
-                  setState(() {
-                    _cityController.clear();
-                    _stateController.clear();
-                    _resCountryController.clear();
-                  });
-                } else if (clean.length == 6 || clean.length == 5) {
-                  _autoDetectCityCountry(clean);
-                }
-              },
               suffixIcon: _isPincodeResolving
                   ? const Padding(
                       padding: EdgeInsets.all(12.0),
@@ -1161,10 +1171,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       ),
                       tooltip: 'Auto-detect location',
                       onPressed: () {
-                        if (_pincodeController.text.trim().isNotEmpty) {
-                          _autoDetectCityCountry(
-                            _pincodeController.text.trim(),
-                          );
+                        final pin = _pincodeController.text.trim();
+                        if (pin.isNotEmpty) {
+                          _autoDetectCityCountry(pin);
                         }
                       },
                     ),
