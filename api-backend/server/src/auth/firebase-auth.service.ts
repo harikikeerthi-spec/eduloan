@@ -21,6 +21,17 @@ export class FirebaseAuthService {
         // Handle the case where the private key might have escaped newlines
         const formattedPrivateKey = privateKey.replace(/\\n/g, '\n');
 
+        console.log('Project ID:', projectId);
+        console.log('Client Email:', clientEmail);
+        console.log(
+          'Private Key starts correctly:',
+          formattedPrivateKey.startsWith('-----BEGIN PRIVATE KEY-----'),
+        );
+        console.log(
+          'Private Key ends correctly:',
+          formattedPrivateKey.endsWith('-----END PRIVATE KEY-----\n'),
+        );
+
         admin.initializeApp({
           credential: admin.credential.cert({
             projectId,
@@ -28,9 +39,10 @@ export class FirebaseAuthService {
             privateKey: formattedPrivateKey,
           }),
         });
+
         console.log('[FirebaseAuthService] Firebase Admin initialized successfully.');
       } catch (error) {
-        console.error('[FirebaseAuthService] Failed to initialize Firebase Admin:', error.message);
+        console.error('[FirebaseAuthService] Failed to initialize Firebase Admin:', error);
       }
     }
   }
