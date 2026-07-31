@@ -66,7 +66,7 @@ class UserService {
       request.fields['userId'] = userId;
 
       final filePath = file.path.toLowerCase();
-      MediaType? contentType;
+      MediaType contentType;
       if (filePath.endsWith('.pdf')) {
         contentType = MediaType('application', 'pdf');
       } else if (filePath.endsWith('.png')) {
@@ -75,10 +75,15 @@ class UserService {
         contentType = MediaType('image', 'jpeg');
       } else if (filePath.endsWith('.heic') || filePath.endsWith('.heif')) {
         contentType = MediaType('image', 'heic');
+      } else if (filePath.endsWith('.webp')) {
+        contentType = MediaType('image', 'webp');
       } else if (filePath.endsWith('.doc')) {
         contentType = MediaType('application', 'msword');
       } else if (filePath.endsWith('.docx')) {
         contentType = MediaType('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document');
+      } else {
+        // Fallback: send as octet-stream so the server filter always accepts it
+        contentType = MediaType('application', 'octet-stream');
       }
 
       request.files.add(await http.MultipartFile.fromPath('file', file.path, contentType: contentType));
