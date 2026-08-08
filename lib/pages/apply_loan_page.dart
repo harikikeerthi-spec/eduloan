@@ -652,19 +652,37 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
 
-      final mainNav = MainNavigation.of(context);
       widget.onLoanSubmitted?.call();
-      
-      if (mainNav != null) {
-        mainNav.switchToTab(2); // Switch to My Loans tab
-      } else {
-        Navigator.pop(context); // Go back to main navigation if pushed as a separate screen
-      }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Loan Application Submitted Successfully!'),
-          backgroundColor: Color(0xFF10B981),
+      final uniName = _instituteController.text;
+      final loanAmt = _amountController.text;
+      final refCode = 'VL-${DateTime.now().year}-${(1000 + (DateTime.now().millisecondsSinceEpoch % 8999))}';
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) => LoanSuccessDialog(
+          applicationRef: refCode,
+          universityName: uniName.isEmpty ? 'Target University' : uniName,
+          amount: loanAmt.isEmpty ? '0' : loanAmt,
+          onViewLoans: () {
+            Navigator.pop(dialogCtx);
+            final mainNav = MainNavigation.of(context);
+            if (mainNav != null) {
+              mainNav.switchToTab(2); // Switch to My Loans tab
+            } else {
+              Navigator.pop(context);
+            }
+          },
+          onGoHome: () {
+            Navigator.pop(dialogCtx);
+            final mainNav = MainNavigation.of(context);
+            if (mainNav != null) {
+              mainNav.switchToTab(0); // Switch to Dashboard tab
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
       );
     } catch (e) {
@@ -2219,5 +2237,268 @@ class IndianCurrencyFormatter extends TextInputFormatter {
     }
 
     return "$groupedRemaining,$lastThree";
+  }
+}
+
+class LoanSuccessDialog extends StatefulWidget {
+  final String applicationRef;
+  final String universityName;
+  final String amount;
+  final VoidCallback onViewLoans;
+  final VoidCallback onGoHome;
+
+  const LoanSuccessDialog({
+    super.key,
+    required this.applicationRef,
+    required this.universityName,
+    required this.amount,
+    required this.onViewLoans,
+    required this.onGoHome,
+  });
+
+  @override
+  State<LoanSuccessDialog> createState() => _LoanSuccessDialogState();
+}
+
+class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.35, 1.0, curve: Curves.easeIn),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF311B92).withValues(alpha: 0.25),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Animated Glowing Checkmark Icon
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: 86,
+                height: 86,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF059669)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 48,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  Text(
+                    'Application Submitted!',
+                    style: GoogleFonts.outfit(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your loan application for ${widget.universityName} has been successfully submitted.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13.5,
+                      color: const Color(0xFF64748B),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  // Summary Detail Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Application Ref:',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            Text(
+                              widget.applicationRef,
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF311B92),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Requested Amount:',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            Text(
+                              '₹${widget.amount}',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Status:',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Under Review',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF10B981),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Action Buttons
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: widget.onViewLoans,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: Text(
+                        'View My Loans',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: TextButton(
+                      onPressed: widget.onGoHome,
+                      child: Text(
+                        'Back to Dashboard',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
