@@ -1280,7 +1280,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   ),
                   Switch.adaptive(
                     value: _hasCollateral,
-                    activeColor: const Color(0xFF311B92),
+                    activeTrackColor: const Color(0xFF311B92),
                     onChanged: (val) => setState(() => _hasCollateral = val),
                   ),
                 ],
