@@ -865,9 +865,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         _showError('Please select your course');
         return false;
       }
-      if (_amountController.text.isEmpty) {
+      final rawAmount = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (rawAmount.isEmpty) {
         setState(() => _fieldErrors[_amountController] = 'Required');
         _showError('Please enter the desired loan amount');
+        return false;
+      }
+      final amountVal = double.tryParse(rawAmount) ?? 0;
+      if (amountVal <= 0) {
+        setState(() => _fieldErrors[_amountController] = 'Enter positive amount');
+        _showError('Please enter a valid loan amount');
+        return false;
+      }
+      if (amountVal > 15000000) {
+        setState(() => _fieldErrors[_amountController] = 'Max ₹1.5 Cr');
+        _showError('Maximum loan amount allowed is ₹1.5 Crore (₹1,50,00,000)');
         return false;
       }
     }
@@ -1322,9 +1334,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               controller: _amountController,
               keyboardType: TextInputType.number,
               isRequired: true,
+              onChanged: _updateAmountInLakhsLabel,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                IndianCurrencyFormatter(),
+                IndianCurrencyFormatter(maxAmount: 15000000),
               ],
             ),
             if (_amountInLakhsLabel.isNotEmpty)
@@ -1774,6 +1787,33 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
+  void _updateAmountInLakhsLabel(String val) {
+    final cleanStr = val.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanStr.isEmpty) {
+      setState(() => _amountInLakhsLabel = '');
+      return;
+    }
+
+    final amount = double.tryParse(cleanStr) ?? 0;
+    if (amount >= 15000000) {
+      setState(() {
+        _amountInLakhsLabel = '₹1.5 Crore (150 Lakhs) • Maximum Limit Reached';
+      });
+    } else {
+      final lakhs = amount / 100000;
+      final crores = amount / 10000000;
+      if (crores >= 1.0) {
+        setState(() {
+          _amountInLakhsLabel = '₹${crores.toStringAsFixed(2)} Crore (${lakhs.toStringAsFixed(1)} Lakhs)';
+        });
+      } else {
+        setState(() {
+          _amountInLakhsLabel = '₹${lakhs.toStringAsFixed(1)} Lakhs';
+        });
+      }
+    }
+  }
+
   Widget _buildSectionHeader(String title, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 8),
@@ -2129,6 +2169,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 }
 
 class IndianCurrencyFormatter extends TextInputFormatter {
+  final double? maxAmount;
+
+  IndianCurrencyFormatter({this.maxAmount});
+
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
@@ -2138,10 +2182,16 @@ class IndianCurrencyFormatter extends TextInputFormatter {
       return newValue;
     }
 
-    // Remove anything that's not a digit
     String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (text.isEmpty) return newValue.copyWith(text: '');
+
+    if (maxAmount != null) {
+      final parsed = double.tryParse(text);
+      if (parsed != null && parsed > maxAmount!) {
+        text = maxAmount!.toInt().toString();
+      }
+    }
 
     String formatted = _formatIndianCurrency(text);
 
@@ -2154,11 +2204,9 @@ class IndianCurrencyFormatter extends TextInputFormatter {
   String _formatIndianCurrency(String text) {
     if (text.length <= 3) return text;
 
-    // Group the last 3 digits
     String lastThree = text.substring(text.length - 3);
     String remaining = text.substring(0, text.length - 3);
 
-    // Group the remaining in 2s
     String groupedRemaining = "";
     int count = 0;
     for (int i = remaining.length - 1; i >= 0; i--) {
