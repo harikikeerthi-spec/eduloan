@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/mesh_background.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
@@ -1045,10 +1046,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     Text(
                       _stepLabels[index],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
                         fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-                        color: isActive ? const Color(0xFF311B92) : Colors.black.withValues(alpha: 0.4),
+                        color: isActive ? const Color(0xFF311B92) : const Color(0xFF94A3B8),
                       ),
                     ),
                   ],
@@ -1066,20 +1067,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 0:
         return _buildStepContainer(
           children: [
+            _buildSectionHeader("Personal Details", Icons.person_outline_rounded),
             _buildTextInput(
               hint: 'First Name',
               icon: Icons.person_outline,
               controller: _firstNameController,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Last Name',
               icon: Icons.person_outline,
               controller: _lastNameController,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Phone Number',
               icon: Icons.phone_outlined,
@@ -1087,7 +1089,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Email Address',
               icon: Icons.email_outlined,
@@ -1100,11 +1102,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 1:
         return _buildStepContainer(
           children: [
-            const Text(
-              "Father's Details",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
+            _buildSectionHeader("Father's Details", Icons.person_outline_rounded),
             _buildTextInput(
               hint: 'Name',
               icon: Icons.person_outline,
@@ -1119,12 +1117,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Mother's Details",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
+            _buildSectionHeader("Mother's Details", Icons.person_outline_rounded),
             _buildTextInput(
               hint: 'Name',
               icon: Icons.person_outline,
@@ -1139,12 +1133,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Residential Details",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
+            _buildSectionHeader("Residential Details", Icons.home_outlined),
             _buildTextInput(
               hint: 'Pincode / ZIP Code',
               icon: Icons.pin_drop_outlined,
@@ -1204,13 +1194,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 2:
         return _buildStepContainer(
           children: [
+            _buildSectionHeader("Co-Applicant Details", Icons.people_outline_rounded),
             _buildTextInput(
               hint: 'Co-applicant Name',
               icon: Icons.person_outline,
               controller: _coApplicantNameController,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Relationship',
               icon: Icons.people_outline,
@@ -1219,7 +1210,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               onTap: _showRelationSelection,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Phone Number',
               icon: Icons.phone_outlined,
@@ -1227,14 +1218,14 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               keyboardType: TextInputType.phone,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Email Address',
               icon: Icons.email_outlined,
               controller: _coApplicantEmailController,
               keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Annual Income (INR)',
               icon: Icons.currency_rupee,
@@ -1247,15 +1238,53 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 3:
         return _buildStepContainer(
           children: [
-            Row(
-              children: [
-                Checkbox(
-                  value: _hasCollateral,
-                  onChanged: (val) => setState(() => _hasCollateral = val ?? false),
-                  fillColor: WidgetStateProperty.all(const Color(0xFF311B92)),
-                ),
-                const Text('Do you have collateral?'),
-              ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.shield_outlined, color: Color(0xFF311B92), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pledge Collateral / Security',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        Text(
+                          'Property, Fixed Deposit, or Land',
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: _hasCollateral,
+                    activeColor: const Color(0xFF311B92),
+                    onChanged: (val) => setState(() => _hasCollateral = val),
+                  ),
+                ],
+              ),
             ),
             if (_hasCollateral) ...[
               const SizedBox(height: 12),
@@ -1266,35 +1295,27 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 maxLines: 3,
               ),
             ],
-            const SizedBox(height: 20),
-            const Text(
-              'Education Information',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
+            _buildSectionHeader('Education Information', Icons.school_outlined),
             _isManualCountryEntry
                 ? _buildCountryManualInput()
                 : _buildCountryReadOnlyInput(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Target University',
               icon: Icons.account_balance_outlined,
               controller: _instituteController,
               isRequired: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Course Name',
               icon: Icons.school_outlined,
               controller: _courseController,
               isRequired: true,
             ),
-            const SizedBox(height: 20),
-            const Text(
-              'Financial Information',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 18),
+            _buildSectionHeader('Financial Information', Icons.account_balance_wallet_outlined),
             _buildTextInput(
               hint: 'Desired Loan Amount (₹)',
               icon: Icons.currency_rupee,
@@ -1311,19 +1332,28 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 margin: const EdgeInsets.only(top: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                  color: const Color(0xFF311B92).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.2)),
+                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.info_outline, size: 16, color: Color(0xFF311B92)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_amountInLakhsLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF311B92)))),
+                    Expanded(
+                      child: Text(
+                        _amountInLakhsLabel,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildTextInput(
               hint: 'Course Details / Purpose',
               icon: Icons.info_outline,
@@ -1744,6 +1774,33 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF311B92).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF311B92)),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: GoogleFonts.outfit(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextInput({
     required String hint,
     required IconData icon,
@@ -1766,76 +1823,89 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
-            color: hasError 
-                ? Colors.red.withValues(alpha: 0.05) 
-                : const Color(0xFF311B92).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
+            color: hasError
+                ? const Color(0xFFFEF2F2)
+                : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: hasError 
-                  ? Colors.red 
-                  : const Color(0xFF311B92).withValues(alpha: 0.05),
-              width: hasError ? 1.5 : 1,
+              color: hasError
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFFE2E8F0),
+              width: hasError ? 1.5 : 1.0,
             ),
           ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            readOnly: readOnly,
-            showCursor: !readOnly,
-            onTap: onTap,
-            maxLines: maxLines,
-            inputFormatters: inputFormatters,
-            onChanged: (val) {
-              if (hasError) {
-                setState(() => _fieldErrors[controller] = null);
-              }
-              if (onChanged != null) {
-                onChanged(val);
-              }
-            },
-            style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              hintText: isRequired ? '$hint *' : hint,
-              hintStyle: TextStyle(
-                color: isRequired
-                    ? Colors.black.withValues(alpha: 0.4)
-                    : Colors.black.withValues(alpha: 0.4),
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              border: InputBorder.none,
-              prefix: keyboardType == TextInputType.phone 
-                  ? Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            '+91',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  readOnly: readOnly,
+                  showCursor: !readOnly,
+                  onTap: onTap,
+                  maxLines: maxLines,
+                  inputFormatters: inputFormatters,
+                  onChanged: (val) {
+                    if (hasError) {
+                      setState(() => _fieldErrors[controller] = null);
+                    }
+                    if (onChanged != null) {
+                      onChanged(val);
+                    }
+                  },
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: isRequired ? '$hint *' : hint,
+                    hintStyle: GoogleFonts.outfit(
+                      color: const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    prefixIcon: keyboardType == TextInputType.phone
+                        ? Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '+91',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFF0F172A),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  height: 16,
+                                  width: 1,
+                                  color: const Color(0xFFCBD5E1),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            height: 16,
-                            width: 1.5,
-                            color: Colors.black.withValues(alpha: 0.1),
-                          ),
-                        ],
-                      ),
-                    )
-                  : null,
-              suffixIcon: suffixIcon ?? Icon(
-                icon,
-                color: hasError 
-                    ? Colors.red 
-                    : const Color(0xFF311B92).withValues(alpha: 0.4),
-                size: 20,
+                          )
+                        : null,
+                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                  ),
+                ),
               ),
-            ),
+              suffixIcon ??
+                  Icon(
+                    icon,
+                    color: hasError
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF64748B),
+                    size: 20,
+                  ),
+            ],
           ),
         ),
         if (hasError)
@@ -1843,7 +1913,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             padding: const EdgeInsets.only(left: 12, top: 4),
             child: Text(
               errorText,
-              style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(
+                color: const Color(0xFFEF4444),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
       ],
@@ -1865,54 +1939,36 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             if (hasError) setState(() => _fieldErrors[_countryController] = null);
             _showCountrySelection();
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: hasError
-                  ? Colors.red.withValues(alpha: 0.05)
-                  : const Color(0xFF311B92).withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+                  ? const Color(0xFFFEF2F2)
+                  : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: hasError
-                    ? Colors.red
-                    : const Color(0xFF311B92).withValues(alpha: 0.05),
-                width: hasError ? 1.5 : 1,
+                    ? const Color(0xFFEF4444)
+                    : const Color(0xFFE2E8F0),
+                width: hasError ? 1.5 : 1.0,
               ),
             ),
             child: Row(
               children: [
                 if (hasValue && flag.isNotEmpty) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF311B92).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(flag, style: const TextStyle(fontSize: 16)),
-                  ),
+                  Text(flag, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 8),
                 ],
                 Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: hasValue ? _countryController.text : 'Target Country',
-                          style: TextStyle(
-                            color: hasValue
-                                ? Colors.black
-                                : Colors.black.withValues(alpha: 0.4),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (!hasValue)
-                          const TextSpan(
-                            text: ' *',
-                            style: TextStyle(color: Colors.red, fontSize: 14),
-                          ),
-                      ],
+                  child: Text(
+                    hasValue ? _countryController.text : 'Target Country *',
+                    style: GoogleFonts.outfit(
+                      color: hasValue
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF94A3B8),
+                      fontSize: 14,
+                      fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1921,8 +1977,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 Icon(
                   Icons.keyboard_arrow_down_rounded,
                   color: hasError
-                      ? Colors.red
-                      : const Color(0xFF311B92).withValues(alpha: 0.5),
+                      ? const Color(0xFFEF4444)
+                      : const Color(0xFF64748B),
+                  size: 20,
                 ),
               ],
             ),
@@ -1933,8 +1990,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             padding: const EdgeInsets.only(left: 12, top: 4),
             child: Text(
               errorText,
-              style: const TextStyle(
-                  color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(
+                color: const Color(0xFFEF4444),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
       ],
@@ -1954,19 +2014,18 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
             color: hasError
-                ? Colors.red.withValues(alpha: 0.05)
-                : const Color(0xFF311B92).withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
+                ? const Color(0xFFFEF2F2)
+                : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: hasError
-                  ? Colors.red
-                  : const Color(0xFF311B92).withValues(alpha: 0.05),
-              width: hasError ? 1.5 : 1,
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFFE2E8F0),
+              width: hasError ? 1.5 : 1.0,
             ),
           ),
           child: Row(
             children: [
-              // Animated flag prefix (appears as user types a recognized country)
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
                 child: flag.isNotEmpty
@@ -1974,7 +2033,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         key: ValueKey(flag),
                         margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF311B92).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
@@ -1985,9 +2044,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     : Container(
                         key: const ValueKey('globe'),
                         margin: const EdgeInsets.only(right: 8),
-                        child: Icon(
+                        child: const Icon(
                           Icons.public,
-                          color: const Color(0xFF311B92).withValues(alpha: 0.4),
+                          color: Color(0xFF64748B),
                           size: 20,
                         ),
                       ),
@@ -1995,7 +2054,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               Expanded(
                 child: TextField(
                   controller: _countryController,
-                  style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                   onChanged: (_) {
                     if (hasError) {
                       setState(() => _fieldErrors[_countryController] = null);
@@ -2003,15 +2066,17 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   },
                   decoration: InputDecoration(
                     hintText: 'Enter Target Country *',
-                    hintStyle: TextStyle(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14),
+                    hintStyle: GoogleFonts.outfit(
+                      color: const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    ),
                     border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
-              // Tap to switch back to picker
               GestureDetector(
                 onTap: () {
                   setState(() {
@@ -2027,10 +2092,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     color: const Color(0xFF311B92).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.list_rounded,
                     size: 18,
-                    color: const Color(0xFF311B92).withValues(alpha: 0.7),
+                    color: Color(0xFF311B92),
                   ),
                 ),
               ),
