@@ -1032,4 +1032,41 @@ export class CommunityController {
             body?.userId || 'user_me',
         );
     }
+
+    // ==================== SMART GROUP CHANNELS & REAL CHAT ENDPOINTS ====================
+
+    @Get('groups')
+    async getSmartGroups() {
+        return this.communityService.getSmartGroups();
+    }
+
+    @Post('groups')
+    async createSmartGroup(@Body() body: any) {
+        return this.communityService.createSmartGroup(body);
+    }
+
+    @Get('groups/:groupId/messages')
+    async getGroupMessages(@Param('groupId') groupId: string) {
+        return this.communityService.getGroupMessages(groupId);
+    }
+
+    @Post('groups/:groupId/messages')
+    async sendGroupMessage(
+        @Param('groupId') groupId: string,
+        @Body() body: any,
+    ) {
+        return this.communityService.sendGroupMessage(groupId, body);
+    }
+
+    @Post('groups/:groupId/join')
+    async joinGroup(@Param('groupId') groupId: string, @Body() body: any) {
+        return this.communityService.joinGroup(groupId, body?.userId);
+    }
+
+    @Post('groups/:groupId/leave')
+    async leaveGroup(@Param('groupId') groupId: string, @Body() body: any) {
+        return this.communityService.leaveGroup(groupId, body?.userId);
+    }
 }
+
+

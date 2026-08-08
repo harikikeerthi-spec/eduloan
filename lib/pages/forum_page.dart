@@ -115,155 +115,53 @@ class _ForumPageState extends State<ForumPage> {
     },
   ];
 
-  // ─── Smart Group Channels Data ─────────────────────────────────────────────
-  final List<Map<String, dynamic>> _smartGroups = [
-    {
-      'id': 'usa_fall26',
-      'title': 'USA Fall 2026 Aspirants',
-      'subtitle': 'NYU, MS in CS, i20 updates & GRE discussion',
-      'members': 245,
-      'online': 38,
-      'icon': Icons.school_rounded,
-      'color': const Color(0xFF311B92),
-      'badge': 'Top Active',
-      'lastMsg': 'Rohan: Has anyone received i20 from NYU Tandon?',
-      'time': '2m ago',
-      'messages': [
-        {
-          'sender': 'Rohan Sharma',
-          'avatarLetter': 'R',
-          'color': const Color(0xFF311B92),
-          'role': 'NYU Applicant',
-          'text': 'Has anyone received i20 from NYU Tandon yet?',
-          'time': '10:42 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'Ananya Mehra',
-          'avatarLetter': 'A',
-          'color': const Color(0xFF10B981),
-          'role': 'Boston Univ Admit',
-          'text': 'Yes! Got mine yesterday via portal. Takes about 4-5 days after submission.',
-          'time': '10:44 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'Vikram Rao (Alumni)',
-          'avatarLetter': 'V',
-          'color': const Color(0xFFF59E0B),
-          'role': 'CMU Alumni',
-          'text': 'Make sure your bank financial certificate date is within 3 months!',
-          'time': '10:46 AM',
-          'isMe': false,
-        },
-      ],
-    },
-    {
-      'id': 'visa_docs',
-      'title': 'Visa & Documentation Squad',
-      'subtitle': 'F1/J1 visa slots, DS-160 & consulate interview tips',
-      'members': 189,
-      'online': 24,
-      'icon': Icons.verified_user_rounded,
-      'color': const Color(0xFF10B981),
-      'badge': 'Visa Alert',
-      'lastMsg': 'Priya: Bulk slots opened for Hyderabad consulate!',
-      'time': '5m ago',
-      'messages': [
-        {
-          'sender': 'Priya K.',
-          'avatarLetter': 'P',
-          'color': const Color(0xFF10B981),
-          'role': 'F1 Applicant',
-          'text': 'Bulk slots opened for Hyderabad consulate just now for July dates!',
-          'time': '11:15 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'Rahul T.',
-          'avatarLetter': 'R',
-          'color': const Color(0xFF3B82F6),
-          'role': 'US Visa Guide',
-          'text': 'DS-160 photo spec check: white background 2x2 inch mandatory.',
-          'time': '11:18 AM',
-          'isMe': false,
-        },
-      ],
-    },
-    {
-      'id': 'loan_squad',
-      'title': 'Loan & Financial Aid Squad',
-      'subtitle': 'Collateral, non-collateral, ROI & sanction letters',
-      'members': 312,
-      'online': 47,
-      'icon': Icons.account_balance_rounded,
-      'color': const Color(0xFFF59E0B),
-      'badge': 'Finance',
-      'lastMsg': 'Sneha: VidyaLoan team cleared my application in 48h!',
-      'time': '12m ago',
-      'messages': [
-        {
-          'sender': 'Sneha Patel',
-          'avatarLetter': 'S',
-          'color': const Color(0xFFEC4899),
-          'role': 'Sanctioned 45L',
-          'text': 'VidyaLoan team cleared my Avanse loan application in 48 hours!',
-          'time': '09:30 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'Amit B.',
-          'avatarLetter': 'A',
-          'color': const Color(0xFF311B92),
-          'role': 'Applicant',
-          'text': 'Is collateral required for loans above 30L for STEM courses?',
-          'time': '09:32 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'VidyaLoan Mentor',
-          'avatarLetter': 'V',
-          'color': const Color(0xFF10B981),
-          'role': 'Official Advisor',
-          'text': 'Non-collateral loans up to 50L are available for top 100 universities!',
-          'time': '09:35 AM',
-          'isMe': false,
-        },
-      ],
-    },
-    {
-      'id': 'uk_europe',
-      'title': 'UK & Europe Scholars',
-      'subtitle': 'CAS letters, UKVI visas, Erasmus & German blocked account',
-      'members': 142,
-      'online': 19,
-      'icon': Icons.public_rounded,
-      'color': const Color(0xFF3B82F6),
-      'badge': 'Global',
-      'lastMsg': 'Tanvi: CAS request timeline for University of Manchester?',
-      'time': '30m ago',
-      'messages': [
-        {
-          'sender': 'Tanvi G.',
-          'avatarLetter': 'T',
-          'color': const Color(0xFF3B82F6),
-          'role': 'Manchester Admit',
-          'text': 'What is the CAS request timeline for University of Manchester?',
-          'time': '08:15 AM',
-          'isMe': false,
-        },
-        {
-          'sender': 'Sameer V.',
-          'avatarLetter': 'S',
-          'color': const Color(0xFF8B5CF6),
-          'role': 'UK Scholar',
-          'text': 'Usually 5-7 working days after tuition deposit confirmation.',
-          'time': '08:20 AM',
-          'isMe': false,
-        },
-      ],
-    },
-  ];
+  // ─── Smart Group Channels Data (Loaded dynamically from database) ───────
+  List<Map<String, dynamic>> _smartGroups = [];
+
+  Future<void> _loadSmartGroups() async {
+    try {
+      final groups = await _communityService.getGroups();
+      if (mounted) {
+        setState(() {
+          _smartGroups = groups.map((g) {
+            final iconName = g['iconName'] ?? g['icon'] ?? 'school_rounded';
+            final colorHex = g['colorHex'] ?? g['color'] ?? '#311B92';
+            return {
+              ...g,
+              'icon': _parseGroupIcon(iconName),
+              'color': _parseGroupColor(colorHex),
+              'members': g['members'] ?? 1,
+              'online': g['online'] ?? 1,
+              'badge': g['badge'] ?? 'General',
+              'lastMsg': g['lastMsg'] ?? 'Active student channel',
+            };
+          }).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading smart groups: $e');
+    }
+  }
+
+  IconData _parseGroupIcon(dynamic icon) {
+    if (icon is IconData) return icon;
+    final str = icon.toString().toLowerCase();
+    if (str.contains('verified')) return Icons.verified_user_rounded;
+    if (str.contains('balance') || str.contains('account')) return Icons.account_balance_rounded;
+    if (str.contains('public') || str.contains('global')) return Icons.public_rounded;
+    return Icons.school_rounded;
+  }
+
+  Color _parseGroupColor(dynamic color) {
+    if (color is Color) return color;
+    if (color == null) return const Color(0xFF311B92);
+    try {
+      final str = color.toString().replaceAll('#', '');
+      return Color(int.parse('FF$str', radix: 16));
+    } catch (_) {
+      return const Color(0xFF311B92);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -279,6 +177,7 @@ class _ForumPageState extends State<ForumPage> {
         _customTitle = args['title'];
       }
       _loadPosts();
+      _loadSmartGroups();
       _loadSavedPollVotes();
       _hasInitialLoaded = true;
     }
@@ -1721,42 +1620,36 @@ class _ForumPageState extends State<ForumPage> {
                                 return;
                               }
 
-                              final newGroup = {
+                              final iconName = selectedBadge == 'Visa'
+                                  ? 'verified_user_rounded'
+                                  : selectedBadge == 'Finance'
+                                      ? 'account_balance_rounded'
+                                      : selectedBadge == 'Global'
+                                          ? 'public_rounded'
+                                          : 'school_rounded';
+                              final colorHex = '#${selectedColor.toARGB32().toRadixString(16).substring(2)}';
+
+                              final newGroupData = {
                                 'id': 'group_${DateTime.now().millisecondsSinceEpoch}',
                                 'title': title,
                                 'subtitle': sub.isEmpty ? 'Student discussion group' : sub,
                                 'members': 1,
                                 'online': 1,
-                                'icon': selectedIcon,
-                                'color': selectedColor,
+                                'iconName': iconName,
+                                'colorHex': colorHex,
                                 'badge': selectedBadge,
                                 'lastMsg': 'Group channel created just now!',
-                                'time': 'Just now',
-                                'messages': [
-                                  {
-                                    'sender': 'System',
-                                    'avatarLetter': 'S',
-                                    'color': selectedColor,
-                                    'role': 'Creator',
-                                    'text': 'Welcome to $title group chat!',
-                                    'time': 'Just now',
-                                    'isMe': false,
-                                  },
-                                ],
                               };
 
-                              setState(() {
-                                _smartGroups.insert(0, newGroup);
-                              });
-
-                              _communityService.saveCustomGroup(newGroup);
+                              await _communityService.createGroup(newGroupData);
+                              await _loadSmartGroups();
 
                               if (context.mounted) {
                                 Navigator.pop(context);
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('AI Verified & Group Created! 🎉'),
+                                    content: Text('AI Verified & Group Saved to Database! 🎉'),
                                     backgroundColor: Color(0xFF10B981),
                                   ),
                                 );
@@ -2402,12 +2295,83 @@ class _SmartChatRoomModal extends StatefulWidget {
 class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late List<Map<String, dynamic>> _messages;
+  List<Map<String, dynamic>> _messages = [];
+  bool _isLoadingMessages = true;
+  bool _isJoined = false;
+  String _mySenderName = 'You';
 
   @override
   void initState() {
     super.initState();
-    _messages = List<Map<String, dynamic>>.from(widget.group['messages']);
+    _loadUserAndMessages();
+  }
+
+  Future<void> _loadUserAndMessages() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fname = prefs.getString('user_firstName') ?? '';
+      final lname = prefs.getString('user_lastName') ?? '';
+      final fullName = '$fname $lname'.trim();
+      if (fullName.isNotEmpty) {
+        _mySenderName = fullName;
+      }
+    } catch (_) {}
+
+    final groupId = widget.group['id'] as String;
+    final isJoined = await CommunityService().isGroupJoined(groupId);
+    final msgs = await CommunityService().getGroupMessages(groupId);
+
+    if (mounted) {
+      setState(() {
+        _isJoined = isJoined;
+        _messages = msgs.map((m) {
+          final sender = m['sender'] ?? 'Student';
+          final colorHex = m['colorHex'] ?? '#311B92';
+          Color color;
+          try {
+            color = Color(int.parse('FF${colorHex.toString().replaceAll('#', '')}', radix: 16));
+          } catch (_) {
+            color = const Color(0xFF311B92);
+          }
+          final isMe = sender == _mySenderName || m['isMe'] == true;
+          return {
+            'id': m['id'],
+            'sender': sender,
+            'avatarLetter': m['avatarLetter'] ?? (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
+            'color': color,
+            'role': m['role'] ?? 'Student',
+            'text': m['text'] ?? '',
+            'time': m['time'] ?? 'Just now',
+            'isMe': isMe,
+          };
+        }).toList();
+
+        _isLoadingMessages = false;
+      });
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    }
+  }
+
+  void _joinGroup() async {
+    final groupId = widget.group['id'] as String;
+    await CommunityService().joinGroup(groupId);
+    if (mounted) {
+      setState(() {
+        _isJoined = true;
+        widget.group['members'] = (widget.group['members'] ?? 1) + 1;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully joined ${widget.group['title']}! 🎉'),
+          backgroundColor: const Color(0xFF10B981),
+        ),
+      );
+    }
   }
 
   @override
@@ -2421,27 +2385,37 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
+    _msgController.clear();
+    final groupId = widget.group['id'] as String;
     final now = DateTime.now();
     final timeStr = '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
 
+    final tempMsg = {
+      'sender': _mySenderName,
+      'avatarLetter': _mySenderName.isNotEmpty ? _mySenderName[0].toUpperCase() : 'Y',
+      'color': const Color(0xFF311B92),
+      'role': 'Student',
+      'text': text,
+      'time': timeStr,
+      'isMe': true,
+    };
+
     setState(() {
-      _messages.add({
-        'sender': 'You',
-        'avatarLetter': 'Y',
-        'color': const Color(0xFF311B92),
-        'role': 'Student',
-        'text': text,
-        'time': timeStr,
-        'isMe': true,
-      });
-      _msgController.clear();
+      _messages.add(tempMsg);
     });
 
     try {
-      final channelId = widget.group['id'] as String;
-      await CommunityService().sendChatMessage(channelId, text);
+      final msgPayload = {
+        'sender': _mySenderName,
+        'avatarLetter': tempMsg['avatarLetter'],
+        'colorHex': '#311B92',
+        'role': 'Student',
+        'text': text,
+        'time': timeStr,
+      };
+      await CommunityService().sendGroupMessage(groupId, msgPayload);
     } catch (e) {
-      debugPrint('Chat message database sync info: $e');
+      debugPrint('Error sending group chat message to DB: $e');
     }
 
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -2538,10 +2512,16 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
           Expanded(
             child: Container(
               color: const Color(0xFFF8FAFC),
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(18),
-                itemCount: _messages.length,
+              child: _isLoadingMessages
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(18),
+                      itemCount: _messages.length,
                 itemBuilder: (context, index) {
                   final msg = _messages[index];
                   final bool isMe = msg['isMe'] == true;
@@ -2671,67 +2651,122 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             ),
           ),
 
-          SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0F000000),
-                    blurRadius: 10,
-                    offset: Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(24),
+          if (!_isJoined)
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0F000000),
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Join this group channel to send messages and participate in discussions.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
                       ),
-                      child: TextField(
-                        controller: _msgController,
-                        style: GoogleFonts.inter(fontSize: 14),
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: 'Type a message to the group...',
-                          hintStyle: GoogleFonts.inter(
-                            fontSize: 13.5,
-                            color: Colors.grey[500],
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _joinGroup,
+                      icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
+                      label: Text(
+                        'Join ${widget.group['title']}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x0F000000),
+                      blurRadius: 10,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: TextField(
+                          controller: _msgController,
+                          style: GoogleFonts.inter(fontSize: 14),
+                          onSubmitted: (_) => _sendMessage(),
+                          decoration: InputDecoration(
+                            hintText: 'Type a message to the group...',
+                            hintStyle: GoogleFonts.inter(
+                              fontSize: 13.5,
+                              color: Colors.grey[500],
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 12,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: _sendMessage,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF311B92),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF311B92),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

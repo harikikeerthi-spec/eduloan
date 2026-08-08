@@ -989,3 +989,39 @@ model Notification {
   @@index([timestamp])
 }
 
+model CommunityGroup {
+  id        String                  @id @default(uuid())
+  title     String
+  subtitle  String?
+  members   Int                     @default(1)
+  online    Int                     @default(1)
+  iconName  String                  @default("school_rounded")
+  colorHex  String                  @default("#311B92")
+  badge     String                  @default("General")
+  lastMsg   String?
+  createdBy String?
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+  messages  CommunityGroupMessage[]
+
+  @@index([createdAt])
+}
+
+model CommunityGroupMessage {
+  id           String         @id @default(uuid())
+  groupId      String
+  sender       String
+  avatarLetter String?
+  colorHex     String?        @default("#311B92")
+  role         String         @default("Student")
+  text         String         @db.Text
+  time         String?
+  isMe         Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  group        CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([createdAt])
+}
+
+

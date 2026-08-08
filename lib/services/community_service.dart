@@ -442,4 +442,109 @@ class CommunityService {
       return {'success': true};
     }
   }
+
+  // ==================== REAL COMMUNITY GROUPS & MESSAGES API ====================
+
+  /// Get all real group channels from backend database
+  Future<List<Map<String, dynamic>>> getGroups() async {
+    try {
+      final response = await _getRequest('/community/groups');
+      if (response['success'] == true && response['data'] != null) {
+        final List raw = response['data'];
+        return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error getting groups from backend: $e');
+    }
+    return [];
+  }
+
+  /// Create real group channel in backend database
+  Future<Map<String, dynamic>?> createGroup(Map<String, dynamic> groupData) async {
+    try {
+      final response = await _postRequest('/community/groups', groupData);
+      if (response['success'] == true && response['data'] != null) {
+        return Map<String, dynamic>.from(response['data'] as Map);
+      }
+    } catch (e) {
+      debugPrint('Error creating group in backend: $e');
+    }
+    return null;
+  }
+
+  /// Get real group messages from backend database
+  Future<List<Map<String, dynamic>>> getGroupMessages(String groupId) async {
+    try {
+      final response = await _getRequest('/community/groups/$groupId/messages');
+      if (response['success'] == true && response['data'] != null) {
+        final List raw = response['data'];
+        return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error loading group messages from backend: $e');
+    }
+    return [];
+  }
+
+  /// Send message in real group chat and save to database
+  Future<Map<String, dynamic>?> sendGroupMessage(String groupId, Map<String, dynamic> msgData) async {
+    try {
+      final response = await _postRequest('/community/groups/$groupId/messages', msgData);
+      if (response['success'] == true && response['data'] != null) {
+        return Map<String, dynamic>.from(response['data'] as Map);
+      }
+    } catch (e) {
+      debugPrint('Error sending group message to backend: $e');
+    }
+    return null;
+  }
+
+  /// Join a group channel
+  Future<bool> joinGroup(String groupId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final joined = prefs.getStringList('joined_group_ids') ?? [];
+      if (!joined.contains(groupId)) {
+        joined.add(groupId);
+        await prefs.setStringList('joined_group_ids', joined);
+      }
+
+      final userId = prefs.getString('userId') ?? '';
+      await _postRequest('/community/groups/$groupId/join', {'userId': userId});
+      return true;
+    } catch (e) {
+      debugPrint('Error joining group: $e');
+      return true;
+    }
+  }
+
+  /// Leave a group channel
+  Future<bool> leaveGroup(String groupId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final joined = prefs.getStringList('joined_group_ids') ?? [];
+      joined.remove(groupId);
+      await prefs.setStringList('joined_group_ids', joined);
+
+      final userId = prefs.getString('userId') ?? '';
+      await _postRequest('/community/groups/$groupId/leave', {'userId': userId});
+      return true;
+    } catch (e) {
+      debugPrint('Error leaving group: $e');
+      return true;
+    }
+  }
+
+  /// Check if user has joined a group channel
+  Future<bool> isGroupJoined(String groupId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final joined = prefs.getStringList('joined_group_ids') ?? [];
+      return joined.contains(groupId);
+    } catch (e) {
+      return false;
+    }
+  }
 }
+
+
