@@ -14,6 +14,8 @@ import '../models/blog.dart';
 import 'blog_detail_page.dart';
 
 import '../services/direct_chat_service.dart';
+import 'main_navigation.dart';
+import '../widgets/avatar_selection_dialog.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -25,8 +27,8 @@ class HomeTab extends StatefulWidget {
 class HomeTabState extends State<HomeTab> {
   final LoanService _loanService = LoanService();
   List<Loan> _activeLoans = [];
-  // ignore: unused_field
   bool _hasAppliedForLoan = false;
+  String? _userProfileImage;
   List<UniversityRecommendation> _aiRecommendations = [];
   List<UniversityRecommendation> _savedRecommendations = [];
   String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
@@ -46,6 +48,7 @@ class HomeTabState extends State<HomeTab> {
   @override
   void initState() {
     super.initState();
+    _loadUserProfileImage();
     _loadActiveLoans();
     _loadRecommendations();
     _loadNotificationCount();
@@ -92,11 +95,26 @@ class HomeTabState extends State<HomeTab> {
     setState(() {
       _bgCache.clear();
     });
+    _loadUserProfileImage();
     _loadRecommendations();
     _loadSavedRecommendations();
     _loadActiveLoans();
     _loadNotificationCount();
     _loadDirectChatUnreadCount();
+  }
+
+  Future<void> _loadUserProfileImage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final img = prefs.getString('user_profileImage');
+      if (mounted) {
+        setState(() {
+          _userProfileImage = img;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user profile image: $e');
+    }
   }
 
   Future<void> _loadNotificationCount() async {
@@ -201,6 +219,79 @@ class HomeTabState extends State<HomeTab> {
     }
   }
 
+  Widget _buildProfileAvatar() {
+    return GestureDetector(
+      onTap: () {
+        MainNavigation.of(context)?.switchToTab(4);
+      },
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(
+            color: const Color(0xFF311B92).withValues(alpha: 0.15),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF311B92).withValues(alpha: 0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipOval(
+          child: Builder(
+            builder: (context) {
+              if (_userProfileImage != null && _userProfileImage!.isNotEmpty) {
+                if (_userProfileImage!.startsWith('data:image/')) {
+                  try {
+                    final base64Str = _userProfileImage!.split(',').last;
+                    final bytes = base64Decode(base64Str);
+                    return Image.memory(
+                      bytes,
+                      width: 44,
+                      height: 44,
+                      fit: BoxFit.cover,
+                    );
+                  } catch (e) {
+                    debugPrint('Error decoding profile avatar: $e');
+                  }
+                }
+
+                final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+                  (a) => a['name'] == _userProfileImage,
+                  orElse: () => <String, dynamic>{},
+                );
+                if (avatarData.isNotEmpty && avatarData['icon'] != null) {
+                  return Container(
+                    color: (avatarData['color'] as Color).withValues(alpha: 0.1),
+                    child: Icon(
+                      avatarData['icon'] as IconData,
+                      size: 24,
+                      color: avatarData['color'] as Color,
+                    ),
+                  );
+                }
+              }
+
+              return Container(
+                color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                child: const Icon(
+                  Icons.person_rounded,
+                  size: 24,
+                  color: Color(0xFF311B92),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,15 +315,7 @@ class HomeTabState extends State<HomeTab> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          ClipPath(
-                            clipper: TriangleClipper(),
-                            child: Image.asset(
-                              'assets/images/app_icon_foreground.png',
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
+                          _buildProfileAvatar(),
                           Row(
                             children: [
                               IconButton(
@@ -377,9 +460,11 @@ class HomeTabState extends State<HomeTab> {
                 _buildFeaturedBlogsSection(),
                 const SizedBox(height: 20),
 
-                // ── AI Recommendations ──────────────────────────────────
-                _buildAiRecommendations(),
-                const SizedBox(height: 28),
+                // ── AI Recommendations (Hidden if user has applied for a loan) ──
+                if (!_hasAppliedForLoan) ...[
+                  _buildAiRecommendations(),
+                  const SizedBox(height: 28),
+                ],
 
                 // Lending Partners
                 Column(
@@ -1072,8 +1157,11 @@ class HomeTabState extends State<HomeTab> {
     );
   }
 
-  // ignore: unused_element
   Widget _buildAiRecommendations() {
+    if (_hasAppliedForLoan) {
+      return const SizedBox.shrink();
+    }
+
     final bool isSavedMode = _activeRecommendationTab == 'Saved';
     final recommendations = isSavedMode
         ? _savedRecommendations

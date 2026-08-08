@@ -12,6 +12,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../apply_loan_page.dart';
 import '../../services/loan_service.dart';
 import '../../models/loan.dart';
+import '../main_navigation.dart';
+import '../my_loans_page.dart';
+import '../../services/pdf_generator_service.dart';
+import '../document_vault_page.dart';
 
 class UniversityShortlistingPage extends StatefulWidget {
   final String? initialFlow;
@@ -56,6 +60,7 @@ class _UniversityShortlistingPageState
   String? _tempCourse;
   bool _checkingLoanStatus = true;
   bool _hasActiveSubmittedLoan = false;
+  bool _isAllDocsUploaded = false;
   Loan? _activeLoan;
 
   @override
@@ -68,10 +73,12 @@ class _UniversityShortlistingPageState
     try {
       final loans = await LoanService().getUserLoans();
       final activeLoans = loans.where((loan) => loan.status.toLowerCase() != 'rejected').toList();
+      final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
       if (activeLoans.isNotEmpty && mounted) {
         setState(() {
           _hasActiveSubmittedLoan = true;
           _activeLoan = activeLoans.first;
+          _isAllDocsUploaded = allDocsUploaded;
           _checkingLoanStatus = false;
         });
         return;
@@ -579,6 +586,7 @@ class _UniversityShortlistingPageState
     if (_checkingLoanStatus) {
       return Scaffold(
         backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -606,6 +614,7 @@ class _UniversityShortlistingPageState
     if (_hasActiveSubmittedLoan) {
       return Scaffold(
         backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -625,7 +634,12 @@ class _UniversityShortlistingPageState
         body: MeshBackground(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight + 16,
+                bottom: 24,
+                left: 24,
+                right: 24,
+              ),
               child: Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
@@ -683,7 +697,16 @@ class _UniversityShortlistingPageState
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          Navigator.pushReplacementNamed(context, '/my-loans');
+                          final mainNav = MainNavigation.of(context);
+                          if (mainNav != null) {
+                            mainNav.switchToTab(2);
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          } else {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MyLoansPage()),
+                            );
+                          }
                         },
                         icon: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
                         label: Text(
@@ -703,6 +726,82 @@ class _UniversityShortlistingPageState
                           elevation: 2,
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const DocumentVaultPage()),
+                              );
+                              _checkActiveLoanStatus();
+                            },
+                            icon: const Icon(Icons.folder_shared_outlined, color: Color(0xFF311B92)),
+                            label: Text(
+                              'Doc Vault',
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF311B92),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: const BorderSide(color: Color(0xFF311B92)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (_isAllDocsUploaded && _activeLoan != null) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Generating loan application PDF...'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                try {
+                                  await PdfGeneratorService.downloadApplicationPdf(_activeLoan!);
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to download PDF: $e'),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                              label: Text(
+                                'Download PDF',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),

@@ -10,6 +10,8 @@ import {
 } from '../utils/ocr-fields.util';
 import { PanDocumentValidation, validatePanExtraction } from '../utils/pan-validation.util';
 import { OpenRouterService } from './openrouter.service';
+// @ts-ignore
+import pdfParse from 'pdf-parse';
 
 export interface AadhaarStructuredAddress {
     house_details?: string;

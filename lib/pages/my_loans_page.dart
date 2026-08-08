@@ -9,6 +9,7 @@ import '../services/loan_service.dart';
 import 'digilocker_auth_page.dart';
 import '../services/digilocker_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/pdf_generator_service.dart';
 
 class MyLoansPage extends StatefulWidget {
   const MyLoansPage({super.key});
@@ -21,6 +22,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
   final LoanService _loanService = LoanService();
   List<Loan> _loans = [];
   bool _isLoading = true;
+  bool _isAllDocsUploaded = false;
   String? _error;
 
   @override
@@ -39,9 +41,11 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
     try {
       final loans = await _loanService.getUserLoans();
+      final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
       if (mounted) {
         setState(() {
           _loans = loans;
+          _isAllDocsUploaded = allDocsUploaded;
           _isLoading = false;
         });
       }
@@ -152,7 +156,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     final bool isVaultLocked = _loans.isEmpty;
                     if (isVaultLocked) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,12 +169,13 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       );
                       return;
                     }
-                    Navigator.push(
+                    await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => const DocumentVaultPage(),
                       ),
                     );
+                    _fetchLoans();
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _loans.isEmpty
@@ -198,6 +203,46 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
               ),
+              if (_loans.isNotEmpty && _isAllDocsUploaded) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Generating loan application PDF...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      try {
+                        await PdfGeneratorService.downloadApplicationPdf(_loans.first);
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to download PDF: $e'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                    label: const Text(
+                      'Download PDF',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
               if (_loans.isEmpty) ...[
                 const SizedBox(width: 10),
                 Expanded(
@@ -670,36 +715,85 @@ class _MyLoansPageState extends State<MyLoansPage> {
                 ],
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context); // Close details dialog
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DocumentVaultPage(),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context); // Close details dialog
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DocumentVaultPage(),
+                          ),
+                        );
+                        _fetchLoans();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 1,
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF311B92),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 1,
-                  ),
-                  icon: const Icon(Icons.folder_shared_outlined, size: 20),
-                  label: const Text(
-                    'Document Vault',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      icon: const Icon(Icons.folder_shared_outlined, size: 18),
+                      label: const Text(
+                        'Doc Vault',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (_isAllDocsUploaded) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Generating loan application PDF...'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          try {
+                            await PdfGeneratorService.downloadApplicationPdf(loan);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to download PDF: $e'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 1,
+                        ),
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                        label: const Text(
+                          'Download PDF',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (loan.status.toLowerCase() == 'rejected' || loan.stage.toLowerCase() == 'rejected') ...[
                 const SizedBox(height: 16),

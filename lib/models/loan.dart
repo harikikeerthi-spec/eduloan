@@ -24,6 +24,23 @@ class Loan {
   final String? counselorName;
   final String? counselorPhone;
   final String? counselorEmail;
+  final String? fatherName;
+  final String? fatherPhone;
+  final String? fatherEmail;
+  final String? motherName;
+  final String? motherPhone;
+  final String? motherEmail;
+  final String? city;
+  final String? pincode;
+  final String? country;
+  final bool hasCollateral;
+  final String? collateralDetails;
+  final bool hasCoApplicant;
+  final String? coApplicantName;
+  final String? coApplicantRelation;
+  final String? coApplicantPhone;
+  final String? coApplicantEmail;
+  final double? coApplicantIncome;
   final List<ApplicationDocument> documents;
 
   Loan({
@@ -50,8 +67,34 @@ class Loan {
     this.counselorName,
     this.counselorPhone,
     this.counselorEmail,
+    this.fatherName,
+    this.fatherPhone,
+    this.fatherEmail,
+    this.motherName,
+    this.motherPhone,
+    this.motherEmail,
+    this.city,
+    this.pincode,
+    this.country,
+    this.hasCollateral = false,
+    this.collateralDetails,
+    this.hasCoApplicant = false,
+    this.coApplicantName,
+    this.coApplicantRelation,
+    this.coApplicantPhone,
+    this.coApplicantEmail,
+    this.coApplicantIncome,
     this.documents = const [],
   });
+
+  String get fullName {
+    final fn = firstName ?? '';
+    final ln = lastName ?? '';
+    final name = '$fn $ln'.trim();
+    return name.isEmpty ? 'Student Applicant' : name;
+  }
+
+  String get phoneNumber => phone ?? '';
 
   factory Loan.fromJson(Map<String, dynamic> json) {
     var docsList = <ApplicationDocument>[];
@@ -93,6 +136,23 @@ class Loan {
       counselorName: json['counselorName']?.toString(),
       counselorPhone: json['counselorPhone']?.toString(),
       counselorEmail: json['counselorEmail']?.toString(),
+      fatherName: json['fatherName']?.toString(),
+      fatherPhone: json['fatherPhone']?.toString(),
+      fatherEmail: json['fatherEmail']?.toString(),
+      motherName: json['motherName']?.toString(),
+      motherPhone: json['motherPhone']?.toString(),
+      motherEmail: json['motherEmail']?.toString(),
+      city: json['city']?.toString(),
+      pincode: json['pincode']?.toString(),
+      country: json['country']?.toString(),
+      hasCollateral: json['hasCollateral'] ?? false,
+      collateralDetails: json['collateralDetails']?.toString(),
+      hasCoApplicant: json['hasCoApplicant'] ?? false,
+      coApplicantName: json['coApplicantName']?.toString(),
+      coApplicantRelation: json['coApplicantRelation']?.toString(),
+      coApplicantPhone: json['coApplicantPhone']?.toString(),
+      coApplicantEmail: json['coApplicantEmail']?.toString(),
+      coApplicantIncome: (json['coApplicantIncome'] as num?)?.toDouble(),
       documents: docsList,
     );
   }
