@@ -732,6 +732,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: const Color(0xFFEC4899),
                         title: 'Refer & Earn',
                         subtitle: 'Share VidyaLoans & earn rewards',
+                        badge: 'Coming Soon',
                         isEnabled: true,
                         onTap: () {
                           Navigator.push(
@@ -878,6 +879,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required Color iconColor,
     required String title,
     required String subtitle,
+    String? badge,
     required bool isEnabled,
     required VoidCallback? onTap,
   }) {
@@ -903,13 +905,35 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.outfit(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E1B4B),
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1E1B4B),
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5821E).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              badge,
+                              style: GoogleFonts.outfit(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFF5821E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
