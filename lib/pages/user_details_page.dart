@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import 'main_navigation.dart';
@@ -95,11 +96,27 @@ class _UserDetailsPageState extends State<UserDetailsPage>
       const Duration(days: 365 * 18),
     );
 
+    DateTime initial = eighteenYearsAgo;
+    if (_dobController.text.isNotEmpty) {
+      final clean = _dobController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (clean.length == 8) {
+        final d = int.tryParse(clean.substring(0, 2));
+        final m = int.tryParse(clean.substring(2, 4));
+        final y = int.tryParse(clean.substring(4, 8));
+        if (d != null && m != null && y != null && y >= 1900 && y <= now.year) {
+          try {
+            initial = DateTime(y, m, d);
+          } catch (_) {}
+        }
+      }
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: eighteenYearsAgo,
+      initialDate: initial.isBefore(eighteenYearsAgo) ? initial : eighteenYearsAgo,
       firstDate: DateTime(1900),
       lastDate: eighteenYearsAgo, // Prevent under 18 selection
+      initialEntryMode: DatePickerEntryMode.calendar,
       helpText: 'SELECT DATE OF BIRTH (MUST BE 18+)',
       builder: (context, child) {
         return Theme(
@@ -124,6 +141,61 @@ class _UserDetailsPageState extends State<UserDetailsPage>
         _dobController.text = DateFormat('dd-MM-yyyy').format(picked);
       });
     }
+  }
+
+  String? _validateDob(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+
+    String cleanValue = value.trim();
+    final rawDigits = cleanValue.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (rawDigits.length != 8) {
+      return 'Enter 8 digits (DD-MM-YYYY)';
+    }
+
+    if (!cleanValue.contains('-') && !cleanValue.contains('/')) {
+      cleanValue =
+          '${rawDigits.substring(0, 2)}-${rawDigits.substring(2, 4)}-${rawDigits.substring(4, 8)}';
+    }
+
+    try {
+      int day = 0, month = 0, year = 0;
+      if (cleanValue.contains('-')) {
+        final parts = cleanValue.split('-');
+        if (parts.length != 3) return 'Invalid format (DD-MM-YYYY)';
+        day = int.parse(parts[0]);
+        month = int.parse(parts[1]);
+        year = int.parse(parts[2]);
+      } else if (cleanValue.contains('/')) {
+        final parts = cleanValue.split('/');
+        if (parts.length != 3) return 'Invalid format (DD-MM-YYYY)';
+        day = int.parse(parts[0]);
+        month = int.parse(parts[1]);
+        year = int.parse(parts[2]);
+      }
+
+      if (month < 1 || month > 12) return 'Invalid month (1-12)';
+      if (day < 1 || day > 31) return 'Invalid day (1-31)';
+
+      final dob = DateTime(year, month, day);
+      final today = DateTime.now();
+      var age = today.year - dob.year;
+      if (today.month < dob.month ||
+          (today.month == dob.month && today.day < dob.day)) {
+        age--;
+      }
+      if (age < 18) {
+        return 'Must be 18+ years old';
+      }
+      if (dob.year < 1920 || dob.isAfter(today)) {
+        return 'Please enter a valid date of birth';
+      }
+    } catch (e) {
+      return 'Invalid date';
+    }
+    return null;
   }
 
   Future<void> _submitForm() async {
@@ -354,8 +426,11 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               // Date of Birth
                               TextFormField(
                                 controller: _dobController,
-                                readOnly: true,
-                                onTap: () => _selectDate(context),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9\-]')),
+                                  DateTextInputFormatter(),
+                                ],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -365,36 +440,14 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   'Date of Birth',
                                   Icons.calendar_today,
                                   hint: 'DD-MM-YYYY',
+                                ).copyWith(
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
+                                    onPressed: () => _selectDate(context),
+                                    tooltip: 'Pick date from calendar',
+                                  ),
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Required';
-                                  }
-                                  // Parse and check 18+
-                                  try {
-                                    final parts = value.split('-');
-                                    if (parts.length != 3) {
-                                      return 'Invalid format';
-                                    }
-                                    final day = int.parse(parts[0]);
-                                    final month = int.parse(parts[1]);
-                                    final year = int.parse(parts[2]);
-                                    final dob = DateTime(year, month, day);
-                                    final today = DateTime.now();
-                                    var age = today.year - dob.year;
-                                    if (today.month < dob.month ||
-                                        (today.month == dob.month &&
-                                            today.day < dob.day)) {
-                                      age--;
-                                    }
-                                    if (age < 18) {
-                                      return 'Must be 18+ years old';
-                                    }
-                                  } catch (e) {
-                                    return 'Invalid date';
-                                  }
-                                  return null;
-                                },
+                                validator: _validateDob,
                               ),
                               const SizedBox(height: 16),
 
@@ -486,6 +539,38 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           ),
         ),
       ),
+    );
+  }
+}
+
+class DateTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.length < oldValue.text.length) {
+      return newValue;
+    }
+
+    String digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 8) {
+      digits = digits.substring(0, 8);
+    }
+
+    String formatted = '';
+    if (digits.length <= 2) {
+      formatted = digits;
+    } else if (digits.length <= 4) {
+      formatted = '${digits.substring(0, 2)}-${digits.substring(2)}';
+    } else {
+      formatted =
+          '${digits.substring(0, 2)}-${digits.substring(2, 4)}-${digits.substring(4)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
