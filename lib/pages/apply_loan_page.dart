@@ -627,7 +627,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         loanType: _loanTypeController.text,
         amount: double.parse(_amountController.text.replaceAll(',', '')),
         tenure: 12, // Default tenure since field was removed
-        purpose: _purposeController.text,
+        purpose: 'Higher Education Loan',
         fatherName: _fatherNameController.text,
         fatherPhone: _fatherPhoneController.text,
         fatherEmail: _fatherEmailController.text,
@@ -1384,13 +1384,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   ],
                 ),
               ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Course Details / Purpose',
-              icon: Icons.info_outline,
-              controller: _purposeController,
-              maxLines: 3,
-            ),
           ],
         );
       case 4:
