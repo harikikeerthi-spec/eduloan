@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import '../services/user_service.dart';
+import '../services/notification_service.dart';
 import '../widgets/mesh_background.dart';
 
 class DocumentVaultPage extends StatefulWidget {
@@ -167,9 +168,16 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           );
           _fetchDocuments();
         } else {
+          // Push dual notification: system heads-up push banner + Bell Icon badge
+          NotificationService.pushNotification(
+            title: '❌ Document Rejected: $name',
+            message: 'Your $name was rejected: $errorMessage. Please re-upload a clear copy.',
+            type: 'DOCUMENT_REJECTED',
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$name upload failed: $errorMessage'),
+              content: Text('$name upload rejected: $errorMessage'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 6),
               action: SnackBarAction(

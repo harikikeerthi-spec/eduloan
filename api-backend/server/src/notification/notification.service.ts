@@ -60,7 +60,49 @@ export class NotificationService {
       metadata,
     });
 
+    // Dispatch FCM Mobile Push Notification
+    this.sendFcmPushNotification(userId, title, body, type, metadata);
+
     return payload;
+  }
+
+  private async sendFcmPushNotification(
+    userId: string,
+    title: string,
+    body: string,
+    type: string,
+    metadata?: any,
+  ) {
+    try {
+      const { data: user } = await this.db
+        .from('User')
+        .select('fcmToken')
+        .eq('id', userId)
+        .single();
+
+      if (user && user.fcmToken) {
+        const admin = require('firebase-admin');
+        if (admin.apps && admin.apps.length > 0) {
+          const message = {
+            token: user.fcmToken,
+            notification: {
+              title,
+              body,
+            },
+            data: {
+              type: type || 'NOTIFICATION',
+              title,
+              body,
+              metadata: JSON.stringify(metadata || {}),
+            },
+          };
+          await admin.messaging().send(message);
+          this.logger.log(`[FCM Push] Notification sent to User ${userId}`);
+        }
+      }
+    } catch (e: any) {
+      this.logger.warn(`[FCM Push] Dispatch note: ${e.message || e}`);
+    }
   }
 
   /**
