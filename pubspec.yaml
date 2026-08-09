@@ -58,6 +58,8 @@ dependencies:
   animated_notch_bottom_bar: ^1.0.4
   pdf: ^3.11.1
   printing: ^5.13.2
+  firebase_messaging: ^16.5.0
+  flutter_local_notifications: ^22.3.0
 
 
 dev_dependencies:

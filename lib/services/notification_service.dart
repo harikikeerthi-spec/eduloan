@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/notification.dart';
 import 'api_config.dart';
+import 'push_notification_service.dart';
 
 class NotificationService {
   static Future<String> get baseUrl async => ApiConfig.getBaseUrl();
@@ -88,6 +89,13 @@ class NotificationService {
       };
       currentRaw.insert(0, json.encode(newNotif));
       await prefs.setStringList(key, currentRaw);
+
+      // Trigger heads-up system push notification banner
+      await PushNotificationService.showLocalNotification(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title: title,
+        body: message,
+      );
 
       if (userId != null) {
         final urlStr = await ApiConfig.getBaseUrl();
