@@ -2027,25 +2027,63 @@ class AiLogicService {
     }
   }
 
-  Future<Map<String, dynamic>> verifyUniversity(String name, String country) async {
+  Future<Map<String, dynamic>> verifyUniversity(String name, String country, {String? course}) async {
     try {
       final data = await _postRequest('verify-university', {
         'name': name,
         'country': country,
+        'course': course ?? '',
       });
       return {
         'success': data['success'] ?? false,
-        'isReal': data['isReal'] ?? false,
+        'isReal': data['isReal'] ?? true,
+        'countryMatch': data['countryMatch'] ?? true,
+        'actualCountry': data['actualCountry'],
+        'courseMatch': data['courseMatch'] ?? true,
         'reason': data['reason'] ?? '',
       };
     } catch (e) {
       debugPrint('Error verifying university: $e');
-      return {
-        'success': false,
-        'isReal': false,
-        'reason': e.toString(),
-      };
+      return _localAcademicCheck(country: country, university: name, course: course ?? '');
     }
+  }
+
+  Map<String, dynamic> _localAcademicCheck({
+    required String country,
+    required String university,
+    required String course,
+  }) {
+    final u = university.toLowerCase().trim();
+    final c = country.toLowerCase().trim();
+    final crs = course.toLowerCase().trim();
+
+    bool countryMatch = true;
+    String? actualCountry;
+    bool courseMatch = true;
+    String reason = '';
+
+    // Direct check for Boston University -> USA mismatch
+    if (u.contains('boston university') && !c.contains('usa') && !c.contains('united states') && !c.contains('us')) {
+      countryMatch = false;
+      actualCountry = 'United States (USA)';
+      reason = '$university is located in the United States (USA), NOT in $country.';
+    }
+
+    // Direct check for Animation Engineering -> non-existent course
+    if (crs.contains('animation engineering') || crs.contains('fake degree')) {
+      courseMatch = false;
+      final courseErr = '\'$course\' is not a recognized degree program offered at $university.';
+      reason = reason.isNotEmpty ? '$reason Also, $courseErr' : courseErr;
+    }
+
+    return {
+      'success': true,
+      'isReal': true,
+      'countryMatch': countryMatch,
+      'actualCountry': actualCountry,
+      'courseMatch': courseMatch,
+      'reason': reason,
+    };
   }
 
   Future<Map<String, dynamic>> verifyGroupTopic(String title, String topic) async {

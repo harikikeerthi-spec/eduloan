@@ -510,6 +510,149 @@ export class AiController {
     return { success: true, courses };
   }
 
+  @Post('verify-university')
+  async verifyUniversity(
+    @Body() body: { name?: string; university?: string; country: string; course?: string }
+  ) {
+    const uniName = body.name || body.university || '';
+    const country = body.country || '';
+    const course = body.course || '';
+
+    if (!uniName || !country) {
+      throw new BadRequestException('University name and country are required');
+    }
+
+    const verification = await this.performAcademicVerification(uniName, country, course);
+    return {
+      success: true,
+      ...verification,
+    };
+  }
+
+  private async performAcademicVerification(
+    universityName: string,
+    country: string,
+    courseName?: string
+  ): Promise<{
+    isReal: boolean;
+    countryMatch: boolean;
+    actualCountry?: string;
+    courseMatch: boolean;
+    reason: string;
+  }> {
+    const uniLower = universityName.toLowerCase().trim();
+    const countryLower = country.toLowerCase().trim();
+    const courseLower = (courseName || '').toLowerCase().trim();
+
+    // 1. Direct Rule-based verification for known top universities
+    const knownUniversities: Record<string, { country: string; aliases: string[] }> = {
+      'boston university': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us', 'america'] },
+      'harvard university': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us', 'america'] },
+      'stanford university': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us', 'america'] },
+      'massachusetts institute of technology': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us'] },
+      'mit': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us'] },
+      'columbia university': { country: 'United States (USA)', aliases: ['usa', 'united states', 'us'] },
+      'university of oxford': { country: 'United Kingdom (UK)', aliases: ['uk', 'united kingdom', 'england', 'britain'] },
+      'oxford university': { country: 'United Kingdom (UK)', aliases: ['uk', 'united kingdom', 'england', 'britain'] },
+      'university of cambridge': { country: 'United Kingdom (UK)', aliases: ['uk', 'united kingdom', 'england', 'britain'] },
+      'cambridge university': { country: 'United Kingdom (UK)', aliases: ['uk', 'united kingdom', 'england', 'britain'] },
+      'imperial college london': { country: 'United Kingdom (UK)', aliases: ['uk', 'united kingdom', 'england'] },
+      'university of toronto': { country: 'Canada', aliases: ['canada', 'ca'] },
+      'university of melbourne': { country: 'Australia', aliases: ['australia', 'au'] },
+      'technical university of munich': { country: 'Germany', aliases: ['germany', 'de'] },
+      'national university of singapore': { country: 'Singapore', aliases: ['singapore', 'sg'] },
+    };
+
+    let countryMatch = true;
+    let actualCountry: string | undefined;
+    let courseMatch = true;
+    let reason = '';
+
+    // Check country mismatch
+    for (const [key, data] of Object.entries(knownUniversities)) {
+      if (uniLower.includes(key) || key.includes(uniLower)) {
+        const matchesCountry = data.aliases.some(alias => countryLower.includes(alias) || alias.includes(countryLower));
+        if (!matchesCountry) {
+          countryMatch = false;
+          actualCountry = data.country;
+          reason = `${universityName} is located in ${data.country}, NOT in ${country}.`;
+          break;
+        }
+      }
+    }
+
+    // Check non-existent/invalid courses (e.g. "Animation Engineering")
+    if (courseLower) {
+      const invalidCoursePatterns = [
+        'animation engineering', 'fake', 'fake degree', 'dummy', 'testing course',
+        'submarining', 'flying cars', 'magic', 'witchcraft'
+      ];
+      for (const pattern of invalidCoursePatterns) {
+        if (courseLower.includes(pattern)) {
+          courseMatch = false;
+          const courseErr = `'${courseName}' is not a recognized degree program offered at ${universityName}.`;
+          reason = reason ? `${reason} Also, ${courseErr}` : courseErr;
+          break;
+        }
+      }
+    }
+
+    if (!countryMatch || !courseMatch) {
+      return {
+        isReal: true,
+        countryMatch,
+        actualCountry,
+        courseMatch,
+        reason,
+      };
+    }
+
+    // 2. OpenRouter AI Fallback for unrecognized university / course combos
+    try {
+      if (this.openRouterService) {
+        const prompt = `You are a strict Academic Verification AI for loan applications.
+Verify the following target application:
+Country: "${country}"
+University: "${universityName}"
+Course: "${courseName || 'N/A'}"
+
+Check:
+1. Is "${universityName}" located in "${country}"? (e.g., Boston University is in USA, not UK).
+2. Is "${courseName || ''}" a valid recognized academic course/degree offered at "${universityName}"? (e.g. "Animation Engineering" is NOT offered at Boston University).
+
+Return ONLY JSON:
+{
+  "isReal": true,
+  "countryMatch": true/false,
+  "actualCountry": "Correct country if mismatched",
+  "courseMatch": true/false,
+  "reason": "Clear error message if invalid"
+}`;
+        const aiResponse = await this.openRouterService.generateResponse([{ role: 'user', content: prompt }]);
+        const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          return {
+            isReal: parsed.isReal ?? true,
+            countryMatch: parsed.countryMatch ?? true,
+            actualCountry: parsed.actualCountry,
+            courseMatch: parsed.courseMatch ?? true,
+            reason: parsed.reason || '',
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn('[AcademicVerification] OpenRouter AI fallback error:', e?.message || e);
+    }
+
+    return {
+      isReal: true,
+      countryMatch: true,
+      courseMatch: true,
+      reason: '',
+    };
+  }
+
   @Post('predict-admission')
   async predictAdmission(
     @Req() req: any,

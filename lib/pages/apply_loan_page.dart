@@ -88,11 +88,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   bool _isManualCountryEntry = false;
   String _selectedCountryFlag = '';
 
-  // University verification caching
-  String? _verifiedUniversityName;
-  String? _verifiedCountry;
-  bool _isVerifiedReal = false;
-
   // Static country → flag emoji map (no API needed, works fully offline)
   static const Map<String, String> _countryFlags = {
     'usa': '🇺🇸',
@@ -535,10 +530,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       return;
     }
 
-    final isReal = await _verifyUniversityName();
+    final verifyResult = await _verifyAcademicApplication();
     if (!mounted) return;
-    if (!isReal) {
-      _showError('Target University is not recognized in this country');
+    if (verifyResult['isValid'] != true) {
+      final bool countryMatch = verifyResult['countryMatch'] ?? true;
+      final bool courseMatch = verifyResult['courseMatch'] ?? true;
+      setState(() {
+        if (!countryMatch) {
+          _fieldErrors[_countryController] = 'Country mismatch';
+          _fieldErrors[_instituteController] = 'Location error';
+        }
+        if (!courseMatch) {
+          _fieldErrors[_courseController] = 'Course not offered';
+        }
+      });
+      _showAiAcademicErrorDialog(verifyResult);
       return;
     }
 
@@ -904,29 +910,139 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     return true;
   }
 
-  Future<bool> _verifyUniversityName() async {
+  Future<Map<String, dynamic>> _verifyAcademicApplication() async {
     final name = _instituteController.text.trim();
     final country = _countryController.text.trim();
-    if (name.isEmpty || country.isEmpty) return false;
+    final course = _courseController.text.trim();
 
-    if (_verifiedUniversityName == name && _verifiedCountry == country) {
-      return _isVerifiedReal;
+    if (name.isEmpty || country.isEmpty) {
+      return {'isValid': false, 'reason': 'Country and University are required.'};
     }
 
     try {
       final aiService = AiLogicService();
-      final result = await aiService.verifyUniversity(name, country);
-      if (result['success'] == true) {
-        _verifiedUniversityName = name;
-        _verifiedCountry = country;
-        _isVerifiedReal = result['isReal'] ?? false;
-        return _isVerifiedReal;
+      final result = await aiService.verifyUniversity(name, country, course: course);
+
+      final bool countryMatch = result['countryMatch'] ?? true;
+      final bool courseMatch = result['courseMatch'] ?? true;
+      final String reason = result['reason'] ?? '';
+
+      if (!countryMatch || !courseMatch) {
+        return {
+          'isValid': false,
+          'countryMatch': countryMatch,
+          'actualCountry': result['actualCountry'],
+          'courseMatch': courseMatch,
+          'reason': reason.isNotEmpty
+              ? reason
+              : (!countryMatch
+                  ? '$name is located in ${result['actualCountry'] ?? 'another country'}, NOT in $country.'
+                  : '\'$course\' is not a recognized degree program offered at $name.'),
+        };
       }
+
+      return {'isValid': true, 'reason': ''};
     } catch (e) {
-      debugPrint('Error verifying university name: $e');
+      debugPrint('Error verifying academic application: $e');
+      return {'isValid': true, 'reason': ''};
     }
-    // Fail permissive if server/network fails so user is not blocked
-    return true;
+  }
+
+  void _showAiAcademicErrorDialog(Map<String, dynamic> errorInfo) {
+    final String reason = errorInfo['reason'] ?? 'Academic details verification failed.';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'AI Verification Failed',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your application cannot be submitted due to the following mismatch:',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      reason,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.red.shade900,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Please update your target Country, University, or Course name before submitting.',
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF311B92),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text('Fix Details', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showError(String message) {
@@ -1436,7 +1552,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                                 ),
                                 SizedBox(height: 16),
                                 Text(
-                                  'Verifying target university with AI...',
+                                  'Verifying application details with AI...',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                   textAlign: TextAlign.center,
                                 ),
@@ -1447,16 +1563,26 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       ),
                     );
 
-                    final isReal = await _verifyUniversityName();
+                    final verifyResult = await _verifyAcademicApplication();
 
                     if (mounted) {
                       Navigator.pop(context); // Pop the progress dialog
                     }
 
-                    if (!isReal) {
-                      setState(() => _fieldErrors[_instituteController] = 'Not recognized');
-                      _showError('Target University is not recognized in this country');
-                      return;
+                    if (verifyResult['isValid'] != true) {
+                      final bool countryMatch = verifyResult['countryMatch'] ?? true;
+                      final bool courseMatch = verifyResult['courseMatch'] ?? true;
+                      setState(() {
+                        if (!countryMatch) {
+                          _fieldErrors[_countryController] = 'Country mismatch';
+                          _fieldErrors[_instituteController] = 'Location error';
+                        }
+                        if (!courseMatch) {
+                          _fieldErrors[_courseController] = 'Course not offered';
+                        }
+                      });
+                      _showAiAcademicErrorDialog(verifyResult);
+                      return; // ⛔ BLOCK SUBMISSION & STEP ADVANCEMENT
                     }
                   }
 
