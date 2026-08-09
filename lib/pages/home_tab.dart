@@ -31,6 +31,7 @@ class HomeTabState extends State<HomeTab> {
   String? _userProfileImage;
   List<UniversityRecommendation> _aiRecommendations = [];
   List<UniversityRecommendation> _savedRecommendations = [];
+  bool _hasSearchedUniversityShortlist = false;
   String _activeRecommendationTab = 'All'; // 'All' or 'Saved'
   final AiLogicService _aiService = AiLogicService();
   final NotificationService _notificationService = NotificationService();
@@ -156,7 +157,22 @@ class HomeTabState extends State<HomeTab> {
     _loadSavedRecommendations(); // Load saved in parallel
     try {
       final prefs = await SharedPreferences.getInstance();
+      final bool hasSearched = prefs.getBool('has_searched_university_shortlist') ?? false;
+      final String? cachedRecs = prefs.getString('latest_ai_recommendations');
       final String? userId = prefs.getString('userId');
+
+      // Top recommendations should show on dashboard ONLY if user has searched shortlisting page
+      final bool userHasSearched = hasSearched || (cachedRecs != null && cachedRecs.isNotEmpty);
+
+      if (mounted) {
+        setState(() {
+          _hasSearchedUniversityShortlist = userHasSearched;
+        });
+      }
+
+      if (!userHasSearched) {
+        return; // User has not searched university shortlisting page yet -> keep hidden
+      }
 
       if (userId != null) {
         final backendRecs = await _aiService.getSavedAiRecommendations(userId);
@@ -171,7 +187,6 @@ class HomeTabState extends State<HomeTab> {
         }
       }
 
-      String? cachedRecs = prefs.getString('latest_ai_recommendations');
       if (cachedRecs != null && cachedRecs.isNotEmpty) {
         final List<dynamic> decoded = jsonDecode(cachedRecs);
         if (mounted) {
@@ -460,8 +475,8 @@ class HomeTabState extends State<HomeTab> {
                 _buildFeaturedBlogsSection(),
                 const SizedBox(height: 20),
 
-                // ── AI Recommendations (Hidden if user has applied for a loan) ──
-                if (!_hasAppliedForLoan) ...[
+                // ── AI Recommendations (Only shown after user searches on University Shortlisting page) ──
+                if (_hasSearchedUniversityShortlist && !_hasAppliedForLoan && (_aiRecommendations.isNotEmpty || _savedRecommendations.isNotEmpty)) ...[
                   _buildAiRecommendations(),
                   const SizedBox(height: 28),
                 ],

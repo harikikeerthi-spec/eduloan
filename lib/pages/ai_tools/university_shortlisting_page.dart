@@ -501,6 +501,7 @@ class _UniversityShortlistingPageState
             'latest_ai_recommendations',
             recommendationsJson,
           );
+          await prefs.setBool('has_searched_university_shortlist', true);
 
           final String chatJson = jsonEncode(
             _messages.map((m) => m.toJson()).toList(),
