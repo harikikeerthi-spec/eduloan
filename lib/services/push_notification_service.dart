@@ -57,7 +57,7 @@ class PushNotificationService {
       );
 
       await _localNotifications.initialize(
-        initSettings,
+        settings: initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           debugPrint('Local notification tapped: ${response.payload}');
         },
@@ -131,10 +131,10 @@ class PushNotificationService {
       );
 
       await _localNotifications.show(
-        id,
-        title,
-        body,
-        platformDetails,
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: platformDetails,
         payload: payload,
       );
     } catch (e) {
