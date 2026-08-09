@@ -20,10 +20,14 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   bool _navigated = false;
   bool _videoReady = false;
   bool _showFallback = false;
+  bool _isInCallMode = false;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<double> _scaleAnim;
+
+  static const MethodChannel _audioChannel =
+      MethodChannel('com.vidyaloan/audio_check');
 
   @override
   void initState() {
@@ -39,8 +43,19 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     _initializeAndPlay();
   }
 
+  /// Checks if the device is currently in a cellular call or VoIP meet (Google Meet, Zoom, WhatsApp)
+  Future<bool> _checkActiveCallOrMeet() async {
+    try {
+      final bool? inCall = await _audioChannel.invokeMethod<bool>('isInCallOrMeet');
+      return inCall ?? false;
+    } catch (e) {
+      debugPrint('VideoSplashScreen: Call check channel exception: $e');
+      return false;
+    }
+  }
+
   Future<void> _initializeAndPlay() async {
-    // Safety net — always navigate after 20 seconds max
+    // Safety net — max 20 seconds
     Future.delayed(const Duration(seconds: 20), () {
       if (mounted && !_navigated) {
         debugPrint('VideoSplashScreen: Safety timeout reached, navigating.');
@@ -48,11 +63,27 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       }
     });
 
+    // ── Check if user is in a phone call or Google Meet / Zoom / WhatsApp call ──
+    final bool isInCall = await _checkActiveCallOrMeet();
+    if (isInCall) {
+      debugPrint('VideoSplashScreen: Active phone call or Meet detected. Bypassing video splash.');
+      if (mounted && !_navigated) {
+        FlutterNativeSplash.remove();
+        setState(() {
+          _showFallback = true;
+          _isInCallMode = true;
+        });
+        _animController.forward();
+        Future.delayed(const Duration(milliseconds: 2500), () {
+          if (mounted && !_navigated) _navigateAway();
+        });
+      }
+      return;
+    }
+
     File? tempVideoFile;
     try {
-      // ─── Step 1: Copy asset bytes to a temp file ──────────────────────────
-      // VideoPlayerController.asset() silently fails on Android release builds.
-      // The file-based approach is 100% reliable on all real devices.
+      // ── Step 1: Copy asset bytes to a temp file ──────────────────────────
       final byteData = await rootBundle.load('assets/images/splash_video.mp4');
       final tempDir = await getTemporaryDirectory();
       tempVideoFile = File('${tempDir.path}/splash_video.mp4');
@@ -64,7 +95,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
       if (!mounted || _navigated) return;
 
-      // ─── Step 2: Initialize player from temp file ─────────────────────────
+      // ── Step 2: Initialize player from temp file ─────────────────────────
       final controller = VideoPlayerController.file(tempVideoFile);
       _controller = controller;
 
@@ -117,7 +148,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
         FlutterNativeSplash.remove();
         setState(() {
           _showFallback = true;
-          _videoReady = false; // hide video layer so fallback renders cleanly
+          _videoReady = false;
         });
         _animController.forward();
         Future.delayed(const Duration(milliseconds: 2500), () {
@@ -127,7 +158,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       return;
     }
 
-    // Navigate when video has finished
     final isFinished = ctrl.value.duration > Duration.zero &&
         ctrl.value.position >= ctrl.value.duration;
 
@@ -144,7 +174,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Check if user is already logged in (has a saved auth token AND userId)
       final String? authToken = prefs.getString('auth_token');
       final String? userId = prefs.getString('userId');
       final bool isLoggedIn =
@@ -154,10 +183,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       if (!mounted) return;
 
       if (isLoggedIn) {
-        // ✅ Persistent login — go straight to dashboard
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
-        // 🔐 No active session — navigate directly to login page
         Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
@@ -185,8 +212,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Video layer
-          if (_videoReady && ctrl != null && ctrl.value.isInitialized)
+          // Video layer (Only shown when not in call/meet)
+          if (_videoReady && ctrl != null && ctrl.value.isInitialized && !_isInCallMode)
             SizedBox.expand(
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -198,8 +225,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
               ),
             ),
 
-          // Fallback animated logo splash
-          if (_showFallback)
+          // Silent Animated Splash Screen (Shown when in call/meet or on fallback)
+          if (_showFallback || _isInCallMode)
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
