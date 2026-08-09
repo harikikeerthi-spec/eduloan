@@ -626,9 +626,8 @@ Return ONLY JSON:
   "countryMatch": true/false,
   "actualCountry": "Correct country if mismatched",
   "courseMatch": true/false,
-  "reason": "Clear error message if invalid"
 }`;
-        const aiResponse = await this.openRouterService.generateResponse([{ role: 'user', content: prompt }]);
+        const aiResponse = await this.openRouterService.chat(prompt);
         const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]);
