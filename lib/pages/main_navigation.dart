@@ -202,6 +202,11 @@ class MainNavigationState extends State<MainNavigation> {
   }
 }
 
+
+// ─── Highlighted Apply / Loans Icon ──────────────────────────────────────────
+// Shows a clean animated ring-ripple around the account_balance icon.
+// No dot. No mismatched aura. Just a smooth, premium pulse ring.
+
 class _HighlightedApplyIcon extends StatefulWidget {
   final bool isActive;
   const _HighlightedApplyIcon({required this.isActive});
@@ -212,35 +217,36 @@ class _HighlightedApplyIcon extends StatefulWidget {
 
 class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _animController;
-  late final Animation<double> _pulseAnimation;
-  late final Animation<double> _glowAnimation;
+  late final AnimationController _controller;
+  late final Animation<double> _ringScale;
+  late final Animation<double> _ringOpacity;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
 
-    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.18).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    // Ring expands outward from 0.6x to 1.8x and fades out
+    _ringScale = Tween<double>(begin: 0.6, end: 1.8).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
-
-    _glowAnimation = Tween<double>(begin: 0.25, end: 0.9).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    _ringOpacity = Tween<double>(begin: 0.7, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // When the notch is active (user tapped this tab), just show plain white icon
     if (widget.isActive) {
       return const Icon(
         Icons.account_balance_rounded,
@@ -249,74 +255,42 @@ class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
       );
     }
 
+    // Inactive state — show the animated ripple ring
     return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          clipBehavior: Clip.none,
-          children: [
-            // Soft Blinking Glowing Aura Behind Icon
-            Transform.scale(
-              scale: _pulseAnimation.value,
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF311B92).withValues(alpha: _glowAnimation.value * 0.3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF673AB7).withValues(alpha: _glowAnimation.value * 0.7),
-                      blurRadius: 10 * _pulseAnimation.value,
-                      spreadRadius: 2 * _pulseAnimation.value,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Icon with Deep Purple Circle Background
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF311B92), Color(0xFF512DA8)],
-                ),
-              ),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-
-            // Glowing Amber Sparkle Badge Dot
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Opacity(
-                opacity: _glowAnimation.value,
+      animation: _controller,
+      builder: (context, _) {
+        return SizedBox(
+          width: 40,
+          height: 40,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // ── Expanding ripple ring ──────────────────────────────────────
+              Transform.scale(
+                scale: _ringScale.value,
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF9800),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.2),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0xFFFF9800),
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ],
+                    border: Border.all(
+                      color: const Color(0xFFFFD700)   // gold ring
+                          .withValues(alpha: _ringOpacity.value),
+                      width: 2.2,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // ── Clean icon — NO extra background circle ────────────────────
+              const Icon(
+                Icons.account_balance_rounded,
+                color: Color(0xFF311B92),   // uses app primary, fits the bar
+                size: 24,
+              ),
+            ],
+          ),
         );
       },
     );
