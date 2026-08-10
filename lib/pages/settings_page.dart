@@ -504,7 +504,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Settings',
+                                LanguageService.tr('settings'),
                                 style: GoogleFonts.outfit(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -512,7 +512,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ),
                               ),
                               Text(
-                                'Manage preferences & account actions',
+                                LanguageService.tr('manage_preferences'),
                                 style: GoogleFonts.inter(
                                   fontSize: 11.5,
                                   color: const Color(0xFF64748B),
@@ -584,7 +584,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                       const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 14),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'Active',
+                                        LanguageService.tr('active'),
                                         style: GoogleFonts.inter(
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
@@ -601,7 +601,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           const SizedBox(height: 20),
 
                           // Section 1: Preferences
-                          _buildSectionTitle('APP PREFERENCES'),
+                          _buildSectionTitle(LanguageService.tr('app_preferences')),
                           const SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
@@ -621,8 +621,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                   icon: Icons.notifications_active_outlined,
                                   iconBgColor: const Color(0xFF311B92).withValues(alpha: 0.08),
                                   iconColor: const Color(0xFF311B92),
-                                  title: 'Push Notifications',
-                                  subtitle: 'Loan status updates & reminders',
+                                  title: LanguageService.tr('push_notifications'),
+                                  subtitle: LanguageService.tr('loan_status_updates'),
                                   trailing: Switch.adaptive(
                                     value: _pushNotifications,
                                     activeTrackColor: const Color(0xFF311B92),
@@ -634,7 +634,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   icon: Icons.language_rounded,
                                   iconBgColor: const Color(0xFF10B981).withValues(alpha: 0.08),
                                   iconColor: const Color(0xFF10B981),
-                                  title: 'App Language',
+                                  title: LanguageService.tr('app_language'),
                                   subtitle: _selectedLanguage,
                                   onTap: _showLanguageSelectionDialog,
                                 ),
@@ -645,7 +645,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           const SizedBox(height: 20),
 
                           // Section 2: Support & Info
-                          _buildSectionTitle('SUPPORT & LEGAL'),
+                          _buildSectionTitle(LanguageService.tr('support_legal')),
                           const SizedBox(height: 8),
                           Container(
                             decoration: BoxDecoration(
@@ -665,8 +665,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                    icon: Icons.help_outline_rounded,
                                    iconBgColor: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
                                    iconColor: const Color(0xFF8B5CF6),
-                                   title: 'Help Center & FAQ',
-                                   subtitle: '24/7 Support Portal • Coming Soon',
+                                   title: LanguageService.tr('help_center'),
+                                   subtitle: LanguageService.tr('support_coming_soon'),
                                    trailing: Container(
                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                      decoration: BoxDecoration(
@@ -675,7 +675,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                        border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.3)),
                                      ),
                                      child: Text(
-                                       '🔒 Coming Soon',
+                                       LanguageService.tr('coming_soon'),
                                        style: GoogleFonts.outfit(
                                          fontSize: 11,
                                          fontWeight: FontWeight.bold,
@@ -692,7 +692,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                              const SizedBox(width: 10),
                                              Expanded(
                                                child: Text(
-                                                 'Help Center & FAQ portal is coming soon in the next update!',
+                                                 LanguageService.tr('help_center_coming_soon'),
                                                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
                                                ),
                                              ),
@@ -710,8 +710,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                   icon: Icons.description_outlined,
                                   iconBgColor: const Color(0xFFEC4899).withValues(alpha: 0.08),
                                   iconColor: const Color(0xFFEC4899),
-                                  title: 'Terms & Privacy Policy',
-                                  subtitle: 'Legal guidelines and policies',
+                                  title: LanguageService.tr('terms_policy'),
+                                  subtitle: LanguageService.tr('legal_guidelines'),
                                   onTap: () {},
                                 ),
                                 const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),

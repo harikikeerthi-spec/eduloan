@@ -10,6 +10,7 @@ import 'digilocker_auth_page.dart';
 import '../services/digilocker_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/pdf_generator_service.dart';
+import '../services/language_service.dart';
 
 class MyLoansPage extends StatefulWidget {
   const MyLoansPage({super.key});
@@ -135,9 +136,9 @@ class _MyLoansPageState extends State<MyLoansPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Welcome back!',
-            style: TextStyle(
+          Text(
+            LanguageService.tr('welcome_back'),
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -268,9 +269,9 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       elevation: 2,
                     ),
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text(
-                      'Apply for Loan',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    label: Text(
+                      LanguageService.tr('apply_loan'),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -304,7 +305,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
       children: [
         Expanded(
           child: _buildStatCard(
-            'ACTIVE',
+            LanguageService.tr('active').toUpperCase(),
             _activeApplicationsCount.toString().padLeft(2, '0'),
             Icons.description,
             const Color(0xFF311B92),
@@ -406,9 +407,9 @@ class _MyLoansPageState extends State<MyLoansPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Application Progress',
-                  style: TextStyle(
+                Text(
+                  LanguageService.tr('application_progress'),
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.black,

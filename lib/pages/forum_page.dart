@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../services/ai_logic_service.dart';
 import '../widgets/mesh_background.dart';
 import 'direct_chat_detail_page.dart';
+import '../services/language_service.dart';
 
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
@@ -523,7 +524,7 @@ class _ForumPageState extends State<ForumPage> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Smart Groups',
+                      LanguageService.tr('smart_groups'),
                       style: GoogleFonts.outfit(
                         fontSize: 14,
                         fontWeight: _selectedMainTab == 1

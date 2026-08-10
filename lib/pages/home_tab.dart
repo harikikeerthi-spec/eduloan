@@ -16,6 +16,7 @@ import 'blog_detail_page.dart';
 import '../services/direct_chat_service.dart';
 import 'main_navigation.dart';
 import '../widgets/avatar_selection_dialog.dart';
+import '../services/language_service.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
@@ -387,7 +388,7 @@ class HomeTabState extends State<HomeTab> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Welcome to',
+                        LanguageService.tr('welcome_to'),
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.black.withValues(alpha: 0.6),
@@ -426,7 +427,7 @@ class HomeTabState extends State<HomeTab> {
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
                             _buildStatItem(
-                              'Active Loans',
+                              LanguageService.tr('active_loans'),
                               '${_activeLoans.length}',
                               Icons.account_balance,
                             ),
@@ -436,7 +437,7 @@ class HomeTabState extends State<HomeTab> {
                               color: Colors.grey.withValues(alpha: 0.2),
                             ),
                             _buildStatItem(
-                              'Total Amount',
+                              LanguageService.tr('total_amount'),
                               '₹${_activeLoans.fold<double>(0, (sum, loan) => sum + loan.amount).toStringAsFixed(0)}',
                               Icons.currency_rupee,
                             ),
@@ -495,10 +496,10 @@ class HomeTabState extends State<HomeTab> {
                             children: [
                               _buildSparkleIcon(isLeft: true),
                               const SizedBox(width: 8),
-                              const Text(
-                                'Our Lending Partners',
+                              Text(
+                                LanguageService.tr('lending_partners'),
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Color(0xFF2D3436),

@@ -9,6 +9,7 @@ import '../widgets/avatar_selection_dialog.dart';
 import 'refer_and_earn_page.dart';
 import 'package:flutter/services.dart';
 import 'settings_page.dart';
+import '../services/language_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -1023,7 +1024,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildActionTile(
                         icon: Icons.card_giftcard_rounded,
                         iconColor: const Color(0xFFEC4899),
-                        title: 'Refer & Earn',
+                        title: LanguageService.tr('refer_earn'),
                         subtitle: 'Share VidyaLoans & earn rewards',
                         badge: '🔒 Coming Soon',
                         isEnabled: true,
@@ -1040,7 +1041,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildActionTile(
                         icon: Icons.settings_outlined,
                         iconColor: const Color(0xFF6366F1),
-                        title: 'App Settings',
+                        title: LanguageService.tr('settings'),
                         subtitle: 'Notifications, account & security',
                         isEnabled: true,
                         onTap: () {
@@ -1056,7 +1057,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildActionTile(
                         icon: Icons.help_outline_rounded,
                         iconColor: const Color(0xFF14B8A6),
-                        title: 'Help & Support',
+                        title: LanguageService.tr('help_center'),
                         subtitle: 'FAQs, contact us & feedback',
                         isEnabled: true,
                         onTap: () {
