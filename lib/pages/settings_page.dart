@@ -7,6 +7,7 @@ import '../widgets/avatar_selection_dialog.dart';
 import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/language_service.dart';
+import 'legal_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -712,7 +713,14 @@ class _SettingsPageState extends State<SettingsPage> {
                                   iconColor: const Color(0xFFEC4899),
                                   title: LanguageService.tr('terms_policy'),
                                   subtitle: LanguageService.tr('legal_guidelines'),
-                                  onTap: () {},
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LegalPage(initialTab: 0),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
                                 _buildSettingItem(
