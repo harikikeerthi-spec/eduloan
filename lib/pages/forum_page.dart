@@ -54,13 +54,17 @@ class _ForumPageState extends State<ForumPage> {
   bool _isLoadingHubs = true;
 
   // ─── Interactive Poll Data State ───────────────────────────────────────────
+  // Polls expire 1 week after creation. Seed polls are pre-expired so the
+  // empty state is shown until users create real polls.
   final List<Map<String, dynamic>> _polls = [
     {
       'id': 'poll_1',
       'question': 'Which country are you targeting for Fall 2026 / Spring 2027?',
       'author': 'VidyaLoan Community',
       'totalVotes': 348,
-      'userVotedIndex': 0, // Default option 0 selected for demonstration
+      'userVotedIndex': 0,
+      // Backdated >7 days so this seed poll shows as expired
+      'createdAt': DateTime.now().subtract(const Duration(days: 10)),
       'options': [
         {'text': '🇺🇸 USA', 'votes': 215},
         {'text': '🇬🇧 UK & Ireland', 'votes': 62},
@@ -74,6 +78,7 @@ class _ForumPageState extends State<ForumPage> {
       'author': 'Finance Advisory',
       'totalVotes': 210,
       'userVotedIndex': -1,
+      'createdAt': DateTime.now().subtract(const Duration(days: 9)),
       'options': [
         {'text': '📄 Co-applicant income proof', 'votes': 98},
         {'text': '⏳ Bank sanction speed', 'votes': 64},
@@ -87,6 +92,7 @@ class _ForumPageState extends State<ForumPage> {
       'author': 'AI Student Lounge',
       'totalVotes': 175,
       'userVotedIndex': 1,
+      'createdAt': DateTime.now().subtract(const Duration(days: 8)),
       'options': [
         {'text': '📝 SOP Writer Tool', 'votes': 65},
         {'text': '🎯 Admit Predictor Tool', 'votes': 78},
@@ -96,7 +102,15 @@ class _ForumPageState extends State<ForumPage> {
     },
   ];
 
-
+  /// Returns polls that were created within the last 7 days (not expired).
+  List<Map<String, dynamic>> get _activePolls {
+    final now = DateTime.now();
+    return _polls.where((p) {
+      final createdAt = p['createdAt'];
+      if (createdAt == null) return true; // no date → keep it
+      return now.difference(createdAt as DateTime).inDays < 7;
+    }).toList();
+  }
 
   // ─── Announcements Data ────────────────────────────────────────────────────
   final List<Map<String, dynamic>> _announcements = [
@@ -1264,7 +1278,82 @@ class _ForumPageState extends State<ForumPage> {
 
         const SizedBox(height: 10),
 
-        ..._smartGroups.map((group) => _buildGroupChannelTile(group)),
+        // ── Empty state when no groups exist ─────────────────────────────
+        if (_smartGroups.isEmpty)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 8, bottom: 8),
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.07),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.groups_outlined,
+                    size: 40,
+                    color: Color(0xFF311B92),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No Groups Yet',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Be the first to create a student group!\nConnect with fellow aspirants around common goals.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: _showCreateGroupModal,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: Text(
+                    'Create First Group',
+                    style: GoogleFonts.outfit(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._smartGroups.map((group) => _buildGroupChannelTile(group)),
       ],
     );
   }
@@ -1797,10 +1886,90 @@ class _ForumPageState extends State<ForumPage> {
 
         const SizedBox(height: 12),
 
-        ...List.generate(
-          _polls.length,
-          (pollIndex) => _buildPollCard(pollIndex, _polls[pollIndex]),
-        ),
+        // ── Show active (non-expired) polls, or empty state ───────────────
+        Builder(builder: (context) {
+          final active = _activePolls;
+          if (active.isEmpty) {
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 4, bottom: 8),
+              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEC4899).withValues(alpha: 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.poll_outlined,
+                      size: 40,
+                      color: Color(0xFFEC4899),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Polls are Empty',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No active polls right now.\nPolls expire after 1 week — create one to get the community talking!',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF64748B),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: _showCreatePollModal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEC4899),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: Text(
+                      'Create a Poll',
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+          return Column(
+            children: List.generate(
+              active.length,
+              (i) => _buildPollCard(i, active[i]),
+            ),
+          );
+        }),
       ],
     );
   }
@@ -1924,6 +2093,7 @@ class _ForumPageState extends State<ForumPage> {
                       'author': 'Student Poll',
                       'totalVotes': 0,
                       'userVotedIndex': -1,
+                      'createdAt': DateTime.now(), // expiry = createdAt + 7 days
                       'options': opts,
                     };
 
