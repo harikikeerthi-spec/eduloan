@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:flutter/services.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/institute_selection_modal.dart';
+import '../widgets/rupee_amount_helper.dart';
 import '../data/institutes_data.dart';
 
 class EmiCalculatorPage extends StatefulWidget {
@@ -401,7 +403,10 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
     required String hint,
     required IconData icon,
     required TextEditingController controller,
+    bool isCurrency = false,
   }) {
+    final checkCurrency = isCurrency || icon == Icons.currency_rupee || label.contains('Amount') || label.contains('Income');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,7 +430,14 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
           ),
           child: TextField(
             controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: checkCurrency ? TextInputType.number : const TextInputType.numberWithOptions(decimal: true),
+            onChanged: (v) => setState(() {}),
+            inputFormatters: checkCurrency
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    IndianCurrencyFormatter(),
+                  ]
+                : null,
             style: const TextStyle(
               fontSize: 16,
               color: Colors.black, // Ensure text is black
@@ -445,6 +457,11 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
             ),
           ),
         ),
+        if (checkCurrency)
+          RupeeAmountHelperCard(
+            amountText: controller.text,
+            label: label.replaceAll(RegExp(r'[\(₹\)]'), '').trim(),
+          ),
       ],
     );
   }

@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/mesh_background.dart';
+import '../widgets/avatar_selection_dialog.dart';
 import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
+import '../services/language_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -15,6 +18,8 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   String _email = '';
   String _userName = '';
+  String? _profileImage;
+  String _selectedLanguage = 'English (IN)';
   bool _isLoading = false;
   bool _pushNotifications = true;
 
@@ -29,14 +34,38 @@ class _SettingsPageState extends State<SettingsPage> {
     final first = prefs.getString('user_firstName') ?? prefs.getString('user_name') ?? '';
     final last = prefs.getString('user_lastName') ?? prefs.getString('user_last_name') ?? '';
     final email = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
+    final profileImg = prefs.getString('user_profileImage');
+    final savedLang = prefs.getString('app_language') ?? 'English (IN)';
 
     setState(() {
       _email = email;
+      _profileImage = profileImg;
+      _selectedLanguage = savedLang;
       _userName = '$first $last'.trim();
       if (_userName.isEmpty) {
         _userName = email.contains('@') ? email.split('@')[0] : 'Student Account';
       }
     });
+
+    // Also fetch latest profile image from backend if email is available
+    if (email.isNotEmpty && email != 'student@vidhyaloan.com') {
+      try {
+        final profile = await AuthService.getUserDashboard(email);
+        if (profile['success'] == true && profile['user'] != null) {
+          final user = profile['user'];
+          if (user['profileImage'] != null) {
+            await prefs.setString('user_profileImage', user['profileImage']);
+            if (mounted) {
+              setState(() {
+                _profileImage = user['profileImage'];
+              });
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching profile in SettingsPage: $e');
+      }
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -238,6 +267,199 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  void _showLanguageSelectionDialog() {
+    final languages = [
+      {'name': 'English (IN)', 'native': 'English', 'code': 'en'},
+      {'name': 'Telugu', 'native': 'తెలుగు', 'code': 'te'},
+      {'name': 'Tamil', 'native': 'தமிழ்', 'code': 'ta'},
+      {'name': 'Kannada', 'native': 'ಕನ್ನಡ', 'code': 'kn'},
+      {'name': 'Malayalam', 'native': 'മലയാളം', 'code': 'ml'},
+      {'name': 'Hindi', 'native': 'हिंदी', 'code': 'hi'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.translate_rounded, color: Color(0xFF10B981), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Select App Language',
+                    style: GoogleFonts.outfit(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: languages.length,
+                  separatorBuilder: (ctx, index) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                  itemBuilder: (ctx, index) {
+                    final lang = languages[index];
+                    final displayName = '${lang['name']} (${lang['native']})';
+                    final isSelected = _selectedLanguage == displayName || (_selectedLanguage.contains(lang['name']!) && lang['name'] != 'English (IN)');
+
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      title: Text(
+                        lang['name']!,
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          color: isSelected ? const Color(0xFF311B92) : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      subtitle: Text(
+                        lang['native']!,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                      trailing: isSelected
+                          ? Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF311B92),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.check, color: Colors.white, size: 16),
+                            )
+                          : null,
+                      onTap: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(ctx);
+                        await LanguageService.setLanguageFromDisplayName(displayName);
+                        setState(() {
+                          _selectedLanguage = displayName;
+                        });
+                        navigator.pop();
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text('App language changed to $displayName'),
+                            backgroundColor: const Color(0xFF10B981),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProfileAvatarWidget(String initialLetter) {
+    if (_profileImage != null && _profileImage!.isNotEmpty) {
+      if (_profileImage!.startsWith('data:image/')) {
+        try {
+          final base64Str = _profileImage!.split(',').last;
+          final bytes = base64Decode(base64Str);
+          return Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF7C4DFF), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7C4DFF).withValues(alpha: 0.25),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.memory(
+                bytes,
+                width: 54,
+                height: 54,
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error decoding base64 image in SettingsPage: $e');
+        }
+      }
+
+      final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+        (a) => a['name'] == _profileImage,
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (avatarData.isNotEmpty && avatarData['icon'] != null) {
+        return Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: (avatarData['color'] as Color).withValues(alpha: 0.15),
+            border: Border.all(color: (avatarData['color'] as Color).withValues(alpha: 0.5), width: 2),
+          ),
+          child: Icon(
+            avatarData['icon'] as IconData,
+            size: 28,
+            color: avatarData['color'] as Color,
+          ),
+        );
+      }
+    }
+
+    return CircleAvatar(
+      radius: 27,
+      backgroundColor: const Color(0xFF311B92),
+      child: Text(
+        initialLetter,
+        style: GoogleFonts.outfit(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String initialLetter = _userName.isNotEmpty ? _userName[0].toUpperCase() : 'V';
@@ -282,7 +504,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Settings & Security',
+                                'Settings',
                                 style: GoogleFonts.outfit(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -324,18 +546,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: const Color(0xFF311B92),
-                                  child: Text(
-                                    initialLetter,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
+                                _buildProfileAvatarWidget(initialLetter),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
@@ -420,21 +631,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                 ),
                                 const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
                                 _buildSettingItem(
-                                  icon: Icons.shield_outlined,
-                                  iconBgColor: const Color(0xFF3B82F6).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFF3B82F6),
-                                  title: 'Privacy & Security',
-                                  subtitle: 'Data protection & masking rules',
-                                  onTap: () {},
-                                ),
-                                const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
-                                _buildSettingItem(
                                   icon: Icons.language_rounded,
                                   iconBgColor: const Color(0xFF10B981).withValues(alpha: 0.08),
                                   iconColor: const Color(0xFF10B981),
                                   title: 'App Language',
-                                  subtitle: 'English (US)',
-                                  onTap: () {},
+                                  subtitle: _selectedLanguage,
+                                  onTap: _showLanguageSelectionDialog,
                                 ),
                               ],
                             ),
@@ -459,14 +661,50 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             child: Column(
                               children: [
-                                _buildSettingItem(
-                                  icon: Icons.help_outline_rounded,
-                                  iconBgColor: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFF8B5CF6),
-                                  title: 'Help Center & FAQ',
-                                  subtitle: 'Get assistance from support team',
-                                  onTap: () {},
-                                ),
+                                 _buildSettingItem(
+                                   icon: Icons.help_outline_rounded,
+                                   iconBgColor: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+                                   iconColor: const Color(0xFF8B5CF6),
+                                   title: 'Help Center & FAQ',
+                                   subtitle: '24/7 Support Portal • Coming Soon',
+                                   trailing: Container(
+                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                     decoration: BoxDecoration(
+                                       color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                                       borderRadius: BorderRadius.circular(12),
+                                       border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.3)),
+                                     ),
+                                     child: Text(
+                                       '🔒 Coming Soon',
+                                       style: GoogleFonts.outfit(
+                                         fontSize: 11,
+                                         fontWeight: FontWeight.bold,
+                                         color: const Color(0xFFC2410C),
+                                       ),
+                                     ),
+                                   ),
+                                   onTap: () {
+                                     ScaffoldMessenger.of(context).showSnackBar(
+                                       SnackBar(
+                                         content: Row(
+                                           children: [
+                                             const Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+                                             const SizedBox(width: 10),
+                                             Expanded(
+                                               child: Text(
+                                                 'Help Center & FAQ portal is coming soon in the next update!',
+                                                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                         backgroundColor: const Color(0xFFF97316),
+                                         behavior: SnackBarBehavior.floating,
+                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                       ),
+                                     );
+                                   },
+                                 ),
                                 const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
                                 _buildSettingItem(
                                   icon: Icons.description_outlined,

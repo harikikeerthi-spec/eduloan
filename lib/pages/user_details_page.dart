@@ -92,9 +92,8 @@ class _UserDetailsPageState extends State<UserDetailsPage>
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime eighteenYearsAgo = now.subtract(
-      const Duration(days: 365 * 18),
-    );
+    final DateTime eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+    final DateTime fortyYearsAgo = DateTime(now.year - 40, now.month, now.day);
 
     DateTime initial = eighteenYearsAgo;
     if (_dobController.text.isNotEmpty) {
@@ -103,7 +102,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
         final d = int.tryParse(clean.substring(0, 2));
         final m = int.tryParse(clean.substring(2, 4));
         final y = int.tryParse(clean.substring(4, 8));
-        if (d != null && m != null && y != null && y >= 1900 && y <= now.year) {
+        if (d != null && m != null && y != null && y >= now.year - 40 && y <= now.year - 18) {
           try {
             initial = DateTime(y, m, d);
           } catch (_) {}
@@ -113,11 +112,11 @@ class _UserDetailsPageState extends State<UserDetailsPage>
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(eighteenYearsAgo) ? initial : eighteenYearsAgo,
-      firstDate: DateTime(1900),
-      lastDate: eighteenYearsAgo, // Prevent under 18 selection
+      initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
+      firstDate: fortyYearsAgo,
+      lastDate: eighteenYearsAgo, // Prevent under 18 or over 40 selection
       initialEntryMode: DatePickerEntryMode.calendar,
-      helpText: 'SELECT DATE OF BIRTH (MUST BE 18+)',
+      helpText: 'SELECT DATE OF BIRTH (ELIGIBLE: 18 - 40 YEARS)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -186,10 +185,10 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           (today.month == dob.month && today.day < dob.day)) {
         age--;
       }
-      if (age < 18) {
-        return 'Must be 18+ years old';
+      if (age < 18 || age > 40) {
+        return 'Age must be between 18 and 40 years';
       }
-      if (dob.year < 1920 || dob.isAfter(today)) {
+      if (dob.isAfter(today)) {
         return 'Please enter a valid date of birth';
       }
     } catch (e) {
@@ -423,70 +422,91 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               ),
                               const SizedBox(height: 16),
 
-                              // Date of Birth
+                              // Date of Birth (Locked in Edit Profile mode)
                               TextFormField(
                                 controller: _dobController,
+                                readOnly: widget.isEdit,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.allow(RegExp(r'[0-9\-]')),
                                   DateTextInputFormatter(),
                                 ],
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                                  color: widget.isEdit ? Colors.black45 : Colors.black,
                                 ),
                                 decoration: _getInputDecoration(
                                   'Date of Birth',
                                   Icons.calendar_today,
                                   hint: 'DD-MM-YYYY',
                                 ).copyWith(
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
-                                    onPressed: () => _selectDate(context),
-                                    tooltip: 'Pick date from calendar',
-                                  ),
+                                  fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
+                                  suffixIcon: widget.isEdit
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12.0),
+                                          child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
+                                        )
+                                      : IconButton(
+                                          icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
+                                          onPressed: () => _selectDate(context),
+                                          tooltip: 'Pick date from calendar',
+                                        ),
+                                  helperText: widget.isEdit ? 'Date of Birth is verified and locked after onboarding' : null,
+                                  helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
                                 ),
-                                validator: _validateDob,
+                                validator: widget.isEdit ? null : _validateDob,
                               ),
                               const SizedBox(height: 16),
 
-                              // Phone Number
+                              // Phone Number (Locked in Edit Profile mode)
                               TextFormField(
                                 controller: _phoneController,
-                                style: const TextStyle(
+                                readOnly: widget.isEdit,
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                                  color: widget.isEdit ? Colors.black45 : Colors.black,
                                 ),
                                 decoration: _getInputDecoration(
                                   'Mobile Number',
                                   Icons.phone_outlined,
                                   hint: 'XXXXXXXXXX',
                                 ).copyWith(
+                                  fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
                                   prefixText: '+91 ',
-                                  prefixStyle: const TextStyle(
+                                  prefixStyle: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.black,
+                                    color: widget.isEdit ? Colors.black45 : Colors.black,
                                   ),
+                                  suffixIcon: widget.isEdit
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12.0),
+                                          child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
+                                        )
+                                      : null,
+                                  helperText: widget.isEdit ? 'Mobile Number is verified and locked after onboarding' : null,
+                                  helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
                                 ),
                                 keyboardType: TextInputType.phone,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your mobile number';
-                                  }
-                                  if (value.length != 10) {
-                                    return 'Must be 10 digits';
-                                  }
-                                  if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
-                                    return 'Invalid Indian mobile number';
-                                  }
-                                  if (value.split('').toSet().length < 3) {
-                                    return 'Highly repetitive number not allowed';
-                                  }
-                                  return null;
-                                },
+                                validator: widget.isEdit
+                                    ? null
+                                    : (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter your mobile number';
+                                        }
+                                        if (value.length != 10) {
+                                          return 'Must be 10 digits';
+                                        }
+                                        if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                          return 'Invalid Indian mobile number';
+                                        }
+                                        if (value.split('').toSet().length < 3) {
+                                          return 'Highly repetitive number not allowed';
+                                        }
+                                        return null;
+                                      },
                               ),
                               const SizedBox(height: 32),
 

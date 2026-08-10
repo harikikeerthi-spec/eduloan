@@ -42,9 +42,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime eighteenYearsAgo = now.subtract(
-      const Duration(days: 365 * 18),
-    );
+    final DateTime eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+    final DateTime fortyYearsAgo = DateTime(now.year - 40, now.month, now.day);
 
     DateTime initial = eighteenYearsAgo;
     if (_dobController.text.isNotEmpty) {
@@ -53,7 +52,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         final d = int.tryParse(clean.substring(0, 2));
         final m = int.tryParse(clean.substring(2, 4));
         final y = int.tryParse(clean.substring(4, 8));
-        if (d != null && m != null && y != null && y >= 1900 && y <= now.year) {
+        if (d != null && m != null && y != null && y >= now.year - 40 && y <= now.year - 18) {
           try {
             initial = DateTime(y, m, d);
           } catch (_) {}
@@ -63,11 +62,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(eighteenYearsAgo) ? initial : eighteenYearsAgo,
-      firstDate: DateTime(1900),
+      initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
+      firstDate: fortyYearsAgo,
       lastDate: eighteenYearsAgo,
       initialEntryMode: DatePickerEntryMode.calendar,
-      helpText: 'SELECT DATE OF BIRTH (MUST BE 18+)',
+      helpText: 'SELECT DATE OF BIRTH (ELIGIBLE: 18 - 40 YEARS)',
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -138,10 +137,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           (today.month == dob.month && today.day < dob.day)) {
         age--;
       }
-      if (age < 18) {
-        return 'Must be 18+ years old';
+      if (age < 18 || age > 40) {
+        return 'Age must be between 18 and 40 years';
       }
-      if (dob.year < 1920 || dob.isAfter(today)) {
+      if (dob.isAfter(today)) {
         return 'Please enter a valid date of birth';
       }
     } catch (e) {

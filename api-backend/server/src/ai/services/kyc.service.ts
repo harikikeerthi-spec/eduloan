@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 // @ts-ignore
 import sharp from 'sharp';

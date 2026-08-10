@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/mesh_background.dart';
+import '../widgets/rupee_amount_helper.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
 import '../services/ai_logic_service.dart';
@@ -1378,6 +1379,15 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               controller: _coApplicantIncomeController,
               keyboardType: TextInputType.number,
               isRequired: true,
+              onChanged: (val) => setState(() {}),
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                IndianCurrencyFormatter(),
+              ],
+            ),
+            RupeeAmountHelperCard(
+              amountText: _coApplicantIncomeController.text,
+              label: 'Annual Income',
             ),
           ],
         );
@@ -1925,30 +1935,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   void _updateAmountInLakhsLabel(String val) {
-    final cleanStr = val.replaceAll(RegExp(r'[^0-9]'), '');
-    if (cleanStr.isEmpty) {
-      setState(() => _amountInLakhsLabel = '');
-      return;
-    }
-
-    final amount = double.tryParse(cleanStr) ?? 0;
-    if (amount >= 15000000) {
-      setState(() {
-        _amountInLakhsLabel = '₹1.5 Crore (150 Lakhs) • Maximum Limit Reached';
-      });
-    } else {
-      final lakhs = amount / 100000;
-      final crores = amount / 10000000;
-      if (crores >= 1.0) {
-        setState(() {
-          _amountInLakhsLabel = '₹${crores.toStringAsFixed(2)} Crore (${lakhs.toStringAsFixed(1)} Lakhs)';
-        });
-      } else {
-        setState(() {
-          _amountInLakhsLabel = '₹${lakhs.toStringAsFixed(1)} Lakhs';
-        });
-      }
-    }
+    setState(() {
+      _amountInLakhsLabel = getRupeeAmountHelperText(val, label: 'Amount');
+    });
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {

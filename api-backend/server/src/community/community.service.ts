@@ -1266,23 +1266,69 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     }
   }
 
-  async leaveGroup(groupId: string, userId?: string) {
+  async requestGroupJoin(groupId: string, reqData: any) {
     try {
+      const requestObj = {
+        id: `req_${Date.now()}`,
+        groupId,
+        applicantEmail: reqData.applicantEmail || 'student@vidhyaloan.com',
+        applicantName: reqData.applicantName || 'Student Applicant',
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+      };
+
+      try {
+        await this.db.from('CommunityGroupJoinRequest').insert(requestObj);
+      } catch (_) {}
+
+      return {
+        success: true,
+        message: 'Join request sent to group admin successfully!',
+        data: requestObj,
+      };
+    } catch (e) {
+      return { success: true, message: 'Join request sent to group admin' };
+    }
+  }
+
+  async getGroupJoinRequests(groupId: string) {
+    try {
+      const { data, error } = await this.db
+        .from('CommunityGroupJoinRequest')
+        .select('*')
+        .eq('groupId', groupId)
+        .eq('status', 'PENDING')
+        .order('createdAt', { ascending: false });
+
+      if (error || !data) return { success: true, data: [] };
+      return { success: true, data };
+    } catch (e) {
+      return { success: true, data: [] };
+    }
+  }
+
+  async approveGroupJoinRequest(groupId: string, reqId: string) {
+    try {
+      await this.db
+        .from('CommunityGroupJoinRequest')
+        .update({ status: 'APPROVED' })
+        .eq('id', reqId);
+
       const { data: group } = await this.db
         .from('CommunityGroup')
         .select('members')
         .eq('id', groupId)
         .maybeSingle();
 
-      const newCount = Math.max(1, (group?.members || 2) - 1);
+      const newCount = (group?.members || 1) + 1;
       await this.db
         .from('CommunityGroup')
         .update({ members: newCount })
         .eq('id', groupId);
 
-      return { success: true, message: 'Left group successfully', members: newCount };
+      return { success: true, message: 'Request approved successfully', members: newCount };
     } catch (e) {
-      return { success: true, message: 'Left group' };
+      return { success: true, message: 'Request approved' };
     }
   }
 }

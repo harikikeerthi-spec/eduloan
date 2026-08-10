@@ -84,46 +84,70 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
-                      // Animated Hero Badge
+                      // Animated Hero Badge with Lock Overlay
                       ScaleTransition(
                         scale: _scaleAnim,
-                        child: Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF311B92), Color(0xFF6200EA)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF311B92).withValues(alpha: 0.35),
-                                blurRadius: 30,
-                                spreadRadius: 5,
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF311B92), Color(0xFF6200EA)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF311B92).withValues(alpha: 0.35),
+                                    blurRadius: 30,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.card_giftcard_rounded,
-                            color: Colors.white,
-                            size: 54,
-                          ),
+                              child: const Icon(
+                                Icons.card_giftcard_rounded,
+                                color: Colors.white,
+                                size: 54,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF97316),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.2),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.lock_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
-                      // Coming Soon Pill Badge
+                      // Locked & Coming Soon Pill Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFF5821E), Color(0xFFFF9800)],
+                            colors: [Color(0xFFEA580C), Color(0xFFF97316)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFF5821E).withValues(alpha: 0.3),
+                              color: const Color(0xFFF97316).withValues(alpha: 0.35),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -132,13 +156,13 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 14),
-                            const SizedBox(width: 6),
+                            const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 16),
+                            const SizedBox(width: 8),
                             Text(
-                              'COMING SOON',
+                              'LOCKED • COMING SOON',
                               style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
                                 color: Colors.white,
                                 letterSpacing: 1.2,
                               ),
@@ -171,7 +195,48 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                                 height: 1.5,
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 20),
+                            // Locked Status Notice Box
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF7ED),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFFFEDD5)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFF97316).withValues(alpha: 0.08),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFC2410C), size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Refer & Earn program is currently locked. Stay tuned for early VIP launch access!',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFFC2410C),
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
                             // Feature Teaser Cards
                             _buildFeatureCard(
                               icon: Icons.currency_rupee_rounded,

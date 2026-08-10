@@ -401,9 +401,28 @@ export class UsersService {
     dateOfBirth: string,
     profileImage?: string,
   ) {
-    const dobDate = this.parseDate(dateOfBirth);
+    const existing = await this.findOne(email);
+    const parsedDob = dateOfBirth ? this.parseDate(dateOfBirth) : null;
+    const finalDob = (existing && existing.dateOfBirth) ? existing.dateOfBirth : parsedDob;
+    const finalPhone = (existing && existing.phoneNumber && String(existing.phoneNumber).trim() !== '') 
+      ? existing.phoneNumber 
+      : phoneNumber;
 
-    const updatePayload: any = { firstName, lastName, phoneNumber, dateOfBirth: dobDate };
+    if (finalDob) {
+      const dobDateObj = new Date(finalDob);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      let age = today.getFullYear() - dobDateObj.getFullYear();
+      const m = today.getMonth() - dobDateObj.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDateObj.getDate())) {
+        age--;
+      }
+      if (age < 18 || age > 40) {
+        throw new BadRequestException('Age eligibility is 18 to 40 years only. More than 40 or less than 18 are not eligible to register or login.');
+      }
+    }
+
+    const updatePayload: any = { firstName, lastName, phoneNumber: finalPhone, dateOfBirth: finalDob };
     if (profileImage !== undefined) {
       updatePayload.profileImage = profileImage;
     }

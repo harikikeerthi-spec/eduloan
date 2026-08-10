@@ -8,6 +8,7 @@ import 'profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import '../services/loan_service.dart';
+import '../services/language_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -134,74 +135,92 @@ class MainNavigationState extends State<MainNavigation> {
         },
         bottomBarItems: [
           // 0 - Dashboard
-          const BottomBarItem(
-            inActiveItem: Icon(
+          BottomBarItem(
+            inActiveItem: const Icon(
               Icons.dashboard_outlined,
               color: Color(0xFF9E9E9E),
               size: 24,
             ),
-            activeItem: Icon(
+            activeItem: const Icon(
               Icons.dashboard_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: 'Dashboard',
+            itemLabel: LanguageService.tr('dashboard'),
           ),
           // 1 - Community
-          const BottomBarItem(
-            inActiveItem: Icon(
+          BottomBarItem(
+            inActiveItem: const Icon(
               Icons.people_outline_rounded,
               color: Color(0xFF9E9E9E),
               size: 24,
             ),
-            activeItem: Icon(
+            activeItem: const Icon(
               Icons.people_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: 'Community',
+            itemLabel: LanguageService.tr('community'),
           ),
-          // 2 - Loans (Center notch active item)
+          // 2 - Loans (Center notch active item - MAIN FEATURE HIGHLIGHTED)
           BottomBarItem(
-            inActiveItem: const Icon(
-              Icons.account_balance_outlined,
-              color: Color(0xFF9E9E9E),
-              size: 24,
+            inActiveItem: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF311B92), Color(0xFF673AB7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.account_balance_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
             activeItem: const Icon(
               Icons.account_balance_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: _hasAppliedForLoan ? 'My Loans' : 'Apply',
+            itemLabel: _hasAppliedForLoan ? LanguageService.tr('my_loans') : LanguageService.tr('apply'),
           ),
           // 3 - Explore (AI Tools)
           BottomBarItem(
-            inActiveItem: Icon(
+            inActiveItem: const Icon(
               Icons.auto_awesome_outlined,
               color: Color(0xFF9E9E9E),
               size: 24,
             ),
-            activeItem: Icon(
+            activeItem: const Icon(
               Icons.auto_awesome_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: 'Explore',
+            itemLabel: LanguageService.tr('explore'),
           ),
           // 4 - Profile
           BottomBarItem(
-            inActiveItem: Icon(
+            inActiveItem: const Icon(
               Icons.person_outline_rounded,
               color: Color(0xFF9E9E9E),
               size: 24,
             ),
-            activeItem: Icon(
+            activeItem: const Icon(
               Icons.person_rounded,
               color: Colors.white,
               size: 26,
             ),
-            itemLabel: 'Profile',
+            itemLabel: LanguageService.tr('profile'),
           ),
         ],
       ),

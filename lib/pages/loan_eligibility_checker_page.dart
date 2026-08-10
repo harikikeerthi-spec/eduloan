@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/ai_logic_service.dart';
 import '../widgets/mesh_background.dart';
+import '../widgets/rupee_amount_helper.dart';
 
 class LoanEligibilityCheckerPage extends StatefulWidget {
   const LoanEligibilityCheckerPage({super.key});
@@ -265,7 +267,7 @@ class _LoanEligibilityCheckerPageState
                     validator: (v) {
                       if (v!.isEmpty) return 'Required';
                       final age = int.tryParse(v);
-                      if (age == null || age < 18 || age > 60) return '18-60';
+                      if (age == null || age < 18 || age > 40) return '18-40';
                       return null;
                     },
                   ),
@@ -369,6 +371,8 @@ class _LoanEligibilityCheckerPageState
     bool isNumber = false,
     String? Function(String?)? validator,
   }) {
+    final isAmountField = isNumber && (label.contains('Income') || label.contains('Loan') || label.contains('Amount') || label.contains('EMI') || label.contains('Fee') || label.contains('Salary'));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -384,6 +388,13 @@ class _LoanEligibilityCheckerPageState
           child: TextFormField(
             controller: controller,
             keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            onChanged: isAmountField ? (v) => setState(() {}) : null,
+            inputFormatters: isAmountField
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    IndianCurrencyFormatter(),
+                  ]
+                : null,
             decoration: const InputDecoration(
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(vertical: 12),
@@ -395,6 +406,11 @@ class _LoanEligibilityCheckerPageState
                 },
           ),
         ),
+        if (isAmountField)
+          RupeeAmountHelperCard(
+            amountText: controller.text,
+            label: label,
+          ),
       ],
     );
   }

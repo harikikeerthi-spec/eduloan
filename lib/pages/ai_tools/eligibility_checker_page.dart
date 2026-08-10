@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../widgets/mesh_background.dart';
+import '../../widgets/rupee_amount_helper.dart';
 import '../../services/ai_logic_service.dart';
 
 class EligibilityCheckerPage extends StatefulWidget {
@@ -417,6 +419,8 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     IconData icon,
     TextEditingController controller,
   ) {
+    final isAmountField = label.contains('Income') || label.contains('Loan') || label.contains('Amount') || label.contains('EMI') || label.contains('Fee') || label.contains('Salary');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -444,6 +448,13 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
           child: TextFormField(
             controller: controller,
             keyboardType: TextInputType.number,
+            onChanged: isAmountField ? (v) => setState(() {}) : null,
+            inputFormatters: isAmountField
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    IndianCurrencyFormatter(),
+                  ]
+                : null,
             validator: (v) => v!.isEmpty ? 'Required' : null,
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             decoration: InputDecoration(
@@ -457,6 +468,11 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
             ),
           ),
         ),
+        if (isAmountField)
+          RupeeAmountHelperCard(
+            amountText: controller.text,
+            label: label,
+          ),
       ],
     );
   }

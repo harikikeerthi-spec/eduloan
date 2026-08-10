@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
@@ -22,6 +23,21 @@ class _ForumPageState extends State<ForumPage> {
   List<ForumPost> _posts = [];
   bool _isLoading = true;
   String? _error;
+  Timer? _groupsPollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupsPollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _loadSmartGroups();
+    });
+  }
+
+  @override
+  void dispose() {
+    _groupsPollingTimer?.cancel();
+    super.dispose();
+  }
 
   int _selectedMainTab = 1; // Default to 1 (Smart Group Chat) as requested!
   int _smartSubTab = 0; // 0 = General Chat, 1 = Q&A, 2 = Polls, 3 = Announcements
@@ -1629,8 +1645,15 @@ class _ForumPageState extends State<ForumPage> {
                                           : 'school_rounded';
                               final colorHex = '#${selectedColor.toARGB32().toRadixString(16).substring(2)}';
 
+                              final prefs = await SharedPreferences.getInstance();
+                              final userEmail = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
+                              final fname = prefs.getString('user_firstName') ?? '';
+                              final lname = prefs.getString('user_lastName') ?? '';
+                              final userName = '$fname $lname'.trim().isEmpty ? 'Group Admin' : '$fname $lname'.trim();
+                              final newGroupId = 'group_${DateTime.now().millisecondsSinceEpoch}';
+
                               final newGroupData = {
-                                'id': 'group_${DateTime.now().millisecondsSinceEpoch}',
+                                'id': newGroupId,
                                 'title': title,
                                 'subtitle': sub.isEmpty ? 'Student discussion group' : sub,
                                 'members': 1,
@@ -1639,6 +1662,8 @@ class _ForumPageState extends State<ForumPage> {
                                 'colorHex': colorHex,
                                 'badge': selectedBadge,
                                 'lastMsg': 'Group channel created just now!',
+                                'adminEmail': userEmail,
+                                'adminName': userName,
                               };
 
                               await _communityService.createGroup(newGroupData);
@@ -1649,7 +1674,7 @@ class _ForumPageState extends State<ForumPage> {
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('AI Verified & Group Saved to Database! 🎉'),
+                                    content: Text('Group Created Successfully! 🎉'),
                                     backgroundColor: Color(0xFF10B981),
                                   ),
                                 );
@@ -2298,12 +2323,68 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   List<Map<String, dynamic>> _messages = [];
   bool _isLoadingMessages = true;
   bool _isJoined = false;
+  String _membershipStatus = 'NONE';
+  List<Map<String, dynamic>> _pendingRequests = [];
   String _mySenderName = 'You';
+  Timer? _chatPollingTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserAndMessages();
+    _chatPollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted) _pollNewMessages();
+    });
+  }
+
+  Future<void> _pollNewMessages() async {
+    final groupId = widget.group['id'] as String;
+    final msgs = await CommunityService().getGroupMessages(groupId);
+    if (!mounted) return;
+    final parsed = msgs.map((m) {
+      final sender = m['sender'] ?? 'Student';
+      final colorHex = m['colorHex'] ?? '#311B92';
+      Color color;
+      try {
+        color = Color(int.parse('FF${colorHex.toString().replaceAll('#', '')}', radix: 16));
+      } catch (_) {
+        color = const Color(0xFF311B92);
+      }
+      final isMe = sender == _mySenderName || m['isMe'] == true;
+      return {
+        'id': m['id'],
+        'sender': sender,
+        'avatarLetter': m['avatarLetter'] ?? (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
+        'color': color,
+        'role': m['role'] ?? 'Student',
+        'text': m['text'] ?? '',
+        'time': m['time'] ?? 'Just now',
+        'isMe': isMe,
+      };
+    }).toList();
+
+    if (parsed.length != _messages.length) {
+      setState(() {
+        _messages = parsed;
+      });
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _chatPollingTimer?.cancel();
+    _msgController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserAndMessages() async {
@@ -2318,12 +2399,20 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     } catch (_) {}
 
     final groupId = widget.group['id'] as String;
-    final isJoined = await CommunityService().isGroupJoined(groupId);
+    final adminEmail = widget.group['adminEmail'] as String?;
+    final status = await CommunityService().getGroupMembershipStatus(groupId, adminEmail);
+    final isJoined = (status == 'ADMIN' || status == 'APPROVED');
     final msgs = await CommunityService().getGroupMessages(groupId);
+    List<Map<String, dynamic>> pendingReqs = [];
+    if (status == 'ADMIN') {
+      pendingReqs = await CommunityService().getPendingJoinRequests(groupId);
+    }
 
     if (mounted) {
       setState(() {
+        _membershipStatus = status;
         _isJoined = isJoined;
+        _pendingRequests = pendingReqs;
         _messages = msgs.map((m) {
           final sender = m['sender'] ?? 'Student';
           final colorHex = m['colorHex'] ?? '#311B92';
@@ -2357,28 +2446,157 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     }
   }
 
-  void _joinGroup() async {
+  void _requestJoinGroup() async {
     final groupId = widget.group['id'] as String;
-    await CommunityService().joinGroup(groupId);
+    final title = widget.group['title'] as String? ?? 'Group';
+    final adminEmail = widget.group['adminEmail'] as String?;
+
+    await CommunityService().requestGroupJoin(
+      groupId: groupId,
+      groupTitle: title,
+      adminEmail: adminEmail,
+    );
+
     if (mounted) {
       setState(() {
-        _isJoined = true;
-        widget.group['members'] = (widget.group['members'] ?? 1) + 1;
+        _membershipStatus = 'PENDING';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Successfully joined ${widget.group['title']}! 🎉'),
+          content: const Row(
+            children: [
+              Icon(Icons.send_rounded, color: Colors.white, size: 18),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '📩 Join request sent to Group Admin! Admin will receive mobile & in-app notifications.',
+                ),
+              ),
+            ],
+          ),
           backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 4),
         ),
       );
     }
   }
 
-  @override
-  void dispose() {
-    _msgController.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void _showAdminPendingRequestsModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF311B92), size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Group Admin: Join Requests',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Review and approve students who requested to join your group channel.',
+                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 16),
+                if (_pendingRequests.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No pending join requests right now.',
+                        style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _pendingRequests.length,
+                      separatorBuilder: (ctx, i) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                      itemBuilder: (ctx, index) {
+                        final req = _pendingRequests[index];
+                        final name = req['applicantName'] ?? 'Student Applicant';
+                        final email = req['applicantEmail'] ?? '';
+
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                          leading: CircleAvatar(
+                            backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF311B92)),
+                            ),
+                          ),
+                          title: Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                          subtitle: Text(email, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600])),
+                          trailing: ElevatedButton.icon(
+                            onPressed: () async {
+                              final groupId = widget.group['id'] as String;
+                              await CommunityService().approveGroupJoinRequest(
+                                groupId: groupId,
+                                requestId: req['id'] ?? '',
+                                applicantEmail: email,
+                                groupTitle: widget.group['title'] ?? 'Group',
+                              );
+                              setModalState(() {
+                                _pendingRequests.removeAt(index);
+                              });
+                              setState(() {
+                                widget.group['members'] = (widget.group['members'] ?? 1) + 1;
+                              });
+                            },
+                            icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                            label: const Text('Approve'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF10B981),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _sendMessage() async {
@@ -2499,6 +2717,34 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                     ],
                   ),
                 ),
+                if (_membershipStatus == 'ADMIN') ...[
+                  GestureDetector(
+                    onTap: _showAdminPendingRequestsModal,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.mark_email_unread_rounded, size: 14, color: Color(0xFFDC2626)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Requests (${_pendingRequests.length})',
+                            style: GoogleFonts.outfit(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded, color: Colors.grey),
@@ -2669,38 +2915,77 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Join this group channel to send messages and participate in discussions.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 12.5,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _joinGroup,
-                      icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
-                      label: Text(
-                        'Join ${widget.group['title']}',
-                        style: GoogleFonts.outfit(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                    if (_membershipStatus == 'PENDING') ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF97316).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.3)),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF311B92),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.hourglass_top_rounded, color: Color(0xFFC2410C), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Join Request Pending Approval',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFC2410C),
+                                    ),
+                                  ),
+                                  Text(
+                                    'Your join request has been sent to the group admin. You will receive mobile & app notifications when approved.',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11.5,
+                                      color: const Color(0xFF7C2D12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                        elevation: 2,
                       ),
-                    ),
+                    ] else ...[
+                      Text(
+                        'Ask permission from the group admin to join and participate in this group.',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _requestJoinGroup,
+                        icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                        label: Text(
+                          '📩 Request to Join Group',
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF311B92),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

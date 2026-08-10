@@ -29,11 +29,13 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'services/push_notification_service.dart';
+import 'services/language_service.dart';
 
 void main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await PushNotificationService.initialize();
+  await LanguageService.init();
   
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
@@ -52,8 +54,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Vidyaloan',
+    return ValueListenableBuilder<String>(
+      valueListenable: LanguageService.activeLanguageNotifier,
+      builder: (context, activeLang, child) {
+        return MaterialApp(
+          title: 'Vidyaloan',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -136,6 +141,8 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationsPage(),
         '/direct-chats': (context) => const DirectChatsPage(),
         '/blogs': (context) => const BlogsPage(),
+      },
+    );
       },
     );
   }

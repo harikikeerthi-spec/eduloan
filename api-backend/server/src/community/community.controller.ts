@@ -1063,9 +1063,19 @@ export class CommunityController {
         return this.communityService.joinGroup(groupId, body?.userId);
     }
 
-    @Post('groups/:groupId/leave')
-    async leaveGroup(@Param('groupId') groupId: string, @Body() body: any) {
-        return this.communityService.leaveGroup(groupId, body?.userId);
+    @Post('groups/:groupId/join-request')
+    async requestGroupJoin(@Param('groupId') groupId: string, @Body() body: any) {
+        return this.communityService.requestGroupJoin(groupId, body);
+    }
+
+    @Get('groups/:groupId/join-requests')
+    async getGroupJoinRequests(@Param('groupId') groupId: string) {
+        return this.communityService.getGroupJoinRequests(groupId);
+    }
+
+    @Post('groups/:groupId/approve-request')
+    async approveGroupJoinRequest(@Param('groupId') groupId: string, @Body() body: any) {
+        return this.communityService.approveGroupJoinRequest(groupId, body?.requestId);
     }
 }
 

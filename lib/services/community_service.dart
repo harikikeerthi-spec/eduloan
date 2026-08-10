@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/community.dart';
 import 'api_config.dart';
 import 'auth_service.dart';
+import 'notification_service.dart';
 
 class CommunityService {
   /// Helper to get common headers including auth token
@@ -360,11 +361,13 @@ class CommunityService {
         'id': group['id'],
         'title': group['title'],
         'subtitle': group['subtitle'],
-        'members': group['members'],
-        'online': group['online'],
-        'badge': group['badge'],
-        'lastMsg': group['lastMsg'],
-        'time': group['time'],
+        'members': group['members'] ?? 1,
+        'online': group['online'] ?? 1,
+        'badge': group['badge'] ?? 'General',
+        'iconName': group['iconName'] ?? 'school_rounded',
+        'colorHex': group['colorHex'] ?? '#311B92',
+        'lastMsg': group['lastMsg'] ?? 'Group channel created just now!',
+        'time': group['time'] ?? 'Just now',
       };
       currentRaw.insert(0, json.encode(groupData));
       await prefs.setStringList('custom_smart_groups', currentRaw);
@@ -445,22 +448,51 @@ class CommunityService {
 
   // ==================== REAL COMMUNITY GROUPS & MESSAGES API ====================
 
-  /// Get all real group channels from backend database
+  /// Get all real group channels from backend database & local custom storage
   Future<List<Map<String, dynamic>>> getGroups() async {
+    final List<Map<String, dynamic>> result = [];
+    final Set<String> existingIds = {};
+
+    // 1. Read custom groups created locally
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentRaw = prefs.getStringList('custom_smart_groups') ?? [];
+      for (var str in currentRaw) {
+        try {
+          final Map<String, dynamic> decoded = Map<String, dynamic>.from(json.decode(str) as Map);
+          if (decoded['id'] != null && !existingIds.contains(decoded['id'])) {
+            existingIds.add(decoded['id']);
+            result.add(decoded);
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error reading local custom groups: $e');
+    }
+
+    // 2. Fetch groups from backend database
     try {
       final response = await _getRequest('/community/groups');
       if (response['success'] == true && response['data'] != null) {
         final List raw = response['data'];
-        return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        for (var e in raw) {
+          final Map<String, dynamic> g = Map<String, dynamic>.from(e as Map);
+          if (g['id'] != null && !existingIds.contains(g['id'])) {
+            existingIds.add(g['id']);
+            result.add(g);
+          }
+        }
       }
     } catch (e) {
       debugPrint('Error getting groups from backend: $e');
     }
-    return [];
+
+    return result;
   }
 
-  /// Create real group channel in backend database
+  /// Create real group channel in backend database and local custom storage
   Future<Map<String, dynamic>?> createGroup(Map<String, dynamic> groupData) async {
+    await saveCustomGroup(groupData);
     try {
       final response = await _postRequest('/community/groups', groupData);
       if (response['success'] == true && response['data'] != null) {
@@ -469,7 +501,7 @@ class CommunityService {
     } catch (e) {
       debugPrint('Error creating group in backend: $e');
     }
-    return null;
+    return groupData;
   }
 
   /// Get real group messages from backend database
@@ -535,14 +567,146 @@ class CommunityService {
     }
   }
 
-  /// Check if user has joined a group channel
-  Future<bool> isGroupJoined(String groupId) async {
+  /// Check group membership status: 'ADMIN', 'APPROVED', 'PENDING', or 'NONE'
+  Future<String> getGroupMembershipStatus(String groupId, String? adminEmail) async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final myEmail = prefs.getString('user_email') ?? '';
+      
+      // Admin check
+      if (adminEmail != null && adminEmail.isNotEmpty && myEmail == adminEmail) {
+        return 'ADMIN';
+      }
+
+      final adminGroups = prefs.getStringList('admin_group_ids') ?? [];
+      if (adminGroups.contains(groupId)) {
+        return 'ADMIN';
+      }
+
       final joined = prefs.getStringList('joined_group_ids') ?? [];
-      return joined.contains(groupId);
+      if (joined.contains(groupId)) {
+        return 'APPROVED';
+      }
+
+      final pending = prefs.getStringList('pending_join_request_ids') ?? [];
+      if (pending.contains(groupId)) {
+        return 'PENDING';
+      }
     } catch (e) {
-      return false;
+      debugPrint('Error getting group membership status: $e');
+    }
+    return 'NONE';
+  }
+
+  /// Request to join a group -> Sends push & in-app notifications to Group Admin
+  Future<bool> requestGroupJoin({
+    required String groupId,
+    required String groupTitle,
+    String? adminEmail,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fname = prefs.getString('user_firstName') ?? '';
+      final lname = prefs.getString('user_lastName') ?? '';
+      final applicantName = '$fname $lname'.trim().isEmpty ? 'Student Applicant' : '$fname $lname'.trim();
+      final applicantEmail = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
+
+      // 1. Store local pending status
+      final pending = prefs.getStringList('pending_join_request_ids') ?? [];
+      if (!pending.contains(groupId)) {
+        pending.add(groupId);
+        await prefs.setStringList('pending_join_request_ids', pending);
+      }
+
+      // 2. Persist request to admin's pending requests queue
+      final adminReqKey = 'admin_pending_requests_$groupId';
+      final currentAdminReqs = prefs.getStringList(adminReqKey) ?? [];
+      final reqObj = {
+        'id': 'req_${DateTime.now().millisecondsSinceEpoch}',
+        'groupId': groupId,
+        'groupTitle': groupTitle,
+        'applicantName': applicantName,
+        'applicantEmail': applicantEmail,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+      currentAdminReqs.add(json.encode(reqObj));
+      await prefs.setStringList(adminReqKey, currentAdminReqs);
+
+      // 3. Post to backend
+      await _postRequest('/community/groups/$groupId/join-request', reqObj);
+
+      // 4. Trigger In-App Notification & Heads-up Mobile Push Notification for Group Admin!
+      await NotificationService.pushNotification(
+        title: '📌 New Group Join Request',
+        message: '$applicantName has requested to join your group "$groupTitle". Tap to review & approve.',
+        type: 'GROUP_JOIN_REQUEST',
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('Error requesting group join: $e');
+      return true;
+    }
+  }
+
+  /// Get pending requests for admin
+  Future<List<Map<String, dynamic>>> getPendingJoinRequests(String groupId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final adminReqKey = 'admin_pending_requests_$groupId';
+      final currentAdminReqs = prefs.getStringList(adminReqKey) ?? [];
+      return currentAdminReqs
+          .map((str) => Map<String, dynamic>.from(json.decode(str) as Map))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Admin approves a join request -> Notifies applicant & grants group access
+  Future<bool> approveGroupJoinRequest({
+    required String groupId,
+    required String requestId,
+    required String applicantEmail,
+    required String groupTitle,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final adminReqKey = 'admin_pending_requests_$groupId';
+      final currentAdminReqs = prefs.getStringList(adminReqKey) ?? [];
+      currentAdminReqs.removeWhere((str) {
+        try {
+          final map = json.decode(str) as Map;
+          return map['id'] == requestId || map['applicantEmail'] == applicantEmail;
+        } catch (_) {
+          return false;
+        }
+      });
+      await prefs.setStringList(adminReqKey, currentAdminReqs);
+
+      // Add to joined groups for the user
+      final joined = prefs.getStringList('joined_group_ids') ?? [];
+      if (!joined.contains(groupId)) {
+        joined.add(groupId);
+        await prefs.setStringList('joined_group_ids', joined);
+      }
+
+      await _postRequest('/community/groups/$groupId/approve-request', {
+        'requestId': requestId,
+        'applicantEmail': applicantEmail,
+      });
+
+      // Send confirmation notification to applicant
+      await NotificationService.pushNotification(
+        title: '🎉 Group Request Approved!',
+        message: 'Group Admin approved your request to join "$groupTitle". Welcome to the group channel!',
+        type: 'GROUP_JOIN_APPROVED',
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('Error approving group join request: $e');
+      return true;
     }
   }
 }

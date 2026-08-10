@@ -142,15 +142,10 @@ export class AuthService {
           return { success: false, message: 'Date of birth cannot be in the future' };
         }
 
-        // Check if person is at least 18 years old
+        // Check if person is between 18 and 40 years old
         const age = Math.floor((today.getTime() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-        if (age < 18) {
-          return { success: false, message: 'You must be at least 18 years old to register' };
-        }
-
-        // Check if date is reasonable (not more than 120 years ago)
-        if (age > 120) {
-          return { success: false, message: 'Please enter a valid date of birth' };
+        if (age < 18 || age > 40) {
+          return { success: false, message: 'Age eligibility is 18 to 40 years only. Applicants under 18 or over 40 are not eligible to register or login.' };
         }
       }
     }
@@ -369,6 +364,23 @@ export class AuthService {
           dateOfBirth: user.dateOfBirth,
           createdAt: new Date().toISOString()
         });
+      }
+
+      // Enforce 18-40 age restriction on existing user login
+      if (user && user.dateOfBirth) {
+        const dobDate = new Date(user.dateOfBirth);
+        if (!isNaN(dobDate.getTime())) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          let age = today.getFullYear() - dobDate.getFullYear();
+          const m = today.getMonth() - dobDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) {
+            age--;
+          }
+          if (age < 18 || age > 40) {
+            throw new BadRequestException('Access denied: App eligibility is strictly restricted to individuals aged 18 to 40 years only.');
+          }
+        }
       }
 
       // Check if user has complete details

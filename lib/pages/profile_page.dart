@@ -159,6 +159,265 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  void _viewProfilePhoto() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: const Color(0xFF7C4DFF).withValues(alpha: 0.6),
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF7C4DFF).withValues(alpha: 0.35),
+                      blurRadius: 35,
+                      spreadRadius: 5,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.account_circle_rounded, color: Color(0xFF7C4DFF), size: 24),
+                            const SizedBox(width: 8),
+                            Text(
+                              _name.isNotEmpty ? _name : 'Profile Photo',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 24),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            minScale: 0.8,
+                            maxScale: 4.0,
+                            child: Center(
+                              child: _buildEnlargedProfilePhoto(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => Navigator.pop(ctx),
+                            icon: const Icon(Icons.close, size: 18),
+                            label: const Text('Close'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                              side: const BorderSide(color: Colors.white24),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _changeAvatar();
+                            },
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                            label: const Text('Change Photo'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF7C4DFF),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEnlargedProfilePhoto() {
+    if (_profileImage != null && _profileImage!.startsWith('data:image/')) {
+      try {
+        final base64Str = _profileImage!.split(',').last;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+        );
+      } catch (e) {
+        debugPrint('Error decoding base64 image: $e');
+      }
+    }
+
+    final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+      (a) => a['name'] == _profileImage,
+      orElse: () => AvatarSelectionDialog.avatars[0],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(40),
+      color: (avatarData['color'] as Color).withValues(alpha: 0.15),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            avatarData['icon'],
+            size: 140,
+            color: avatarData['color'],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            avatarData['label'] ?? 'Avatar',
+            style: GoogleFonts.outfit(
+              color: Colors.white70,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showProfilePhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F172A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Profile Photo',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.visibility_rounded, color: Color(0xFF7C4DFF)),
+                ),
+                title: Text(
+                  'View Profile Photo',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'View full size photo with zoom',
+                  style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _viewProfilePhoto();
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.photo_camera_rounded, color: Color(0xFF00E676)),
+                ),
+                title: Text(
+                  'Change Profile Photo',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'Upload a new picture or choose avatar',
+                  style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _changeAvatar();
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _handleError([String? message]) {
     if (mounted) {
       setState(() {
@@ -391,113 +650,147 @@ class _ProfilePageState extends State<ProfilePage> {
                               const SizedBox(height: 18),
 
                               // Avatar with glowing neon rings
-                              Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 96,
-                                    height: 96,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: const LinearGradient(
-                                        colors: [
-                                          Color(0xFF7C4DFF),
-                                          Color(0xFF00E676),
-                                        ],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.45),
-                                          blurRadius: 22,
-                                          spreadRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(3.5),
-                                      child: Container(
-                                        decoration: const BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Color(0xFF0F172A),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(48),
-                                          child: Builder(
-                                            builder: (context) {
-                                              if (_profileImage != null) {
-                                                if (_profileImage!.startsWith('data:image/')) {
-                                                  try {
-                                                    final base64Str = _profileImage!.split(',').last;
-                                                    final bytes = base64Decode(base64Str);
-                                                    return Image.memory(
-                                                      bytes,
-                                                      width: 96,
-                                                      height: 96,
-                                                      fit: BoxFit.cover,
-                                                    );
-                                                  } catch (e) {
-                                                    debugPrint('Error decoding base64 image: $e');
-                                                  }
-                                                }
-
-                                                final avatarData = AvatarSelectionDialog.avatars.firstWhere(
-                                                  (a) => a['name'] == _profileImage,
-                                                  orElse: () => AvatarSelectionDialog.avatars[0],
-                                                );
-                                                return Center(
-                                                  child: Icon(
-                                                    avatarData['icon'],
-                                                    size: 48,
-                                                    color: avatarData['color'],
-                                                  ),
-                                                );
-                                              }
-
-                                              return const Center(
-                                                child: Icon(
-                                                  Icons.person_rounded,
-                                                  size: 50,
-                                                  color: Color(0xFFB39DDB),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: GestureDetector(
-                                      onTap: _changeAvatar,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
-                                          ),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(color: Colors.white, width: 2),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.35),
-                                              blurRadius: 10,
-                                            ),
+                              GestureDetector(
+                                onTap: _showProfilePhotoOptions,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      width: 96,
+                                      height: 96,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF7C4DFF),
+                                            Color(0xFF00E676),
                                           ],
                                         ),
-                                        child: const Icon(
-                                          Icons.camera_alt_rounded,
-                                          size: 15,
-                                          color: Colors.white,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF7C4DFF).withValues(alpha: 0.45),
+                                            blurRadius: 22,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(3.5),
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Color(0xFF0F172A),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(48),
+                                            child: Builder(
+                                              builder: (context) {
+                                                if (_profileImage != null) {
+                                                  if (_profileImage!.startsWith('data:image/')) {
+                                                    try {
+                                                      final base64Str = _profileImage!.split(',').last;
+                                                      final bytes = base64Decode(base64Str);
+                                                      return Image.memory(
+                                                        bytes,
+                                                        width: 96,
+                                                        height: 96,
+                                                        fit: BoxFit.cover,
+                                                      );
+                                                    } catch (e) {
+                                                      debugPrint('Error decoding base64 image: $e');
+                                                    }
+                                                  }
+
+                                                  final avatarData = AvatarSelectionDialog.avatars.firstWhere(
+                                                    (a) => a['name'] == _profileImage,
+                                                    orElse: () => AvatarSelectionDialog.avatars[0],
+                                                  );
+                                                  return Center(
+                                                    child: Icon(
+                                                      avatarData['icon'],
+                                                      size: 48,
+                                                      color: avatarData['color'],
+                                                    ),
+                                                  );
+                                                }
+
+                                                return const Center(
+                                                  child: Icon(
+                                                    Icons.person_rounded,
+                                                    size: 50,
+                                                    color: Color(0xFFB39DDB),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: _showProfilePhotoOptions,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
+                                            ),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 2),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.35),
+                                                blurRadius: 10,
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(
+                                            Icons.camera_alt_rounded,
+                                            size: 15,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 8),
+
+                              // View Photo Action Button
+                              InkWell(
+                                onTap: _viewProfilePhoto,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.visibility_rounded, size: 14, color: Color(0xFFB39DDB)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'View Photo',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFFB39DDB),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
 
                               // Name
                               Text(
@@ -732,7 +1025,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         iconColor: const Color(0xFFEC4899),
                         title: 'Refer & Earn',
                         subtitle: 'Share VidyaLoans & earn rewards',
-                        badge: 'Coming Soon',
+                        badge: '🔒 Coming Soon',
                         isEnabled: true,
                         onTap: () {
                           Navigator.push(
