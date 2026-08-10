@@ -1,4 +1,4 @@
-﻿
+
 import { Injectable } from '@nestjs/common';
 // @ts-ignore
 import sharp from 'sharp';
@@ -10,8 +10,6 @@ import {
 } from '../utils/ocr-fields.util';
 import { PanDocumentValidation, validatePanExtraction } from '../utils/pan-validation.util';
 import { OpenRouterService } from './openrouter.service';
-// @ts-ignore
-import * as pdfParse from 'pdf-parse';
 
 export interface AadhaarStructuredAddress {
     house_details?: string;
@@ -55,28 +53,6 @@ export interface KycExtractionResult {
     ocr_issues?: string[];
     raw_text_summary?: string;
     error?: string;
-}
-
-export function getFriendlyDocLabel(type: string): string {
-    const t = String(type || '').toLowerCase();
-    if (t.includes('pan')) return 'PAN Card';
-    if (t.includes('aadhar') || t.includes('aadhaar')) return 'Aadhar Card';
-    if (t.includes('passport')) return 'Passport Copy';
-    if (t.includes('10th') || t.includes('ssc') || t.includes('marksheet_10')) return '10th Marksheet';
-    if (t.includes('12th') || t.includes('hsc') || t.includes('intermediate') || t.includes('marksheet_12')) return '12th Marksheet';
-    if (t.includes('degree') || t.includes('ug') || t.includes('undergrad') || t.includes('marksheet_ug')) return 'Degree Marksheet';
-    if (t.includes('pg') || t.includes('postgrad') || t.includes('master') || t.includes('marksheet_pg')) return 'Postgraduate Marksheet';
-    if (t.includes('test_score')) return 'Test Score Card';
-    if (t.includes('offer_letter')) return 'Offer Letter';
-    if (t.includes('salary_slip')) return 'Salary Slip';
-    if (t.includes('bank_statement_salary')) return 'Salary Bank Statement';
-    if (t.includes('form16_itr')) return 'Form 16 / ITR';
-    if (t.includes('electricity_bill')) return 'Electricity Bill';
-    if (t.includes('itr_computation')) return 'ITR with Computation';
-    if (t.includes('balance_sheet')) return 'Balance Sheet & P&L';
-    if (t.includes('business_proof')) return 'Business Registration Proof';
-    if (t.includes('bank_statement_business')) return 'Business Bank Statement';
-    return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 @Injectable()
@@ -143,14 +119,9 @@ export class KycService {
             console.log(`[KycService] Document format ${mimetype} is not directly supported by AI Vision. Utilizing robust fallback.`);
 
             let text = '';
-            if (mimetype.startsWith('text/') ||
-    mimetype.includes('json') ||
-    mimetype.includes('xml')) {
-    text = buffer.toString('utf-8');
-} else if (isPdf) {
-    const pdf = await (pdfParse as any)(buffer);
-    text = pdf.text || '';
-}
+            if (mimetype.startsWith('text/') || mimetype.includes('json') || mimetype.includes('xml')) {
+                text = buffer.toString('utf-8');
+            }
             const dynamicData = canonicalizeOcrFields(
                 this.extractDynamicFieldsFromText(text, docType),
                 docType,
@@ -193,22 +164,18 @@ export class KycService {
                 console.warn(`[KycService] Fallback validation warning: Uploaded document failed local keyword pattern verification for type: ${docType}`);
             }
 
-// Extract dynamic fields from local OCR/PDF
-let text = '';
+            // Extract dynamic fields from local Tesseract text dynamically!
+            let text = '';
+            try {
+                if (isImage) {
+                    text = await this.fallbackOcr(buffer);
+                } else if (isPdf) {
+                    text = buffer.toString('utf-8');
+                }
+            } catch (ocrErr: any) {
+                console.warn('[KycService] Fallback OCR extraction failed:', ocrErr.message);
+            }
 
-try {
-    if (isImage) {
-        text = await this.fallbackOcr(buffer);
-    } else if (isPdf) {
-        const pdf = await (pdfParse as any)(buffer);
-        text = pdf.text || '';
-    }
-} catch (ocrErr: any) {
-    console.warn(
-        '[KycService] Fallback OCR extraction failed:',
-        ocrErr.message,
-    );
-}            
             const rawDynamic = this.extractDynamicFieldsFromText(text, docType);
             const dynamicData = canonicalizeOcrFields(
                 {
@@ -276,52 +243,13 @@ try {
             if (isImage) {
                 text = await this.fallbackOcr(buffer);
             } else if (isPdf) {
-                const pdf = await (pdfParse as any)(buffer);
-                text = pdf.text || '';
+                text = buffer.toString('utf-8');
             }
         } catch (e: any) {
             console.warn('[KycService] Local keyword extraction failed:', e.message);
         }
 
         const clean = text.toLowerCase();
-        
-        console.log("========== KYC DEBUG ==========");
-        console.log("Doc Type:", docType);
-        console.log("Normalized Type:", normalizedType);
-        console.log("OCR Length:", clean.length);
-        console.log("OCR Preview:", clean.substring(0, 500));
-        console.log("===============================");
-   
-
-
-
-        // Strict mismatch checks for academic documents vs identity documents
-        const hasAadhaarKeywords = clean.includes('unique identification') || clean.includes('aadhaar') || clean.includes('uidai') || /\b\d{4}\s?\d{4}\s?\d{4}\b/.test(clean);
-        const hasPassportKeywords = clean.includes('passport') || clean.includes('p<ind') || clean.includes('mrz');
-        const hasPanKeywords = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
-
-        if (isAcademicDoc) {
-            if (hasPanKeywords || hasAadhaarKeywords || hasPassportKeywords) {
-                const detected = hasPanKeywords ? 'PAN Card' : (hasAadhaarKeywords ? 'Aadhar Card' : 'Passport Copy');
-                const expected = getFriendlyDocLabel(docType);
-                return {
-                    is_valid: false,
-                    error: `Uploaded wrong document (uploaded ${detected} instead of ${expected})`
-                };
-            }
-        }
-
-        if (isIdentityDoc) {
-            const hasMarksheetKeywords = clean.includes('marks') || clean.includes('grade') || clean.includes('cbse') || clean.includes('roll no') || clean.includes('marksheet');
-            if (hasMarksheetKeywords) {
-                const expected = getFriendlyDocLabel(docType);
-                return {
-                    is_valid: false,
-                    error: `Uploaded wrong document (uploaded Marksheet instead of ${expected})`
-                };
-            }
-        }
-
         let matches = false;
         let expectedLabel = '';
 
@@ -464,10 +392,10 @@ try {
             - Copy values exactly as printed. Do NOT guess, invent, or duplicate values.
             - Return each concept ONCE with the exact field names specified below.
             - Do NOT output duplicate aliases (e.g. use "dob" only, never both "dob" and "date_of_birth").
-            - Do NOT output both a string address and a structured address object ΓÇö use one format only.
+            - Do NOT output both a string address and a structured address object — use one format only.
             - If a field is missing or unreadable, omit it or use null. Never use placeholder names like "Resident Name".
             
-            ΓÜá∩╕Å  DOCUMENT TYPE VERIFICATION (CRITICAL):
+            ⚠️  DOCUMENT TYPE VERIFICATION (CRITICAL):
             - You MUST verify if the uploaded document matches the expected type: ${docType.toUpperCase()}
             - BEFORE extracting any data, FIRST check for markers of DIFFERENT document types
             - If you detect markers of a DIFFERENT document type, you MUST:
@@ -499,7 +427,7 @@ try {
             aadhaar: `
                 EXPECTED DOCUMENT TYPE: AADHAAR CARD (India's unique identity document issued by UIDAI)
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT" keyword anywhere
                 - "P<" or "MRZ" (Machine Readable Zone - Passport marker)
                 - "REPUBLIC OF INDIA" in header with "PASSPORT" 
@@ -517,7 +445,7 @@ try {
                 - "GOVT. OF INDIA" + "MINISTRY OF ELECTRONICS AND INFORMATION TECHNOLOGY"
                 - Aadhaar-specific layout with name, DOB, gender, address sections
 
-                extracted_data fields (use exactly these keys ΓÇö dob and gender are REQUIRED):
+                extracted_data fields (use exactly these keys — dob and gender are REQUIRED):
                 - full_name: ONLY the person's name printed on the card in the NAME field (e.g. "RAJESH KUMAR"). Do NOT include titles, prefixes, or labels. Extract ONLY the name text after the "Name:" label. Single name is okay.
                 - aadhaar_number: all 12 digits if visible, or masked XXXX XXXX 1234 if only last 4 shown
                 - dob: date of birth exactly as printed (DD/MM/YYYY). If only "Year of Birth" is shown, use YYYY-01-01 format.
@@ -527,7 +455,7 @@ try {
                   { "house_details", "area", "landmark", "mandal", "city", "district", "state", "pincode" }
                 - pin_code: 6-digit pincode (from address if not separate)
 
-                document_validation (advisory booleans ΓÇö do not fail is_valid solely because VID is absent):
+                document_validation (advisory booleans — do not fail is_valid solely because VID is absent):
                 { "aadhaar_logo_present", "govt_of_india_branding_present", "uidai_text_present",
                   "aadhaar_number_format_valid", "vid_present", "photo_present", "dob_and_gender_fields_present" }
 
@@ -536,7 +464,7 @@ try {
             pan: `
                 EXPECTED DOCUMENT TYPE: PAN CARD (Permanent Account Number card issued by Income Tax Department)
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT" keyword anywhere
                 - "P<" or "MRZ" (Machine Readable Zone - Passport marker)
                 - "UNIQUE IDENTIFICATION" or "AADHAAR" or "UIDAI"
@@ -562,7 +490,7 @@ try {
                 - government: e.g. "Govt. of India"
                 - signature_present, photo_present, qr_code_present: booleans for visible card features
 
-                document_validation (set booleans from visible card ΓÇö report false only when clearly absent):
+                document_validation (set booleans from visible card — report false only when clearly absent):
                 { "income_tax_department_heading_present", "govt_of_india_branding_present",
                   "pan_number_format_valid", "photo_present", "signature_present",
                   "qr_code_present", "dob_field_present" }
@@ -573,7 +501,7 @@ try {
             passport: `
                 EXPECTED DOCUMENT TYPE: PASSPORT (Travel document issued by Passport Office)
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "AADHAAR" or "UNIQUE IDENTIFICATION" or "UIDAI"
                 - "INCOME TAX" or "PERMANENT ACCOUNT" or "PAN CARD"
                 - "12-digit" Aadhaar number pattern without passport markers
@@ -596,7 +524,7 @@ try {
                 - date_of_issue (DD/MM/YYYY)
                 - date_of_expiry (DD/MM/YYYY)
                 - issue_country: country where passport was issued (e.g. "India", not the city)
-                - place_of_issue: city/passport office only (e.g. "HYDERABAD") ΓÇö not the country
+                - place_of_issue: city/passport office only (e.g. "HYDERABAD") — not the country
                 - birth_city: city from Place of Birth
                 - birth_country: country from Place of Birth (e.g. "India")
                 - place_of_birth: full Place of Birth line if shown (e.g. "HYDERABAD, TELANGANA")
@@ -608,7 +536,7 @@ try {
             marksheet_10: `
                 EXPECTED DOCUMENT TYPE: GRADE 10 / SSC MARKSHEET/CERTIFICATE
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT", "AADHAAR", "UNIQUE IDENTIFICATION", "PAN CARD", "INCOME TAX"
                 - Document that is NOT an academic marksheet/certificate
                 
@@ -649,7 +577,7 @@ try {
             marksheet_12: `
                 EXPECTED DOCUMENT TYPE: GRADE 12 / INTERMEDIATE / HSC MARKSHEET/CERTIFICATE
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT", "AADHAAR", "UNIQUE IDENTIFICATION", "PAN CARD", "INCOME TAX"
                 - Document that is NOT an academic marksheet/certificate
                 
@@ -690,7 +618,7 @@ try {
             marksheet_ug: `
                 EXPECTED DOCUMENT TYPE: UNDERGRADUATE DEGREE / MARKSHEET / TRANSCRIPT
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT", "AADHAAR", "UNIQUE IDENTIFICATION", "PAN CARD", "INCOME TAX"
                 - Document that is NOT an academic degree/marksheet/transcript
                 
@@ -729,7 +657,7 @@ try {
             marksheet_pg: `
                 EXPECTED DOCUMENT TYPE: POSTGRADUATE DEGREE / MARKSHEET / TRANSCRIPT
 
-                ΓÜá∩╕Å  REJECT IMMEDIATELY IF YOU DETECT:
+                ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "PASSPORT", "AADHAAR", "UNIQUE IDENTIFICATION", "PAN CARD", "INCOME TAX"
                 - Document that is NOT an academic postgraduate degree/marksheet/transcript
                 
@@ -826,9 +754,7 @@ try {
             // Check for fraud_reason indicating wrong document type
             if (parsed.fraud_reason === 'WRONG_DOCUMENT_TYPE_UPLOADED') {
                 isValid = false;
-                const expectedLabel = getFriendlyDocLabel(docType);
-                const detectedLabel = getFriendlyDocLabel(parsed.document_type || 'unknown');
-                validationError = `Uploaded wrong document (uploaded ${detectedLabel} instead of ${expectedLabel})`;
+                validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but the uploaded document appears to be a ${String(parsed.document_type || 'different document').toUpperCase()}. Please upload the correct document.`;
             } else {
                 // Strict document type validation check
                 const expectedNorm = this.normalizeDocTypeForComparison(docType);
@@ -836,9 +762,7 @@ try {
 
                 if (expectedNorm !== detectedNorm) {
                     isValid = false;
-                    const expectedLabel = getFriendlyDocLabel(docType);
-                    const detectedLabel = getFriendlyDocLabel(parsed.document_type || 'unknown');
-                    validationError = `Uploaded wrong document (uploaded ${detectedLabel} instead of ${expectedLabel})`;
+                    validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but detected a ${String(parsed.document_type || 'different document type').toUpperCase()}. Please upload the correct document.`;
                 } else {
                     if (isAadhaar) {
                         const aadhaarValidation = this.validateAadhaarDocument(parsed, extracted);
@@ -981,17 +905,17 @@ try {
             if (dobMatch) {
                 data.dob = dobMatch[0];
             } else {
-                const yobMatch = clean.match(/(?:year\s*of\s*birth|yob|αñ£αñ¿αÑìαñ«\s*αñ╡αñ░αÑìαñ╖)[:\s]*((?:19|20)\d{2})/i)
+                const yobMatch = clean.match(/(?:year\s*of\s*birth|yob|जन्म\s*वर्ष)[:\s]*((?:19|20)\d{2})/i)
                     || clean.match(/\b((?:19|20)\d{2})\b/);
                 if (yobMatch) {
                     data.dob = `${yobMatch[1]}-01-01`;
                 }
             }
 
-            // Find Gender (M/F, Male/Female ΓÇö check female before male)
-            if (/\bfemale\b/i.test(clean) || /\bαñ«αñ╣αñ┐αñ▓αñ╛\b/.test(clean)) {
+            // Find Gender (M/F, Male/Female — check female before male)
+            if (/\bfemale\b/i.test(clean) || /\bमहिला\b/.test(clean)) {
                 data.gender = 'female';
-            } else if (/\bmale\b/i.test(clean) || /\bαñ¬αÑüαñ░αÑüαñ╖\b/.test(clean)) {
+            } else if (/\bmale\b/i.test(clean) || /\bपुरुष\b/.test(clean)) {
                 data.gender = 'male';
             } else if (/\b[Ff]\b/.test(clean) && !/\b[Mm]\b/.test(clean.split(/\n/)[0] || '')) {
                 data.gender = 'female';
@@ -999,7 +923,7 @@ try {
                 data.gender = 'male';
             }
 
-            // Find Name ΓÇö "Name:" / "αñ¿αñ╛αñ«" label (supports ALL CAPS and Indic script)
+            // Find Name — "Name:" / "नाम" label (supports ALL CAPS and Indic script)
             let foundName = extractNameFromLabeledOcrText(clean) || '';
 
             if (!foundName) {
@@ -1007,7 +931,7 @@ try {
                     'government', 'india', 'unique', 'identification', 'authority', 'uidai',
                     'enrollment', 'help', 'yojana', 'address', 'father', 'husband', 'mother',
                     'download', 'card', 'generation', 'issued', 'valid', 'year', 'birth',
-                    'resident', 'dob', 'gender', 'sex', 'male', 'female', 'aadhaar', 'αñåαñºαñ╛αñ░',
+                    'resident', 'dob', 'gender', 'sex', 'male', 'female', 'aadhaar', 'आधार',
                     'your', 'aadhar', 'vid', 'mobile', 'email', 'www', 'uidai.gov',
                 ];
 
@@ -1019,7 +943,7 @@ try {
                         const minLength = line.length >= 2;
                         const maxLength = line.length <= 60;
                         const notSkipped = !skipKeywords.some((kw) => lower.includes(kw));
-                        const notLabelOnly = !/^(name|αñ¿αñ╛αñ«)\s*:?\s*$/iu.test(line.trim());
+                        const notLabelOnly = !/^(name|नाम)\s*:?\s*$/iu.test(line.trim());
                         return hasLetters && noLongDigitRun && minLength && maxLength && notSkipped && notLabelOnly;
                     })
                     .sort((a, b) => {
@@ -1037,8 +961,8 @@ try {
                 data.full_name = foundName.replace(/\s+/g, ' ').trim();
             }
 
-            // Find Address (starts with "address", "αñ¬αññαñ╛", "C/O", "S/O", "D/O", "W/O" and ends near pin code or next keywords)
-            const addressKeywords = ['address', 'αñ¬αññαñ╛', 'c/o', 's/o', 'd/o', 'w/o'];
+            // Find Address (starts with "address", "पता", "C/O", "S/O", "D/O", "W/O" and ends near pin code or next keywords)
+            const addressKeywords = ['address', 'पता', 'c/o', 's/o', 'd/o', 'w/o'];
             let addressStartIdx = -1;
             let matchedKeyword = '';
 
@@ -1211,7 +1135,7 @@ try {
                         && !lower.includes('passport') && !lower.includes('republic')
                         && !lower.includes('india') && !lower.includes('birth')
                         && !lower.includes('issue') && !lower.includes('expir')
-                        && !/^(name|αñ¿αñ╛αñ«)\s*:?\s*$/i.test(line.trim())
+                        && !/^(name|नाम)\s*:?\s*$/i.test(line.trim())
                         && !lower.includes('mrz');
                 });
                 if (nameLine) data.full_name = nameLine.replace(/\s+/g, ' ').trim();
@@ -1219,7 +1143,7 @@ try {
 
             const pinMatch = clean.match(/\b\d{6}\b/);
             if (pinMatch) {
-                const addrBlock = clean.match(/(?:address|αñ¬αññαñ╛)[:\s]*([^\n]{15,200})/i);
+                const addrBlock = clean.match(/(?:address|पता)[:\s]*([^\n]{15,200})/i);
                 if (addrBlock) {
                     data.address = addrBlock[1].trim().replace(/\s+/g, ' ');
                 }
