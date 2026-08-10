@@ -162,36 +162,10 @@ class MainNavigationState extends State<MainNavigation> {
             ),
             itemLabel: LanguageService.tr('community'),
           ),
-          // 2 - Loans (Center notch active item - MAIN FEATURE HIGHLIGHTED)
+          // 2 - Loans (Center notch active item - BEAUTIFULLY HIGHLIGHTED & PULSING)
           BottomBarItem(
-            inActiveItem: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF311B92), Color(0xFF673AB7)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF311B92).withValues(alpha: 0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.account_balance_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            activeItem: const Icon(
-              Icons.account_balance_rounded,
-              color: Colors.white,
-              size: 26,
-            ),
+            inActiveItem: const _HighlightedApplyIcon(isActive: false),
+            activeItem: const _HighlightedApplyIcon(isActive: true),
             itemLabel: _hasAppliedForLoan ? LanguageService.tr('my_loans') : LanguageService.tr('apply'),
           ),
           // 3 - Explore (AI Tools)
@@ -224,6 +198,127 @@ class MainNavigationState extends State<MainNavigation> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HighlightedApplyIcon extends StatefulWidget {
+  final bool isActive;
+  const _HighlightedApplyIcon({required this.isActive});
+
+  @override
+  State<_HighlightedApplyIcon> createState() => _HighlightedApplyIconState();
+}
+
+class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _pulseAnimation;
+  late final Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.18).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    );
+
+    _glowAnimation = Tween<double>(begin: 0.25, end: 0.9).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isActive) {
+      return const Icon(
+        Icons.account_balance_rounded,
+        color: Colors.white,
+        size: 26,
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: _animController,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Soft Blinking Glowing Aura Behind Icon
+            Transform.scale(
+              scale: _pulseAnimation.value,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF311B92).withValues(alpha: _glowAnimation.value * 0.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF673AB7).withValues(alpha: _glowAnimation.value * 0.7),
+                      blurRadius: 10 * _pulseAnimation.value,
+                      spreadRadius: 2 * _pulseAnimation.value,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Icon with Deep Purple Circle Background
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Color(0xFF311B92), Color(0xFF512DA8)],
+                ),
+              ),
+              child: const Icon(
+                Icons.account_balance_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+
+            // Glowing Amber Sparkle Badge Dot
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Opacity(
+                opacity: _glowAnimation.value,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.2),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0xFFFF9800),
+                        blurRadius: 5,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
