@@ -1220,6 +1220,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               icon: Icons.person_outline,
               controller: _firstNameController,
               isRequired: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+              ],
             ),
             const SizedBox(height: 12),
             _buildTextInput(
@@ -1227,6 +1230,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               icon: Icons.person_outline,
               controller: _lastNameController,
               isRequired: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+              ],
             ),
             const SizedBox(height: 12),
             _buildTextInput(
@@ -1347,6 +1353,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               icon: Icons.person_outline,
               controller: _coApplicantNameController,
               isRequired: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+              ],
             ),
             const SizedBox(height: 12),
             _buildTextInput(

@@ -288,6 +288,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               controller: _firstNameController,
                               hint: 'John',
                               icon: Icons.person_outline,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                              ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Required';
@@ -307,6 +310,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               controller: _lastNameController,
                               hint: 'Doe',
                               icon: Icons.person_outline,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                              ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Required';
@@ -433,6 +439,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     required String hint,
     required IconData icon,
     TextInputType inputType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return Container(
@@ -443,6 +450,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       child: TextFormField(
         controller: controller,
         keyboardType: inputType,
+        inputFormatters: inputFormatters,
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: inputType == TextInputType.phone ? 'XXXXXXXXXX' : hint,

@@ -369,6 +369,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               // First Name
                               TextFormField(
                                 controller: _firstNameController,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                ],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -397,6 +400,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               // Last Name
                               TextFormField(
                                 controller: _lastNameController,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                ],
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,

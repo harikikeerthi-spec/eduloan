@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -891,6 +892,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                   'First Name',
                   _firstNameController,
                   Icons.person_outline,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -899,6 +903,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                   'Last Name',
                   _lastNameController,
                   Icons.person_outline,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                  ],
                 ),
               ),
             ],
@@ -929,8 +936,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
   Widget _buildEditField(
     String label,
     TextEditingController controller,
-    IconData icon,
-  ) {
+    IconData icon, {
+    List<TextInputFormatter>? inputFormatters,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -945,6 +953,7 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          inputFormatters: inputFormatters,
           decoration: InputDecoration(
             prefixIcon: Icon(icon, size: 20, color: const Color(0xFF6200EE)),
             filled: true,
