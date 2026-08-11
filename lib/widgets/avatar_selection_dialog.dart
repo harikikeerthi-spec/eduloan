@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'image_crop_dialog.dart';
 
 class AvatarSelectionDialog extends StatefulWidget {
   final String? currentAvatar;
@@ -31,18 +32,29 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 70,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 90,
       );
 
       if (image != null && mounted) {
         final bytes = await image.readAsBytes();
         if (mounted) {
-          final base64String = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-          Navigator.pop(context, base64String);
+          // Launch interactive crop dialog
+          final croppedBase64 = await Navigator.push<String>(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ImageCropDialog(imageBytes: bytes),
+            ),
+          );
+
+          if (croppedBase64 != null && mounted) {
+            Navigator.pop(context, croppedBase64);
+            return;
+          }
         }
-      } else if (mounted) {
+      }
+      if (mounted) {
         setState(() => _isPicking = false);
       }
     } catch (e) {
@@ -55,8 +67,31 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
     }
   }
 
+  Future<void> _cropCurrentPhoto() async {
+    if (widget.currentAvatar == null || !widget.currentAvatar!.startsWith('data:image/')) return;
+    try {
+      final base64Str = widget.currentAvatar!.split(',').last;
+      final bytes = base64Decode(base64Str);
+      final croppedBase64 = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ImageCropDialog(imageBytes: bytes),
+        ),
+      );
+
+      if (croppedBase64 != null && mounted) {
+        Navigator.pop(context, croppedBase64);
+      }
+    } catch (e) {
+      debugPrint('Error re-cropping photo: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool hasCustomPhoto = widget.currentAvatar != null &&
+        widget.currentAvatar!.startsWith('data:image/');
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -76,7 +111,7 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
           ),
           const SizedBox(height: 24),
           const Text(
-            'Choose Your Avatar',
+            'Choose Your Profile Photo',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -85,19 +120,43 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Select an icon or upload your own photo',
+            'Upload a photo, crop it to fit, or choose an avatar',
             style: TextStyle(
               fontSize: 14,
               color: Colors.black.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(height: 24),
-          
+
+          // Re-crop option if user has custom photo
+          if (hasCustomPhoto) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _cropCurrentPhoto,
+                icon: const Icon(Icons.crop_rounded, color: Colors.white),
+                label: const Text(
+                  'Crop / Adjust Current Photo ✂️',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Custom Photo Buttons
           if (_isPicking)
             const Padding(
               padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
+              child: CircularProgressIndicator(color: Color(0xFF311B92)),
             )
           else
             Row(
@@ -131,11 +190,11 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
                 ),
               ],
             ),
-          
+
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
-          
+
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -171,3 +230,4 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
     );
   }
 }
+
