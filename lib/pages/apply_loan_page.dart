@@ -773,48 +773,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     } else if (step == 1) {
-      if (_fatherNameController.text.length < 3) {
-        setState(() => _fieldErrors[_fatherNameController] = 'Required');
-        _showError('Father\'s name is required (min 3 chars)');
-        return false;
-      }
-      String fPhone = _fatherPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (fPhone.length != 10) {
-        setState(() => _fieldErrors[_fatherPhoneController] = 'Enter 10 digits');
-        _showError('Father\'s phone number must be 10 digits');
-        return false;
-      }
-      if (!RegExp(r'^[6-9]').hasMatch(fPhone)) {
-        setState(() => _fieldErrors[_fatherPhoneController] = 'Must start with 6-9');
-        _showError('Enter a valid Indian mobile number for father');
-        return false;
-      }
-      if (fPhone.split('').toSet().length < 3) {
-        setState(() => _fieldErrors[_fatherPhoneController] = 'Invalid pattern');
-        _showError('Father\'s phone number cannot be highly repetitive');
-        return false;
-      }
-      if (_motherNameController.text.length < 3) {
-        setState(() => _fieldErrors[_motherNameController] = 'Required');
-        _showError('Mother\'s name is required (min 3 chars)');
-        return false;
-      }
-      String mPhone = _motherPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (mPhone.length != 10) {
-        setState(() => _fieldErrors[_motherPhoneController] = 'Enter 10 digits');
-        _showError('Mother\'s phone number must be 10 digits');
-        return false;
-      }
-      if (!RegExp(r'^[6-9]').hasMatch(mPhone)) {
-        setState(() => _fieldErrors[_motherPhoneController] = 'Must start with 6-9');
-        _showError('Enter a valid Indian mobile number for mother');
-        return false;
-      }
-      if (mPhone.split('').toSet().length < 3) {
-        setState(() => _fieldErrors[_motherPhoneController] = 'Invalid pattern');
-        _showError('Mother\'s phone number cannot be highly repetitive');
-        return false;
-      }
       if (_pincodeController.text.trim().length < 4) {
         setState(() => _fieldErrors[_pincodeController] = 'Required');
         _showError('Please enter a valid pincode/zipcode');
@@ -1116,7 +1074,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
-  final List<String> _stepLabels = ['Personal', 'Parents', 'Co-Applicant', 'Info', 'Review'];
+  final List<String> _stepLabels = ['Personal', 'Address', 'Co-Applicant', 'Info', 'Review'];
 
   Widget _buildCustomProgressHeader() {
     return Container(
@@ -1255,38 +1213,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 1:
         return _buildStepContainer(
           children: [
-            _buildSectionHeader("Father's Details", Icons.person_outline_rounded),
-            _buildTextInput(
-              hint: 'Name',
-              icon: Icons.person_outline,
-              controller: _fatherNameController,
-              isRequired: true,
-            ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Phone',
-              icon: Icons.phone_outlined,
-              controller: _fatherPhoneController,
-              keyboardType: TextInputType.phone,
-              isRequired: true,
-            ),
-            const SizedBox(height: 18),
-            _buildSectionHeader("Mother's Details", Icons.person_outline_rounded),
-            _buildTextInput(
-              hint: 'Name',
-              icon: Icons.person_outline,
-              controller: _motherNameController,
-              isRequired: true,
-            ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Phone',
-              icon: Icons.phone_outlined,
-              controller: _motherPhoneController,
-              keyboardType: TextInputType.phone,
-              isRequired: true,
-            ),
-            const SizedBox(height: 18),
             _buildSectionHeader("Residential Details", Icons.home_outlined),
             _buildTextInput(
               hint: 'Pincode / ZIP Code',
