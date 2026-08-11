@@ -65,26 +65,27 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   // Handle Google Login
-  Future<void> _handleGoogleLogin() async {
+  Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      final userCredential = await GoogleAuthService.signInWithGoogle();
+      final googleAuthService = GoogleAuthService();
+      final User? user = await googleAuthService.signInWithGoogle();
 
-      if (userCredential == null) {
+      if (user == null) {
         setState(() => _isLoading = false);
         return;
       }
 
-      final email = userCredential.user?.email;
+      final email = user.email;
       if (email == null) {
         throw Exception("Could not retrieve email from Google Account");
       }
 
-      final idToken = await userCredential.user?.getIdToken();
+      final idToken = await user.getIdToken();
       if (idToken == null) {
         throw Exception("Failed to retrieve Firebase ID Token");
       }

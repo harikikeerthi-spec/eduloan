@@ -141,6 +141,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       if (age < 18 || age > 40) {
         return 'Age must be between 18 and 40 years';
       }
+      if (dob.isAfter(today)) {
+        return 'Please enter a valid date of birth';
+      }
+    } catch (e) {
+      return 'Invalid date format';
+    }
     return null;
   }
 
@@ -152,12 +158,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     });
 
     try {
-      final result = await AuthService.completeProfile(
-        email: widget.email,
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        dob: _dobController.text.trim(),
+      final result = await AuthService.updateUserDetails(
+        widget.email,
+        _firstNameController.text.trim(),
+        _lastNameController.text.trim(),
+        _phoneController.text.trim(),
+        _dobController.text.trim(),
       );
 
       if (!mounted) return;
