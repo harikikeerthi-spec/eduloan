@@ -1991,6 +1991,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }) {
     final errorText = _fieldErrors[controller];
     final hasError = errorText != null;
+    final isPhoneField = keyboardType == TextInputType.phone || hint.toLowerCase().contains('phone');
+    final effectiveFormatters = isPhoneField
+        ? [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ]
+        : inputFormatters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2019,7 +2026,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   showCursor: !readOnly,
                   onTap: onTap,
                   maxLines: maxLines,
-                  inputFormatters: inputFormatters,
+                  maxLength: isPhoneField ? 10 : null,
+                  buildCounter: isPhoneField
+                      ? (context, {required currentLength, required isFocused, maxLength}) => null
+                      : null,
+                  inputFormatters: effectiveFormatters,
                   onChanged: (val) {
                     if (hasError) {
                       setState(() => _fieldErrors[controller] = null);

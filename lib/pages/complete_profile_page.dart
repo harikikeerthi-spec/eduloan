@@ -333,6 +333,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               hint: '1234567890',
                               icon: Icons.phone_outlined,
                               inputType: TextInputType.phone,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(10),
+                              ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Required';
@@ -450,7 +454,17 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       child: TextFormField(
         controller: controller,
         keyboardType: inputType,
-        inputFormatters: inputFormatters,
+        maxLength: inputType == TextInputType.phone ? 10 : null,
+        buildCounter: inputType == TextInputType.phone
+            ? (context, {required currentLength, required isFocused, maxLength}) => null
+            : null,
+        inputFormatters: inputFormatters ??
+            (inputType == TextInputType.phone
+                ? [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ]
+                : null),
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: inputType == TextInputType.phone ? 'XXXXXXXXXX' : hint,

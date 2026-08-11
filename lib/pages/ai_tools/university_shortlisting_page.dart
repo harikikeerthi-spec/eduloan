@@ -4344,7 +4344,10 @@ class _PhoneInputState extends State<_PhoneInput> {
               controller: _controller,
               keyboardType: TextInputType.phone,
               maxLength: 10,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
               decoration: const InputDecoration(
                 hintText: "XXXXXXXXXX",
                 border: InputBorder.none,

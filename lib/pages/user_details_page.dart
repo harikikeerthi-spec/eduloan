@@ -469,6 +469,12 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               TextFormField(
                                 controller: _phoneController,
                                 readOnly: widget.isEdit,
+                                maxLength: 10,
+                                buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(10),
+                                ],
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
