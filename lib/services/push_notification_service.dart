@@ -10,7 +10,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint('Handling background push notification: ${message.messageId}');
   await PushNotificationService.saveNotificationLocally(
-    title: message.notification?.title ?? message.data['title'] ?? 'VidyaLoan Notification',
+    title: message.notification?.title ?? message.data['title'] ?? 'VidyaLoans Notification',
     body: message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? '',
     type: message.data['type'] ?? 'PUSH',
   );
@@ -23,7 +23,7 @@ class PushNotificationService {
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'vidyaloan_high_importance_channel',
-    'VidyaLoan Notifications',
+    'VidyaLoans Notifications',
     description: 'High priority notifications for loan status updates and announcements',
     importance: Importance.max,
     playSound: true,

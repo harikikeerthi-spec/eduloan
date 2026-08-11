@@ -270,7 +270,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
                         ),
                         const SizedBox(height: 24),
                         Text(
-                          'Vidya Loans',
+                          'VidyaLoans',
                           style: GoogleFonts.outfit(
                             fontSize: 34,
                             fontWeight: FontWeight.w700,

@@ -398,7 +398,7 @@ class HomeTabState extends State<HomeTab> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'VidyaLoan',
+                        'VidyaLoans',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,

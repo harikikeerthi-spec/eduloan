@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
       valueListenable: LanguageService.activeLanguageNotifier,
       builder: (context, activeLang, child) {
         return MaterialApp(
-          title: 'Vidyaloan',
+          title: 'Vidyaloans',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
