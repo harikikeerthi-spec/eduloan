@@ -234,9 +234,59 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     final universityStr = _instituteController.text.trim();
     final uniLower = universityStr.toLowerCase();
 
-    if (countryStr.isEmpty || universityStr.isEmpty || universityStr.length < 3) {
+    if (countryStr.isEmpty) {
       _universityLocationWarning = null;
       return;
+    }
+
+    // ⛔ Strict Restriction: Vidyaloans is for ABROAD studies only!
+    if (countryLower == 'india' || countryLower == 'bharat' || countryLower == 'hindustan') {
+      _universityLocationWarning =
+          '❌ Vidyaloans is for abroad studies only. India is not eligible for international student loans. Please select an abroad destination (e.g., USA, UK, Canada, Germany, Australia).';
+      _fieldErrors[_countryController] = 'Abroad destinations only';
+      return;
+    }
+
+    if (universityStr.isEmpty || universityStr.length < 2) {
+      _universityLocationWarning = null;
+      return;
+    }
+
+    // ⛔ Block Indian Universities
+    final indianUniKeywords = [
+      'india',
+      'indian',
+      'iit',
+      'iisc',
+      'bits pilani',
+      'nit',
+      'iim',
+      'iiit',
+      'delhi university',
+      'mumbai university',
+      'anna university',
+      'vtu',
+      'jntu',
+      'amity',
+      'manipal',
+      'srm',
+      'lpu',
+      'vit',
+      'thapar',
+      'christ university',
+      'symbiosis',
+    ];
+
+    for (var keyword in indianUniKeywords) {
+      if (uniLower == keyword ||
+          uniLower.contains(' $keyword') ||
+          uniLower.contains('$keyword ') ||
+          (keyword.length >= 4 && uniLower.contains(keyword))) {
+        _universityLocationWarning =
+            '❌ Vidyaloans is for abroad universities only. Indian universities are not eligible. Please enter a university located abroad.';
+        _fieldErrors[_instituteController] = 'Indian universities not eligible';
+        return;
+      }
     }
 
     // Explicit cross-country mismatch detection
@@ -668,6 +718,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                           _countryController.text = country;
                           _isManualCountryEntry = false;
                           _selectedCountryFlag = flag;
+                          _fieldErrors.remove(_countryController);
+                          _validateUniversityLocation();
                         }
                       });
                       Navigator.pop(context);
