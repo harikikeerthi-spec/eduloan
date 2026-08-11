@@ -137,7 +137,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
     );
     if (picked != null) {
       setState(() {
-        _dobController.text = DateFormat('dd-MM-yyyy').format(picked);
+        _dobController.text = DateFormat('dd/MM/yyyy').format(picked);
       });
     }
   }
@@ -151,25 +151,25 @@ class _UserDetailsPageState extends State<UserDetailsPage>
     final rawDigits = cleanValue.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (rawDigits.length != 8) {
-      return 'Enter 8 digits (DD-MM-YYYY)';
+      return 'Enter 8 digits (DD/MM/YYYY)';
     }
 
     if (!cleanValue.contains('-') && !cleanValue.contains('/')) {
       cleanValue =
-          '${rawDigits.substring(0, 2)}-${rawDigits.substring(2, 4)}-${rawDigits.substring(4, 8)}';
+          '${rawDigits.substring(0, 2)}/${rawDigits.substring(2, 4)}/${rawDigits.substring(4, 8)}';
     }
 
     try {
       int day = 0, month = 0, year = 0;
-      if (cleanValue.contains('-')) {
-        final parts = cleanValue.split('-');
-        if (parts.length != 3) return 'Invalid format (DD-MM-YYYY)';
+      if (cleanValue.contains('/')) {
+        final parts = cleanValue.split('/');
+        if (parts.length != 3) return 'Invalid format (DD/MM/YYYY)';
         day = int.parse(parts[0]);
         month = int.parse(parts[1]);
         year = int.parse(parts[2]);
-      } else if (cleanValue.contains('/')) {
-        final parts = cleanValue.split('/');
-        if (parts.length != 3) return 'Invalid format (DD-MM-YYYY)';
+      } else if (cleanValue.contains('-')) {
+        final parts = cleanValue.split('-');
+        if (parts.length != 3) return 'Invalid format (DD/MM/YYYY)';
         day = int.parse(parts[0]);
         month = int.parse(parts[1]);
         year = int.parse(parts[2]);
@@ -434,7 +434,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                 readOnly: widget.isEdit,
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9\-]')),
+                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9\/]')),
                                   DateTextInputFormatter(),
                                 ],
                                 style: TextStyle(
@@ -445,7 +445,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                 decoration: _getInputDecoration(
                                   'Date of Birth',
                                   Icons.calendar_today,
-                                  hint: 'DD-MM-YYYY',
+                                  hint: 'DD/MM/YYYY',
                                 ).copyWith(
                                   fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
                                   suffixIcon: widget.isEdit
@@ -593,11 +593,17 @@ class DateTextInputFormatter extends TextInputFormatter {
     String formatted = '';
     if (digits.length <= 2) {
       formatted = digits;
+      if (digits.length == 2) {
+        formatted = '$digits/';
+      }
     } else if (digits.length <= 4) {
-      formatted = '${digits.substring(0, 2)}-${digits.substring(2)}';
+      formatted = '${digits.substring(0, 2)}/${digits.substring(2)}';
+      if (digits.length == 4) {
+        formatted = '${digits.substring(0, 2)}/${digits.substring(2)}/';
+      }
     } else {
       formatted =
-          '${digits.substring(0, 2)}-${digits.substring(2, 4)}-${digits.substring(4)}';
+          '${digits.substring(0, 2)}/${digits.substring(2, 4)}/${digits.substring(4)}';
     }
 
     return TextEditingValue(
