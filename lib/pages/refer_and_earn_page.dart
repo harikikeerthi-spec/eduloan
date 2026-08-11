@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/mesh_background.dart';
@@ -409,6 +410,9 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                                     controller: _emailController,
                                     keyboardType: TextInputType.emailAddress,
                                     enabled: !_isNotified || _isSubmitting,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                                    ],
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,

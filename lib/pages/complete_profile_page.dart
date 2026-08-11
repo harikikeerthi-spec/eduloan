@@ -464,7 +464,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(10),
                   ]
-                : null),
+                : inputType == TextInputType.emailAddress || hint.toLowerCase().contains('email')
+                    ? [
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                      ]
+                    : null),
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: inputType == TextInputType.phone ? 'XXXXXXXXXX' : hint,

@@ -1992,12 +1992,17 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     final errorText = _fieldErrors[controller];
     final hasError = errorText != null;
     final isPhoneField = keyboardType == TextInputType.phone || hint.toLowerCase().contains('phone');
+    final isEmailField = keyboardType == TextInputType.emailAddress || hint.toLowerCase().contains('email');
     final effectiveFormatters = isPhoneField
         ? [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(10),
           ]
-        : inputFormatters;
+        : isEmailField
+            ? [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+              ]
+            : inputFormatters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
