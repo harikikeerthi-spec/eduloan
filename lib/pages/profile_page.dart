@@ -96,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
               if (_dob.contains('-')) {
                 final parts = _dob.split('T')[0].split('-');
                 if (parts.length == 3 && parts[0].length == 4) {
-                  _dob = '${parts[2]}-${parts[1]}-${parts[0]}';
+                  _dob = '${parts[2]}/${parts[1]}/${parts[0]}';
                 }
               }
               _profileImage = _sanitizeProfileImage(

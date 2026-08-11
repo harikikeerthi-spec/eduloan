@@ -528,25 +528,44 @@ class DateTextInputFormatter extends TextInputFormatter {
       return newValue;
     }
 
-    String digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final String text = newValue.text;
+    final bool justTypedSlash = text.endsWith('/');
+
+    String digits = text.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.length > 8) {
       digits = digits.substring(0, 8);
     }
 
+    if (digits.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
     String formatted = '';
-    if (digits.length <= 2) {
-      formatted = digits;
-      if (digits.length == 2) {
-        formatted = '$digits/';
+
+    if (digits.length == 1) {
+      formatted = justTypedSlash ? '0$digits/' : digits;
+    } else if (digits.length == 2) {
+      formatted = '$digits/';
+    } else if (digits.length == 3) {
+      final day = digits.substring(0, 2);
+      final monthDigit = digits.substring(2);
+      if (justTypedSlash) {
+        formatted = '$day/0$monthDigit/';
+      } else {
+        formatted = '$day/$monthDigit';
       }
-    } else if (digits.length <= 4) {
-      formatted = '${digits.substring(0, 2)}/${digits.substring(2)}';
-      if (digits.length == 4) {
-        formatted = '${digits.substring(0, 2)}/${digits.substring(2)}/';
-      }
+    } else if (digits.length == 4) {
+      final day = digits.substring(0, 2);
+      final month = digits.substring(2, 4);
+      formatted = '$day/$month/';
     } else {
-      formatted =
-          '${digits.substring(0, 2)}/${digits.substring(2, 4)}/${digits.substring(4)}';
+      final day = digits.substring(0, 2);
+      final month = digits.substring(2, 4);
+      final year = digits.substring(4);
+      formatted = '$day/$month/$year';
     }
 
     return TextEditingValue(
