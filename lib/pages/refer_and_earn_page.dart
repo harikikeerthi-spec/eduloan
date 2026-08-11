@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/mesh_background.dart';
+import '../services/notification_service.dart';
 
 class ReferAndEarnPage extends StatefulWidget {
   const ReferAndEarnPage({super.key});
@@ -14,7 +16,12 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
   late AnimationController _animCtrl;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
+
+  final TextEditingController _emailController = TextEditingController();
   bool _isNotified = false;
+  String? _savedEmail;
+  bool _isSubmitting = false;
+  String? _emailError;
 
   @override
   void initState() {
@@ -35,12 +42,94 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
     );
 
     _animCtrl.forward();
+    _loadSavedNotificationPref();
+  }
+
+  Future<void> _loadSavedNotificationPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString('referral_notify_email');
+    final userEmail = prefs.getString('user_email') ?? '';
+    final isNotified = prefs.getBool('referral_notified') ?? false;
+
+    if (mounted) {
+      setState(() {
+        _savedEmail = savedEmail ?? (userEmail.isNotEmpty ? userEmail : null);
+        _emailController.text = _savedEmail ?? '';
+        _isNotified = isNotified;
+      });
+    }
   }
 
   @override
   void dispose() {
     _animCtrl.dispose();
+    _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleNotifyMe() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() {
+        _emailError = 'Please enter a valid Gmail address (e.g. name@gmail.com)';
+      });
+      return;
+    }
+
+    setState(() {
+      _emailError = null;
+      _isSubmitting = true;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('referral_notify_email', email);
+    await prefs.setBool('referral_notified', true);
+
+    // Trigger Dual Notification (Bell Icon + System Banner + Email Alert)
+    await NotificationService.pushNotification(
+      title: '🎁 Refer & Earn VIP Subscription Confirmed!',
+      message: 'We will notify $email as soon as Refer & Earn launches with rewards up to ₹3,000!',
+      type: 'ALERT',
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _isNotified = true;
+      _savedEmail = email;
+      _isSubmitting = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.mark_email_read_rounded, color: Colors.white, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'VIP Access Reserved! 🎉',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  Text(
+                    'We will email $email as soon as Refer & Earn launches!',
+                    style: GoogleFonts.inter(fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
   }
 
   @override
@@ -259,7 +348,8 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                               description: 'Track your referrals, pending payouts, and earnings live from your dashboard.',
                             ),
                             const SizedBox(height: 32),
-                            // Notification Card
+
+                            // Notification Card with Gmail Input Field
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
@@ -276,77 +366,192 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage>
                               ),
                               child: Column(
                                 children: [
-                                  Text(
-                                    'Want early access?',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF0F172A),
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEA4335).withValues(alpha: 0.1),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.mark_email_unread_rounded,
+                                          color: Color(0xFFEA4335),
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Get Launch Email Alert ✉️',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    'Be the first to know when the Refer & Earn program launches.',
+                                    'Enter your Gmail address to get notified directly on your inbox when Refer & Earn launches.',
                                     textAlign: TextAlign.center,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 13,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12.5,
                                       color: const Color(0xFF64748B),
+                                      height: 1.4,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 48,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        setState(() => _isNotified = true);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Row(
+
+                                  // Gmail Input Field
+                                  TextField(
+                                    controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
+                                    enabled: !_isNotified || _isSubmitting,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter your Gmail address (e.g. name@gmail.com)',
+                                      hintStyle: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        color: const Color(0xFF94A3B8),
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.email_outlined,
+                                        color: Color(0xFF311B92),
+                                        size: 20,
+                                      ),
+                                      filled: true,
+                                      fillColor: _isNotified ? const Color(0xFFF8FAFC) : const Color(0xFFF1F5F9),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: BorderSide(
+                                          color: _emailError != null ? Colors.red : const Color(0xFFCBD5E1),
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                        borderSide: const BorderSide(
+                                          color: Color(0xFF311B92),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      errorText: _emailError,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+
+                                  if (_isNotified && _savedEmail != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                const Icon(Icons.check_circle, color: Colors.white),
-                                                const SizedBox(width: 10),
-                                                Expanded(
-                                                  child: Text(
-                                                    'You\'ll be notified as soon as Refer & Earn launches!',
-                                                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                                                Text(
+                                                  '✓ VIP Launch Alert Reserved!',
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(0xFF047857),
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'We will email $_savedEmail on launch day.',
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 11.5,
+                                                    color: const Color(0xFF065F46),
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                            backgroundColor: const Color(0xFF10B981),
-                                            behavior: SnackBarBehavior.floating,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                           ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: _isNotified ? const Color(0xFF10B981) : const Color(0xFF311B92),
-                                        foregroundColor: Colors.white,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            _isNotified ? Icons.check_circle_rounded : Icons.notifications_active_rounded,
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            _isNotified ? 'You\'re on the VIP list!' : 'Notify Me on Launch',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.bold,
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                _isNotified = false;
+                                              });
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                              ),
+                                              child: Text(
+                                                'Edit Gmail',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(0xFF047857),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ),
+                                  ] else
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: ElevatedButton(
+                                        onPressed: _isSubmitting ? null : _handleNotifyMe,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF311B92),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                        ),
+                                        child: _isSubmitting
+                                            ? const SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  const Icon(
+                                                    Icons.notifications_active_rounded,
+                                                    size: 18,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    'Notify Me on Launch 🔔',
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 15,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
