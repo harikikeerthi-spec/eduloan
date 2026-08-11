@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'main_navigation.dart';
 import 'onboarding_page.dart';
@@ -140,31 +141,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       if (age < 18 || age > 40) {
         return 'Age must be between 18 and 40 years';
       }
-      if (dob.isAfter(today)) {
-        return 'Please enter a valid date of birth';
-      }
-    } catch (e) {
-      return 'Invalid date';
-    }
     return null;
   }
 
   Future<void> _submitProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final result = await AuthService.updateUserDetails(
-        widget.email,
-        _firstNameController.text.trim(),
-        _lastNameController.text.trim(),
-        _phoneController.text.trim(),
-        _dobController.text.trim(),
+      final result = await AuthService.completeProfile(
+        email: widget.email,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        dob: _dobController.text.trim(),
       );
 
       if (!mounted) return;
@@ -178,9 +171,13 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           const SnackBar(content: Text('Profile completed successfully!')),
         );
 
-        // Navigate after profile completion
-        if (widget.isNewUser) {
-          // First-time user — show onboarding
+        final prefs = await SharedPreferences.getInstance();
+        final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+
+        if (!mounted) return;
+
+        if (!onboardingShown) {
+          // Mandatory Onboarding Page completion first
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (context) => const OnboardingPage()),
             (route) => false,

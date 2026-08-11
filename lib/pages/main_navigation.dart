@@ -7,6 +7,7 @@ import 'ai_tools/ai_tools_page.dart';
 import 'profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
+import 'onboarding_page.dart';
 import '../services/loan_service.dart';
 import '../services/language_service.dart';
 
@@ -56,6 +57,18 @@ class MainNavigationState extends State<MainNavigation> {
 
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
+    final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+
+    if (!onboardingShown) {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnboardingPage()),
+          (route) => false,
+        );
+      }
+      return;
+    }
+
     final firstName = prefs.getString('user_firstName') ?? '';
     if (firstName.isEmpty) {
       if (mounted) {

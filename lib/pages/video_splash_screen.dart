@@ -179,10 +179,14 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       final bool isLoggedIn =
           authToken != null && authToken.isNotEmpty &&
           userId != null && userId.isNotEmpty;
+      final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
 
       if (!mounted) return;
 
-      if (isLoggedIn) {
+      if (!onboardingShown) {
+        // Mandatory Onboarding Page completion first
+        Navigator.of(context).pushReplacementNamed('/onboarding');
+      } else if (isLoggedIn) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -190,7 +194,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     } catch (e) {
       debugPrint('VideoSplashScreen: Navigation error — $e');
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
+        Navigator.of(context).pushReplacementNamed('/onboarding');
       }
     }
   }

@@ -95,7 +95,7 @@ class AuthService {
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        await prefs.setBool('onboarding_shown', true);
+        // onboarding_shown is set only when user completes OnboardingPage
         if (token != null) await prefs.setString('auth_token', token);
         if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
         if (data['userId'] != null) await prefs.setString('userId', data['userId']);
@@ -163,7 +163,7 @@ class AuthService {
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        await prefs.setBool('onboarding_shown', true);
+        // onboarding_shown is set only when user completes OnboardingPage
         if (token != null) await prefs.setString('auth_token', token);
         if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
         if (data['userId'] != null) await prefs.setString('userId', data['userId']);
