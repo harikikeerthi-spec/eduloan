@@ -13,6 +13,7 @@ import '../services/blog_service.dart';
 import '../models/blog.dart';
 import 'blog_detail_page.dart';
 
+import 'essential_service_page.dart';
 import '../services/direct_chat_service.dart';
 import 'main_navigation.dart';
 import '../widgets/avatar_selection_dialog.dart';
@@ -1559,6 +1560,35 @@ class HomeTabState extends State<HomeTab> {
                   color: Color(0xFFC7D2FE),
                 ),
                 width: 220,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EssentialServicePage(
+                        serviceTitle: 'US Credit Card',
+                        serviceSubtitle:
+                            'Build your US credit score from day one with a student credit card. Enjoy zero foreign transaction fees and exclusive student rewards.',
+                        primaryIcon: Icons.credit_card_rounded,
+                        themeColor: Color(0xFF6366F1),
+                        serviceKey: 'essential_us_credit',
+                        features: [
+                          {
+                            'title': 'No SSN Required Initially',
+                            'desc': 'Apply before landing in the US with zero prior credit history required.',
+                          },
+                          {
+                            'title': 'Build Credit Score Early',
+                            'desc': 'Start building your US FICO score from your first campus semester.',
+                          },
+                          {
+                            'title': '0% Foreign Transaction Fees',
+                            'desc': 'Enjoy student cashback on textbooks, groceries, and dining.',
+                          },
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 16),
               _buildServiceCard(
@@ -1574,6 +1604,35 @@ class HomeTabState extends State<HomeTab> {
                   color: Color(0xFFFDE68A),
                 ),
                 width: 220,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EssentialServicePage(
+                        serviceTitle: 'German Blocked Account (BA)',
+                        serviceSubtitle:
+                            'Open your official embassy-approved Sperrkonto blocked account for your German student visa application.',
+                        primaryIcon: Icons.account_balance_wallet_rounded,
+                        themeColor: Color(0xFFD97706),
+                        serviceKey: 'essential_german_ba',
+                        features: [
+                          {
+                            'title': 'Embassy Approved Sperrkonto',
+                            'desc': '100% recognized by German Foreign Office & Ausländerbehörde.',
+                          },
+                          {
+                            'title': '24-Hour Digital Certificate',
+                            'desc': 'Receive your official blocked account confirmation certificate fast.',
+                          },
+                          {
+                            'title': 'Health Insurance Combo',
+                            'desc': 'Free TK / DAK German public health insurance package integration.',
+                          },
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 16),
               _buildServiceCard(
@@ -1589,6 +1648,35 @@ class HomeTabState extends State<HomeTab> {
                   color: Color(0xFFA7F3D0),
                 ),
                 width: 220,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EssentialServicePage(
+                        serviceTitle: 'Student Forex Card',
+                        serviceSubtitle:
+                            'Multi-currency travel card with zero markup exchange rates and free ATM withdrawals worldwide.',
+                        primaryIcon: Icons.currency_exchange_rounded,
+                        themeColor: Color(0xFF10B981),
+                        serviceKey: 'essential_forex',
+                        features: [
+                          {
+                            'title': 'Zero Forex Markup Rates',
+                            'desc': 'Lock in live interbank exchange rates with zero hidden markups.',
+                          },
+                          {
+                            'title': 'Multi-Currency Smart Chip',
+                            'desc': 'Hold USD, GBP, EUR, CAD, AUD on a single contactless card.',
+                          },
+                          {
+                            'title': 'Emergency Cash Replacement',
+                            'desc': 'Free global replacement & 24/7 emergency card block assistance.',
+                          },
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 16),
               _buildServiceCard(
@@ -1604,6 +1692,35 @@ class HomeTabState extends State<HomeTab> {
                   color: Color(0xFFDDD6FE),
                 ),
                 width: 220,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EssentialServicePage(
+                        serviceTitle: 'UK Bank Account',
+                        serviceSubtitle:
+                            'Get your UK Sort Code & Account Number before leaving India for seamless tuition & rent payments.',
+                        primaryIcon: Icons.account_balance_rounded,
+                        themeColor: Color(0xFF8B5CF6),
+                        serviceKey: 'essential_uk_bank',
+                        features: [
+                          {
+                            'title': 'Pre-Arrival Account Opening',
+                            'desc': 'Obtain your UK Sort Code & Account Number before flying out.',
+                          },
+                          {
+                            'title': 'Contactless Debit Card',
+                            'desc': 'Ready to tap on arrival for TfL London transit and campus shops.',
+                          },
+                          {
+                            'title': 'Zero Monthly Maintenance Fees',
+                            'desc': 'Enjoy fee-free student banking throughout your UK degree.',
+                          },
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
