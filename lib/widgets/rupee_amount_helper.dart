@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 /// Formatter that automatically inserts Indian currency commas (e.g. 2,50,00,00,00,000)
 class IndianCurrencyFormatter extends TextInputFormatter {
   final double? maxAmount;
+  final int? maxDigits;
 
-  IndianCurrencyFormatter({this.maxAmount});
+  IndianCurrencyFormatter({this.maxAmount, this.maxDigits});
 
   @override
   TextEditingValue formatEditUpdate(
@@ -20,6 +21,10 @@ class IndianCurrencyFormatter extends TextInputFormatter {
     String text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (text.isEmpty) return newValue.copyWith(text: '');
+
+    if (maxDigits != null && text.length > maxDigits!) {
+      text = text.substring(0, maxDigits!);
+    }
 
     if (maxAmount != null) {
       final parsed = double.tryParse(text);
