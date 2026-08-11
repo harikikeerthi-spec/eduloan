@@ -251,10 +251,9 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                             if (_uiImage != null)
                               Transform(
                                 alignment: Alignment.center,
-                                transform: Matrix4.identity()
-                                  ..translate(_offset.dx, _offset.dy)
+                                transform: Matrix4.translationValues(_offset.dx, _offset.dy, 0.0)
                                   ..rotateZ((_rotationTurns % 4) * (math.pi / 2))
-                                  ..scale(_scale),
+                                  ..scale(_scale, _scale, 1.0),
                                 child: RawImage(
                                   image: _uiImage,
                                   fit: BoxFit.contain,
