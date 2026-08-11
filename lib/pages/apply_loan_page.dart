@@ -88,6 +88,232 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _purposeController = TextEditingController();
   bool _isManualCountryEntry = false;
   String _selectedCountryFlag = '';
+  String? _universityLocationWarning;
+
+  static final Map<String, List<String>> _knownUniversitiesByCountry = {
+    'usa': [
+      'Harvard University',
+      'Massachusetts Institute of Technology',
+      'MIT',
+      'Stanford University',
+      'Columbia University',
+      'University of California',
+      'UC Berkeley',
+      'UCLA',
+      'Yale University',
+      'Princeton University',
+      'Cornell University',
+      'New York University',
+      'NYU',
+      'Carnegie Mellon University',
+      'University of Texas at Dallas',
+      'University of Southern California',
+      'Northeastern University',
+      'Arizona State University',
+      'University of Illinois',
+    ],
+    'united states': [
+      'Harvard University',
+      'Massachusetts Institute of Technology',
+      'MIT',
+      'Stanford University',
+      'Columbia University',
+      'University of California',
+      'UC Berkeley',
+      'UCLA',
+      'Yale University',
+      'Princeton University',
+      'Cornell University',
+      'New York University',
+      'NYU',
+      'Carnegie Mellon University',
+      'University of Texas at Dallas',
+      'University of Southern California',
+      'Northeastern University',
+      'Arizona State University',
+      'University of Illinois',
+    ],
+    'uk': [
+      'University of Oxford',
+      'Oxford University',
+      'University of Cambridge',
+      'Cambridge University',
+      'Imperial College London',
+      'University College London',
+      'UCL',
+      'London School of Economics',
+      'LSE',
+      'University of Edinburgh',
+      'King\'s College London',
+      'University of Manchester',
+      'University of Warwick',
+      'University of Bristol',
+    ],
+    'united kingdom': [
+      'University of Oxford',
+      'Oxford University',
+      'University of Cambridge',
+      'Cambridge University',
+      'Imperial College London',
+      'University College London',
+      'UCL',
+      'London School of Economics',
+      'LSE',
+      'University of Edinburgh',
+      'King\'s College London',
+      'University of Manchester',
+      'University of Warwick',
+      'University of Bristol',
+    ],
+    'canada': [
+      'University of Toronto',
+      'University of British Columbia',
+      'UBC',
+      'McGill University',
+      'University of Waterloo',
+      'University of Alberta',
+      'McMaster University',
+      'Western University',
+      'University of Montreal',
+    ],
+    'germany': [
+      'Technical University of Munich',
+      'TUM',
+      'Ludwig Maximilian University',
+      'LMU Munich',
+      'Heidelberg University',
+      'Humboldt University of Berlin',
+      'RWTH Aachen University',
+      'Free University of Berlin',
+      'Karlsruhe Institute of Technology',
+      'KIT',
+      'TU Berlin',
+    ],
+    'australia': [
+      'University of Melbourne',
+      'University of Sydney',
+      'Australian National University',
+      'ANU',
+      'University of Queensland',
+      'Monash University',
+      'UNSW Sydney',
+      'University of Western Australia',
+      'University of Adelaide',
+    ],
+    'ireland': [
+      'Trinity College Dublin',
+      'University College Dublin',
+      'UCD',
+      'National University of Ireland Galway',
+      'University College Cork',
+      'Dublin City University',
+    ],
+    'france': [
+      'PSL Research University',
+      'Institut Polytechnique de Paris',
+      'Sorbonne University',
+      'HEC Paris',
+      'University of Paris-Saclay',
+    ],
+    'india': [
+      'Indian Institute of Science',
+      'IISc',
+      'IIT Bombay',
+      'IIT Delhi',
+      'IIT Madras',
+      'IIT Kharagpur',
+      'IIT Kanpur',
+      'University of Delhi',
+      'BITS Pilani',
+    ],
+  };
+
+  void _validateUniversityLocation() {
+    final countryStr = _countryController.text.trim();
+    final countryLower = countryStr.toLowerCase();
+    final universityStr = _instituteController.text.trim();
+    final uniLower = universityStr.toLowerCase();
+
+    if (countryStr.isEmpty || universityStr.isEmpty || universityStr.length < 3) {
+      _universityLocationWarning = null;
+      return;
+    }
+
+    // Explicit cross-country mismatch detection
+    String? foundCountry;
+    _knownUniversitiesByCountry.forEach((cKey, uniList) {
+      bool isSelectedCountryKey = (cKey == countryLower) ||
+          (countryLower.contains('usa') && cKey.contains('united states')) ||
+          (countryLower.contains('united states') && cKey.contains('usa')) ||
+          (countryLower.contains('uk') && cKey.contains('united kingdom')) ||
+          (countryLower.contains('united kingdom') && cKey.contains('uk'));
+
+      if (!isSelectedCountryKey) {
+        for (var knownUni in uniList) {
+          final knownLower = knownUni.toLowerCase();
+          if (uniLower == knownLower ||
+              (knownLower.length >= 5 && uniLower.contains(knownLower)) ||
+              (uniLower.length >= 6 && knownLower.contains(uniLower))) {
+            foundCountry = cKey.toUpperCase();
+            break;
+          }
+        }
+      }
+    });
+
+    if (foundCountry != null) {
+      _universityLocationWarning =
+          'Warning: "$universityStr" is located in $foundCountry, not in $countryStr. Please enter a correct university located in $countryStr.';
+      _fieldErrors[_instituteController] = 'University location mismatch';
+      return;
+    }
+
+    // Country name token check within university text
+    final checkCountries = {
+      'usa': 'USA',
+      'united states': 'USA',
+      'uk': 'UK',
+      'united kingdom': 'UK',
+      'canada': 'Canada',
+      'germany': 'Germany',
+      'australia': 'Australia',
+      'france': 'France',
+      'ireland': 'Ireland',
+      'india': 'India',
+      'sydney': 'Australia',
+      'melbourne': 'Australia',
+      'oxford': 'UK',
+      'cambridge': 'UK',
+      'toronto': 'Canada',
+      'munich': 'Germany',
+      'berlin': 'Germany',
+      'delhi': 'India',
+      'bombay': 'India',
+    };
+
+    checkCountries.forEach((keyword, countryName) {
+      if (uniLower.contains(keyword)) {
+        bool matchesSelected = countryLower.contains(keyword) ||
+            countryLower.contains(countryName.toLowerCase()) ||
+            (countryLower.contains('usa') && countryName == 'USA') ||
+            (countryLower.contains('united states') && countryName == 'USA') ||
+            (countryLower.contains('uk') && countryName == 'UK') ||
+            (countryLower.contains('united kingdom') && countryName == 'UK');
+
+        if (!matchesSelected) {
+          _universityLocationWarning =
+              'Warning: "$universityStr" does not appear to be located in $countryStr. Please enter a correct university located in $countryStr.';
+          _fieldErrors[_instituteController] = 'Location mismatch';
+        }
+      }
+    });
+
+    if (_fieldErrors[_instituteController] != 'University location mismatch' &&
+        _fieldErrors[_instituteController] != 'Location mismatch') {
+      _universityLocationWarning = null;
+      _fieldErrors.remove(_instituteController);
+    }
+  }
 
   // Static country → flag emoji map (no API needed, works fully offline)
   static const Map<String, String> _countryFlags = {
@@ -527,32 +753,20 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     if (!_validateStep(0) ||
         !_validateStep(1) ||
         !_validateStep(2) ||
-        !_validateStep(3) ) {
+        !_validateStep(3)) {
       return;
     }
 
-    final verifyResult = await _verifyAcademicApplication();
-    if (!mounted) return;
-    if (verifyResult['isValid'] != true) {
-      final bool countryMatch = verifyResult['countryMatch'] ?? true;
-      final bool courseMatch = verifyResult['courseMatch'] ?? true;
-      setState(() {
-        if (!countryMatch) {
-          _fieldErrors[_countryController] = 'Country mismatch';
-          _fieldErrors[_instituteController] = 'Location error';
-        }
-        if (!courseMatch) {
-          _fieldErrors[_courseController] = 'Course not offered';
-        }
-      });
-      _showAiAcademicErrorDialog(verifyResult);
+    _validateUniversityLocation();
+    if (_universityLocationWarning != null) {
+      _showError(_universityLocationWarning!);
       return;
     }
 
-    if (_instituteController.text.isEmpty ||
-        _courseController.text.isEmpty ||
+    if (_countryController.text.isEmpty ||
+        _instituteController.text.isEmpty ||
         _amountController.text.isEmpty) {
-      _showError('Please fill all required education and financial fields');
+      _showError('Please complete all required fields in the application');
       return;
     }
 
@@ -833,19 +1047,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     } else if (step == 3) {
-      if (_countryController.text.isEmpty) {
+      if (_countryController.text.trim().isEmpty) {
         setState(() => _fieldErrors[_countryController] = 'Required');
         _showError('Please select your target country');
         return false;
       }
-      if (_instituteController.text.isEmpty) {
+      if (_instituteController.text.trim().isEmpty) {
         setState(() => _fieldErrors[_instituteController] = 'Required');
-        _showError('Please select your target university');
+        _showError('Please enter your target university');
         return false;
       }
-      if (_courseController.text.isEmpty) {
-        setState(() => _fieldErrors[_courseController] = 'Required');
-        _showError('Please select your course');
+      _validateUniversityLocation();
+      if (_universityLocationWarning != null) {
+        _showError(_universityLocationWarning!);
         return false;
       }
       final rawAmount = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
@@ -867,141 +1081,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       }
     }
     return true;
-  }
-
-  Future<Map<String, dynamic>> _verifyAcademicApplication() async {
-    final name = _instituteController.text.trim();
-    final country = _countryController.text.trim();
-    final course = _courseController.text.trim();
-
-    if (name.isEmpty || country.isEmpty) {
-      return {'isValid': false, 'reason': 'Country and University are required.'};
-    }
-
-    try {
-      final aiService = AiLogicService();
-      final result = await aiService.verifyUniversity(name, country, course: course);
-
-      final bool countryMatch = result['countryMatch'] ?? true;
-      final bool courseMatch = result['courseMatch'] ?? true;
-      final String reason = result['reason'] ?? '';
-
-      if (!countryMatch || !courseMatch) {
-        return {
-          'isValid': false,
-          'countryMatch': countryMatch,
-          'actualCountry': result['actualCountry'],
-          'courseMatch': courseMatch,
-          'reason': reason.isNotEmpty
-              ? reason
-              : (!countryMatch
-                  ? '$name is located in ${result['actualCountry'] ?? 'another country'}, NOT in $country.'
-                  : '\'$course\' is not a recognized degree program offered at $name.'),
-        };
-      }
-
-      return {'isValid': true, 'reason': ''};
-    } catch (e) {
-      debugPrint('Error verifying academic application: $e');
-      return {'isValid': true, 'reason': ''};
-    }
-  }
-
-  void _showAiAcademicErrorDialog(Map<String, dynamic> errorInfo) {
-    final String reason = errorInfo['reason'] ?? 'Academic details verification failed.';
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'AI Verification Failed',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Your application cannot be submitted due to the following mismatch:',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      reason,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade900,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Please update your target Country, University, or Course name before submitting.',
-              style: GoogleFonts.outfit(
-                fontSize: 13,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF311B92),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            ),
-            child: const Text('Fix Details', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showError(String message) {
@@ -1392,19 +1471,72 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 ? _buildCountryManualInput()
                 : _buildCountryReadOnlyInput(),
             const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Target University',
-              icon: Icons.account_balance_outlined,
-              controller: _instituteController,
-              isRequired: true,
-            ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Course Name',
-              icon: Icons.school_outlined,
-              controller: _courseController,
-              isRequired: true,
-            ),
+            if (_countryController.text.trim().isEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 20, color: Color(0xFF311B92)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Please select your Target Country above to select your target university.',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              _buildTextInput(
+                hint: 'Target University',
+                icon: Icons.account_balance_outlined,
+                controller: _instituteController,
+                isRequired: true,
+                onChanged: (val) {
+                  setState(() {
+                    _validateUniversityLocation();
+                  });
+                },
+              ),
+              if (_universityLocationWarning != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _universityLocationWarning!,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF991B1B),
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
             const SizedBox(height: 18),
             _buildSectionHeader('Financial Information', Icons.account_balance_wallet_outlined),
             _buildTextInput(
@@ -1478,59 +1610,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: () async {
+              onPressed: () {
                 if (_validateStep(_currentStep)) {
-                  if (_currentStep == 3) {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => const Center(
-                        child: Card(
-                          margin: EdgeInsets.all(24),
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
-                                ),
-                                SizedBox(height: 16),
-                                Text(
-                                  'Verifying application details with AI...',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-
-                    final verifyResult = await _verifyAcademicApplication();
-
-                    if (mounted) {
-                      Navigator.pop(context); // Pop the progress dialog
-                    }
-
-                    if (verifyResult['isValid'] != true) {
-                      final bool countryMatch = verifyResult['countryMatch'] ?? true;
-                      final bool courseMatch = verifyResult['courseMatch'] ?? true;
-                      setState(() {
-                        if (!countryMatch) {
-                          _fieldErrors[_countryController] = 'Country mismatch';
-                          _fieldErrors[_instituteController] = 'Location error';
-                        }
-                        if (!courseMatch) {
-                          _fieldErrors[_courseController] = 'Course not offered';
-                        }
-                      });
-                      _showAiAcademicErrorDialog(verifyResult);
-                      return; // ⛔ BLOCK SUBMISSION & STEP ADVANCEMENT
-                    }
-                  }
-
                   if (_currentStep < 4) {
                     setState(() => _currentStep += 1);
                   } else {
@@ -1626,7 +1707,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${_courseController.text.isEmpty ? "Course" : _courseController.text} • ${_countryController.text.isEmpty ? "Country" : _countryController.text}',
+                'Target Country: ${_countryController.text.isEmpty ? "Country" : _countryController.text}',
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 12,
