@@ -275,7 +275,7 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
         'color': const Color(0xFF10B981),
       },
       {
-        'type': 'student_passport_front',
+        'type': 'student_passport',
         'label': 'Student Passport Number',
         'icon': Icons.flight_takeoff_rounded,
         'color': const Color(0xFF3B82F6),

@@ -40,8 +40,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     'KYC': [
       {'name': 'PAN Card', 'type': 'student_pan'},
       {'name': 'Aadhar Card', 'type': 'student_aadhar'},
-      {'name': 'Passport (Front Page)', 'type': 'student_passport_front'},
-      {'name': 'Passport (Back Page)', 'type': 'student_passport_back'},
+      {'name': 'Passport (Front & Back)', 'type': 'student_passport'},
     ],
     'Academics': [
       {'name': '10th Marksheet', 'type': 'student_10th_marksheet'},
@@ -1237,7 +1236,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         color: const Color(0xFF1E88E5),
                         onTap: () async {
                           final token = await _getToken();
-                          final targetType = doc?.docType ?? type;
+                          final targetType = doc.docType;
                           final url = await UserService.getDocumentViewUrl(targetType);
                           final uri = Uri.parse('$url?token=$token');
 
