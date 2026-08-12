@@ -335,11 +335,47 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   UserDocument? _findDoc(String type) {
+    if (_documents.isEmpty) return null;
+    final targetClean = type.trim().toLowerCase().replaceAll('-', '_');
+
+    // 1. Direct case-insensitive match
     try {
-      return _documents.firstWhere((doc) => doc.docType == type);
-    } catch (e) {
-      return null;
-    }
+      return _documents.firstWhere(
+        (doc) => doc.docType.trim().toLowerCase().replaceAll('-', '_') == targetClean,
+      );
+    } catch (_) {}
+
+    // 2. Fuzzy alias matching between website docType and app docType
+    try {
+      return _documents.firstWhere((doc) {
+        final dt = doc.docType.trim().toLowerCase().replaceAll('-', '_');
+        if (targetClean.contains('pan')) {
+          if (targetClean.startsWith('father') && dt.contains('father') && dt.contains('pan')) return true;
+          if (targetClean.startsWith('mother') && dt.contains('mother') && dt.contains('pan')) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && dt.contains('pan')) return true;
+          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if (dt == 'pan' || dt == 'pan_card') return true;
+        }
+        if (targetClean.contains('aadhar') || targetClean.contains('aadhaar')) {
+          if (targetClean.startsWith('father') && dt.contains('father') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('mother') && dt.contains('mother') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if (dt == 'aadhar' || dt == 'aadhaar' || dt == 'aadhar_card' || dt == 'aadhaar_card') return true;
+        }
+        if (targetClean.contains('passport')) {
+          if (targetClean.contains('front') && (dt.contains('front') || dt == 'passport' || dt == 'student_passport')) return true;
+          if (targetClean.contains('back') && dt.contains('back')) return true;
+          if (dt == 'passport' || dt == 'student_passport') return true;
+        }
+        if (targetClean.contains('10th') && dt.contains('10th')) return true;
+        if (targetClean.contains('12th') && dt.contains('12th')) return true;
+        if (targetClean.contains('degree') && dt.contains('degree')) return true;
+        return false;
+      });
+    } catch (_) {}
+
+    return null;
   }
 
   /// Detects if a PDF is password-protected by scanning raw bytes for /Encrypt.
@@ -993,9 +1029,13 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       return const Center(child: CircularProgressIndicator());
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: sections.entries.map((entry) {
+    return RefreshIndicator(
+      onRefresh: _fetchDocuments,
+      color: const Color(0xFF311B92),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: sections.entries.map((entry) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1035,6 +1075,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           ],
         );
       }).toList(),
+      ),
     );
   }
 

@@ -35,10 +35,24 @@ class UserService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          return (data['data'] as List)
-              .map((item) => UserDocument.fromJson(item))
+        final decoded = jsonDecode(response.body);
+        List? rawList;
+        if (decoded is List) {
+          rawList = decoded;
+        } else if (decoded is Map) {
+          if (decoded['data'] is List) {
+            rawList = decoded['data'];
+          } else if (decoded['documents'] is List) {
+            rawList = decoded['documents'];
+          } else if (decoded['userDocuments'] is List) {
+            rawList = decoded['userDocuments'];
+          } else if (decoded['results'] is List) {
+            rawList = decoded['results'];
+          }
+        }
+        if (rawList != null) {
+          return rawList
+              .map((item) => UserDocument.fromJson(Map<String, dynamic>.from(item)))
               .toList();
         }
       }

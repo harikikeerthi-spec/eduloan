@@ -40,16 +40,34 @@ class UserDocument {
       reason = meta['rejectionReason']?.toString();
     }
 
+    final String? path = json['filePath']?.toString() ??
+        json['fileUrl']?.toString() ??
+        json['url']?.toString() ??
+        json['documentUrl']?.toString() ??
+        json['file_path']?.toString() ??
+        json['file_url']?.toString() ??
+        json['path']?.toString();
+
+    final String statusStr = (json['status']?.toString() ?? 'pending').toLowerCase();
+    final bool isUploadedBool = json['uploaded'] == true ||
+        (path != null && path.isNotEmpty) ||
+        statusStr == 'uploaded' ||
+        statusStr == 'verified' ||
+        statusStr == 'approved' ||
+        statusStr == 'completed' ||
+        statusStr == 'under_review' ||
+        statusStr == 'pending_verification';
+
     return UserDocument(
       id: json['id']?.toString() ?? '',
-      userId: json['userId']?.toString() ?? '',
-      docType: json['docType']?.toString() ?? '',
-      uploaded: json['uploaded'] ?? false,
+      userId: json['userId']?.toString() ?? json['user_id']?.toString() ?? '',
+      docType: json['docType']?.toString() ?? json['type']?.toString() ?? '',
+      uploaded: isUploadedBool,
       status: json['status']?.toString() ?? 'pending',
-      filePath: json['filePath']?.toString(),
+      filePath: path,
       uploadedAt: json['uploadedAt'] != null
           ? DateTime.tryParse(json['uploadedAt'].toString())
-          : null,
+          : (json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null),
       isDigilocker: fromDigilocker,
       rejectionReason: reason,
       verificationMetadata: meta,

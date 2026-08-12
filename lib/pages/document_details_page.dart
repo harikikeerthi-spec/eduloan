@@ -76,33 +76,63 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     }
   }
 
-  String? _getExtractedNumberForDoc(String type) {
-    // 1. Check UserDocument from backend
+  UserDocument? _findDocInDetails(String type) {
+    if (_userDocs.isEmpty) return null;
+    final targetClean = type.trim().toLowerCase().replaceAll('-', '_');
+
     try {
-      final doc = _userDocs.firstWhere(
-        (d) => d.docType == type || (type == 'student_passport_front' && d.docType == 'student_passport_back'),
+      return _userDocs.firstWhere(
+        (doc) => doc.docType.trim().toLowerCase().replaceAll('-', '_') == targetClean,
       );
-      if (doc.extractedNumber != null && doc.extractedNumber!.trim().isNotEmpty) {
-        return doc.extractedNumber!.trim();
-      }
     } catch (_) {}
 
-    // 2. Check local SharedPreferences fallback
-    if (_localOcrNumbers.containsKey(type)) {
-      return _localOcrNumbers[type];
-    }
+    try {
+      return _userDocs.firstWhere((doc) {
+        final dt = doc.docType.trim().toLowerCase().replaceAll('-', '_');
+        if (targetClean.contains('pan')) {
+          if (targetClean.startsWith('father') && dt.contains('father') && dt.contains('pan')) return true;
+          if (targetClean.startsWith('mother') && dt.contains('mother') && dt.contains('pan')) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && dt.contains('pan')) return true;
+          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if (dt == 'pan' || dt == 'pan_card') return true;
+        }
+        if (targetClean.contains('aadhar') || targetClean.contains('aadhaar')) {
+          if (targetClean.startsWith('father') && dt.contains('father') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('mother') && dt.contains('mother') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if (dt == 'aadhar' || dt == 'aadhaar' || dt == 'aadhar_card' || dt == 'aadhaar_card') return true;
+        }
+        if (targetClean.contains('passport')) {
+          if (targetClean.contains('front') && (dt.contains('front') || dt == 'passport' || dt == 'student_passport')) return true;
+          if (targetClean.contains('back') && dt.contains('back')) return true;
+          if (dt == 'passport' || dt == 'student_passport') return true;
+        }
+        if (targetClean.contains('10th') && dt.contains('10th')) return true;
+        if (targetClean.contains('12th') && dt.contains('12th')) return true;
+        if (targetClean.contains('degree') && dt.contains('degree')) return true;
+        return false;
+      });
+    } catch (_) {}
+
     return null;
   }
 
-  bool _isDocUploaded(String type) {
-    try {
-      final doc = _userDocs.firstWhere(
-        (d) => d.docType == type || (type == 'student_passport_front' && d.docType == 'student_passport_back'),
-      );
-      return doc.uploaded || doc.status == 'uploaded' || doc.status == 'verified';
-    } catch (_) {
-      return _localOcrNumbers.containsKey(type);
+  String? _getExtractedNumberForDoc(String type) {
+    final doc = _findDocInDetails(type);
+    if (doc != null && doc.extractedNumber != null && doc.extractedNumber!.trim().isNotEmpty) {
+      return doc.extractedNumber!.trim();
     }
+    return _localOcrNumbers[type];
+  }
+
+  bool _isDocUploaded(String type) {
+    final doc = _findDocInDetails(type);
+    if (doc != null) {
+      final s = doc.status.toLowerCase();
+      return doc.uploaded || s == 'uploaded' || s == 'verified' || s == 'approved' || s == 'completed' || (doc.filePath != null && doc.filePath!.isNotEmpty);
+    }
+    return _localOcrNumbers.containsKey(type);
   }
 
   @override
