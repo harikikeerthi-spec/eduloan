@@ -196,7 +196,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           );
         } else {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
             (route) => false,
           );
         }

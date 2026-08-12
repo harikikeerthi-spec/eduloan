@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       } else {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
+          MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
           (route) => false,
         );
       }

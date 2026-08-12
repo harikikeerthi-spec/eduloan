@@ -13,7 +13,7 @@ import '../services/language_service.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
-  const MainNavigation({super.key, this.initialIndex = 0});
+  const MainNavigation({super.key, this.initialIndex = 2});
 
   static MainNavigationState? of(BuildContext context) =>
       context.findAncestorStateOfType<MainNavigationState>();

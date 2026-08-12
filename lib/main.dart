@@ -115,7 +115,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/onboarding': (context) => const OnboardingPage(),
-        '/home': (context) => const MainNavigation(),
+        '/home': (context) => const MainNavigation(initialIndex: 2),
         '/apply-loan': (context) => const ApplyLoanPage(),
         '/emi-calculator': (context) => const EmiCalculatorPage(),
         '/ai': (context) => const AiToolsPage(),

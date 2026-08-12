@@ -247,7 +247,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           // Navigate to home page
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const MainNavigation()),
+            MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
             (route) => false,
           );
         }
