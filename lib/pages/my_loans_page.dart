@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'apply_loan_page.dart';
 import 'document_vault_page.dart';
 import '../widgets/mesh_background.dart';
+import '../services/user_service.dart';
 import '../models/loan.dart';
 import '../services/loan_service.dart';
 import 'digilocker_auth_page.dart';
@@ -34,6 +35,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
     return null;
   }
   bool _isAllDocsUploaded = false;
+  bool _hasUploadedDocs = false;
   String? _error;
 
   @override
@@ -52,10 +54,16 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
     try {
       final loans = await _loanService.getUserLoans();
+      final userDocs = await UserService.getUserDocuments();
+      final bool hasUploadedDocs = userDocs.any((d) =>
+        (d.uploaded || d.status.toLowerCase() == 'verified' || d.status.toLowerCase() == 'uploaded' || d.status.toLowerCase() == 'approved' || (d.filePath != null && d.filePath!.isNotEmpty)) &&
+        d.status.toLowerCase() != 'rejected'
+      );
       final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
       if (mounted) {
         setState(() {
           _loans = loans;
+          _hasUploadedDocs = hasUploadedDocs;
           _isAllDocsUploaded = allDocsUploaded;
           _isLoading = false;
         });
@@ -85,7 +93,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
   int get _documentsProgress {
     if (_loans.isEmpty) return 0;
-    final totalProgress = _loans.fold(0, (sum, loan) => sum + loan.effectiveProgress);
+    final totalProgress = _loans.fold(0, (sum, loan) => sum + loan.getEffectiveProgress(hasUploadedDocs: _hasUploadedDocs));
     return (totalProgress / _loans.length).round();
   }
 
@@ -426,7 +434,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
                 Text(
-                  '${loan.effectiveProgress}%',
+                  '${loan.getEffectiveProgress(hasUploadedDocs: _hasUploadedDocs)}%',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -1087,7 +1095,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
       {'key': 'disbursed', 'label': 'Disbursed', 'icon': Icons.payments},
     ];
 
-    final int currentStageIndex = loan.effectiveStageIndex;
+    final int currentStageIndex = loan.getEffectiveStageIndex(hasUploadedDocs: _hasUploadedDocs);
 
     return Column(
       children: [

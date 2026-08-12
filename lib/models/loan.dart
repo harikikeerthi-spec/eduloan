@@ -100,7 +100,7 @@ class Loan {
 
   String get phoneNumber => phone ?? '';
 
-  int get effectiveProgress {
+  int getEffectiveProgress({bool hasUploadedDocs = false}) {
     final st = status.toLowerCase().trim();
     final sg = stage.toLowerCase().trim();
 
@@ -133,8 +133,11 @@ class Loan {
         sg == 'review') {
       return 60;
     }
-    if (st == 'docs_received' ||
+    if (hasUploadedDocs ||
+        st == 'docs_received' ||
         st == 'staff_verified' ||
+        st == 'documents_uploaded' ||
+        st == 'documents_verified' ||
         sg == 'document_verification' ||
         sg == 'documents_uploaded' ||
         sg == 'documents') {
@@ -143,7 +146,7 @@ class Loan {
     return progress > 0 ? progress : 20;
   }
 
-  int get effectiveStageIndex {
+  int getEffectiveStageIndex({bool hasUploadedDocs = false}) {
     final st = status.toLowerCase().trim();
     final sg = stage.toLowerCase().trim();
 
@@ -176,8 +179,11 @@ class Loan {
         sg == 'review') {
       return 2;
     }
-    if (st == 'docs_received' ||
+    if (hasUploadedDocs ||
+        st == 'docs_received' ||
         st == 'staff_verified' ||
+        st == 'documents_uploaded' ||
+        st == 'documents_verified' ||
         sg == 'document_verification' ||
         sg == 'documents_uploaded' ||
         sg == 'documents') {
@@ -185,6 +191,9 @@ class Loan {
     }
     return 0;
   }
+
+  int get effectiveProgress => getEffectiveProgress();
+  int get effectiveStageIndex => getEffectiveStageIndex();
 
   factory Loan.fromJson(Map<String, dynamic> json) {
     var docsList = <ApplicationDocument>[];
