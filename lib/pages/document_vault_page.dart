@@ -38,9 +38,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   // Document Categories based on user request
   final Map<String, List<Map<String, String>>> _studentDocs = {
     'KYC': [
-      {'name': 'PAN Card', 'type': 'student_pan'},
-      {'name': 'Aadhar Card', 'type': 'student_aadhar'},
       {'name': 'Passport (Front & Back)', 'type': 'student_passport'},
+      {'name': 'Aadhar Card', 'type': 'student_aadhar'},
+      {'name': 'PAN Card', 'type': 'student_pan'},
     ],
     'Academics': [
       {'name': '10th Marksheet', 'type': 'student_10th_marksheet'},
