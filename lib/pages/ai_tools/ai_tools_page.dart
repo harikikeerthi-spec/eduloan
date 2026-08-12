@@ -90,6 +90,15 @@ class AiToolsPage extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     _buildGridCard(
                       context,
+                      title: 'EMI\nCalculator',
+                      subtitle: 'Calculate loan EMIs',
+                      imagePath: 'assets/icons/3d/emi_calculator.png',
+                      color: const Color(0xFF10B981),
+                      onTap: () =>
+                          Navigator.pushNamed(context, '/emi-calculator'),
+                    ),
+                    _buildGridCard(
+                      context,
                       title: 'Eligibility\nChecker',
                       subtitle: 'Check loan qualification',
                       imagePath: 'assets/icons/3d/loan_eligibility.png',
