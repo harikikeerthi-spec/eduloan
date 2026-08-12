@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image/image.dart' as img;
+import 'package:vector_math/vector_math_64.dart' as vmath;
 
 class ImageCropDialog extends StatefulWidget {
   final Uint8List imageBytes;
@@ -88,37 +90,31 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
     setState(() => _isCropping = true);
 
     try {
-      const double outputSize = 512.0;
+      // Step 1: Render cropped circle at 256×256 on canvas (smaller = less data)
+      const double outputSize = 256.0;
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
 
-      // White background fill
+      // White background
       final bgPaint = Paint()..color = Colors.white;
       canvas.drawRect(const Rect.fromLTWH(0, 0, outputSize, outputSize), bgPaint);
 
-      // Clip canvas to circle for clean profile picture avatar output
+      // Clip to circle
       final clipPath = Path()
         ..addOval(const Rect.fromLTWH(0, 0, outputSize, outputSize));
       canvas.clipPath(clipPath);
 
       final double scaleRatio = outputSize / _cropSize;
 
-      // Move to center of output canvas
       canvas.translate(outputSize / 2, outputSize / 2);
-
-      // Apply user pan offset
       canvas.translate(_offset.dx * scaleRatio, _offset.dy * scaleRatio);
 
-      // Apply rotation
       if (_rotationTurns % 4 != 0) {
         canvas.rotate((_rotationTurns % 4) * (math.pi / 2));
       }
 
-      // Base scale fits shortest side to output diameter
       final double imgW = _uiImage!.width.toDouble();
       final double imgH = _uiImage!.height.toDouble();
-
-      // Adjust dimensions depending on 90 / 270 degree rotation
       final bool isRotated90 = (_rotationTurns % 2 != 0);
       final double effectiveW = isRotated90 ? imgH : imgW;
       final double effectiveH = isRotated90 ? imgW : imgH;
@@ -128,24 +124,35 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
 
       canvas.scale(totalScale, totalScale);
 
-      // Draw raw image centered
       final paint = Paint()
         ..isAntiAlias = true
         ..filterQuality = ui.FilterQuality.high;
 
-      canvas.drawImage(
-        _uiImage!,
-        Offset(-imgW / 2, -imgH / 2),
-        paint,
-      );
+      canvas.drawImage(_uiImage!, Offset(-imgW / 2, -imgH / 2), paint);
 
       final picture = recorder.endRecording();
-      final croppedUiImage = await picture.toImage(outputSize.toInt(), outputSize.toInt());
-      final byteData = await croppedUiImage.toByteData(format: ui.ImageByteFormat.png);
+      final croppedUiImage =
+          await picture.toImage(outputSize.toInt(), outputSize.toInt());
+
+      // Step 2: Get raw RGBA bytes from canvas
+      final byteData =
+          await croppedUiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
 
       if (byteData != null) {
-        final bytes = byteData.buffer.asUint8List();
-        return 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        final rgbaBytes = byteData.buffer.asUint8List();
+        final side = outputSize.toInt();
+
+        // Step 3: Use the `image` package to encode as JPEG at 75% quality
+        final imgLib = img.Image.fromBytes(
+          width: side,
+          height: side,
+          bytes: rgbaBytes.buffer,
+          format: img.Format.uint8,
+          numChannels: 4,
+        );
+
+        final jpegBytes = img.encodeJpg(imgLib, quality: 75);
+        return 'data:image/jpeg;base64,${base64Encode(jpegBytes)}';
       }
     } catch (e) {
       debugPrint('Error exporting cropped image: $e');
@@ -253,7 +260,7 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                                 alignment: Alignment.center,
                                 transform: Matrix4.translationValues(_offset.dx, _offset.dy, 0.0)
                                   ..rotateZ((_rotationTurns % 4) * (math.pi / 2))
-                                  ..scale(_scale, _scale, 1.0),
+                                  ..scaleByVector3(vmath.Vector3(_scale, _scale, 1.0)),
                                 child: RawImage(
                                   image: _uiImage,
                                   fit: BoxFit.contain,

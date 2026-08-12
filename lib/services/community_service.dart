@@ -368,9 +368,22 @@ class CommunityService {
         'colorHex': group['colorHex'] ?? '#311B92',
         'lastMsg': group['lastMsg'] ?? 'Group channel created just now!',
         'time': group['time'] ?? 'Just now',
+        // ✅ Persist admin identity so membership check works after restart
+        'adminEmail': group['adminEmail'] ?? '',
+        'adminName': group['adminName'] ?? '',
       };
       currentRaw.insert(0, json.encode(groupData));
       await prefs.setStringList('custom_smart_groups', currentRaw);
+
+      // ✅ Mark this group as admin-owned in local prefs
+      final groupId = group['id']?.toString() ?? '';
+      if (groupId.isNotEmpty) {
+        final adminGroups = prefs.getStringList('admin_group_ids') ?? [];
+        if (!adminGroups.contains(groupId)) {
+          adminGroups.add(groupId);
+          await prefs.setStringList('admin_group_ids', adminGroups);
+        }
+      }
 
       await _postRequest('/community/chat/group/create', groupData);
     } catch (e) {
@@ -706,6 +719,50 @@ class CommunityService {
       return true;
     } catch (e) {
       debugPrint('Error approving group join request: $e');
+      return true;
+    }
+  }
+  /// Admin rejects a join request
+  Future<bool> rejectGroupJoinRequest({
+    required String groupId,
+    required String requestId,
+    required String applicantEmail,
+    required String groupTitle,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final adminReqKey = 'admin_pending_requests_$groupId';
+      final currentAdminReqs = prefs.getStringList(adminReqKey) ?? [];
+      currentAdminReqs.removeWhere((str) {
+        try {
+          final map = json.decode(str) as Map;
+          return map['id'] == requestId || map['applicantEmail'] == applicantEmail;
+        } catch (_) {
+          return false;
+        }
+      });
+      await prefs.setStringList(adminReqKey, currentAdminReqs);
+
+      // Remove from pending
+      final pending = prefs.getStringList('pending_join_request_ids') ?? [];
+      pending.remove(groupId);
+      await prefs.setStringList('pending_join_request_ids', pending);
+
+      await _postRequest('/community/groups/$groupId/reject-request', {
+        'requestId': requestId,
+        'applicantEmail': applicantEmail,
+      });
+
+      // Notify applicant of rejection
+      await NotificationService.pushNotification(
+        title: '❌ Group Request Declined',
+        message: 'Your request to join "$groupTitle" was not approved by the admin.',
+        type: 'GROUP_JOIN_REJECTED',
+      );
+
+      return true;
+    } catch (e) {
+      debugPrint('Error rejecting group join request: $e');
       return true;
     }
   }

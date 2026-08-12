@@ -1,10 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import '../services/user_service.dart';
+import '../services/loan_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/mesh_background.dart';
 
@@ -20,63 +24,36 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   late TabController _tabController;
   bool _isLoading = true;
   List<UserDocument> _documents = [];
-  String? _coApplicantType; // 'Salaried' or 'Self Employed' or null
+  String? _coApplicantRelation;
+
+  final Map<String, String> _uploadedFileFingerprints = {};
+  final Map<String, String> _uploadedDocNames = {};
+
+  Map<String, List<Map<String, String>>> _customDocs = {
+    'Student': [],
+    'Co-Applicant': [],
+    'Parents': [],
+  };
 
   // Document Categories based on user request
   final Map<String, List<Map<String, String>>> _studentDocs = {
     'KYC': [
       {'name': 'PAN Card', 'type': 'student_pan'},
       {'name': 'Aadhar Card', 'type': 'student_aadhar'},
-      {'name': 'Passport Copy', 'type': 'student_passport'},
+      {'name': 'Passport (Front Page)', 'type': 'student_passport_front'},
+      {'name': 'Passport (Back Page)', 'type': 'student_passport_back'},
     ],
     'Academics': [
       {'name': '10th Marksheet', 'type': 'student_10th_marksheet'},
       {'name': '12th Marksheet', 'type': 'student_12th_marksheet'},
       {'name': 'Degree Marksheet', 'type': 'student_degree_marksheet'},
-      {'name': 'Test Score Card', 'type': 'student_test_score'},
-      {'name': 'University Offer Letter', 'type': 'student_offer_letter'},
     ],
   };
 
-  final Map<String, List<Map<String, String>>> _coApplicantSalariedDocs = {
+  final Map<String, List<Map<String, String>>> _coApplicantDocs = {
     'KYC': [
       {'name': 'Co-applicant PAN Card', 'type': 'coapp_pan'},
       {'name': 'Co-applicant Aadhar Card', 'type': 'coapp_aadhar'},
-      {'name': 'Latest Electricity Bill', 'type': 'coapp_electricity_bill'},
-    ],
-    'Financials': [
-      {'name': 'Last 3 Months Salary Slip', 'type': 'coapp_salary_slip'},
-      {
-        'name': 'Last 6 Months Bank Statement (Salary)',
-        'type': 'coapp_bank_statement_salary',
-      },
-      {'name': 'Last 1 Year Form 16 / ITR', 'type': 'coapp_form16_itr'},
-    ],
-  };
-
-  final Map<String, List<Map<String, String>>> _coApplicantSelfEmployedDocs = {
-    'KYC': [
-      {'name': 'Co-applicant PAN Card', 'type': 'coapp_pan'},
-      {'name': 'Co-applicant Aadhar Card', 'type': 'coapp_aadhar'},
-      {'name': 'Latest Electricity Bill', 'type': 'coapp_electricity_bill'},
-    ],
-    'Financials': [
-      {
-        'name': 'Last 2 Years ITR with Computation',
-        'type': 'coapp_itr_computation',
-      },
-      {
-        'name': 'Balance Sheet & P&L Account',
-        'type': 'coapp_balance_sheet_pnl',
-      },
-      {
-        'name': 'Business Registration Proof (GST/Others)',
-        'type': 'coapp_business_proof',
-      },
-      {
-        'name': 'Last 1 Year Bank Statement (Current & Saving)',
-        'type': 'coapp_bank_statement_business',
-      },
     ],
   };
 
@@ -98,28 +75,258 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     _fetchDocuments();
   }
 
+  Future<void> _loadCustomDocs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+      final String? jsonStr = prefs.getString('custom_vault_docs_$userId');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final Map<String, dynamic> decoded = jsonDecode(jsonStr);
+        _customDocs = {
+          'Student': List<Map<String, String>>.from(
+              (decoded['Student'] ?? []).map((x) => Map<String, String>.from(x))),
+          'Co-Applicant': List<Map<String, String>>.from(
+              (decoded['Co-Applicant'] ?? []).map((x) => Map<String, String>.from(x))),
+          'Parents': List<Map<String, String>>.from(
+              (decoded['Parents'] ?? []).map((x) => Map<String, String>.from(x))),
+        };
+      } else {
+        _customDocs = {
+          'Student': [],
+          'Co-Applicant': [],
+          'Parents': [],
+        };
+      }
+    } catch (e) {
+      debugPrint('Error loading custom vault docs: $e');
+    }
+  }
+
+  Future<void> _saveCustomDocs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+      await prefs.setString('custom_vault_docs_$userId', jsonEncode(_customDocs));
+    } catch (e) {
+      debugPrint('Error saving custom vault docs: $e');
+    }
+  }
+
+  Future<String> _getFileFingerprint(File file) async {
+    final length = await file.length();
+    final name = file.path.split(RegExp(r'[/\\]')).last.toLowerCase();
+    try {
+      final raf = await file.open();
+      final sampleSize = length < 2048 ? length : 2048;
+      final sample = Uint8List(sampleSize);
+      await raf.readInto(sample);
+      await raf.close();
+      final sampleString = sample.sublist(0, sampleSize > 100 ? 100 : sampleSize).join('_');
+      return '${length}_${name}_$sampleString';
+    } catch (_) {
+      return '${length}_$name';
+    }
+  }
+
+  Future<void> _loadFingerprints() async {
+    _uploadedFileFingerprints.clear();
+    _uploadedDocNames.clear();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+      final fpPrefix = 'fingerprint_${userId}_';
+      final dnPrefix = 'docname_${userId}_';
+
+      final keys = prefs.getKeys();
+      for (var key in keys) {
+        if (key.startsWith(fpPrefix)) {
+          final docType = key.replaceFirst(fpPrefix, '');
+          final fp = prefs.getString(key);
+          if (fp != null) _uploadedFileFingerprints[docType] = fp;
+        }
+        if (key.startsWith(dnPrefix)) {
+          final docType = key.replaceFirst(dnPrefix, '');
+          final dn = prefs.getString(key);
+          if (dn != null) _uploadedDocNames[docType] = dn;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading fingerprints: $e');
+    }
+  }
+
+  Future<void> _saveFingerprint(String docType, String docName, String fingerprint) async {
+    _uploadedFileFingerprints[docType] = fingerprint;
+    _uploadedDocNames[docType] = docName;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+      await prefs.setString('fingerprint_${userId}_$docType', fingerprint);
+      await prefs.setString('docname_${userId}_$docType', docName);
+    } catch (e) {
+      debugPrint('Error saving fingerprint: $e');
+    }
+  }
+
+  Future<void> _deleteFingerprint(String docType) async {
+    _uploadedFileFingerprints.remove(docType);
+    _uploadedDocNames.remove(docType);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+      await prefs.remove('fingerprint_${userId}_$docType');
+      await prefs.remove('docname_${userId}_$docType');
+      await prefs.remove('ocr_number_${userId}_$docType');
+    } catch (e) {
+      debugPrint('Error deleting fingerprint for $docType: $e');
+    }
+  }
+
+  Future<void> _extractAndStoreOcrNumber(File file, String docType) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final sampleLen = bytes.length > 50000 ? 50000 : bytes.length;
+      final rawString = String.fromCharCodes(bytes.sublist(0, sampleLen));
+      
+      String? extractedNumber;
+
+      final typeLower = docType.toLowerCase();
+      if (typeLower.contains('pan')) {
+        final match = RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').firstMatch(rawString.toUpperCase());
+        if (match != null) extractedNumber = match.group(0);
+      } else if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
+        final match = RegExp(r'\b\d{4}\s?\d{4}\s?\d{4}\b').firstMatch(rawString);
+        if (match != null) extractedNumber = match.group(0);
+      } else if (typeLower.contains('passport')) {
+        final match = RegExp(r'\b[A-Z][0-9]{7}\b').firstMatch(rawString.toUpperCase());
+        if (match != null) extractedNumber = match.group(0);
+      }
+
+      if (extractedNumber != null && extractedNumber.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('userId') ?? 'anonymous';
+        await prefs.setString('ocr_number_${userId}_$docType', extractedNumber);
+      }
+    } catch (e) {
+      debugPrint('Error extracting OCR number locally: $e');
+    }
+  }
+
+  Future<String?> _validateDocumentTypeMismatch(File file, String targetDocType, String targetDocName) async {
+    final pathLower = file.path.toLowerCase();
+    String contentText = pathLower;
+
+    try {
+      final bytes = await file.readAsBytes();
+      final sampleLen = bytes.length > 30000 ? 30000 : bytes.length;
+      final rawString = String.fromCharCodes(bytes.sublist(0, sampleLen)).toLowerCase();
+      contentText = '$pathLower $rawString';
+    } catch (_) {}
+
+    final typeLower = targetDocType.toLowerCase();
+
+    // Keywords for Aadhaar Card
+    final isAadhaarContent = contentText.contains('unique identification') ||
+        contentText.contains('aadhaar') ||
+        contentText.contains('aadhar') ||
+        contentText.contains('uidai') ||
+        RegExp(r'\b\d{4}\s?\d{4}\s?\d{4}\b').hasMatch(contentText);
+
+    // Keywords for PAN Card
+    final isPanContent = contentText.contains('income tax') ||
+        contentText.contains('permanent account') ||
+        contentText.contains('tax department') ||
+        RegExp(r'[a-z]{5}[0-9]{4}[a-z]{1}').hasMatch(contentText);
+
+    // Keywords for Passport
+    final isPassportContent = contentText.contains('passport') ||
+        contentText.contains('republic of india') ||
+        contentText.contains('p<ind') ||
+        contentText.contains('mrz');
+
+    // 1. Target slot is Aadhaar Card
+    if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
+      if (isPanContent && !isAadhaarContent) {
+        return 'You are uploading a PAN Card in the Aadhar Card slot. Please change it and upload your Aadhar Card.';
+      }
+      if (isPassportContent && !isAadhaarContent) {
+        return 'You are uploading a Passport in the Aadhar Card slot. Please change it and upload your Aadhar Card.';
+      }
+    }
+
+    // 2. Target slot is PAN Card
+    if (typeLower.contains('pan')) {
+      if (isAadhaarContent && !isPanContent) {
+        return 'You are uploading an Aadhar Card in the PAN Card slot. Please change it and upload your PAN Card.';
+      }
+      if (isPassportContent && !isPanContent) {
+        return 'You are uploading a Passport in the PAN Card slot. Please change it and upload your PAN Card.';
+      }
+    }
+
+    // 3. Target slot is Passport
+    if (typeLower.contains('passport')) {
+      if (isAadhaarContent && !isPassportContent) {
+        return 'You are uploading an Aadhar Card in the Passport slot. Please change it and upload your Passport.';
+      }
+      if (isPanContent && !isPassportContent) {
+        return 'You are uploading a PAN Card in the Passport slot. Please change it and upload your Passport.';
+      }
+    }
+
+    return null;
+  }
+
   Future<void> _fetchDocuments() async {
     setState(() => _isLoading = true);
+    await _loadCustomDocs();
+    await _loadFingerprints();
 
-    // Load persisted co-applicant type
     final prefs = await SharedPreferences.getInstance();
-    _coApplicantType = prefs.getString('co_applicant_type');
+    _coApplicantRelation = prefs.getString('co_applicant_relation');
+
+    try {
+      final loans = await LoanService().getUserLoans();
+      if (loans.isNotEmpty) {
+        final lastLoan = loans.first;
+        if (lastLoan.coApplicantRelation != null && lastLoan.coApplicantRelation!.isNotEmpty) {
+          _coApplicantRelation = lastLoan.coApplicantRelation;
+          await prefs.setString('co_applicant_relation', _coApplicantRelation!);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching user loans for relation filter: $e');
+    }
 
     final docs = await UserService.getUserDocuments();
+
+    // Auto-discover backend uploaded custom documents
+    for (var doc in docs) {
+      if (doc.docType.startsWith('custom_')) {
+        String cat = 'Student';
+        if (doc.docType.contains('co_applicant') || doc.docType.contains('coapp')) {
+          cat = 'Co-Applicant';
+        } else if (doc.docType.contains('parents') || doc.docType.contains('father') || doc.docType.contains('mother')) {
+          cat = 'Parents';
+        }
+        final existingList = _customDocs[cat] ?? [];
+        if (!existingList.any((item) => item['type'] == doc.docType)) {
+          existingList.add({
+            'name': doc.displayName.isNotEmpty ? doc.displayName : 'Custom Document',
+            'type': doc.docType,
+          });
+          _customDocs[cat] = existingList;
+        }
+      }
+    }
+    await _saveCustomDocs();
+
     if (mounted) {
       setState(() {
         _documents = docs;
         _isLoading = false;
       });
     }
-  }
-
-  Future<void> _saveCoApplicantType(String type) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('co_applicant_type', type);
-    setState(() {
-      _coApplicantType = type;
-    });
   }
 
   Future<String?> _getToken() async {
@@ -135,61 +342,363 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     }
   }
 
+  /// Detects if a PDF is password-protected by scanning raw bytes for /Encrypt.
+  Future<bool> _isPdfPasswordProtected(File file) async {
+    try {
+      if (!file.path.toLowerCase().endsWith('.pdf')) return false;
+      final int fileSize = await file.length();
+      final int readSize = fileSize < 65536 ? fileSize : 65536;
+      final RandomAccessFile raf = await file.open();
+      final Uint8List headBytes = Uint8List(readSize);
+      await raf.readInto(headBytes);
+      await raf.close();
+      Uint8List tailBytes = Uint8List(0);
+      if (fileSize > readSize) {
+        final int tailSize = fileSize < 4096 ? fileSize : 4096;
+        final RandomAccessFile raf2 = await file.open();
+        await raf2.setPosition(fileSize - tailSize);
+        tailBytes = Uint8List(tailSize);
+        await raf2.readInto(tailBytes);
+        await raf2.close();
+      }
+      final String combined =
+          '${String.fromCharCodes(headBytes)} ${String.fromCharCodes(tailBytes)}';
+      return combined.contains('/Encrypt');
+    } catch (e) {
+      debugPrint('PDF password check error: $e');
+      return false;
+    }
+  }
+
+  /// Secure password dialog for password-protected documents.
+  /// Returns the entered password or null if cancelled.
+  Future<String?> _showPasswordDialog(String docName) async {
+    final TextEditingController passCtrl = TextEditingController();
+    bool obscure = true;
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.lock_rounded, color: Color(0xFF311B92), size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Document Password',
+                  style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text('"$docName" is password protected.',
+                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF475569))),
+              const SizedBox(height: 4),
+              Text('Enter the document password to proceed with upload.',
+                  style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF64748B))),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passCtrl,
+                obscureText: obscure,
+                autofocus: true,
+                style: GoogleFonts.inter(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Enter document password',
+                  hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+                  prefixIcon: const Icon(Icons.vpn_key_rounded, size: 18, color: Color(0xFF311B92)),
+                  suffixIcon: IconButton(
+                    icon: Icon(obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                        size: 18, color: Colors.grey),
+                    onPressed: () => setSt(() => obscure = !obscure),
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFF94A3B8)),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text('Used only to unlock the document for verification.',
+                        style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final pwd = passCtrl.text.trim();
+                if (pwd.isEmpty) return;
+                Navigator.pop(ctx, pwd);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF311B92),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: Text('Upload', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _uploadDocument(String type, String name) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'heif', 'doc', 'docx', 'webp'],
     );
 
-    if (result != null && result.files.single.path != null) {
-      File file = File(result.files.single.path!);
+    if (result == null || result.files.single.path == null) return;
 
+    File file = File(result.files.single.path!);
+
+    // ─── DUPLICATE DOCUMENT CHECK ─────────────────────────────────────────
+    final String fingerprint = await _getFileFingerprint(file);
+    String? duplicateDocName;
+
+    _uploadedFileFingerprints.forEach((existingType, existingFp) {
+      if (existingType != type && existingFp == fingerprint) {
+        duplicateDocName = _uploadedDocNames[existingType] ?? existingType;
+      }
+    });
+
+    if (duplicateDocName != null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Uploading $name...'),
-            duration: const Duration(minutes: 2),
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text(
+                  'Duplicate Document',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF311B92),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'This document is already uploaded under "$duplicateDocName".\n\nEach document can only be uploaded once. If you want to move it here, please delete it from "$duplicateDocName" first.',
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
-      String? errorMessage = await UserService.uploadDocument(file, type);
-
+    // ─── DOCUMENT TYPE MISMATCH PRE-CHECK ──────────────────────────────────
+    final String? mismatchError = await _validateDocumentTypeMismatch(file, type, name);
+    if (mismatchError != null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        if (errorMessage == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$name uploaded'),
-              backgroundColor: const Color(0xFF10B981),
-              duration: const Duration(seconds: 4),
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text(
+                  'Wrong Document Type',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF311B92),
+                  ),
+                ),
+              ],
             ),
-          );
-          _fetchDocuments();
-        } else {
-          // Push dual notification: system heads-up push banner + Bell Icon badge
-          NotificationService.pushNotification(
-            title: '❌ Document Rejected: $name',
-            message: 'Your $name was rejected: $errorMessage. Please re-upload a clear copy.',
-            type: 'DOCUMENT_REJECTED',
-          );
+            content: Text(
+              mismatchError,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
+    String? docPassword;
+
+    // ── Password Protection Check ──────────────────────────────────────────
+    final bool isProtected = await _isPdfPasswordProtected(file);
+    if (isProtected) {
+      if (!mounted) return;
+      docPassword = await _showPasswordDialog(name);
+      // If user cancelled the password dialog, abort upload
+      if (docPassword == null) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('$name upload rejected: $errorMessage'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 6),
-              action: SnackBarAction(
-                label: 'Dismiss',
-                textColor: Colors.white,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
-              ),
+              content: Text('Upload of "$name" cancelled.'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
+        return;
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 16, height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Text('Uploading $name${isProtected ? ' (unlocking...)' : ''}...'),
+            ],
+          ),
+          duration: const Duration(minutes: 2),
+        ),
+      );
+    }
+
+    String? errorMessage = await UserService.uploadDocument(
+      file,
+      type,
+      password: docPassword,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      if (errorMessage == null) {
+        _saveFingerprint(type, name, fingerprint);
+        await _extractAndStoreOcrNumber(file, type);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name uploaded${isProtected ? ' ✓ Unlocked' : ''}'),
+            backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+        _fetchDocuments();
+      } else {
+        // Push dual notification: system heads-up push banner + Bell Icon badge
+        NotificationService.pushNotification(
+          title: '❌ Document Rejected: $name',
+          message: 'Your $name was rejected: $errorMessage. Please re-upload a clear copy.',
+          type: 'DOCUMENT_REJECTED',
+        );
+
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text(
+                  'Wrong Document Type',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF311B92),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              errorMessage,
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name upload rejected: $errorMessage'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
+          ),
+        );
       }
     }
   }
@@ -220,6 +729,189 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     );
   }
 
+  Map<String, List<Map<String, String>>> _getCombinedDocs(
+    String category,
+    Map<String, List<Map<String, String>>> baseDocs,
+  ) {
+    final Map<String, List<Map<String, String>>> combined = Map.from(baseDocs);
+
+    if (category == 'Parents' && _coApplicantRelation != null) {
+      final relLower = _coApplicantRelation!.trim().toLowerCase();
+      if (relLower == 'father' || relLower.contains('father')) {
+        combined.remove('Father');
+      } else if (relLower == 'mother' || relLower.contains('mother')) {
+        combined.remove('Mother');
+      }
+    }
+
+    final customList = _customDocs[category];
+    if (customList != null && customList.isNotEmpty) {
+      combined['Additional Documents'] = List.from(customList);
+    }
+    return combined;
+  }
+
+  void _showAddCustomDocDialog() {
+    String selectedCategory = 'Student';
+    final TextEditingController nameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.add_task_rounded, color: Color(0xFF311B92)),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Add Custom Document',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF311B92),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Select Category:',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.7)),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedCategory,
+                        isExpanded: true,
+                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF311B92)),
+                        items: ['Student', 'Co-Applicant', 'Parents'].map((cat) {
+                          return DropdownMenuItem<String>(
+                            value: cat,
+                            child: Text(cat, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setDialogState(() => selectedCategory = val);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Document Name:',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.7)),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: nameController,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. University Offer Letter',
+                      filled: true,
+                      fillColor: const Color(0xFFF3F4F6),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final nav = Navigator.of(ctx);
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a document name'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final String slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
+                    final String catPrefix = selectedCategory.toLowerCase().replaceAll('-', '_');
+                    final String docType = 'custom_${catPrefix}_${slug}_${DateTime.now().millisecondsSinceEpoch}';
+
+                    setState(() {
+                      _customDocs[selectedCategory] ??= [];
+                      _customDocs[selectedCategory]!.add({
+                        'name': name,
+                        'type': docType,
+                      });
+                    });
+
+                    await _saveCustomDocs();
+                    nav.pop();
+
+                    // Switch tab to the selected category tab
+                    int tabIndex = 0;
+                    if (selectedCategory == 'Co-Applicant') tabIndex = 1;
+                    if (selectedCategory == 'Parents') tabIndex = 2;
+                    _tabController.animateTo(tabIndex);
+
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('"$name" added under $selectedCategory! Tap to upload.'),
+                        backgroundColor: const Color(0xFF10B981),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF311B92),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Add Document'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -238,6 +930,18 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 color: Color(0xFF311B92),
               ),
             ),
+          ),
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: Color(0xFF311B92), size: 24),
+            ),
+            tooltip: 'Add Custom Document',
+            onPressed: _showAddCustomDocDialog,
           ),
         ],
       ),
@@ -273,149 +977,15 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildStudentTab() {
-    return _buildSectionList(_studentDocs);
+    return _buildSectionList(_getCombinedDocs('Student', _studentDocs));
   }
 
   Widget _buildCoApplicantTab() {
-    if (_coApplicantType == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.people_alt_outlined,
-                size: 64,
-                color: Color(0xFF311B92),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Choose Co-Applicant Type',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF311B92),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Please select the employment type of your co-applicant. This selection will be locked once chosen.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _saveCoApplicantType('Salaried'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF311B92),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Salaried'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => _saveCoApplicantType('Self Employed'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF311B92),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Self Employed'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        const SizedBox(height: 16),
-        // Toggle Switch (Locked)
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: Colors.grey.shade300),
-          ),
-          child: Row(
-            children: [
-              _buildToggleOption('Salaried'),
-              _buildToggleOption('Self Employed'),
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(top: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock_outline, size: 12, color: Colors.grey),
-              SizedBox(width: 4),
-              Text(
-                'Type is locked after selection',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _buildSectionList(
-            _coApplicantType == 'Salaried'
-                ? _coApplicantSalariedDocs
-                : _coApplicantSelfEmployedDocs,
-          ),
-        ),
-      ],
-    );
+    return _buildSectionList(_getCombinedDocs('Co-Applicant', _coApplicantDocs));
   }
 
   Widget _buildParentsTab() {
-    return _buildSectionList(_parentsDocs);
-  }
-
-  Widget _buildToggleOption(String text) {
-    bool isSelected = _coApplicantType == text;
-    // Type is locked, so no onTap
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF311B92) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade400,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
+    return _buildSectionList(_getCombinedDocs('Parents', _parentsDocs));
   }
 
   Widget _buildSectionList(Map<String, List<Map<String, String>>> sections) {
@@ -687,42 +1257,41 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         }
                       },
                     ),
-                    if (!isVerified) ...[
-                      const SizedBox(width: 6),
-                      _buildCompactActionButton(
-                        icon: Icons.delete_outline_rounded,
-                        color: const Color(0xFFE53935),
-                        onTap: () async {
-                          bool? confirm = await showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              title: const Text('Delete Document'),
-                              content: Text('Are you sure you want to delete $name?'),
-                              actions: [
-                                TextButton(
-                                  child: const Text('Cancel'),
-                                  onPressed: () => Navigator.pop(context, false),
+                    const SizedBox(width: 6),
+                    _buildCompactActionButton(
+                      icon: Icons.delete_outline_rounded,
+                      color: const Color(0xFFE53935),
+                      onTap: () async {
+                        bool? confirm = await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text('Delete Document'),
+                            content: Text('Are you sure you want to delete $name?'),
+                            actions: [
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () => Navigator.pop(context, false),
+                              ),
+                              TextButton(
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
                                 ),
-                                TextButton(
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(color: Colors.red),
-                                  ),
-                                  onPressed: () => Navigator.pop(context, true),
-                                ),
-                              ],
-                            ),
-                          );
+                                onPressed: () => Navigator.pop(context, true),
+                              ),
+                            ],
+                          ),
+                        );
 
-                          if (confirm == true) {
-                            setState(() => _isLoading = true);
-                            await UserService.deleteDocument(type);
-                            _fetchDocuments();
-                          }
-                        },
-                      ),
-                    ],
+                        if (confirm == true) {
+                          setState(() => _isLoading = true);
+                          await _deleteFingerprint(type);
+                          await UserService.deleteDocument(type);
+                          _fetchDocuments();
+                        }
+                      },
+                    ),
                   ],
                 )
               else

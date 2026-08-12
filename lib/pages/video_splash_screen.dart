@@ -19,12 +19,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   VideoPlayerController? _controller;
   bool _navigated = false;
   bool _videoReady = false;
-  bool _showFallback = false;
-  bool _isInCallMode = false;
-
-  late AnimationController _animController;
-  late Animation<double> _fadeAnim;
-  late Animation<double> _scaleAnim;
 
   static const MethodChannel _audioChannel =
       MethodChannel('com.vidyaloan/audio_check');
@@ -32,18 +26,10 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
-    _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
-    );
     _initializeAndPlay();
   }
 
-  /// Checks if the device is currently in a cellular call or VoIP meet (Google Meet, Zoom, WhatsApp)
+  /// Checks if the device is currently in a cellular call or VoIP meet (Google Meet, Zoom, WhatsApp, Teams)
   Future<bool> _checkActiveCallOrMeet() async {
     try {
       final bool? inCall = await _audioChannel.invokeMethod<bool>('isInCallOrMeet');
@@ -55,10 +41,11 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   }
 
   Future<void> _initializeAndPlay() async {
-    // Safety net — max 20 seconds
-    Future.delayed(const Duration(seconds: 20), () {
+    // ── Hard safety net — max 1.2 seconds ────────────────────────────────
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted && !_navigated) {
-        debugPrint('VideoSplashScreen: Safety timeout reached, navigating.');
+        debugPrint('VideoSplashScreen: Safety timeout reached. Navigating instantly.');
+        FlutterNativeSplash.remove();
         _navigateAway();
       }
     });
@@ -66,17 +53,10 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     // ── Check if user is in a phone call or Google Meet / Zoom / WhatsApp call ──
     final bool isInCall = await _checkActiveCallOrMeet();
     if (isInCall) {
-      debugPrint('VideoSplashScreen: Active phone call or Meet detected. Bypassing video splash.');
+      debugPrint('VideoSplashScreen: Active phone call or Meet detected. Instantly bypassing video splash.');
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
-        setState(() {
-          _showFallback = true;
-          _isInCallMode = true;
-        });
-        _animController.forward();
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (mounted && !_navigated) _navigateAway();
-        });
+        _navigateAway();
       }
       return;
     }
@@ -99,10 +79,11 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       final controller = VideoPlayerController.file(tempVideoFile);
       _controller = controller;
 
+      // Aggressive 800ms timeout so hardware locks never hang the app
       await controller.initialize().timeout(
-        const Duration(seconds: 15),
+        const Duration(milliseconds: 800),
         onTimeout: () {
-          throw Exception('Video initialization timed out after 15s');
+          throw Exception('Video initialization timed out after 800ms');
         },
       );
 
@@ -123,15 +104,11 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       await controller.play();
       debugPrint('VideoSplashScreen: Video playing successfully.');
     } catch (error) {
-      debugPrint('VideoSplashScreen: Video failed — $error. Showing fallback.');
+      debugPrint('VideoSplashScreen: Video failed or timed out ($error). Instantly navigating to app.');
       try { await tempVideoFile?.delete(); } catch (_) {}
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
-        setState(() => _showFallback = true);
-        _animController.forward();
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (mounted && !_navigated) _navigateAway();
-        });
+        _navigateAway();
       }
     }
   }
@@ -146,14 +123,7 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       if (mounted && !_navigated) {
         ctrl.removeListener(_videoListener);
         FlutterNativeSplash.remove();
-        setState(() {
-          _showFallback = true;
-          _videoReady = false;
-        });
-        _animController.forward();
-        Future.delayed(const Duration(milliseconds: 2500), () {
-          if (mounted && !_navigated) _navigateAway();
-        });
+        _navigateAway();
       }
       return;
     }
@@ -201,7 +171,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
   @override
   void dispose() {
-    _animController.dispose();
     _controller?.removeListener(_videoListener);
     _controller?.dispose();
     super.dispose();
@@ -212,12 +181,12 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     final ctrl = _controller;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1E1B4B),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Video layer (Only shown when not in call/meet)
-          if (_videoReady && ctrl != null && ctrl.value.isInitialized && !_isInCallMode)
+          // Video layer (Only shown when not in call/meet and ready)
+          if (_videoReady && ctrl != null && ctrl.value.isInitialized)
             SizedBox.expand(
               child: FittedBox(
                 fit: BoxFit.cover,
@@ -227,10 +196,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
                   child: VideoPlayer(ctrl),
                 ),
               ),
-            ),
-
-          // Silent Animated Splash Screen (Shown when in call/meet or on fallback)
-          if (_showFallback || _isInCallMode)
+            )
+          else
+            // Clean branded background matching native splash while loading/navigating
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -243,65 +211,38 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
                   ],
                 ),
               ),
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: ScaleTransition(
-                  scale: _scaleAnim,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.25),
-                              width: 1.5,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Image.asset(
-                            'assets/images/logo_transparent.png',
-                            fit: BoxFit.contain,
-                          ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 1.5,
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'VidyaLoans',
-                          style: GoogleFonts.outfit(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Your Dream. Our Support.',
-                          style: GoogleFonts.outfit(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.white70,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        SizedBox(
-                          width: 36,
-                          height: 36,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Image.asset(
+                        'assets/images/logo_transparent.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'VidyaLoans',
+                      style: GoogleFonts.outfit(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

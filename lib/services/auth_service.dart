@@ -43,7 +43,6 @@ class AuthService {
         return {'success': false, 'message': 'Unexpected server response'};
       }
 
-      // Check both status code AND the 'success' flag from backend
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           data['success'] == true) {
         return {
@@ -82,25 +81,20 @@ class AuthService {
         return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
       }
 
-      // CRITICAL FIX: The backend might return 201 Created but with { success: false } body
-      // We must check data['success'] explicitly.
       if ((response.statusCode == 200 || response.statusCode == 201) &&
           data['success'] == true) {
         final token = data['access_token'];
         final refreshToken = data['refresh_token'];
 
-        // Save tokens and email
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('latest_ai_recommendations');
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        // onboarding_shown is set only when user completes OnboardingPage
         if (token != null) await prefs.setString('auth_token', token);
         if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
         if (data['userId'] != null) await prefs.setString('userId', data['userId']);
 
-        // Save details
         if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
         if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
         if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
@@ -130,7 +124,7 @@ class AuthService {
     return loginWithFirebaseToken(idToken: idToken, email: email);
   }
 
-  /// Authenticates using Firebase ID token (Google Sign-In or Phone Auth)
+  /// Authenticates using Firebase ID token
   static Future<Map<String, dynamic>> loginWithFirebaseToken({
     required String idToken,
     required String email,
@@ -157,18 +151,15 @@ class AuthService {
         final token = data['access_token'];
         final refreshToken = data['refresh_token'];
 
-        // Save tokens and email
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('latest_ai_recommendations');
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        // onboarding_shown is set only when user completes OnboardingPage
         if (token != null) await prefs.setString('auth_token', token);
         if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
         if (data['userId'] != null) await prefs.setString('userId', data['userId']);
 
-        // Save details
         if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
         if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
         if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
@@ -226,7 +217,6 @@ class AuthService {
         }
         return true;
       } else {
-        // If refresh fails, clear tokens as session is totally expired
         await prefs.remove('auth_token');
         await prefs.remove('refresh_token');
         return false;
@@ -248,12 +238,13 @@ class AuthService {
   }) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-      final bodyMap = {
+      final String normalizedDob = dateOfBirth.replaceAll('/', '-');
+      final bodyMap = <String, dynamic>{
         'email': email,
         'firstName': firstName,
         'lastName': lastName,
         'phoneNumber': phoneNumber,
-        'dateOfBirth': dateOfBirth,
+        'dateOfBirth': normalizedDob,
       };
       if (profileImage != null) {
         bodyMap['profileImage'] = profileImage;
@@ -273,10 +264,10 @@ class AuthService {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Update local prefs
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_firstName', firstName);
         await prefs.setString('user_lastName', lastName);
+        await prefs.setString('user_name', '$firstName $lastName'.trim());
         await prefs.setString('user_phone', phoneNumber);
         await prefs.setString('user_dob', dateOfBirth);
         if (profileImage != null) {

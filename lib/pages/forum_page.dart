@@ -1358,146 +1358,216 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
+
   Widget _buildGroupChannelTile(Map<String, dynamic> group) {
     final Color color = group['color'] as Color;
+    final String groupId = group['id']?.toString() ?? '';
+    final String? adminEmail = group['adminEmail']?.toString();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF311B92).withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+    return FutureBuilder<String>(
+      future: CommunityService().getGroupMembershipStatus(groupId, adminEmail),
+      builder: (context, snapshot) {
+        final status = snapshot.data ?? 'NONE';
+        final bool isAdmin = status == 'ADMIN';
+        final bool isMember = status == 'APPROVED';
+        final bool isPending = status == 'PENDING';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: isAdmin
+                ? Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5), width: 1.5)
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openGroupChatModal(group),
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Row(
-              children: [
-                Stack(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openGroupChatModal(group),
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.all(15),
+                child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(
-                        group['icon'] as IconData,
-                        color: color,
-                        size: 24,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            group['icon'] as IconData,
+                            color: color,
+                            size: 24,
+                          ),
                         ),
-                      ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 9,
+                            height: 9,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ),
+                        // 👑 Admin crown badge
+                        if (isAdmin)
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF59E0B),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.shield_rounded, size: 10, color: Colors.white),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              group['title'],
-                              style: GoogleFonts.outfit(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1E293B),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  group['title'],
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1E293B),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              // Admin badge tag
+                              if (isAdmin) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(7),
+                                  ),
+                                  child: Text(
+                                    'Admin',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFD97706),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  group['badge'],
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          // Show join status hint for non-admin
+                          if (!isAdmin && !isMember)
+                            Row(
+                              children: [
+                                Icon(
+                                  isPending ? Icons.hourglass_top_rounded : Icons.lock_outline_rounded,
+                                  size: 11,
+                                  color: isPending ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  isPending ? 'Request pending approval' : 'Request to join',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10.5,
+                                    color: isPending ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            Text(
+                              group['lastMsg'],
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: const Color(0xFF475569),
+                                fontWeight: FontWeight.w500,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              group['badge'],
-                              style: GoogleFonts.inter(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
-                                color: color,
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Icon(Icons.people_alt_outlined, size: 13, color: Colors.grey[500]),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${group['members']} members',
+                                style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[600]),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${group['online']} online',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10.5,
+                                  color: const Color(0xFF10B981),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        group['lastMsg'],
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: const Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Icon(Icons.people_alt_outlined, size: 13, color: Colors.grey[500]),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${group['members']} members',
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${group['online']} online',
-                            style: GoogleFonts.inter(
-                              fontSize: 10.5,
-                              color: const Color(0xFF10B981),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      isAdmin
+                          ? Icons.manage_accounts_rounded
+                          : Icons.arrow_forward_ios_rounded,
+                      size: isAdmin ? 18 : 13,
+                      color: isAdmin ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 13,
-                  color: Color(0xFF94A3B8),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -2722,40 +2792,93 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                         final name = req['applicantName'] ?? 'Student Applicant';
                         final email = req['applicantEmail'] ?? '';
 
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                          leading: CircleAvatar(
-                            backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
-                            child: Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF311B92)),
-                            ),
-                          ),
-                          title: Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
-                          subtitle: Text(email, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600])),
-                          trailing: ElevatedButton.icon(
-                            onPressed: () async {
-                              final groupId = widget.group['id'] as String;
-                              await CommunityService().approveGroupJoinRequest(
-                                groupId: groupId,
-                                requestId: req['id'] ?? '',
-                                applicantEmail: email,
-                                groupTitle: widget.group['title'] ?? 'Group',
-                              );
-                              setModalState(() {
-                                _pendingRequests.removeAt(index);
-                              });
-                              setState(() {
-                                widget.group['members'] = (widget.group['members'] ?? 1) + 1;
-                              });
-                            },
-                            icon: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                            label: const Text('Approve'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF10B981),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
+                                child: Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF311B92)),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    Text(email, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // ── Approve button ──
+                              GestureDetector(
+                                onTap: () async {
+                                  final groupId = widget.group['id'] as String;
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  await CommunityService().approveGroupJoinRequest(
+                                    groupId: groupId,
+                                    requestId: req['id'] ?? '',
+                                    applicantEmail: email,
+                                    groupTitle: widget.group['title'] ?? 'Group',
+                                  );
+                                  setModalState(() => _pendingRequests.removeAt(index));
+                                  setState(() {
+                                    widget.group['members'] = (widget.group['members'] ?? 1) + 1;
+                                  });
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('✅ $name approved and notified!'),
+                                      backgroundColor: const Color(0xFF10B981),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // ── Reject button ──
+                              GestureDetector(
+                                onTap: () async {
+                                  final groupId = widget.group['id'] as String;
+                                  final messenger = ScaffoldMessenger.of(context);
+                                  await CommunityService().rejectGroupJoinRequest(
+                                    groupId: groupId,
+                                    requestId: req['id'] ?? '',
+                                    applicantEmail: email,
+                                    groupTitle: widget.group['title'] ?? 'Group',
+                                  );
+                                  setModalState(() => _pendingRequests.removeAt(index));
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text('❌ $name\'s request rejected.'),
+                                      backgroundColor: const Color(0xFFEF4444),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },

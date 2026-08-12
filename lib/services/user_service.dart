@@ -49,7 +49,7 @@ class UserService {
     }
   }
 
-  static Future<String?> uploadDocument(File file, String docType) async {
+  static Future<String?> uploadDocument(File file, String docType, {String? password}) async {
     try {
       final token = await _getToken();
       if (token == null) return 'Authentication token not found.';
@@ -64,6 +64,10 @@ class UserService {
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['docType'] = docType;
       request.fields['userId'] = userId;
+      // Send document password if provided (for backend decryption)
+      if (password != null && password.isNotEmpty) {
+        request.fields['docPassword'] = password;
+      }
 
       final filePath = file.path.toLowerCase();
       MediaType contentType;

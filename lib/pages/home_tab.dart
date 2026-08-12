@@ -876,7 +876,7 @@ class HomeTabState extends State<HomeTab> {
                     ),
                   ),
                   Text(
-                    '${loan.progress}%',
+                    '${loan.effectiveProgress}%',
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -889,7 +889,7 @@ class HomeTabState extends State<HomeTab> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
-                  value: loan.progress / 100,
+                  value: loan.effectiveProgress / 100,
                   backgroundColor: Colors.grey.withValues(alpha: 0.2),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF311B92),

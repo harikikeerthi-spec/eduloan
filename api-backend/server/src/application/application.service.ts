@@ -517,7 +517,7 @@ export class ApplicationService {
       return {
         counselorName: 'VidhyaLoan Support',
         counselorPhone: '+91 9240209000',
-        counselorEmail: 'support@vidhyaloan.com'
+        counselorEmail: 'vidyaloans7@gmail.com'
       };
     }
     try {
@@ -530,7 +530,7 @@ export class ApplicationService {
         return {
           counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
           counselorPhone: user.phoneNumber || '+91 9240209000',
-          counselorEmail: user.email || 'support@vidhyaloan.com'
+          counselorEmail: user.email || 'vidyaloans7@gmail.com'
         };
       }
     } catch (e) {
@@ -539,7 +539,7 @@ export class ApplicationService {
     return {
       counselorName: 'VidhyaLoan Support',
       counselorPhone: '+91 9240209000',
-      counselorEmail: 'support@vidhyaloan.com'
+      counselorEmail: 'vidyaloans7@gmail.com'
     };
   }
 
@@ -595,7 +595,7 @@ export class ApplicationService {
                 staffMap.set(user.id, {
                   counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
                   counselorPhone: user.phoneNumber || '+91 9240209000',
-                  counselorEmail: user.email || 'support@vidhyaloan.com'
+                  counselorEmail: user.email || 'vidyaloans7@gmail.com'
                 });
               });
             }
@@ -608,7 +608,7 @@ export class ApplicationService {
           const staffInfo = app.assignedStaffId ? staffMap.get(app.assignedStaffId) : null;
           app.counselorName = staffInfo?.counselorName || 'VidhyaLoan Support';
           app.counselorPhone = staffInfo?.counselorPhone || '+91 9240209000';
-          app.counselorEmail = staffInfo?.counselorEmail || 'support@vidhyaloan.com';
+          app.counselorEmail = staffInfo?.counselorEmail || 'vidyaloans7@gmail.com';
         });
       }
 

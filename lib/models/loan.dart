@@ -11,6 +11,8 @@ class Loan {
   final String? universityName;
   final String? targetCountry;
   final String? courseName;
+  final String? fieldOfStudy;
+  final String? admissionStatus;
   final String bank;
   final String loanType;
   final double amount;
@@ -59,6 +61,8 @@ class Loan {
     required this.amount,
     required this.tenure,
     this.purpose,
+    this.fieldOfStudy,
+    this.admissionStatus,
     required this.status,
     required this.stage,
     required this.progress,
@@ -95,6 +99,92 @@ class Loan {
   }
 
   String get phoneNumber => phone ?? '';
+
+  int get effectiveProgress {
+    final st = status.toLowerCase().trim();
+    final sg = stage.toLowerCase().trim();
+
+    if (st == 'disbursed' ||
+        st == 'disbursement_confirmed' ||
+        st == 'disbursed_to_university' ||
+        st == 'closed' ||
+        sg == 'disbursement' ||
+        sg == 'disbursed') {
+      return 100;
+    }
+    if (st == 'sanctioned' ||
+        st == 'approved' ||
+        st == 'conditional_sanction' ||
+        st == 'partial_sanction' ||
+        st == 'counter_offer' ||
+        sg == 'sanction' ||
+        sg == 'sanctioned') {
+      return 80;
+    }
+    if (st == 'under_review' ||
+        st == 'submitted_to_bank' ||
+        st == 'file_logged' ||
+        st == 'under_bank_review' ||
+        st == 'query_raised' ||
+        sg == 'credit_check' ||
+        sg == 'bank_review' ||
+        sg == 'under_review' ||
+        sg == 'verification' ||
+        sg == 'review') {
+      return 60;
+    }
+    if (st == 'docs_received' ||
+        st == 'staff_verified' ||
+        sg == 'document_verification' ||
+        sg == 'documents_uploaded' ||
+        sg == 'documents') {
+      return 40;
+    }
+    return progress > 0 ? progress : 20;
+  }
+
+  int get effectiveStageIndex {
+    final st = status.toLowerCase().trim();
+    final sg = stage.toLowerCase().trim();
+
+    if (st == 'disbursed' ||
+        st == 'disbursement_confirmed' ||
+        st == 'disbursed_to_university' ||
+        st == 'closed' ||
+        sg == 'disbursement' ||
+        sg == 'disbursed') {
+      return 4;
+    }
+    if (st == 'sanctioned' ||
+        st == 'approved' ||
+        st == 'conditional_sanction' ||
+        st == 'partial_sanction' ||
+        st == 'counter_offer' ||
+        sg == 'sanction' ||
+        sg == 'sanctioned') {
+      return 3;
+    }
+    if (st == 'under_review' ||
+        st == 'submitted_to_bank' ||
+        st == 'file_logged' ||
+        st == 'under_bank_review' ||
+        st == 'query_raised' ||
+        sg == 'credit_check' ||
+        sg == 'bank_review' ||
+        sg == 'under_review' ||
+        sg == 'verification' ||
+        sg == 'review') {
+      return 2;
+    }
+    if (st == 'docs_received' ||
+        st == 'staff_verified' ||
+        sg == 'document_verification' ||
+        sg == 'documents_uploaded' ||
+        sg == 'documents') {
+      return 1;
+    }
+    return 0;
+  }
 
   factory Loan.fromJson(Map<String, dynamic> json) {
     var docsList = <ApplicationDocument>[];
@@ -145,6 +235,8 @@ class Loan {
       city: json['city']?.toString(),
       pincode: json['pincode']?.toString(),
       country: json['country']?.toString(),
+      fieldOfStudy: json['fieldOfStudy']?.toString(),
+      admissionStatus: json['admissionStatus']?.toString(),
       hasCollateral: json['hasCollateral'] ?? false,
       collateralDetails: json['collateralDetails']?.toString(),
       hasCoApplicant: json['hasCoApplicant'] ?? false,
@@ -182,6 +274,8 @@ class Loan {
       'counselorName': counselorName,
       'counselorPhone': counselorPhone,
       'counselorEmail': counselorEmail,
+      'fieldOfStudy': fieldOfStudy,
+      'admissionStatus': admissionStatus,
       'documents': documents.map((doc) => doc.toJson()).toList(),
     };
   }
@@ -202,26 +296,11 @@ class Loan {
   }
 
   String get displayBank {
-    final statusLower = status.toLowerCase();
-    final stageLower = stage.toLowerCase();
-    final bool isSentToBank = statusLower == 'submitted_to_bank' ||
-        statusLower == 'file_logged' ||
-        statusLower == 'under_bank_review' ||
-        statusLower == 'query_raised' ||
-        statusLower == 'conditional_sanction' ||
-        statusLower == 'partial_sanction' ||
-        statusLower == 'counter_offer' ||
-        statusLower == 'approved' ||
-        statusLower == 'sanctioned' ||
-        statusLower == 'disbursement_confirmed' ||
-        statusLower == 'closed' ||
-        stageLower == 'credit_check' ||
-        stageLower == 'bank_review' ||
-        stageLower == 'sanction' ||
-        stageLower == 'sanctioned' ||
-        stageLower == 'disbursement' ||
-        stageLower == 'disbursed';
-
-    return isSentToBank ? bank : 'Matching Lenders...';
+    if (bank.isEmpty ||
+        bank.toLowerCase().contains('pending') ||
+        bank.toLowerCase() == 'pending bank assignment') {
+      return 'Matching Lenders...';
+    }
+    return bank;
   }
 }

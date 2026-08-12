@@ -50,6 +50,9 @@ class LoanService {
     String? coApplicantPhone,
     String? coApplicantEmail,
     double? coApplicantIncome,
+    String? fieldOfStudy,
+    String? admissionStatus,
+    String? dateOfBirth,
     bool isRetry = false,
   }) async {
     try {
@@ -64,6 +67,7 @@ class LoanService {
           'lastName': lastName,
           'phone': phoneNumber,
           'email': email,
+          'dateOfBirth': dateOfBirth,
           'targetCountry': targetCountry,
           'country': country ?? targetCountry,
           'city': city,
@@ -89,6 +93,8 @@ class LoanService {
           'coApplicantPhone': coApplicantPhone,
           'coApplicantEmail': coApplicantEmail,
           'coApplicantIncome': coApplicantIncome,
+          'fieldOfStudy': fieldOfStudy,
+          'admissionStatus': admissionStatus,
         }),
       );
 
@@ -129,6 +135,8 @@ class LoanService {
             coApplicantPhone: coApplicantPhone,
             coApplicantEmail: coApplicantEmail,
             coApplicantIncome: coApplicantIncome,
+            fieldOfStudy: fieldOfStudy,
+            admissionStatus: admissionStatus,
             isRetry: true,
           );
         } else {

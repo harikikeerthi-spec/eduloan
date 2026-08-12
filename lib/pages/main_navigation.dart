@@ -12,7 +12,8 @@ import '../services/loan_service.dart';
 import '../services/language_service.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   static MainNavigationState? of(BuildContext context) =>
       context.findAncestorStateOfType<MainNavigationState>();
@@ -23,8 +24,9 @@ class MainNavigation extends StatefulWidget {
 
 class MainNavigationState extends State<MainNavigation> {
   // Index mapping: 0=Dashboard, 1=Community, 2=Loans(notch), 3=Explore, 4=Profile
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _hasAppliedForLoan = false;
+  bool _initialRouteChecked = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<HomeTabState> _homeTabKey = GlobalKey<HomeTabState>();
 
@@ -33,9 +35,28 @@ class MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex;
     _notchController = NotchBottomBarController(index: _currentIndex);
     _checkOnboarding();
     _checkLoanStatus();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialRouteChecked) {
+      _initialRouteChecked = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args.containsKey('initialIndex')) {
+        final int targetIndex = args['initialIndex'] as int;
+        if (_currentIndex != targetIndex) {
+          setState(() {
+            _currentIndex = targetIndex;
+          });
+          _notchController.jumpTo(targetIndex);
+        }
+      }
+    }
   }
 
   Future<void> _checkLoanStatus() async {

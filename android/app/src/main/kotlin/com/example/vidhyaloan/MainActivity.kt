@@ -27,16 +27,21 @@ class MainActivity : FlutterActivity() {
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             if (audioManager != null) {
                 val mode = audioManager.mode
-                // MODE_IN_CALL (2) or MODE_IN_COMMUNICATION (3) indicates active cellular or VoIP call (Google Meet, Zoom, WhatsApp)
-                if (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION) {
+                // Any mode other than MODE_NORMAL (0) indicates an active phone call, ringtone, or VoIP meet (Google Meet, Zoom, WhatsApp, Teams)
+                if (mode != AudioManager.MODE_NORMAL) {
                     return true
+                }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    val commDevice = audioManager.communicationDevice
+                    if (commDevice != null) {
+                        return true
+                    }
                 }
             }
 
             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             if (telephonyManager != null) {
                 val state = telephonyManager.callState
-                // CALL_STATE_OFFHOOK (2) or CALL_STATE_RINGING (1) indicates active call
                 if (state == TelephonyManager.CALL_STATE_OFFHOOK || state == TelephonyManager.CALL_STATE_RINGING) {
                     return true
                 }

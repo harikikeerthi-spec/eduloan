@@ -58,8 +58,10 @@ dependencies:
   animated_notch_bottom_bar: ^1.0.4
   pdf: ^3.11.1
   printing: ^5.13.2
+  vector_math: ^2.1.4
   firebase_messaging: ^16.5.0
   flutter_local_notifications: ^22.3.0
+  image: ^4.8.0
 
 
 dev_dependencies:
@@ -73,7 +75,6 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: "^0.13.1"
-  image: ^4.8.0
 
 flutter_launcher_icons:
   android: "ic_launcher"

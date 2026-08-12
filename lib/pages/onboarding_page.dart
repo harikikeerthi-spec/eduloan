@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
+import 'main_navigation.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -119,7 +120,13 @@ class _OnboardingPageState extends State<OnboardingPage>
                             userId != null && userId.isNotEmpty;
 
     if (isLoggedIn) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      // Navigate to loans page (index 2 in MainNavigation), not dashboard
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const MainNavigation(initialIndex: 2),
+        ),
+        (route) => false,
+      );
     } else {
       Navigator.of(context).pushReplacementNamed('/login');
     }

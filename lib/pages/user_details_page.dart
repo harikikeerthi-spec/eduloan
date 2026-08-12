@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'main_navigation.dart';
 import '../widgets/mesh_background.dart';
@@ -126,7 +127,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
       initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
       firstDate: fortyYearsAgo,
       lastDate: eighteenYearsAgo, // Prevent under 18 or over 40 selection
-      initialEntryMode: DatePickerEntryMode.calendar,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
       helpText: 'SELECT DATE OF BIRTH (ELIGIBLE: 18 - 40 YEARS)',
       builder: (context, child) {
         return Theme(
@@ -226,6 +227,14 @@ class _UserDetailsPageState extends State<UserDetailsPage>
       setState(() => _isLoading = false);
 
       if (result['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_firstName', _firstNameController.text.trim());
+        await prefs.setString('user_lastName', _lastNameController.text.trim());
+        await prefs.setString('user_name', '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim());
+        await prefs.setString('user_phone', _phoneController.text.trim());
+        await prefs.setString('user_dob', _dobController.text.trim());
+        if (!mounted) return;
+
         if (widget.isEdit) {
           Navigator.pop(context, true); // Return success to refresh profile
           ScaffoldMessenger.of(context).showSnackBar(
@@ -437,100 +446,97 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 16),
-
-                              // Date of Birth (Locked in Edit Profile mode)
-                              TextFormField(
-                                controller: _dobController,
-                                readOnly: widget.isEdit,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[0-9\/]')),
-                                  DateTextInputFormatter(),
-                                ],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: widget.isEdit ? Colors.black45 : Colors.black,
-                                ),
-                                decoration: _getInputDecoration(
-                                  'Date of Birth',
-                                  Icons.calendar_today,
-                                  hint: 'DD/MM/YYYY',
-                                ).copyWith(
-                                  fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
-                                  suffixIcon: widget.isEdit
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(12.0),
-                                          child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
-                                        )
-                                      : IconButton(
-                                          icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
-                                          onPressed: () => _selectDate(context),
-                                          tooltip: 'Pick date from calendar',
-                                        ),
-                                  helperText: widget.isEdit ? 'Date of Birth is verified and locked after onboarding' : null,
-                                  helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
-                                ),
-                                validator: widget.isEdit ? null : _validateDob,
-                              ),
-                              const SizedBox(height: 16),
-
-                              // Phone Number (Locked in Edit Profile mode)
-                              TextFormField(
-                                controller: _phoneController,
-                                readOnly: widget.isEdit,
-                                maxLength: 10,
-                                buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(10),
-                                ],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: widget.isEdit ? Colors.black45 : Colors.black,
-                                ),
-                                decoration: _getInputDecoration(
-                                  'Mobile Number',
-                                  Icons.phone_outlined,
-                                  hint: 'XXXXXXXXXX',
-                                ).copyWith(
-                                  fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
-                                  prefixText: '+91 ',
-                                  prefixStyle: TextStyle(
+                              if (!widget.isEdit) ...[
+                                const SizedBox(height: 16),
+                                // Date of Birth (Only shown during initial registration)
+                                TextFormField(
+                                  controller: _dobController,
+                                  readOnly: true,
+                                  onTap: widget.isEdit ? null : () => _selectDate(context),
+                                  style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                     color: widget.isEdit ? Colors.black45 : Colors.black,
                                   ),
-                                  suffixIcon: widget.isEdit
-                                      ? const Padding(
-                                          padding: EdgeInsets.all(12.0),
-                                          child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
-                                        )
-                                      : null,
-                                  helperText: widget.isEdit ? 'Mobile Number is verified and locked after onboarding' : null,
-                                  helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
+                                  decoration: _getInputDecoration(
+                                    'Date of Birth',
+                                    Icons.calendar_today,
+                                    hint: 'DD/MM/YYYY',
+                                  ).copyWith(
+                                    fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
+                                    suffixIcon: widget.isEdit
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
+                                          )
+                                        : IconButton(
+                                            icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
+                                            onPressed: () => _selectDate(context),
+                                            tooltip: 'Pick date from calendar',
+                                          ),
+                                    helperText: widget.isEdit ? 'Date of Birth is verified and locked after onboarding' : null,
+                                    helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                  validator: widget.isEdit ? null : _validateDob,
                                 ),
-                                keyboardType: TextInputType.phone,
-                                validator: widget.isEdit
-                                    ? null
-                                    : (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your mobile number';
-                                        }
-                                        if (value.length != 10) {
-                                          return 'Must be 10 digits';
-                                        }
-                                        if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
-                                          return 'Invalid Indian mobile number';
-                                        }
-                                        if (value.split('').toSet().length < 3) {
-                                          return 'Highly repetitive number not allowed';
-                                        }
-                                        return null;
-                                      },
-                              ),
+                                const SizedBox(height: 16),
+
+                                // Phone Number (Only shown during initial registration)
+                                TextFormField(
+                                  controller: _phoneController,
+                                  readOnly: widget.isEdit,
+                                  maxLength: 10,
+                                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(10),
+                                  ],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: widget.isEdit ? Colors.black45 : Colors.black,
+                                  ),
+                                  decoration: _getInputDecoration(
+                                    'Mobile Number',
+                                    Icons.phone_outlined,
+                                    hint: 'XXXXXXXXXX',
+                                  ).copyWith(
+                                    fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
+                                    prefixText: '+91 ',
+                                    prefixStyle: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: widget.isEdit ? Colors.black45 : Colors.black,
+                                    ),
+                                    suffixIcon: widget.isEdit
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
+                                          )
+                                        : null,
+                                    helperText: widget.isEdit ? 'Mobile Number is verified and locked after onboarding' : null,
+                                    helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
+                                  ),
+                                  keyboardType: TextInputType.phone,
+                                  validator: widget.isEdit
+                                      ? null
+                                      : (value) {
+                                          if (value == null || value.isEmpty) {
+                                            return 'Please enter your mobile number';
+                                          }
+                                          if (value.length != 10) {
+                                            return 'Must be 10 digits';
+                                          }
+                                          if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                            return 'Invalid Indian mobile number';
+                                          }
+                                          if (value.split('').toSet().length < 3) {
+                                            return 'Highly repetitive number not allowed';
+                                          }
+                                          return null;
+                                        },
+                                ),
+                              ],
                               const SizedBox(height: 32),
 
                               // Submit Button

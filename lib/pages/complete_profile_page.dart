@@ -66,7 +66,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
       initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
       firstDate: fortyYearsAgo,
       lastDate: eighteenYearsAgo,
-      initialEntryMode: DatePickerEntryMode.calendar,
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
       helpText: 'SELECT DATE OF BIRTH (ELIGIBLE: 18 - 40 YEARS)',
       builder: (context, child) {
         return Theme(
@@ -178,6 +178,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         );
 
         final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_email', widget.email);
+        await prefs.setString('user_firstName', _firstNameController.text.trim());
+        await prefs.setString('user_lastName', _lastNameController.text.trim());
+        await prefs.setString('user_name', '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim());
+        await prefs.setString('user_phone', _phoneController.text.trim());
+        await prefs.setString('user_dob', _dobController.text.trim());
         final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
 
         if (!mounted) return;
@@ -361,11 +367,8 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _dobController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9\/]')),
-                                DateTextInputFormatter(),
-                              ],
+                              readOnly: true,
+                              onTap: () => _selectDate(context),
                               style: GoogleFonts.inter(fontSize: 16),
                               decoration: _inputDecoration(
                                 'DD/MM/YYYY',

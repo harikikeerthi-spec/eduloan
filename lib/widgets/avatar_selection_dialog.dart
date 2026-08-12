@@ -224,7 +224,24 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
               );
             },
           ),
-          const SizedBox(height: 32),
+          if (widget.currentAvatar != null && widget.currentAvatar!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () => Navigator.pop(context, 'REMOVE_PHOTO'),
+                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                label: const Text(
+                  'Remove Profile Photo',
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
         ],
       ),
     );

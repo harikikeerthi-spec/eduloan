@@ -10,6 +10,7 @@ import 'refer_and_earn_page.dart';
 import 'package:flutter/services.dart';
 import 'settings_page.dart';
 import '../services/language_service.dart';
+import 'document_details_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,11 +21,11 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isLoading = true;
-  String _name = 'Loading...';
-  String _email = 'Loading...';
-  String _phone = 'Loading...';
-  String _dob = 'Loading...';
-  String _userId = 'Loading...';
+  String _name = '';
+  String _email = '';
+  String _phone = '';
+  String _dob = '';
+  String _userId = '';
   String? _profileImage;
 
   /// Only accept images explicitly set by the user.
@@ -39,18 +40,43 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadCachedProfileImage();
+    _loadCachedData();
     _fetchProfile();
   }
 
-  Future<void> _loadCachedProfileImage() async {
+  /// Instantly loads cached profile from SharedPreferences so data is shown
+  /// immediately without waiting for the backend API call.
+  Future<void> _loadCachedData() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+
+    final firstName = prefs.getString('user_firstName') ?? '';
+    final lastName = prefs.getString('user_lastName') ?? '';
+    final email = prefs.getString('user_email') ?? '';
+    final phone = prefs.getString('user_phone') ?? '';
+    String dob = prefs.getString('user_dob') ?? '';
+    final userId = prefs.getString('userId') ?? '';
     final cached = _sanitizeProfileImage(prefs.getString('user_profileImage'));
-    if (cached != null && mounted) {
-      setState(() {
-        _profileImage = cached;
-      });
+
+    // Format DOB if stored in ISO format (YYYY-MM-DD)
+    if (dob.contains('-') && !dob.contains('/')) {
+      final parts = dob.split('T')[0].split('-');
+      if (parts.length == 3 && parts[0].length == 4) {
+        dob = '${parts[2]}/${parts[1]}/${parts[0]}';
+      }
     }
+
+    setState(() {
+      _name = '$firstName $lastName'.trim();
+      _email = email;
+      _phone = phone;
+      _dob = dob;
+      _userId = userId;
+      if (cached != null) _profileImage = cached;
+      // Show data immediately from cache; keep _isLoading true until backend
+      // responds so the full profile card animates in.
+      if (_name.isNotEmpty || _email.isNotEmpty) _isLoading = false;
+    });
   }
 
   Future<void> _fetchProfile() async {
@@ -67,19 +93,23 @@ class _ProfilePageState extends State<ProfilePage> {
             final nestedData = responseData['data'] ?? {};
             final user = nestedData['user'] ?? responseData['user'] ?? responseData;
 
-            final fname = user['firstName'] ?? '';
-            final lname = user['lastName'] ?? '';
+            final String fname = (user['firstName']?.toString() ?? '').trim().isNotEmpty
+                ? user['firstName'].toString().trim()
+                : (prefs.getString('user_firstName') ?? '');
+            final String lname = (user['lastName']?.toString() ?? '').trim().isNotEmpty
+                ? user['lastName'].toString().trim()
+                : (prefs.getString('user_lastName') ?? '');
+            final String phone = (user['phoneNumber']?.toString() ?? '').trim().isNotEmpty
+                ? user['phoneNumber'].toString().trim()
+                : (prefs.getString('user_phone') ?? '');
+            final String dob = (user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '').trim().isNotEmpty
+                ? (user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '').trim()
+                : (prefs.getString('user_dob') ?? '');
 
-            prefs.setString('user_firstName', fname);
-            prefs.setString('user_lastName', lname);
-            if (user['phoneNumber'] != null) {
-              prefs.setString('user_phone', user['phoneNumber']);
-            }
-            if (user['dateOfBirth'] != null) {
-              prefs.setString('user_dob', user['dateOfBirth']);
-            } else if (user['dob'] != null) {
-              prefs.setString('user_dob', user['dob']);
-            }
+            if (fname.isNotEmpty) prefs.setString('user_firstName', fname);
+            if (lname.isNotEmpty) prefs.setString('user_lastName', lname);
+            if (phone.isNotEmpty) prefs.setString('user_phone', phone);
+            if (dob.isNotEmpty) prefs.setString('user_dob', dob);
             if (user['profileImage'] != null) {
               prefs.setString('user_profileImage', user['profileImage']);
             }
@@ -89,11 +119,11 @@ class _ProfilePageState extends State<ProfilePage> {
               if (_name.isEmpty) _name = 'Student User';
 
               _email = user['email'] ?? email;
-              _phone = user['phoneNumber'] ?? 'Not set';
-              _dob = user['dateOfBirth'] ?? user['dob'] ?? 'Not set';
+              _phone = phone.isNotEmpty ? phone : 'Not set';
+              _dob = dob.isNotEmpty ? dob : 'Not set';
               _userId = user['id']?.toString() ?? cachedUserId;
 
-              if (_dob.contains('-')) {
+              if (_dob.contains('-') && !_dob.contains('/')) {
                 final parts = _dob.split('T')[0].split('-');
                 if (parts.length == 3 && parts[0].length == 4) {
                   _dob = '${parts[2]}/${parts[1]}/${parts[0]}';
@@ -122,6 +152,11 @@ class _ProfilePageState extends State<ProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) => AvatarSelectionDialog(currentAvatar: _profileImage),
     );
+
+    if (result == 'REMOVE_PHOTO') {
+      await _deleteProfilePhoto();
+      return;
+    }
 
     if (result != null && mounted) {
       setState(() => _isLoading = true);
@@ -199,7 +234,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             const Icon(Icons.account_circle_rounded, color: Color(0xFF7C4DFF), size: 24),
                             const SizedBox(width: 8),
                             Text(
-                              _name.isNotEmpty ? _name : 'Profile Photo',
+                              'Profile Photo',
                               style: GoogleFonts.outfit(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -253,7 +288,28 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        if (_profileImage != null && _profileImage!.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _deleteProfilePhoto();
+                              },
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                              label: const Text('Delete'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.redAccent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
@@ -261,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               _changeAvatar();
                             },
                             icon: const Icon(Icons.edit_rounded, size: 18),
-                            label: const Text('Change Photo'),
+                            label: const Text('Change'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF7C4DFF),
                               foregroundColor: Colors.white,
@@ -411,12 +467,147 @@ class _ProfilePageState extends State<ProfilePage> {
                   _changeAvatar();
                 },
               ),
+              if (_profileImage != null && _profileImage!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  ),
+                  title: Text(
+                    'Delete Profile Photo',
+                    style: GoogleFonts.outfit(
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Remove profile photo and reset to default',
+                    style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _deleteProfilePhoto();
+                  },
+                ),
+              ],
               const SizedBox(height: 12),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _deleteProfilePhoto() async {
+    if (_profileImage == null || _profileImage!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No profile photo to delete.',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Delete Photo',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to remove your profile photo?',
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.black87),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: Text('Delete', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('user_profileImage');
+
+      await AuthService.updateUserDetails(
+        _email,
+        _name.split(' ')[0],
+        _name.contains(' ') ? _name.split(' ').sublist(1).join(' ') : '',
+        _phone,
+        _dob,
+        profileImage: '',
+      );
+
+      if (mounted) {
+        setState(() {
+          _profileImage = null;
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Profile photo deleted successfully!',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete photo: $e'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _handleError([String? message]) {
@@ -971,8 +1162,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
-
                 // ─── QUICK ACTIONS CARD ──────────────────────────────────────
                 _buildSectionHeader('QUICK ACTIONS', Icons.bolt_rounded),
                 const SizedBox(height: 10),
@@ -993,6 +1182,22 @@ class _ProfilePageState extends State<ProfilePage> {
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     children: [
+                      _buildActionTile(
+                        icon: Icons.document_scanner_rounded,
+                        iconColor: const Color(0xFF10B981),
+                        title: 'Document Details (AI OCR)',
+                        subtitle: 'View extracted PAN, Aadhar, Passport & Marksheet numbers',
+                        isEnabled: true,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DocumentDetailsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 16, color: Color(0xFFF1F5F9)),
                       _buildActionTile(
                         icon: Icons.edit_note_rounded,
                         iconColor: const Color(0xFF311B92),
@@ -1015,6 +1220,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ).then((val) {
                                   if (val == true) {
+                                    _loadCachedData();
                                     _fetchProfile();
                                   }
                                 });

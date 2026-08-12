@@ -324,35 +324,48 @@ export class KycService {
                 if (normalizedType.includes('aadhar') || normalizedType.includes('aadhaar') || normalizedType.includes('national_id')) {
                     const isPassport = clean.includes('passport') || clean.includes('p<ind') || clean.includes('mrz');
                     const isPan = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
-                    if (isPassport || isPan) {
+                    if (isPan) {
                         return {
                             is_valid: false,
-                            error: `Document type rejection: The uploaded PDF contains keywords indicating it is a ${isPassport ? 'Passport' : 'PAN Card'}, not an Aadhaar Card. Only Aadhaar cards should be uploaded for Aadhaar verification. Please upload the correct Aadhaar document.`
+                            error: `You are uploading a PAN Card in the Aadhar Card slot. Please change it and upload your Aadhar Card.`
                         };
                     }
-                    // Even if other PDF is uploaded without clear keywords of other doc types
-                    return {
-                        is_valid: false,
-                        error: `Document verification failed: The uploaded PDF does not contain necessary Aadhaar document keywords. Only official Aadhaar cards should be uploaded for this field.`
-                    };
+                    if (isPassport) {
+                        return {
+                            is_valid: false,
+                            error: `You are uploading a Passport in the Aadhar Card slot. Please change it and upload your Aadhar Card.`
+                        };
+                    }
                 }
                 if (normalizedType.includes('passport')) {
                     const isAadhaar = clean.includes('unique identification') || clean.includes('aadhaar') || clean.includes('uidai') || /\b\d{4}\s?\d{4}\s?\d{4}\b/.test(clean);
                     const isPan = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
-                    if (isAadhaar || isPan) {
+                    if (isAadhaar) {
                         return {
                             is_valid: false,
-                            error: `Document mismatch in PDF. The uploaded PDF contains keywords indicating it is an ${isAadhaar ? 'Aadhaar Card' : 'PAN Card'} instead of a Passport.`
+                            error: `You are uploading an Aadhar Card in the Passport slot. Please change it and upload your Passport.`
+                        };
+                    }
+                    if (isPan) {
+                        return {
+                            is_valid: false,
+                            error: `You are uploading a PAN Card in the Passport slot. Please change it and upload your Passport.`
                         };
                     }
                 }
                 if (normalizedType.includes('pan')) {
                     const isAadhaar = clean.includes('unique identification') || clean.includes('aadhaar') || clean.includes('uidai') || /\b\d{4}\s?\d{4}\s?\d{4}\b/.test(clean);
                     const isPassport = clean.includes('passport') || clean.includes('p<ind') || clean.includes('mrz');
-                    if (isAadhaar || isPassport) {
+                    if (isAadhaar) {
                         return {
                             is_valid: false,
-                            error: `Document mismatch in PDF. The uploaded PDF contains keywords indicating it is a ${isAadhaar ? 'Aadhaar Card' : 'Passport'} instead of a PAN Card.`
+                            error: `You are uploading an Aadhar Card in the PAN Card slot. Please change it and upload your PAN Card.`
+                        };
+                    }
+                    if (isPassport) {
+                        return {
+                            is_valid: false,
+                            error: `You are uploading a Passport in the PAN Card slot. Please change it and upload your PAN Card.`
                         };
                     }
                 }
