@@ -1237,7 +1237,8 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         color: const Color(0xFF1E88E5),
                         onTap: () async {
                           final token = await _getToken();
-                          final url = await UserService.getDocumentViewUrl(type);
+                          final targetType = doc?.docType ?? type;
+                          final url = await UserService.getDocumentViewUrl(targetType);
                           final uri = Uri.parse('$url?token=$token');
 
                           if (await canLaunchUrl(uri)) {
@@ -1284,7 +1285,8 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       color: const Color(0xFF1E88E5),
                       onTap: () async {
                         final token = await _getToken();
-                        final url = await UserService.getDocumentViewUrl(type);
+                        final targetType = doc?.docType ?? type;
+                        final url = await UserService.getDocumentViewUrl(targetType);
                         final uri = Uri.parse('$url?token=$token');
 
                         if (await canLaunchUrl(uri)) {

@@ -24,6 +24,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import * as crypto from 'crypto';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 // ── Use in-memory storage — files go straight to S3, never touch disk ──────
 const storage = memoryStorage();
@@ -378,6 +380,42 @@ export class DocumentController {
     return { success: true, authUrl };
   }
 
+  private findMatchingDoc(docs: any[], docType: string) {
+    if (!docs || docs.length === 0) return null;
+    const targetClean = docType.trim().toLowerCase().replaceAll('-', '_');
+
+    // 1. Exact or normalized match
+    let doc = docs.find(
+      (d) => (d.docType || '').trim().toLowerCase().replaceAll('-', '_') === targetClean,
+    );
+    if (doc) return doc;
+
+    // 2. Alias match
+    return docs.find((d) => {
+      const dt = (d.docType || '').trim().toLowerCase().replaceAll('-', '_');
+      if (targetClean.includes('pan')) {
+        if (targetClean.startsWith('father') && dt.includes('father') && dt.includes('pan')) return true;
+        if (targetClean.startsWith('mother') && dt.includes('mother') && dt.includes('pan')) return true;
+        if (targetClean.startsWith('coapp') && (dt.includes('coapp') || dt.includes('co_applicant')) && dt.includes('pan')) return true;
+        if (targetClean.startsWith('student') && dt.includes('pan') && !dt.includes('father') && !dt.includes('mother') && !dt.includes('coapp')) return true;
+        if (dt === 'pan' || dt === 'pan_card' || dt === 'student_pan') return true;
+      }
+      if (targetClean.includes('aadhar') || targetClean.includes('aadhaar')) {
+        if (targetClean.startsWith('father') && dt.includes('father') && (dt.includes('aadhar') || dt.includes('aadhaar'))) return true;
+        if (targetClean.startsWith('mother') && dt.includes('mother') && (dt.includes('aadhar') || dt.includes('aadhaar'))) return true;
+        if (targetClean.startsWith('coapp') && (dt.includes('coapp') || dt.includes('co_applicant')) && (dt.includes('aadhar') || dt.includes('aadhaar'))) return true;
+        if (targetClean.startsWith('student') && (dt.includes('aadhar') || dt.includes('aadhaar')) && !dt.includes('father') && !dt.includes('mother') && !dt.includes('coapp')) return true;
+        if (dt === 'aadhar' || dt === 'aadhaar' || dt === 'aadhar_card' || dt === 'aadhaar_card' || dt === 'student_aadhar') return true;
+      }
+      if (targetClean.includes('passport')) {
+        if (targetClean.includes('front') && (dt.includes('front') || dt === 'passport' || dt === 'student_passport')) return true;
+        if (targetClean.includes('back') && dt.includes('back')) return true;
+        if (dt === 'passport' || dt === 'student_passport') return true;
+      }
+      return false;
+    });
+  }
+
   // ─── View document — redirects to a short-lived S3 presigned URL ─────────
   @Get('view/:userId/:docType')
   async viewDocument(
@@ -407,26 +445,47 @@ export class DocumentController {
     }
 
     const docs = await this.usersService.getUserDocuments(userId);
-    const doc = docs.find((d) => d.docType === docType);
+    const doc = this.findMatchingDoc(docs, docType);
 
-    if (!doc || !doc.filePath)
+    if (!doc) {
       throw new NotFoundException('Document not found');
+    }
+
+    const filePath = doc.filePath || doc.fileUrl || doc.url || doc.path || doc.documentUrl || doc.file_path || doc.file_url;
+
+    if (!filePath) {
+      throw new NotFoundException('Document file path not found');
+    }
+
+    // Direct HTTP/HTTPS URL (e.g. Supabase storage public URL or direct CDN link)
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return res.redirect(302, filePath);
+    }
 
     // DigiLocker virtual record
-    if (doc.filePath.startsWith('in.gov.')) {
+    if (filePath.startsWith('in.gov.')) {
       const html = `<!DOCTYPE html><html><head><title>DigiLocker Record - ${doc.docName || doc.docType}</title>
 <style>body{font-family:system-ui,sans-serif;background:#f0f2f5;display:flex;justify-content:center;padding:40px}.card{background:white;padding:40px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,.1);max-width:600px;width:100%;border-top:6px solid #82c91e}.badge{background:#e6fced;color:#12b842;padding:6px 12px;border-radius:20px;font-weight:600;font-size:14px}</style></head>
 <body><div class="card"><h2>Digital Verification Record</h2><span class="badge">✓ Verified by DigiLocker</span>
 <p><strong>Document:</strong> ${doc.docName || doc.docType}</p>
-<p><strong>Reference:</strong> ${doc.filePath}</p></div></body></html>`;
+<p><strong>Reference:</strong> ${filePath}</p></div></body></html>`;
       res.setHeader('Content-Type', 'text/html');
       return res.send(html);
     }
 
-    // Generate presigned S3 URL (1 hour expiry) and redirect
+    // Check local static file in uploads directory
+    const uploadsDir = join(process.cwd(), 'uploads');
+    const cleanFileName = filePath.replace(/^(\/?uploads\/|\/?api\/uploads\/)/, '');
+    const localPath = join(uploadsDir, cleanFileName);
+
+    if (existsSync(localPath)) {
+      return res.sendFile(localPath);
+    }
+
+    // Generate presigned S3 URL
     try {
       const presignedUrl = await this.s3Service.getPresignedUrl(
-        doc.filePath,
+        filePath,
         3600,
       );
       return res.redirect(302, presignedUrl);
@@ -464,13 +523,24 @@ export class DocumentController {
     }
 
     const docs = await this.usersService.getUserDocuments(userId);
-    const doc = docs.find((d) => d.docType === docType);
+    const doc = this.findMatchingDoc(docs, docType);
 
-    if (!doc || !doc.filePath)
+    if (!doc) {
       throw new NotFoundException('Document not found');
+    }
 
-    const url = await this.s3Service.getPresignedUrl(doc.filePath, 3600);
-    return { success: true, url, docType, filePath: doc.filePath };
+    const filePath = doc.filePath || doc.fileUrl || doc.url || doc.path || doc.documentUrl || doc.file_path || doc.file_url;
+
+    if (!filePath) {
+      throw new NotFoundException('Document file path not found');
+    }
+
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      return { success: true, url: filePath, docType, filePath };
+    }
+
+    const url = await this.s3Service.getPresignedUrl(filePath, 3600);
+    return { success: true, url, docType, filePath };
   }
 
   // ─── List user documents ─────────────────────────────────────────────────
@@ -487,13 +557,16 @@ export class DocumentController {
     @Param('docType') docType: string,
   ) {
     const docs = await this.usersService.getUserDocuments(userId);
-    const doc = docs.find((d) => d.docType === docType);
+    const doc = this.findMatchingDoc(docs, docType);
+    const targetType = doc?.docType || docType;
 
-    if (doc?.filePath && !doc.filePath.startsWith('in.gov.')) {
-      await this.s3Service.delete(doc.filePath);
+    const filePath = doc?.filePath || doc?.fileUrl || doc?.url || doc?.path;
+
+    if (filePath && !filePath.startsWith('in.gov.')) {
+      await this.s3Service.delete(filePath);
     }
 
-    await this.usersService.deleteUserDocument(userId, docType);
+    await this.usersService.deleteUserDocument(userId, targetType);
     return { success: true, message: 'Document deleted successfully' };
   }
 
