@@ -1444,5 +1444,69 @@ Return ONLY JSON:
       address: 'India'
     };
   }
+
+  // ── University Country Verification ────────────────────────────────────────
+  @Post('verify-university-country')
+  async verifyUniversityCountry(
+    @Body() body: { university: string; targetCountry: string },
+  ) {
+    const { university, targetCountry } = body;
+    if (!university?.trim() || !targetCountry?.trim()) {
+      throw new BadRequestException('university and targetCountry are required');
+    }
+
+    const uniName = university.trim();
+    const country = targetCountry.trim();
+
+    const prompt = `You are a strict fact-checking assistant for a study-abroad loan platform.
+
+The user says they want to study at "${uniName}" which they believe is located in "${country}".
+
+Your task:
+1. Determine if "${uniName}" is a REAL university that actually exists.
+2. If it exists, determine which COUNTRY it is actually located in.
+3. Check if that country matches "${country}".
+
+Respond ONLY with a valid JSON object in this exact format (no markdown, no extra text):
+{
+  "isReal": true/false,
+  "actualCountry": "exact country name where the university is located",
+  "countryMatch": true/false,
+  "confidence": "high"/"medium"/"low",
+  "reason": "one sentence explaining the result"
+}
+
+Rules:
+- If the university doesn't exist or is not recognizable, set isReal=false and actualCountry=null.
+- If the university exists but is in a different country, set countryMatch=false and fill actualCountry correctly.
+- If the university matches the target country, set countryMatch=true.
+- Be STRICT and accurate. Use your training knowledge about real universities worldwide.
+- For confidence: use "high" for well-known universities, "medium" for less-known but verifiable ones, "low" if unsure.`;
+
+    try {
+      const aiResponse = await this.openRouterService.chat(prompt);
+      const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      const result = JSON.parse(cleaned);
+      return {
+        success: true,
+        isReal: result.isReal ?? true,
+        actualCountry: result.actualCountry ?? null,
+        countryMatch: result.countryMatch ?? true,
+        confidence: result.confidence ?? 'low',
+        reason: result.reason ?? '',
+      };
+    } catch (err) {
+      console.error('University country verification failed:', err);
+      // Neutral fallback — don't block the user if AI fails
+      return {
+        success: false,
+        isReal: true,
+        actualCountry: null,
+        countryMatch: true,
+        confidence: 'low',
+        reason: 'Could not verify at this time.',
+      };
+    }
+  }
 }
 

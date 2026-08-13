@@ -101,6 +101,10 @@ class Loan {
   String get phoneNumber => phone ?? '';
 
   int getEffectiveProgress({bool hasUploadedDocs = false}) {
+    if (progress > 0) {
+      return progress;
+    }
+
     final st = status.toLowerCase().trim();
     final sg = stage.toLowerCase().trim();
 
@@ -138,15 +142,15 @@ class Loan {
         sg == 'review') {
       return 75;
     }
-    if (st == 'submitted_to_bank' ||
+    if (hasUploadedDocs ||
+        st == 'submitted_to_bank' ||
         st == 'submit_to_bank' ||
         st == 'staff_verified' ||
         sg == 'submitted_to_bank' ||
         sg == 'submit_to_bank') {
       return 50;
     }
-    if (hasUploadedDocs ||
-        st == 'documents_verified' ||
+    if (st == 'documents_verified' ||
         st == 'staff_verified' ||
         st == 'submitted_to_bank' ||
         st == 'submit_to_bank' ||
@@ -172,6 +176,17 @@ class Loan {
   }
 
   int getEffectiveStageIndex({bool hasUploadedDocs = false}) {
+    if (progress > 0) {
+      if (progress >= 100) return 7; // Disbursed
+      if (progress >= 95) return 6;  // Sanction
+      if (progress >= 90) return 5;  // Bank Review
+      if (progress >= 75) return 4;  // Credit Check
+      if (progress >= 50) return 3;  // Submit to Bank
+      if (progress >= 40) return 2;  // Documents
+      if (progress >= 25) return 1;  // Submitted
+      return 0;                      // Created
+    }
+
     final st = status.toLowerCase().trim();
     final sg = stage.toLowerCase().trim();
 
@@ -209,15 +224,15 @@ class Loan {
         sg == 'review') {
       return 4;
     }
-    if (st == 'submitted_to_bank' ||
+    if (hasUploadedDocs ||
+        st == 'submitted_to_bank' ||
         st == 'submit_to_bank' ||
         st == 'staff_verified' ||
         sg == 'submitted_to_bank' ||
         sg == 'submit_to_bank') {
       return 3;
     }
-    if (hasUploadedDocs ||
-        st == 'documents_verified' ||
+    if (st == 'documents_verified' ||
         st == 'staff_verified' ||
         st == 'submitted_to_bank' ||
         st == 'submit_to_bank' ||

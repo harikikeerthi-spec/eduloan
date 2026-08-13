@@ -8,6 +8,7 @@ import 'profile_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import 'onboarding_page.dart';
+import 'complete_profile_page.dart';
 import '../services/loan_service.dart';
 import '../services/language_service.dart';
 
@@ -78,8 +79,32 @@ class MainNavigationState extends State<MainNavigation> {
 
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+    final String firstName = prefs.getString('user_firstName') ?? '';
+    final String email = prefs.getString('user_email') ?? '';
 
+    if (firstName.isEmpty) {
+      if (mounted) {
+        if (email.isNotEmpty) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => CompleteProfilePage(
+                email: email,
+                isNewUser: false,
+              ),
+            ),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+        }
+      }
+      return;
+    }
+
+    final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
     if (!onboardingShown) {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -88,16 +113,6 @@ class MainNavigationState extends State<MainNavigation> {
         );
       }
       return;
-    }
-
-    final firstName = prefs.getString('user_firstName') ?? '';
-    if (firstName.isEmpty) {
-      if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-          (route) => false,
-        );
-      }
     }
   }
 
@@ -237,9 +252,9 @@ class MainNavigationState extends State<MainNavigation> {
 }
 
 
-// ─── Highlighted Apply / Loans Icon ──────────────────────────────────────────
-// Shows a clean animated ring-ripple around the account_balance icon.
-// No dot. No mismatched aura. Just a smooth, premium pulse ring.
+// ─── Highlighted Loans Icon ───────────────────────────────────────────────────
+// Premium multi-ring glowing animation for the Loans tab button.
+// Dual staggered pulse rings + gradient orb glow + icon scale bounce.
 
 class _HighlightedApplyIcon extends StatefulWidget {
   final bool isActive;
@@ -250,37 +265,72 @@ class _HighlightedApplyIcon extends StatefulWidget {
 }
 
 class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _ringScale;
-  late final Animation<double> _ringOpacity;
+    with TickerProviderStateMixin {
+  late final AnimationController _ring1Controller;
+  late final AnimationController _ring2Controller;
+  late final AnimationController _bounceController;
+
+  late final Animation<double> _ring1Scale;
+  late final Animation<double> _ring1Opacity;
+  late final Animation<double> _ring2Scale;
+  late final Animation<double> _ring2Opacity;
+  late final Animation<double> _iconScale;
+  late final Animation<double> _glowOpacity;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+
+    // Ring 1 — fast gold pulse
+    _ring1Controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 1400),
     )..repeat();
 
-    // Ring expands outward from 0.6x to 1.8x and fades out
-    _ringScale = Tween<double>(begin: 0.6, end: 1.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    // Ring 2 — slightly delayed purple pulse
+    _ring2Controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+
+    // Bounce / breathe of the icon
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+
+    _ring1Scale = Tween<double>(begin: 0.55, end: 2.0).animate(
+      CurvedAnimation(parent: _ring1Controller, curve: Curves.easeOut),
     );
-    _ringOpacity = Tween<double>(begin: 0.7, end: 0.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    _ring1Opacity = Tween<double>(begin: 0.85, end: 0.0).animate(
+      CurvedAnimation(parent: _ring1Controller, curve: Curves.easeOut),
+    );
+
+    _ring2Scale = Tween<double>(begin: 0.5, end: 2.4).animate(
+      CurvedAnimation(parent: _ring2Controller, curve: Curves.easeOut),
+    );
+    _ring2Opacity = Tween<double>(begin: 0.55, end: 0.0).animate(
+      CurvedAnimation(parent: _ring2Controller, curve: Curves.easeOut),
+    );
+
+    _iconScale = Tween<double>(begin: 1.0, end: 1.14).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    );
+    _glowOpacity = Tween<double>(begin: 0.45, end: 0.85).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ring1Controller.dispose();
+    _ring2Controller.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // When the notch is active (user tapped this tab), just show plain white icon
     if (widget.isActive) {
       return const Icon(
         Icons.account_balance_rounded,
@@ -289,39 +339,109 @@ class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
       );
     }
 
-    // Inactive state — show the animated ripple ring
     return AnimatedBuilder(
-      animation: _controller,
+      animation: Listenable.merge([_ring1Controller, _ring2Controller, _bounceController]),
       builder: (context, _) {
         return SizedBox(
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           child: Stack(
             alignment: Alignment.center,
             clipBehavior: Clip.none,
             children: [
-              // ── Expanding ripple ring ──────────────────────────────────────
+              // ── Ring 2 (outer purple) ──────────────────────────────────────
               Transform.scale(
-                scale: _ringScale.value,
+                scale: _ring2Scale.value,
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFFFD700)   // gold ring
-                          .withValues(alpha: _ringOpacity.value),
-                      width: 2.2,
+                      color: const Color(0xFF7C3AED)
+                          .withValues(alpha: _ring2Opacity.value),
+                      width: 1.5,
                     ),
                   ),
                 ),
               ),
 
-              // ── Clean icon — NO extra background circle ────────────────────
-              const Icon(
-                Icons.account_balance_rounded,
-                color: Color(0xFF311B92),   // uses app primary, fits the bar
-                size: 24,
+              // ── Ring 1 (inner gold) ────────────────────────────────────────
+              Transform.scale(
+                scale: _ring1Scale.value,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFFFCC00)
+                          .withValues(alpha: _ring1Opacity.value),
+                      width: 2.0,
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Glowing orb background ─────────────────────────────────────
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFFFCC00).withValues(alpha: _glowOpacity.value * 0.35),
+                      const Color(0xFF311B92).withValues(alpha: _glowOpacity.value * 0.20),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.55, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFCC00).withValues(alpha: _glowOpacity.value * 0.4),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFF311B92).withValues(alpha: _glowOpacity.value * 0.25),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Icon with subtle scale bounce ──────────────────────────────
+              Transform.scale(
+                scale: _iconScale.value,
+                child: const Icon(
+                  Icons.account_balance_rounded,
+                  color: Color(0xFF311B92),
+                  size: 24,
+                ),
+              ),
+
+              // ── Hot badge dot at top-right ─────────────────────────────────
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF3B30),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
+                        blurRadius: 5,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

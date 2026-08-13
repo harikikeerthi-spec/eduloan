@@ -71,41 +71,23 @@ class PdfGeneratorService {
     'mother_aadhar': 'Mother Aadhar Card',
   };
 
-  /// Returns true if every required document in Document Vault has been uploaded and accepted by the user.
+  /// Returns true if any required document in Document Vault has been uploaded and accepted by the staff.
   static Future<bool> isEveryDocumentUploaded() async {
     try {
       final docs = await UserService.getUserDocuments();
       if (docs.isEmpty) return false;
 
-      // Required core student documents in Document Vault
-      final requiredTypes = <String>[
-        'student_passport',
-        'student_aadhar',
-        'student_pan',
-        'student_10th_marksheet',
-        'student_12th_marksheet',
-        'student_degree_marksheet',
-      ];
+      // A document is considered accepted when staff marks its status as verified, approved, accepted, or completed
+      final hasAnyAccepted = docs.any((d) {
+        final st = d.status.toLowerCase().trim();
+        return st == 'verified' ||
+            st == 'approved' ||
+            st == 'accepted' ||
+            st == 'staff_verified' ||
+            st == 'completed';
+      });
 
-      // A document is considered accepted when staff marks its status as verified, approved, or accepted
-      final acceptedTypes = docs
-          .where((d) {
-            final st = d.status.toLowerCase().trim();
-            return st == 'verified' ||
-                st == 'approved' ||
-                st == 'accepted' ||
-                st == 'staff_verified' ||
-                st == 'completed';
-          })
-          .map((d) => d.docType)
-          .toSet();
-
-      for (final reqType in requiredTypes) {
-        if (!acceptedTypes.contains(reqType)) {
-          return false;
-        }
-      }
-      return true;
+      return hasAnyAccepted;
     } catch (e) {
       debugPrint('Error checking document completion: $e');
       return false;

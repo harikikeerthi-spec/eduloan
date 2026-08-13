@@ -2141,4 +2141,43 @@ class AiLogicService {
       };
     }
   }
+
+  /// Calls the AI backend to verify whether [university] is actually located
+  /// in [targetCountry]. Returns a map with:
+  ///   - success: bool
+  ///   - isReal: bool — whether the university is recognised
+  ///   - countryMatch: bool — whether it is in [targetCountry]
+  ///   - actualCountry: String? — the real country if different
+  ///   - confidence: 'high'|'medium'|'low'
+  ///   - reason: String
+  Future<Map<String, dynamic>> verifyUniversityCountry({
+    required String university,
+    required String targetCountry,
+  }) async {
+    try {
+      final data = await _postRequest('verify-university-country', {
+        'university': university,
+        'targetCountry': targetCountry,
+      });
+      return {
+        'success': data['success'] ?? false,
+        'isReal': data['isReal'] ?? true,
+        'countryMatch': data['countryMatch'] ?? true,
+        'actualCountry': data['actualCountry'],
+        'confidence': data['confidence'] ?? 'low',
+        'reason': data['reason'] ?? '',
+      };
+    } catch (e) {
+      debugPrint('verifyUniversityCountry error: $e');
+      // Fail open — don't block the user if the network is down
+      return {
+        'success': false,
+        'isReal': true,
+        'countryMatch': true,
+        'actualCountry': null,
+        'confidence': 'low',
+        'reason': '',
+      };
+    }
+  }
 }

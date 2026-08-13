@@ -102,7 +102,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   bool _isPincodeResolving = false;
   Timer? _pincodeLookupTimer;
 
-  // Co-Applicant Details
+  // University AI verification state
+  bool _isVerifyingUniversity = false;
+  Timer? _universityCheckTimer;
+
   final TextEditingController _coApplicantNameController = TextEditingController();
   final TextEditingController _coApplicantRelationController = TextEditingController();
   final TextEditingController _coApplicantPhoneController = TextEditingController();
@@ -321,29 +324,44 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     ],
   };
 
-  void _validateUniversityLocation() {
-    final countryStr = _countryController.text.trim();
-    final countryLower = countryStr.toLowerCase();
-    final universityStr = _instituteController.text.trim();
-    final uniLower = universityStr.toLowerCase();
+  /// Triggers a debounced AI-powered university country validation.
+  /// Shows a loading indicator while the check is running, then displays
+  /// a precise warning (e.g. "Regi University is in Malaysia, not USA").
+  void _scheduleUniversityCheck() {
+    _universityCheckTimer?.cancel();
 
-    // Reset warning and error
-    _universityLocationWarning = null;
-    _fieldErrors.remove(_instituteController);
+    final university = _instituteController.text.trim();
+    final country = _countryController.text.trim();
 
-    if (countryStr.isEmpty) return;
-
-    // ⛔ Block India as destination country
-    if (countryLower == 'india' || countryLower == 'bharat' || countryLower == 'hindustan') {
-      _universityLocationWarning =
-          '❌ Vidyaloans is for abroad studies only. India is not eligible. Please select an abroad destination (e.g., USA, UK, Canada, Germany, Australia).';
-      _fieldErrors[_countryController] = 'Abroad destinations only';
+    // Clear warning immediately if fields are short
+    if (university.length < 3 || country.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _universityLocationWarning = null;
+          _isVerifyingUniversity = false;
+          _fieldErrors.remove(_instituteController);
+        });
+      }
       return;
     }
 
-    if (universityStr.isEmpty || universityStr.length < 2) return;
+    // ── Fast local checks first (instant, no API needed) ───────────────────
+    final uniLower = university.toLowerCase();
+    final countryLower = country.toLowerCase();
 
-    // ⛔ Block Indian universities by keyword
+    // Block India as destination
+    if (countryLower == 'india' || countryLower == 'bharat' || countryLower == 'hindustan') {
+      setState(() {
+        _universityLocationWarning =
+            '❌ Vidyaloans is for abroad studies only. India is not eligible. '
+            'Please select an abroad destination (e.g., USA, UK, Canada, Germany, Australia).';
+        _fieldErrors[_countryController] = 'Abroad destinations only';
+        _isVerifyingUniversity = false;
+      });
+      return;
+    }
+
+    // Block known Indian university keywords
     final indianUniKeywords = [
       'iit ', 'iit-', 'iim ', 'iim-', 'iisc', 'iiit', 'bits pilani', 'nit ',
       'anna university', 'vtu', 'jntu', 'amity university', 'manipal university',
@@ -353,77 +371,132 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       'calicut university', 'kerala university', 'andhra university',
       'mysore university', 'aligarh', 'banaras hindu', 'bhu',
     ];
-
-    for (var keyword in indianUniKeywords) {
-      if (uniLower.contains(keyword)) {
-        _universityLocationWarning =
-            '❌ Indian universities are not eligible for Vidyaloans. Please enter a university located abroad.';
-        _fieldErrors[_instituteController] = 'Indian universities not eligible';
+    for (var kw in indianUniKeywords) {
+      if (uniLower.contains(kw)) {
+        setState(() {
+          _universityLocationWarning =
+              '❌ Indian universities are not eligible for Vidyaloans. '
+              'Please enter a university located abroad.';
+          _fieldErrors[_instituteController] = 'Indian universities not eligible';
+          _isVerifyingUniversity = false;
+        });
         return;
       }
     }
 
-    // Normalize selected country for lookup
-    String normalizedSelectedCountry = countryLower;
-    if (countryLower == 'usa' || countryLower == 'united states' || countryLower == 'united states of america') {
-      normalizedSelectedCountry = 'usa';
-    } else if (countryLower == 'uk' || countryLower == 'united kingdom' || countryLower == 'britain' || countryLower == 'england') {
-      normalizedSelectedCountry = 'uk';
+    // ── Check local known-university dictionary (instant) ──────────────────
+    String normalizedSelected = countryLower;
+    if (['usa', 'united states', 'united states of america'].contains(countryLower)) {
+      normalizedSelected = 'usa';
+    } else if (['uk', 'united kingdom', 'britain', 'england'].contains(countryLower)) {
+      normalizedSelected = 'uk';
     }
 
-    // Determine actual country of the university from the known database
-    String? actualCountryKey;
+    String? foundCountryKey;
     _knownUniversitiesByCountry.forEach((cKey, uniList) {
-      if (actualCountryKey != null) return; // already found
+      if (foundCountryKey != null) return;
       for (var knownUni in uniList) {
-        final knownLower = knownUni.toLowerCase();
-        // Match: exact, contains (either direction) for names >= 4 chars
-        if (uniLower == knownLower ||
-            (knownLower.length >= 4 && uniLower.contains(knownLower)) ||
-            (uniLower.length >= 5 && knownLower.contains(uniLower))) {
-          actualCountryKey = cKey;
+        final kl = knownUni.toLowerCase();
+        if (uniLower == kl ||
+            (kl.length >= 4 && uniLower.contains(kl)) ||
+            (uniLower.length >= 5 && kl.contains(uniLower))) {
+          foundCountryKey = cKey;
           break;
         }
       }
     });
 
-    if (actualCountryKey != null) {
-      // Normalize the actual country key for comparison
-      String normalizedActual = actualCountryKey!;
-      if (actualCountryKey == 'united states') normalizedActual = 'usa';
-      if (actualCountryKey == 'united kingdom') normalizedActual = 'uk';
+    if (foundCountryKey != null) {
+      String normActual = foundCountryKey!;
+      if (foundCountryKey == 'united states') normActual = 'usa';
+      if (foundCountryKey == 'united kingdom') normActual = 'uk';
 
-      // Block Indian university regardless of selected country
-      if (normalizedActual == 'india') {
-        _universityLocationWarning =
-            '❌ Indian universities are not eligible for Vidyaloans. Please enter a university located abroad.';
-        _fieldErrors[_instituteController] = 'Indian universities not eligible';
+      if (normActual == 'india') {
+        setState(() {
+          _universityLocationWarning =
+              '❌ Indian universities are not eligible for Vidyaloans. '
+              'Please enter a university located abroad.';
+          _fieldErrors[_instituteController] = 'Indian universities not eligible';
+          _isVerifyingUniversity = false;
+        });
         return;
       }
 
-      // Check if it matches selected country
-      if (normalizedActual != normalizedSelectedCountry) {
-        final displayCountry = actualCountryKey!.toUpperCase();
-        _universityLocationWarning =
-            '❌ "$universityStr" is located in $displayCountry, NOT in $countryStr. '
-            'Please enter a university actually located in $countryStr, or change your target country.';
-        _fieldErrors[_instituteController] = 'University not in selected country';
+      if (normActual != normalizedSelected) {
+        setState(() {
+          _universityLocationWarning =
+              '⚠️ "$university" is located in ${foundCountryKey!.toUpperCase()}, '
+              'NOT in $country. Please select a university in $country, '
+              'or change your target country.';
+          _fieldErrors[_instituteController] = 'University not in selected country';
+          _isVerifyingUniversity = false;
+        });
         return;
       }
 
-      // University is confirmed in the correct country — all good
-      _universityLocationWarning = null;
-      _fieldErrors.remove(_instituteController);
+      // Known and matches — clear
+      setState(() {
+        _universityLocationWarning = null;
+        _fieldErrors.remove(_instituteController);
+        _isVerifyingUniversity = false;
+      });
       return;
     }
 
-    // University not in our known database — show a soft advisory warning
-    // (This still blocks submission to protect integrity)
-    _universityLocationWarning =
-        '⚠️ Could not verify "$universityStr" in $countryStr. Please double-check '
-        'that this university is actually located in $countryStr before proceeding.';
-    _fieldErrors[_instituteController] = 'University could not be verified';
+    // ── Not in local dictionary → call AI backend (debounced 900ms) ────────
+    setState(() => _isVerifyingUniversity = true);
+    _universityCheckTimer = Timer(const Duration(milliseconds: 900), () async {
+      if (!mounted) return;
+      try {
+        final result = await AiLogicService().verifyUniversityCountry(
+          university: university,
+          targetCountry: country,
+        );
+
+        if (!mounted) return;
+        setState(() {
+          _isVerifyingUniversity = false;
+
+          final bool isReal = result['isReal'] == true;
+          final bool countryMatch = result['countryMatch'] == true;
+          final String? actualCountry = result['actualCountry']?.toString();
+          final String confidence = result['confidence']?.toString() ?? 'low';
+
+          if (!isReal) {
+            _universityLocationWarning =
+                '⚠️ "$university" could not be found as a recognised university. '
+                'Please double-check the name and ensure it is an accredited institution.';
+            _fieldErrors[_instituteController] = 'University not recognised';
+          } else if (!countryMatch && actualCountry != null && actualCountry.isNotEmpty) {
+            _universityLocationWarning =
+                '❌ "$university" is located in $actualCountry, NOT in $country. '
+                'Please select a university actually in $country, or change your target country.';
+            _fieldErrors[_instituteController] = 'University not in selected country';
+          } else if (confidence == 'low') {
+            // AI unsure — soft advisory only, don't block
+            _universityLocationWarning =
+                '⚠️ Could not fully verify "$university" in $country. '
+                'Please confirm this university is in $country before submitting.';
+            _fieldErrors[_instituteController] = 'University could not be verified';
+          } else {
+            // AI confirmed it matches — clear
+            _universityLocationWarning = null;
+            _fieldErrors.remove(_instituteController);
+          }
+        });
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isVerifyingUniversity = false;
+            _universityLocationWarning = null;
+          });
+        }
+      }
+    });
   }
+
+  // Kept for compatibility — now just delegates to the async scheduler
+  void _validateUniversityLocation() => _scheduleUniversityCheck();
 
   // Static country → flag emoji map (no API needed, works fully offline)
   static const Map<String, String> _countryFlags = {
@@ -536,6 +609,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     _fieldOfStudyController.dispose();
     _admissionStatusController.dispose();
     _pincodeLookupTimer?.cancel();
+    _universityCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -1383,109 +1457,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     });
 
     if (step == 0) {
-      if (_firstNameController.text.length < 3) {
-        setState(() => _fieldErrors[_firstNameController] = 'Enter at least 3 chars');
-        _showError('First name must be at least 3 characters long');
-        return false;
-      }
-      if (_lastNameController.text.isEmpty) {
-        setState(() => _fieldErrors[_lastNameController] = 'Required');
-        _showError('Last name is required');
-        return false;
-      }
-      String phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (phone.length != 10) {
-        setState(() => _fieldErrors[_phoneController] = 'Enter 10 digits');
-        _showError('Phone number must be exactly 10 digits');
-        return false;
-      }
-      if (!RegExp(r'^[6-9]').hasMatch(phone)) {
-        setState(() => _fieldErrors[_phoneController] = 'Must start with 6-9');
-        _showError('Enter a valid Indian mobile number');
-        return false;
-      }
-      if (phone.split('').toSet().length < 3) {
-        setState(() => _fieldErrors[_phoneController] = 'Invalid pattern');
-        _showError('Phone number cannot be highly repetitive (e.g., 8787878787)');
-        return false;
-      }
-      if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
-        setState(() => _fieldErrors[_emailController] = 'Enter valid email');
-        _showError('Please enter a valid email address');
-        return false;
-      }
-    } else if (step == 1) {
-      final pin = _pincodeController.text.trim();
-      if (pin.length != 6 || !RegExp(r'^\d{6}$').hasMatch(pin)) {
-        setState(() => _fieldErrors[_pincodeController] = 'Must be 6 digits');
-        _showError('Pincode must be exactly 6 digits');
-        return false;
-      }
-      if (_cityController.text.trim().length < 2) {
-        setState(() => _fieldErrors[_cityController] = 'Required');
-        _showError('Please enter a city');
-        return false;
-      }
-      if (_resCountryController.text.trim().length < 2) {
-        setState(() => _fieldErrors[_resCountryController] = 'Required');
-        _showError('Please enter a country');
-        return false;
-      }
-    } else if (step == 2) {
-      if (_coApplicantNameController.text.trim().length < 3) {
-        setState(() => _fieldErrors[_coApplicantNameController] = 'Required');
-        _showError('Co-applicant\'s name is required (min 3 chars)');
-        return false;
-      }
-      if (_coApplicantNameController.text.trim().length > 30) {
-        setState(() => _fieldErrors[_coApplicantNameController] = 'Max 30 chars');
-        _showError('Co-applicant\'s name must not exceed 30 characters');
-        return false;
-      }
-      if (_coApplicantRelationController.text.isEmpty) {
-        setState(() => _fieldErrors[_coApplicantRelationController] = 'Required');
-        _showError('Co-applicant relationship is required');
-        return false;
-      }
-      String caPhone = _coApplicantPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
-      if (caPhone.length != 10) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Enter 10 digits');
-        _showError('Co-applicant\'s phone number must be 10 digits');
-        return false;
-      }
-      if (!RegExp(r'^[6-9]').hasMatch(caPhone)) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Must start with 6-9');
-        _showError('Enter a valid Indian mobile number for co-applicant');
-        return false;
-      }
-      if (caPhone.split('').toSet().length < 3) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Invalid pattern');
-        _showError('Co-applicant\'s phone number cannot be highly repetitive');
-        return false;
-      }
-      if (_coApplicantEmailController.text.isNotEmpty && !_coApplicantEmailController.text.contains('@')) {
-        setState(() => _fieldErrors[_coApplicantEmailController] = 'Enter valid email');
-        _showError('Please enter a valid email address for co-applicant');
-        return false;
-      }
-      if (_coApplicantEmailController.text.length > 30) {
-        setState(() => _fieldErrors[_coApplicantEmailController] = 'Max 30 chars');
-        _showError('Co-applicant\'s email must not exceed 30 characters');
-        return false;
-      }
-      final incomeText = _coApplicantIncomeController.text.replaceAll(',', '');
-      if (incomeText.isEmpty) {
-        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Required');
-        _showError('Co-applicant\'s annual income is required');
-        return false;
-      }
-      final income = double.tryParse(incomeText);
-      if (income == null || income <= 0) {
-        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Enter positive amount');
-        _showError('Enter a valid positive annual income');
-        return false;
-      }
-    } else if (step == 3) {
+      // ACADEMIC/EDUCATION DETAILS
       final targetCountryLower = _countryController.text.trim().toLowerCase();
       if (_countryController.text.trim().isEmpty) {
         setState(() => _fieldErrors[_countryController] = 'Required');
@@ -1537,6 +1509,112 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       if (amountVal > 15000000) {
         setState(() => _fieldErrors[_amountController] = 'Max ₹1.5 Cr');
         _showError('Maximum loan amount allowed is ₹1.5 Crore (₹1,50,00,000)');
+        return false;
+      }
+    } else if (step == 1) {
+      // PERSONAL DETAILS
+      if (_firstNameController.text.length < 3) {
+        setState(() => _fieldErrors[_firstNameController] = 'Enter at least 3 chars');
+        _showError('First name must be at least 3 characters long');
+        return false;
+      }
+      if (_lastNameController.text.isEmpty) {
+        setState(() => _fieldErrors[_lastNameController] = 'Required');
+        _showError('Last name is required');
+        return false;
+      }
+      String phone = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (phone.length != 10) {
+        setState(() => _fieldErrors[_phoneController] = 'Enter 10 digits');
+        _showError('Phone number must be exactly 10 digits');
+        return false;
+      }
+      if (!RegExp(r'^[6-9]').hasMatch(phone)) {
+        setState(() => _fieldErrors[_phoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number');
+        return false;
+      }
+      if (phone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_phoneController] = 'Invalid pattern');
+        _showError('Phone number cannot be highly repetitive (e.g., 8787878787)');
+        return false;
+      }
+      if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+        setState(() => _fieldErrors[_emailController] = 'Enter valid email');
+        _showError('Please enter a valid email address');
+        return false;
+      }
+    } else if (step == 2) {
+      // RESIDENTIAL/ADDRESS DETAILS
+      final pin = _pincodeController.text.trim();
+      if (pin.length != 6 || !RegExp(r'^\d{6}$').hasMatch(pin)) {
+        setState(() => _fieldErrors[_pincodeController] = 'Must be 6 digits');
+        _showError('Pincode must be exactly 6 digits');
+        return false;
+      }
+      if (_cityController.text.trim().length < 2) {
+        setState(() => _fieldErrors[_cityController] = 'Required');
+        _showError('Please enter a city');
+        return false;
+      }
+      if (_resCountryController.text.trim().length < 2) {
+        setState(() => _fieldErrors[_resCountryController] = 'Required');
+        _showError('Please enter a country');
+        return false;
+      }
+    } else if (step == 3) {
+      // CO-APPLICANT DETAILS
+      if (_coApplicantNameController.text.trim().length < 3) {
+        setState(() => _fieldErrors[_coApplicantNameController] = 'Required');
+        _showError('Co-applicant\'s name is required (min 3 chars)');
+        return false;
+      }
+      if (_coApplicantNameController.text.trim().length > 30) {
+        setState(() => _fieldErrors[_coApplicantNameController] = 'Max 30 chars');
+        _showError('Co-applicant\'s name must not exceed 30 characters');
+        return false;
+      }
+      if (_coApplicantRelationController.text.isEmpty) {
+        setState(() => _fieldErrors[_coApplicantRelationController] = 'Required');
+        _showError('Co-applicant relationship is required');
+        return false;
+      }
+      String caPhone = _coApplicantPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      if (caPhone.length != 10) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Enter 10 digits');
+        _showError('Co-applicant\'s phone number must be 10 digits');
+        return false;
+      }
+      if (!RegExp(r'^[6-9]').hasMatch(caPhone)) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Must start with 6-9');
+        _showError('Enter a valid Indian mobile number for co-applicant');
+        return false;
+      }
+      if (caPhone.split('').toSet().length < 3) {
+        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Invalid pattern');
+        _showError('Co-applicant\'s phone number cannot be highly repetitive');
+        return false;
+      }
+      if (_coApplicantEmailController.text.isNotEmpty && !_coApplicantEmailController.text.contains('@')) {
+        setState(() => _fieldErrors[_coApplicantEmailController] = 'Enter valid email');
+        _showError('Please enter a valid email address for co-applicant');
+        return false;
+      }
+      if (_coApplicantEmailController.text.length > 30) {
+        setState(() => _fieldErrors[_coApplicantEmailController] = 'Max 30 chars');
+        _showError('Co-applicant\'s email must not exceed 30 characters');
+        return false;
+      }
+      final incomeText = _coApplicantIncomeController.text.replaceAll(',', '');
+      if (incomeText.isEmpty) {
+        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Required');
+        _showError('Co-applicant\'s annual income is required');
+        return false;
+      }
+      final income = double.tryParse(incomeText);
+      if (income == null || income <= 0) {
+        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Enter positive amount');
+        _showError('Enter a valid positive annual income');
         return false;
       }
     }
@@ -1613,7 +1691,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
-  final List<String> _stepLabels = ['Personal', 'Address', 'Co-Applicant', 'Info', 'Review'];
+  final List<String> _stepLabels = ['Academic', 'Personal', 'Address', 'Co-Applicant', 'Review'];
 
   Widget _buildCustomProgressHeader() {
     return Container(
@@ -1709,6 +1787,182 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   Widget _buildStepContent(int step) {
     switch (step) {
       case 0:
+        return _buildStepContainer(
+          children: [
+            _buildSectionHeader('Education Information', Icons.school_outlined),
+            _isManualCountryEntry
+                ? _buildCountryManualInput()
+                : _buildCountryReadOnlyInput(),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Field of Study',
+              icon: Icons.interests_outlined,
+              controller: _fieldOfStudyController,
+              readOnly: true,
+              onTap: _showFieldOfStudySelection,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            _buildTextInput(
+              hint: 'Admission Status',
+              icon: Icons.verified_user_outlined,
+              controller: _admissionStatusController,
+              readOnly: true,
+              onTap: _showAdmissionStatusSelection,
+              isRequired: true,
+            ),
+            const SizedBox(height: 12),
+            if (_countryController.text.trim().isEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 20, color: Color(0xFF311B92)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Please select your Target Country above to select your target university.',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              _buildTextInput(
+                hint: 'Target University',
+                icon: Icons.account_balance_outlined,
+                controller: _instituteController,
+                isRequired: true,
+                onChanged: (val) => _scheduleUniversityCheck(),
+              ),
+              // ── AI Verifying indicator ─────────────────────────────────────
+              if (_isVerifyingUniversity)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF311B92).withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Verifying university location with AI…',
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // ── Warning / error from AI ────────────────────────────────────
+              if (!_isVerifyingUniversity && _universityLocationWarning != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _universityLocationWarning!,
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF991B1B),
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 18),
+            _buildSectionHeader('Financial Information', Icons.account_balance_wallet_outlined),
+            _buildTextInput(
+              hint: 'Desired Loan Amount (₹)',
+              icon: Icons.currency_rupee,
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              isRequired: true,
+              onChanged: _updateAmountInLakhsLabel,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                IndianCurrencyFormatter(),
+              ],
+            ),
+            if (_amountInLakhsLabel.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: _isAmountExceedingLimit
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFF311B92).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _isAmountExceedingLimit
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF311B92).withValues(alpha: 0.15),
+                    width: _isAmountExceedingLimit ? 1.5 : 1.0,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _isAmountExceedingLimit ? Icons.warning_amber_rounded : Icons.info_outline,
+                      size: 18,
+                      color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _amountInLakhsLabel,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      case 1:
         return _buildStepContainer(
           children: [
             _buildSectionHeader("Personal Details", Icons.person_outline_rounded),
@@ -1813,7 +2067,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             ),
           ],
         );
-      case 1:
+      case 2:
         return _buildStepContainer(
           children: [
             _buildSectionHeader("Residential Details", Icons.home_outlined),
@@ -1873,7 +2127,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             ),
           ],
         );
-      case 2:
+      case 3:
         return _buildStepContainer(
           children: [
             _buildSectionHeader("Co-Applicant Details", Icons.people_outline_rounded),
@@ -1932,151 +2186,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               amountText: _coApplicantIncomeController.text,
               label: 'Annual Income',
             ),
-          ],
-        );
-      case 3:
-        return _buildStepContainer(
-          children: [
-            _buildSectionHeader('Education Information', Icons.school_outlined),
-            _isManualCountryEntry
-                ? _buildCountryManualInput()
-                : _buildCountryReadOnlyInput(),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Field of Study',
-              icon: Icons.interests_outlined,
-              controller: _fieldOfStudyController,
-              readOnly: true,
-              onTap: _showFieldOfStudySelection,
-              isRequired: true,
-            ),
-            const SizedBox(height: 12),
-            _buildTextInput(
-              hint: 'Admission Status',
-              icon: Icons.verified_user_outlined,
-              controller: _admissionStatusController,
-              readOnly: true,
-              onTap: _showAdmissionStatusSelection,
-              isRequired: true,
-            ),
-            const SizedBox(height: 12),
-            if (_countryController.text.trim().isEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF311B92).withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, size: 20, color: Color(0xFF311B92)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Please select your Target Country above to select your target university.',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF311B92),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              _buildTextInput(
-                hint: 'Target University',
-                icon: Icons.account_balance_outlined,
-                controller: _instituteController,
-                isRequired: true,
-                onChanged: (val) {
-                  setState(() {
-                    _validateUniversityLocation();
-                  });
-                },
-              ),
-              if (_universityLocationWarning != null)
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 22),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _universityLocationWarning!,
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF991B1B),
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-            const SizedBox(height: 18),
-            _buildSectionHeader('Financial Information', Icons.account_balance_wallet_outlined),
-            _buildTextInput(
-              hint: 'Desired Loan Amount (₹)',
-              icon: Icons.currency_rupee,
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              isRequired: true,
-              onChanged: _updateAmountInLakhsLabel,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                IndianCurrencyFormatter(),
-              ],
-            ),
-            if (_amountInLakhsLabel.isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _isAmountExceedingLimit
-                      ? const Color(0xFFFEF2F2)
-                      : const Color(0xFF311B92).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _isAmountExceedingLimit
-                        ? const Color(0xFFEF4444)
-                        : const Color(0xFF311B92).withValues(alpha: 0.15),
-                    width: _isAmountExceedingLimit ? 1.5 : 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      _isAmountExceedingLimit ? Icons.warning_amber_rounded : Icons.info_outline,
-                      size: 18,
-                      color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _amountInLakhsLabel,
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         );
       case 4:
@@ -2235,26 +2344,25 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       ),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'COLLATERAL OFFERED',
-                        style: TextStyle(color: Colors.white60, fontSize: 9, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _hasCollateral ? 'Yes' : 'No',
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ],
           ),
         ),
         const SizedBox(height: 20),
+        _buildReviewSection(
+          'Education & Loan Details',
+          Icons.school_outlined,
+          [
+            _buildReviewRow('Country', _countryController.text),
+            _buildReviewRow('University', _instituteController.text),
+            _buildReviewRow('Field of Study', _fieldOfStudyController.text),
+            _buildReviewRow('Admission Status', _admissionStatusController.text),
+            _buildReviewRow('Amount', '₹${_amountController.text}'),
+          ],
+          onEdit: () => setState(() => _currentStep = 0),
+        ),
+        const SizedBox(height: 16),
         _buildReviewSection(
           'Personal Details',
           Icons.person_outline_rounded,
@@ -2263,7 +2371,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow('Phone', _phoneController.text),
             _buildReviewRow('Email', _emailController.text),
           ],
-          onEdit: () => setState(() => _currentStep = 0),
+          onEdit: () => setState(() => _currentStep = 1),
         ),
         const SizedBox(height: 16),
         _buildReviewSection(
@@ -2275,7 +2383,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow("State", _stateController.text.isEmpty ? 'N/A' : _stateController.text),
             _buildReviewRow("Country", _resCountryController.text),
           ],
-          onEdit: () => setState(() => _currentStep = 1),
+          onEdit: () => setState(() => _currentStep = 2),
         ),
         const SizedBox(height: 16),
         _buildReviewSection(
@@ -2287,20 +2395,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow('Phone', _coApplicantPhoneController.text),
             _buildReviewRow('Email', _coApplicantEmailController.text.isEmpty ? 'N/A' : _coApplicantEmailController.text),
             _buildReviewRow('Annual Income', '₹${_coApplicantIncomeController.text}'),
-          ],
-          onEdit: () => setState(() => _currentStep = 2),
-        ),
-        const SizedBox(height: 16),
-        _buildReviewSection(
-          'Education & Loan Details',
-          Icons.school_outlined,
-          [
-            _buildReviewRow('Country', _countryController.text),
-            _buildReviewRow('University', _instituteController.text),
-            _buildReviewRow('Field of Study', _fieldOfStudyController.text),
-            _buildReviewRow('Admission Status', _admissionStatusController.text),
-            _buildReviewRow('Amount', '₹${_amountController.text}'),
-            _buildReviewRow('Collateral', _hasCollateral ? 'Yes (${_collateralController.text})' : 'No'),
           ],
           onEdit: () => setState(() => _currentStep = 3),
         ),
@@ -2322,68 +2416,99 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.08)),
+        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.12)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF311B92).withValues(alpha: 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF311B92).withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 18,
-                      color: const Color(0xFF311B92),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2D3436),
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.mode_edit_outline_outlined, size: 18, color: Color(0xFF311B92)),
-                onPressed: onEdit,
-                tooltip: 'Edit Section',
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          // ── Gradient header strip ─────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF311B92).withValues(alpha: 0.02),
-              borderRadius: BorderRadius.circular(12),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF311B92), Color(0xFF6200EA)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(icon, size: 17, color: Colors.white),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      title.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: onEdit,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.mode_edit_outline_rounded, size: 13, color: Colors.white),
+                        SizedBox(width: 4),
+                        Text(
+                          'Edit',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Fields grid ───────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
-              children: children,
+              children: [
+                for (int i = 0; i < children.length; i++) ...
+                  [
+                    children[i],
+                    if (i < children.length - 1) const SizedBox(height: 10),
+                  ],
+              ],
             ),
           ),
         ],
@@ -2392,33 +2517,36 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   Widget _buildReviewRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
+    final displayValue = value.isEmpty ? 'N/A' : value;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F3FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(
+          left: BorderSide(color: const Color(0xFF6200EA), width: 3.5),
+        ),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.black.withValues(alpha: 0.45),
-                fontWeight: FontWeight.w500,
-              ),
+          Text(
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF7C3AED),
+              letterSpacing: 1.1,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 4,
-            child: Text(
-              value.isEmpty ? 'N/A' : value,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3436),
-              ),
-              textAlign: TextAlign.end,
+          const SizedBox(height: 4),
+          Text(
+            displayValue,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1A0553),
             ),
           ),
         ],

@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'complete_profile_page.dart';
 
 class VideoSplashScreen extends StatefulWidget {
   const VideoSplashScreen({super.key});
@@ -41,8 +42,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   }
 
   Future<void> _initializeAndPlay() async {
-    // ── Hard safety net — max 1.2 seconds ────────────────────────────────
-    Future.delayed(const Duration(milliseconds: 1200), () {
+    // ── Hard safety net — max 6 seconds ────────────────────────────────
+    Future.delayed(const Duration(seconds: 6), () {
       if (mounted && !_navigated) {
         debugPrint('VideoSplashScreen: Safety timeout reached. Navigating instantly.');
         FlutterNativeSplash.remove();
@@ -153,18 +154,35 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
 
       if (!mounted) return;
 
-      if (!onboardingShown) {
-        // Mandatory Onboarding Page completion first
-        Navigator.of(context).pushReplacementNamed('/onboarding');
-      } else if (isLoggedIn) {
-        Navigator.of(context).pushReplacementNamed('/home');
+      if (isLoggedIn) {
+        final String firstName = prefs.getString('user_firstName') ?? '';
+        final String email = prefs.getString('user_email') ?? '';
+        if (firstName.isEmpty) {
+          if (email.isNotEmpty) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => CompleteProfilePage(
+                  email: email,
+                  isNewUser: false,
+                ),
+              ),
+              (route) => false,
+            );
+          } else {
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        } else if (!onboardingShown) {
+          Navigator.of(context).pushReplacementNamed('/onboarding');
+        } else {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
       } else {
         Navigator.of(context).pushReplacementNamed('/login');
       }
     } catch (e) {
       debugPrint('VideoSplashScreen: Navigation error — $e');
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/onboarding');
+        Navigator.of(context).pushReplacementNamed('/login');
       }
     }
   }

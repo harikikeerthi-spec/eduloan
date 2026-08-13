@@ -303,7 +303,7 @@ export class KycService {
             expectedLabel = 'Grade 12 Marksheet';
             const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'college', 'roll', 'subject', 'result', 'hsc', 'intermediate', 'higher secondary', 'cbse', 'icse'];
             matches = keywords.some(kw => clean.includes(kw));
-        } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor')) {
+        } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor') || normalizedType.includes('degree')) {
             expectedLabel = 'Undergraduate Marksheet/Degree';
             const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'undergraduate', 'bachelor'];
             matches = keywords.some(kw => clean.includes(kw));
@@ -531,6 +531,8 @@ export class KycService {
                 - passport_number
                 - full_name: full name as on biodata page (given names then surname, single line)
                 - given_names, surname: use when full_name line is split on the card
+                - father_name: full Name of Father / Legal Guardian as printed on passport back page
+                - mother_name: full Name of Mother as printed on passport back page
                 - dob (DD/MM/YYYY)
                 - gender: lowercase "male" or "female"
                 - date_of_issue (DD/MM/YYYY)
@@ -719,7 +721,7 @@ export class KycService {
             targetType = 'marksheet_10';
         } else if (normalizedType.includes('marksheet_12') || normalizedType.includes('12th') || normalizedType.includes('hsc') || normalizedType.includes('intermediate') || normalizedType.includes('grade12') || normalizedType.includes('grade_12')) {
             targetType = 'marksheet_12';
-        } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('ug_degree') || normalizedType.includes('ug_transcript') || normalizedType.includes('undergrad') || normalizedType.includes('undergraduate')) {
+        } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('ug_degree') || normalizedType.includes('ug_transcript') || normalizedType.includes('undergrad') || normalizedType.includes('undergraduate') || normalizedType.includes('degree')) {
             targetType = 'marksheet_ug';
         } else if (normalizedType.includes('marksheet_pg') || normalizedType.includes('pg_degree') || normalizedType.includes('pg_transcript') || normalizedType.includes('postgrad') || normalizedType.includes('postgraduate')) {
             targetType = 'marksheet_pg';
@@ -838,7 +840,7 @@ export class KycService {
         if (t.includes('marksheet_12') || t.includes('12th') || t.includes('hsc') || t.includes('intermediate') || t.includes('grade12') || t.includes('grade_12')) {
             return 'marksheet_12';
         }
-        if (t.includes('marksheet_ug') || t.includes('ug_degree') || t.includes('ug_transcript') || t.includes('undergrad') || t.includes('undergraduate')) {
+        if (t.includes('marksheet_ug') || t.includes('ug_degree') || t.includes('ug_transcript') || t.includes('undergrad') || t.includes('undergraduate') || t.includes('degree')) {
             return 'marksheet_ug';
         }
         if (t.includes('marksheet_pg') || t.includes('pg_degree') || t.includes('pg_transcript') || t.includes('postgrad') || t.includes('postgraduate')) {

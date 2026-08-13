@@ -66,6 +66,19 @@ export class DocumentController {
       `[UPLOAD] Processing pre-storage check: userId=${userId}, docType=${docType}, file=${file.originalname} (${file.size} bytes)`,
     );
 
+    // ── 0. Passport Mandatory Upload Check ─────────────────────────────────
+    const isPassportDoc = docType === 'student_passport' || docType.includes('passport');
+    const userDocs = await this.usersService.getUserDocuments(userId);
+    const passportDoc = userDocs.find(
+      (d) => (d.docType === 'student_passport' || d.docType.includes('passport')) && d.uploaded && d.status !== 'rejected',
+    );
+
+    if (!isPassportDoc && !passportDoc) {
+      throw new BadRequestException(
+        'Passport (Front & Back) is mandatory and must be uploaded first! Please upload your Passport first before uploading other KYC documents.',
+      );
+    }
+
     try {
       // ── 1. Perform AI OCR Verification BEFORE storing in S3 ───────────────
       console.log(`[UPLOAD] Running pre-storage KYC verification for ${docType}...`);
@@ -126,6 +139,43 @@ export class DocumentController {
         );
       }
 
+      // ── 1.5 Cross-Verify Details Against Passport Reference ───────────────
+      if (!isPassportDoc && passportDoc && passportDoc.verificationMetadata) {
+        const pMeta = passportDoc.verificationMetadata?.details?.extractedFields || passportDoc.verificationMetadata || {};
+        const passportStudentName = pMeta.full_name || pMeta.student_name || pMeta.name;
+        const passportFatherName = pMeta.father_name || pMeta.guardian_name;
+        const passportMotherName = pMeta.mother_name;
+
+        const extractedDocName = kycResult.extracted_data?.full_name ||
+          kycResult.extracted_data?.name ||
+          kycResult.extracted_data?.student_name ||
+          kycResult.extracted_data?.father_name ||
+          kycResult.extracted_data?.mother_name;
+
+        if (docType === 'student_pan' || docType === 'student_aadhar') {
+          if (passportStudentName && extractedDocName && !this.verifyNameMatch(passportStudentName, extractedDocName)) {
+            console.warn(`[UPLOAD] Student name mismatch! Passport: "${passportStudentName}", Extracted: "${extractedDocName}"`);
+            throw new BadRequestException(
+              `Document verification failed: The student name on this document ("${extractedDocName}") does not match your Passport records ("${passportStudentName}"). Please upload the correct file.`
+            );
+          }
+        } else if (docType === 'father_pan' || docType === 'father_aadhar') {
+          if (passportFatherName && extractedDocName && !this.verifyNameMatch(passportFatherName, extractedDocName)) {
+            console.warn(`[UPLOAD] Father name mismatch! Passport: "${passportFatherName}", Extracted: "${extractedDocName}"`);
+            throw new BadRequestException(
+              `Document verification failed: The name on this Father document ("${extractedDocName}") does not match the Father Name recorded in your Passport ("${passportFatherName}"). Please upload the correct file.`
+            );
+          }
+        } else if (docType === 'mother_pan' || docType === 'mother_aadhar') {
+          if (passportMotherName && extractedDocName && !this.verifyNameMatch(passportMotherName, extractedDocName)) {
+            console.warn(`[UPLOAD] Mother name mismatch! Passport: "${passportMotherName}", Extracted: "${extractedDocName}"`);
+            throw new BadRequestException(
+              `Document verification failed: The name on this Mother document ("${extractedDocName}") does not match the Mother Name recorded in your Passport ("${passportMotherName}"). Please upload the correct file.`
+            );
+          }
+        }
+      }
+
       // ── 2. Verified! Proceed to Upload to S3 (with Local Fallback) ───────
       const s3Key = this.s3Service.buildKey(userId, docType, file.originalname);
       let previewUrl = '';
@@ -157,6 +207,8 @@ export class DocumentController {
         isValid: true,
         code: 'AI_VERIFIED',
         confidence: kycResult.confidence_score,
+        extractedFields: kycResult.extracted_data,
+        extracted_data: kycResult.extracted_data,
         details: {
           message: 'Document verified by AI OCR pre-storage.',
           extractedFields: kycResult.extracted_data,
@@ -766,8 +818,28 @@ export class DocumentController {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      console.error(`[SEND-TO-BANK] Error:`, error.message);
       throw new BadRequestException(`Failed to send document to bank: ${error.message || 'Unknown error'}`);
     }
+  }
+
+  private verifyNameMatch(expectedName: string, extractedName: string): boolean {
+    if (!expectedName || !extractedName) return true;
+    const cleanExp = expectedName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const cleanExt = extractedName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    if (cleanExp === cleanExt) return true;
+
+    const expTokens = cleanExp.split(/\s+/).filter((t) => t.length > 1);
+    const extTokens = cleanExt.split(/\s+/).filter((t) => t.length > 1);
+
+    if (expTokens.length === 0 || extTokens.length === 0) return true;
+
+    let matches = 0;
+    for (const token of expTokens) {
+      if (extTokens.some((extToken) => extToken.includes(token) || token.includes(extToken))) {
+        matches++;
+      }
+    }
+    const matchRatio = matches / expTokens.length;
+    return matchRatio >= 0.5;
   }
 }
