@@ -34,6 +34,8 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     super.dispose();
   }
 
+  final Map<String, String> _userProfileNumbers = {};
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -52,11 +54,48 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
             _localOcrNumbers[type] = val;
           }
         } else if (k.startsWith('ocr_number_') && !k.contains('_user_') && !k.contains('_anon_')) {
-          // Legacy fallback
           final type = k.replaceFirst('ocr_number_', '');
           final val = prefs.getString(k);
           if (val != null && val.isNotEmpty) {
             _localOcrNumbers[type] = val;
+          }
+        }
+      }
+
+      // Read fallback profile document numbers
+      final profileKeys = [
+        'pan_number', 'panNumber', 'user_pan', 'student_pan',
+        'aadhar_number', 'aadhaar_number', 'aadharNumber', 'user_aadhar', 'student_aadhar',
+        'passport_number', 'passportNumber', 'user_passport', 'student_passport',
+        'father_pan', 'father_pan_number', 'father_aadhar', 'father_aadhar_number',
+        'mother_pan', 'mother_pan_number', 'mother_aadhar', 'mother_aadhar_number',
+        'coapp_pan', 'coapp_pan_number', 'coapp_aadhar', 'coapp_aadhar_number',
+      ];
+      for (var k in profileKeys) {
+        final v = prefs.getString(k);
+        if (v != null && v.trim().isNotEmpty) {
+          if (k.contains('pan')) {
+            if (k.contains('father')) {
+              _userProfileNumbers['father_pan'] = v.trim();
+            } else if (k.contains('mother')) {
+              _userProfileNumbers['mother_pan'] = v.trim();
+            } else if (k.contains('coapp')) {
+              _userProfileNumbers['coapp_pan'] = v.trim();
+            } else {
+              _userProfileNumbers['pan'] = v.trim();
+            }
+          } else if (k.contains('aadhar') || k.contains('aadhaar')) {
+            if (k.contains('father')) {
+              _userProfileNumbers['father_aadhar'] = v.trim();
+            } else if (k.contains('mother')) {
+              _userProfileNumbers['mother_aadhar'] = v.trim();
+            } else if (k.contains('coapp')) {
+              _userProfileNumbers['coapp_aadhar'] = v.trim();
+            } else {
+              _userProfileNumbers['aadhar'] = v.trim();
+            }
+          } else if (k.contains('passport')) {
+            _userProfileNumbers['passport'] = v.trim();
           }
         }
       }
@@ -123,7 +162,51 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     if (doc != null && doc.extractedNumber != null && doc.extractedNumber!.trim().isNotEmpty) {
       return doc.extractedNumber!.trim();
     }
-    return _localOcrNumbers[type];
+    if (_localOcrNumbers.containsKey(type) && _localOcrNumbers[type]!.trim().isNotEmpty) {
+      return _localOcrNumbers[type]!.trim();
+    }
+
+    final targetClean = type.trim().toLowerCase().replaceAll('-', '_');
+    for (var entry in _localOcrNumbers.entries) {
+      final k = entry.key.toLowerCase().replaceAll('-', '_');
+      if (targetClean.contains('pan') && k.contains('pan')) return entry.value;
+      if ((targetClean.contains('aadhar') || targetClean.contains('aadhaar')) && (k.contains('aadhar') || k.contains('aadhaar'))) return entry.value;
+      if (targetClean.contains('passport') && k.contains('passport')) return entry.value;
+    }
+
+    if (doc != null && doc.uploaded) {
+      final typeLower = type.toLowerCase();
+      if (typeLower.contains('student_pan') || (typeLower.contains('pan') && !typeLower.contains('father') && !typeLower.contains('mother') && !typeLower.contains('coapp'))) {
+        final val = _userProfileNumbers['pan'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('student_aadhar') || (typeLower.contains('aadhar') && !typeLower.contains('father') && !typeLower.contains('mother') && !typeLower.contains('coapp'))) {
+        final val = _userProfileNumbers['aadhar'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('passport')) {
+        final val = _userProfileNumbers['passport'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('father_pan')) {
+        final val = _userProfileNumbers['father_pan'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('father_aadhar')) {
+        final val = _userProfileNumbers['father_aadhar'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('mother_pan')) {
+        final val = _userProfileNumbers['mother_pan'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+      if (typeLower.contains('mother_aadhar')) {
+        final val = _userProfileNumbers['mother_aadhar'];
+        if (val != null && val.isNotEmpty) return val;
+      }
+    }
+
+    return null;
   }
 
   bool _isDocUploaded(String type) {

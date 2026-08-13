@@ -130,19 +130,28 @@ class UserDocument {
       final val = data['pan_number'] ??
           data['panNumber'] ??
           data['pan'] ??
+          data['pan_card_number'] ??
           data['aadhaar_number'] ??
           data['aadhar_number'] ??
           data['aadhaarNumber'] ??
           data['aadharNumber'] ??
+          data['aadhaar_no'] ??
+          data['aadhar_no'] ??
           data['aadhaar'] ??
           data['aadhar'] ??
+          data['uid'] ??
           data['passport_number'] ??
           data['passportNumber'] ??
+          data['passport_no'] ??
           data['passport'] ??
           data['roll_number'] ??
           data['rollNumber'] ??
+          data['roll_no'] ??
           data['registration_number'] ??
           data['registrationNumber'] ??
+          data['reg_no'] ??
+          data['certificate_number'] ??
+          data['certificate_no'] ??
           data['id_number'] ??
           data['idNumber'] ??
           data['document_number'] ??

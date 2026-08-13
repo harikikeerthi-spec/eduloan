@@ -112,6 +112,38 @@ class UserService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            final docData = data['data'];
+            final ocrResult = docData?['ocrResult'] ?? docData?['verification'] ?? data['ocrResult'];
+            final extractedFields = ocrResult?['extractedFields'] ??
+                ocrResult?['extracted_fields'] ??
+                ocrResult?['extracted_data'] ??
+                docData?['verificationMetadata']?['details']?['extractedFields'] ??
+                docData?['verificationMetadata']?['extractedFields'];
+
+            if (extractedFields != null && extractedFields is Map) {
+              final Map map = extractedFields;
+              final numVal = map['pan_number'] ??
+                  map['panNumber'] ??
+                  map['pan'] ??
+                  map['aadhaar_number'] ??
+                  map['aadhar_number'] ??
+                  map['aadhaarNumber'] ??
+                  map['aadharNumber'] ??
+                  map['passport_number'] ??
+                  map['passportNumber'] ??
+                  map['roll_number'] ??
+                  map['rollNumber'] ??
+                  map['registration_number'] ??
+                  map['registrationNumber'];
+              if (numVal != null && numVal.toString().trim().isNotEmpty) {
+                await prefs.setString('ocr_number_${userId}_$docType', numVal.toString().trim());
+              }
+            }
+          } catch (e) {
+            debugPrint('Error caching OCR number in user_service: $e');
+          }
           return null;
         } else {
           return data['message'] ?? 'Upload failed.';
