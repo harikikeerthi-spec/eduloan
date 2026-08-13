@@ -262,8 +262,8 @@ class PdfGeneratorService {
           ),
           pw.SizedBox(height: 16),
 
-          // Section 2: Family & Co-Applicant Info
-          _buildSectionHeader('2. GUARDIAN & CO-APPLICANT DETAILS', primaryColor),
+          // Section 2: Co-Applicant Details
+          _buildSectionHeader('2. CO-APPLICANT DETAILS', primaryColor),
           pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
@@ -274,9 +274,6 @@ class PdfGeneratorService {
             ),
             child: pw.Column(
               children: [
-                _buildInfoRow('Father\'s Name', loan.fatherName ?? 'N/A', 'Father\'s Phone', loan.fatherPhone ?? 'N/A'),
-                _buildInfoRow('Mother\'s Name', loan.motherName ?? 'N/A', 'Mother\'s Phone', loan.motherPhone ?? 'N/A'),
-                pw.Divider(color: PdfColors.grey300, thickness: 0.5),
                 _buildInfoRow(
                   'Co-Applicant Name',
                   loan.coApplicantName ?? 'N/A',
