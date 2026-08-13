@@ -512,6 +512,54 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Future<void> _uploadDocument(String type, String name) async {
+    // ─── PASSPORT MANDATORY FIRST CHECK ─────────────────────────────────────
+    final isPassport = type == 'student_passport' || type.contains('passport');
+    final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
+    final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
+
+    if (!isPassport && !isPassportUploaded) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Row(
+              children: [
+                Icon(Icons.lock_clock_rounded, color: Color(0xFF311B92), size: 28),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Passport Mandatory First',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF311B92),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: const Text(
+              'Please upload your Passport (Front & Back) first.\n\nAI requires your Passport details to extract your official identity and family records before verifying other documents.',
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'heif', 'doc', 'docx', 'webp'],
@@ -1023,6 +1071,38 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     return _buildSectionList(_getCombinedDocs('Parents', _parentsDocs));
   }
 
+  Widget _buildPassportMandatoryBanner() {
+    final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
+    final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
+    if (isPassportUploaded) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF97316), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lock_outline_rounded, color: Color(0xFFC2410C), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Passport Mandatory First: Please upload your Passport (Front & Back) first. Passport details will be used by AI to verify student, father, and mother records on all other documents.',
+              style: GoogleFonts.outfit(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF9A3412),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionList(Map<String, List<Map<String, String>>> sections) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -1034,46 +1114,49 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       child: ListView(
         padding: const EdgeInsets.all(16),
         physics: const AlwaysScrollableScrollPhysics(),
-        children: sections.entries.map((entry) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 8),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF311B92),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+        children: [
+          _buildPassportMandatoryBanner(),
+          ...sections.entries.map((entry) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 16, bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 4,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF311B92),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF311B92),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    entry.key,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF311B92),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ...entry.value.map((docDef) {
-              final existingDoc = _findDoc(docDef['type']!);
-              return _buildDocCard(
-                docDef['name']!,
-                docDef['type']!,
-                existingDoc,
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
-        );
-      }).toList(),
+                ),
+                ...entry.value.map((docDef) {
+                  final existingDoc = _findDoc(docDef['type']!);
+                  return _buildDocCard(
+                    docDef['name']!,
+                    docDef['type']!,
+                    existingDoc,
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+            );
+          }),
+        ],
       ),
     );
   }
