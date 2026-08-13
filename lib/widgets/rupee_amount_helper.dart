@@ -26,12 +26,7 @@ class IndianCurrencyFormatter extends TextInputFormatter {
       text = text.substring(0, maxDigits!);
     }
 
-    if (maxAmount != null) {
-      final parsed = double.tryParse(text);
-      if (parsed != null && parsed > maxAmount!) {
-        text = maxAmount!.toInt().toString();
-      }
-    }
+    // Preserve full user input for validation warnings
 
     String formatted = formatIndianCurrency(text);
 

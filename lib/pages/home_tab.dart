@@ -799,16 +799,18 @@ class HomeTabState extends State<HomeTab> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      loan.courseName ?? 'General Course',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black.withValues(alpha: 0.6),
+                    if (loan.targetCountry != null && loan.targetCountry!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        loan.targetCountry!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black.withValues(alpha: 0.6),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ],
                 ),
               ),

@@ -160,23 +160,34 @@ export class LoanStateMachine {
   static getProgressByStatus(status: string): number {
     const s = status?.toLowerCase();
     switch (s) {
-      case 'pending': return 10;
-      case 'docs_received': return 25;
-      case 'staff_verified': return 40;
-      case 'submitted_to_bank': return 50;
-      case 'file_logged': return 60;
-      case 'under_bank_review': return 70;
-      case 'query_raised': return 75;
-      case 'conditional_sanction': return 80;
-      case 'partial_sanction': return 80;
-      case 'counter_offer': return 80;
-      case 'approved': return 85;
-      case 'sanctioned': return 90;
-      case 'disbursement_confirmed': return 100;
-      case 'disbursed': return 100;
-      case 'partially_disbursed': return 95;
+      case 'created':
+      case 'draft': return 10;
+      case 'pending':
+      case 'submitted':
+      case 'application_submitted': return 25;
+      case 'docs_received':
+      case 'documents_uploaded':
+      case 'documents_verified': return 40;
+      case 'staff_verified':
+      case 'submitted_to_bank':
+      case 'submit_to_bank': return 50;
+      case 'file_logged':
+      case 'query_raised':
+      case 'under_review':
+      case 'credit_check': return 75;
+      case 'under_bank_review':
+      case 'bank_review': return 90;
+      case 'conditional_sanction':
+      case 'partial_sanction':
+      case 'counter_offer':
+      case 'approved':
+      case 'sanctioned':
+      case 'sanction': return 95;
+      case 'disbursement_confirmed':
+      case 'disbursed':
+      case 'partially_disbursed':
       case 'closed': return 100;
-      default: return 10;
+      default: return 25;
     }
   }
 

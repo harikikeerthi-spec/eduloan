@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/mesh_background.dart';
 
@@ -117,9 +118,9 @@ final _privacySections = [
     '7',
     'Contact Data Privacy Officer',
     'If you have questions, comments, or data handling complaints regarding this Privacy Policy, please reach out to our dedicated Data Privacy Team:\n\n'
-        '📧 Email: privacy@vidyaloan.in\n'
-        '📍 Address: Nuzvid\n'
-        '📞 Phone: +91 9240209000',
+        '📧 Email: support@Vidyaloans.in\n'
+        '📞 Phone: +91 8143797779\n'
+        '📍 Address: Nuzvid, Andhra Pradesh, India',
   ),
 ];
 
@@ -158,13 +159,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A0050), Color(0xFF311B92), Color(0xFF4527A0)],
-        ),
-      ),
+      color: Colors.transparent,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -179,47 +174,29 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                     child: Container(
                       padding: const EdgeInsets.all(9),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
+                        color: const Color(0xFF311B92).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF311B92), size: 18),
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Legal',
-                        style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      Text(
-                        'Last Updated: May 26, 2026',
-                        style: GoogleFonts.inter(fontSize: 11, color: Colors.white.withValues(alpha: 0.6)),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.gavel_rounded, color: Colors.white, size: 20),
+                  Text(
+                    'Legal',
+                    style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Tab bar
             Container(
-              margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              margin: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
+                color: const Color(0xFF311B92).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: TabBar(
@@ -229,8 +206,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                   borderRadius: BorderRadius.circular(11),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -240,7 +218,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                 labelStyle: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold),
                 unselectedLabelStyle: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w500),
                 labelColor: const Color(0xFF311B92),
-                unselectedLabelColor: Colors.white.withValues(alpha: 0.75),
+                unselectedLabelColor: Colors.black.withValues(alpha: 0.6),
                 tabs: const [
                   Tab(text: '📜  Terms & Conditions'),
                   Tab(text: '🔒  Privacy Policy'),
@@ -253,7 +231,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildIntroCard(String version, String updated) {
+  Widget _buildIntroCard(String version) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(20, 20, 20, 4),
@@ -280,22 +258,13 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Version $version',
-                  style: GoogleFonts.outfit(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF311B92),
-                  ),
-                ),
-                Text(
-                  'Last Updated: $updated',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
-                ),
-              ],
+            child: Text(
+              'Version $version',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF311B92),
+              ),
             ),
           ),
           Container(
@@ -551,9 +520,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _contactRow(Icons.email_outlined, 'privacy@vidyaloan.in'),
-          _contactRow(Icons.phone_outlined, '+91 9240209000'),
+          const SizedBox(height: 14),
+          _contactRow(Icons.email_outlined, 'support@Vidyaloans.in'),
+          const SizedBox(height: 8),
+          _contactRow(Icons.phone_outlined, '+91 8143797779'),
+          const SizedBox(height: 8),
           _contactRow(Icons.location_on_outlined, 'Nuzvid, Andhra Pradesh, India'),
         ],
       ),
@@ -561,20 +532,48 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
   }
 
   Widget _contactRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 16),
-          const SizedBox(width: 10),
-          Text(
-            text,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
+    return InkWell(
+      onTap: () async {
+        await Clipboard.setData(ClipboardData(text: text));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Copied "$text" to clipboard'),
+            backgroundColor: const Color(0xFF311B92),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
-        ],
+        );
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            Icon(
+              Icons.copy_rounded,
+              color: Colors.white.withValues(alpha: 0.7),
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -583,7 +582,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _buildIntroCard('1.8', 'May 26, 2026'),
+        _buildIntroCard('1.8'),
         _buildTocCard(_termsSections, _expandedTerms),
         const SizedBox(height: 16),
         ..._termsSections.asMap().entries.map((e) => _buildAccordionSection(
@@ -607,7 +606,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        _buildIntroCard('2.1', 'May 26, 2026'),
+        _buildIntroCard('2.1'),
         _buildTocCard(_privacySections, _expandedPrivacy),
         const SizedBox(height: 16),
         ..._privacySections.asMap().entries.map((e) => _buildAccordionSection(

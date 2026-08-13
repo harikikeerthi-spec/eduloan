@@ -119,31 +119,56 @@ class Loan {
         st == 'counter_offer' ||
         sg == 'sanction' ||
         sg == 'sanctioned') {
-      return 80;
+      return 95;
     }
-    if (st == 'under_review' ||
-        st == 'submitted_to_bank' ||
-        st == 'file_logged' ||
-        st == 'under_bank_review' ||
-        st == 'query_raised' ||
-        sg == 'credit_check' ||
+    if (st == 'under_bank_review' ||
+        st == 'bank_review' ||
         sg == 'bank_review' ||
-        sg == 'under_review' ||
+        sg == 'under_bank_review') {
+      return 90;
+    }
+    if (st == 'credit_check' ||
+        st == 'file_logged' ||
+        st == 'query_raised' ||
+        st == 'under_review' ||
+        sg == 'credit_check' ||
+        sg == 'file_logged' ||
+        sg == 'query_raised' ||
         sg == 'verification' ||
         sg == 'review') {
-      return 60;
+      return 75;
+    }
+    if (st == 'submitted_to_bank' ||
+        st == 'submit_to_bank' ||
+        st == 'staff_verified' ||
+        sg == 'submitted_to_bank' ||
+        sg == 'submit_to_bank') {
+      return 50;
     }
     if (hasUploadedDocs ||
-        st == 'docs_received' ||
-        st == 'staff_verified' ||
-        st == 'documents_uploaded' ||
         st == 'documents_verified' ||
-        sg == 'document_verification' ||
-        sg == 'documents_uploaded' ||
-        sg == 'documents') {
+        st == 'staff_verified' ||
+        st == 'submitted_to_bank' ||
+        st == 'submit_to_bank' ||
+        sg == 'documents_verified' ||
+        sg == 'documents_approved') {
       return 40;
     }
-    return progress > 0 ? progress : 20;
+    if (st == 'submitted' ||
+        st == 'application_submitted' ||
+        st == 'pending' ||
+        st == 'docs_received' ||
+        st == 'documents_uploaded' ||
+        sg == 'application_submitted' ||
+        sg == 'submitted' ||
+        sg == 'pending' ||
+        sg == 'documents_uploaded') {
+      return 25;
+    }
+    if (st == 'created' || sg == 'created' || st == 'draft') {
+      return 10;
+    }
+    return progress > 0 ? progress : 25;
   }
 
   int getEffectiveStageIndex({bool hasUploadedDocs = false}) {
@@ -156,7 +181,7 @@ class Loan {
         st == 'closed' ||
         sg == 'disbursement' ||
         sg == 'disbursed') {
-      return 4;
+      return 7;
     }
     if (st == 'sanctioned' ||
         st == 'approved' ||
@@ -165,31 +190,71 @@ class Loan {
         st == 'counter_offer' ||
         sg == 'sanction' ||
         sg == 'sanctioned') {
-      return 3;
+      return 6;
     }
-    if (st == 'under_review' ||
-        st == 'submitted_to_bank' ||
-        st == 'file_logged' ||
-        st == 'under_bank_review' ||
-        st == 'query_raised' ||
-        sg == 'credit_check' ||
+    if (st == 'under_bank_review' ||
+        st == 'bank_review' ||
         sg == 'bank_review' ||
-        sg == 'under_review' ||
+        sg == 'under_bank_review') {
+      return 5;
+    }
+    if (st == 'credit_check' ||
+        st == 'file_logged' ||
+        st == 'query_raised' ||
+        st == 'under_review' ||
+        sg == 'credit_check' ||
+        sg == 'file_logged' ||
+        sg == 'query_raised' ||
         sg == 'verification' ||
         sg == 'review') {
-      return 2;
+      return 4;
+    }
+    if (st == 'submitted_to_bank' ||
+        st == 'submit_to_bank' ||
+        st == 'staff_verified' ||
+        sg == 'submitted_to_bank' ||
+        sg == 'submit_to_bank') {
+      return 3;
     }
     if (hasUploadedDocs ||
-        st == 'docs_received' ||
-        st == 'staff_verified' ||
-        st == 'documents_uploaded' ||
         st == 'documents_verified' ||
-        sg == 'document_verification' ||
-        sg == 'documents_uploaded' ||
-        sg == 'documents') {
+        st == 'staff_verified' ||
+        st == 'submitted_to_bank' ||
+        st == 'submit_to_bank' ||
+        sg == 'documents_verified' ||
+        sg == 'documents_approved') {
+      return 2;
+    }
+    if (st == 'submitted' ||
+        st == 'application_submitted' ||
+        st == 'pending' ||
+        st == 'docs_received' ||
+        st == 'documents_uploaded' ||
+        sg == 'application_submitted' ||
+        sg == 'submitted' ||
+        sg == 'pending' ||
+        sg == 'documents_uploaded') {
       return 1;
     }
     return 0;
+  }
+
+  String currentStageLabel({bool hasUploadedDocs = false}) {
+    final idx = getEffectiveStageIndex(hasUploadedDocs: hasUploadedDocs);
+    const stageLabels = [
+      'Created',
+      'Submitted',
+      'Documents',
+      'Submit to Bank',
+      'Credit Check',
+      'Bank Review',
+      'Sanction',
+      'Disbursed',
+    ];
+    if (idx >= 0 && idx < stageLabels.length) {
+      return stageLabels[idx];
+    }
+    return 'Submitted';
   }
 
   int get effectiveProgress => getEffectiveProgress();
@@ -305,9 +370,15 @@ class Loan {
   }
 
   String get displayBank {
-    if (bank.isEmpty ||
-        bank.toLowerCase().contains('pending') ||
-        bank.toLowerCase() == 'pending bank assignment') {
+    final b = bank.toLowerCase().trim();
+    if (b.isEmpty ||
+        b == 'any bank' ||
+        b == 'any' ||
+        b == 'unknown bank' ||
+        b == 'not assigned' ||
+        b == 'all banks' ||
+        b == 'pending bank assignment' ||
+        b.contains('pending')) {
       return 'Matching Lenders...';
     }
     return bank;

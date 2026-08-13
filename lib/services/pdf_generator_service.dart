@@ -236,7 +236,7 @@ class PdfGeneratorService {
             child: pw.Column(
               children: [
                 _buildInfoRow('Student Full Name', loan.fullName, 'Target Country', loan.targetCountry ?? 'N/A'),
-                _buildInfoRow('University Name', loan.universityName ?? 'N/A', 'Course Name', loan.courseName ?? 'N/A'),
+                _buildInfoRow('University Name', loan.universityName ?? 'N/A', 'Field of Study', loan.fieldOfStudy ?? 'N/A'),
                 _buildInfoRow(
                   'Loan Amount Requested',
                   currencyFormatter.format(loan.amount),
@@ -245,7 +245,7 @@ class PdfGeneratorService {
                 ),
                 _buildInfoRow(
                   'Assigned Lender / Bank',
-                  loan.bank,
+                  loan.displayBank,
                   'Purpose',
                   loan.purpose ?? 'Higher Education',
                 ),

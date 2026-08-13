@@ -565,8 +565,25 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         _selectedCountryFlag = _getFlagForCountry(country);
       }
     }
-    // Auto-detect flag as user types manually
+    // Auto-detect flag & block disallowed countries as user types manually
     _countryController.addListener(() {
+      final lower = _countryController.text.trim().toLowerCase();
+      if (lower.contains('pakistan') ||
+          lower.contains('bangladesh') ||
+          lower == 'pak' ||
+          lower == 'bangla' ||
+          lower == 'pk' ||
+          lower == 'bd') {
+        if (_fieldErrors[_countryController] != 'Country not recognized') {
+          setState(() {
+            _fieldErrors[_countryController] = 'Country not recognized';
+          });
+        }
+      } else if (_fieldErrors[_countryController] == 'Country not recognized') {
+        setState(() {
+          _fieldErrors.remove(_countryController);
+        });
+      }
       if (_isManualCountryEntry) {
         final flag = _getFlagForCountry(_countryController.text);
         if (flag != _selectedCountryFlag) {
@@ -675,10 +692,15 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
   }
 
-  void _updateAmountLabel() {
-    final text = _amountController.text.replaceAll(',', '');
+  bool _isAmountExceedingLimit = false;
+
+  void _updateAmountLabel([String? _]) {
+    final text = _amountController.text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9]'), '');
     if (text.isEmpty) {
-      setState(() => _amountInLakhsLabel = '');
+      setState(() {
+        _amountInLakhsLabel = '';
+        _isAmountExceedingLimit = false;
+      });
       return;
     }
     final amount = double.tryParse(text);
@@ -688,12 +710,24 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         symbol: '₹',
         decimalDigits: 0,
       );
+      if (amount > 15000000) {
+        setState(() {
+          _isAmountExceedingLimit = true;
+          _amountInLakhsLabel =
+              '⚠️ Maximum limit allowed is ₹1.5 Crore (₹1,50,00,000). Current: ${formatter.format(amount)} (${(amount / 100000).toStringAsFixed(2)} Lakhs)';
+        });
+        return;
+      }
       setState(() {
+        _isAmountExceedingLimit = false;
         _amountInLakhsLabel =
             'Amount: ${formatter.format(amount)} (${(amount / 100000).toStringAsFixed(2)} Lakhs)';
       });
     } else {
-      setState(() => _amountInLakhsLabel = '');
+      setState(() {
+        _amountInLakhsLabel = '';
+        _isAmountExceedingLimit = false;
+      });
     }
   }
 
@@ -726,99 +760,213 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
 
   void _showCountrySelection() {
+    String searchQuery = '';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.65,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final query = searchQuery.trim().toLowerCase();
+          final isUnrecognizedCountry = query.contains('pakistan') ||
+              query.contains('bangladesh') ||
+              query == 'pak' ||
+              query == 'bangla' ||
+              query == 'pk' ||
+              query == 'bd';
+
+          final filteredCountries = _countries.where((c) {
+            if (query.isEmpty) return true;
+            return c.toLowerCase().contains(query);
+          }).toList();
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.75,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'Select Target Country',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF311B92),
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _countries.length,
-                itemBuilder: (context, index) {
-                  final country = _countries[index];
-                  final flag = country == 'Other' ? '🌍' : _getFlagForCountry(country);
-                  final isSelected = _countryController.text == country;
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                    leading: flag.isNotEmpty
-                        ? Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF311B92).withValues(alpha: 0.1)
-                                  : const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                flag,
-                                style: const TextStyle(fontSize: 24),
-                              ),
-                            ),
-                          )
-                        : null,
-                    title: Text(
-                      country,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                    'Select Target Country',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF311B92),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: TextField(
+                      onChanged: (val) {
+                        setModalState(() {
+                          searchQuery = val;
+                        });
+                      },
+                      style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0F172A)),
+                      decoration: const InputDecoration(
+                        hintText: 'Search target country...',
+                        hintStyle: TextStyle(color: Color(0xFF94A3B8)),
+                        border: InputBorder.none,
+                        icon: Icon(Icons.search, color: Color(0xFF64748B), size: 20),
                       ),
                     ),
-                    trailing: isSelected
-                        ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
-                        : const Icon(Icons.chevron_right, color: Colors.grey),
-                    onTap: () {
-                      setState(() {
-                        if (country == 'Other') {
-                          _countryController.clear();
-                          _isManualCountryEntry = true;
-                          _selectedCountryFlag = '';
-                        } else {
-                          _countryController.text = country;
-                          _isManualCountryEntry = false;
-                          _selectedCountryFlag = flag;
-                          _fieldErrors.remove(_countryController);
-                          _validateUniversityLocation();
-                        }
-                      });
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: isUnrecognizedCountry
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 30),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Country not recognized',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF991B1B),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Education loans are not supported for Pakistan / Bangladesh as target destinations.',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 13,
+                                          color: const Color(0xFFB91C1C),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : (filteredCountries.isEmpty && query.isNotEmpty)
+                          ? Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Container(
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 28),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Text(
+                                        'Country not recognized',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF991B1B),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: filteredCountries.length,
+                              itemBuilder: (context, index) {
+                                final country = filteredCountries[index];
+                                final flag = country == 'Other' ? '🌍' : _getFlagForCountry(country);
+                                final isSelected = _countryController.text == country;
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                  leading: flag.isNotEmpty
+                                      ? Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? const Color(0xFF311B92).withValues(alpha: 0.1)
+                                                : const Color(0xFFF3F4F6),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              flag,
+                                              style: const TextStyle(fontSize: 24),
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                  title: Text(
+                                    country,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                                    ),
+                                  ),
+                                  trailing: isSelected
+                                      ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                                      : const Icon(Icons.chevron_right, color: Colors.grey),
+                                  onTap: () {
+                                    setState(() {
+                                      if (country == 'Other') {
+                                        _countryController.clear();
+                                        _isManualCountryEntry = true;
+                                        _selectedCountryFlag = '';
+                                      } else {
+                                        _countryController.text = country;
+                                        _isManualCountryEntry = false;
+                                        _selectedCountryFlag = flag;
+                                        _fieldErrors.remove(_countryController);
+                                        _validateUniversityLocation();
+                                      }
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1267,9 +1415,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     } else if (step == 1) {
-      if (_pincodeController.text.trim().length < 4) {
-        setState(() => _fieldErrors[_pincodeController] = 'Required');
-        _showError('Please enter a valid pincode/zipcode');
+      final pin = _pincodeController.text.trim();
+      if (pin.length != 6 || !RegExp(r'^\d{6}$').hasMatch(pin)) {
+        setState(() => _fieldErrors[_pincodeController] = 'Must be 6 digits');
+        _showError('Pincode must be exactly 6 digits');
         return false;
       }
       if (_cityController.text.trim().length < 2) {
@@ -1337,9 +1486,20 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
     } else if (step == 3) {
+      final targetCountryLower = _countryController.text.trim().toLowerCase();
       if (_countryController.text.trim().isEmpty) {
         setState(() => _fieldErrors[_countryController] = 'Required');
         _showError('Please select your target country');
+        return false;
+      }
+      if (targetCountryLower.contains('pakistan') ||
+          targetCountryLower.contains('bangladesh') ||
+          targetCountryLower == 'pak' ||
+          targetCountryLower == 'bangla' ||
+          targetCountryLower == 'pk' ||
+          targetCountryLower == 'bd') {
+        setState(() => _fieldErrors[_countryController] = 'Country not recognized');
+        _showError('Country not recognized. Education loans are not supported for this destination.');
         return false;
       }
       if (_instituteController.text.trim().isEmpty) {
@@ -1877,21 +2037,32 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               onChanged: _updateAmountInLakhsLabel,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                IndianCurrencyFormatter(maxAmount: 15000000),
+                IndianCurrencyFormatter(),
               ],
             ),
             if (_amountInLakhsLabel.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                  color: _isAmountExceedingLimit
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFF311B92).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: _isAmountExceedingLimit
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF311B92).withValues(alpha: 0.15),
+                    width: _isAmountExceedingLimit ? 1.5 : 1.0,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 16, color: Color(0xFF311B92)),
+                    Icon(
+                      _isAmountExceedingLimit ? Icons.warning_amber_rounded : Icons.info_outline,
+                      size: 18,
+                      color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -1899,7 +2070,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF311B92),
+                          color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
                         ),
                       ),
                     ),
@@ -2096,13 +2267,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         ),
         const SizedBox(height: 16),
         _buildReviewSection(
-          'Parent Details',
-          Icons.family_restroom_rounded,
+          'Residential Details',
+          Icons.home_outlined,
           [
-            _buildReviewRow("Father's Name", _fatherNameController.text),
-            _buildReviewRow("Father's Phone", _fatherPhoneController.text),
-            _buildReviewRow("Mother's Name", _motherNameController.text),
-            _buildReviewRow("Mother's Phone", _motherPhoneController.text),
             _buildReviewRow("Pincode / ZIP", _pincodeController.text),
             _buildReviewRow("City", _cityController.text),
             _buildReviewRow("State", _stateController.text.isEmpty ? 'N/A' : _stateController.text),
@@ -2130,7 +2297,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           [
             _buildReviewRow('Country', _countryController.text),
             _buildReviewRow('University', _instituteController.text),
-            _buildReviewRow('Course', _courseController.text),
             _buildReviewRow('Field of Study', _fieldOfStudyController.text),
             _buildReviewRow('Admission Status', _admissionStatusController.text),
             _buildReviewRow('Amount', '₹${_amountController.text}'),
@@ -2282,9 +2448,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   void _updateAmountInLakhsLabel(String val) {
-    setState(() {
-      _amountInLakhsLabel = getRupeeAmountHelperText(val, label: 'Amount');
-    });
+    _updateAmountLabel(val);
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
@@ -2331,16 +2495,22 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     final hasError = errorText != null;
     final isPhoneField = keyboardType == TextInputType.phone || hint.toLowerCase().contains('phone');
     final isEmailField = keyboardType == TextInputType.emailAddress || hint.toLowerCase().contains('email');
+    final isPincodeField = hint.toLowerCase().contains('pincode') || hint.toLowerCase().contains('zip');
     final effectiveFormatters = (isPhoneField && !readOnly)
         ? [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(10),
           ]
-        : isEmailField
+        : (isPincodeField && !readOnly)
             ? [
-                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(6),
               ]
-            : inputFormatters;
+            : isEmailField
+                ? [
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                  ]
+                : inputFormatters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2369,8 +2539,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   showCursor: !readOnly,
                   onTap: onTap,
                   maxLines: maxLines,
-                  maxLength: (isPhoneField && !readOnly) ? 10 : null,
-                  buildCounter: isPhoneField
+                  maxLength: (isPhoneField && !readOnly)
+                      ? 10
+                      : (isPincodeField && !readOnly)
+                          ? 6
+                          : null,
+                  buildCounter: (isPhoneField || isPincodeField)
                       ? (context, {required currentLength, required isFocused, maxLength}) => null
                       : null,
                   inputFormatters: effectiveFormatters,
@@ -2680,12 +2854,7 @@ class IndianCurrencyFormatter extends TextInputFormatter {
       text = text.substring(0, maxDigits!);
     }
 
-    if (maxAmount != null) {
-      final parsed = double.tryParse(text);
-      if (parsed != null && parsed > maxAmount!) {
-        text = maxAmount!.toInt().toString();
-      }
-    }
+    // Preserve full user input for validation warnings
 
     String formatted = _formatIndianCurrency(text);
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'apply_loan_page.dart';
 import 'document_vault_page.dart';
@@ -24,6 +25,75 @@ class _MyLoansPageState extends State<MyLoansPage> {
   final LoanService _loanService = LoanService();
   List<Loan> _loans = [];
   bool _isLoading = true;
+
+  Future<void> _launchEmail(String rawEmail) async {
+    final String email = rawEmail.trim();
+    if (email.isEmpty) return;
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+    );
+    try {
+      bool launched = await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        launched = await launchUrl(emailUri);
+      }
+      if (!launched) {
+        await Clipboard.setData(ClipboardData(text: email));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Email address copied to clipboard: $email'),
+            backgroundColor: const Color(0xFF311B92),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      await Clipboard.setData(ClipboardData(text: email));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Email address copied to clipboard: $email'),
+          backgroundColor: const Color(0xFF311B92),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _launchPhone(String rawPhone) async {
+    final String phone = rawPhone.trim();
+    if (phone.isEmpty) return;
+    final Uri phoneUri = Uri(scheme: 'tel', path: phone);
+    try {
+      bool launched = await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        launched = await launchUrl(phoneUri);
+      }
+      if (!launched) {
+        await Clipboard.setData(ClipboardData(text: phone));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Phone number copied to clipboard: $phone'),
+            backgroundColor: const Color(0xFF311B92),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      await Clipboard.setData(ClipboardData(text: phone));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Phone number copied to clipboard: $phone'),
+          backgroundColor: const Color(0xFF311B92),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   String? _getBankLogoPath(String bankName) {
     final lower = bankName.toLowerCase();
@@ -55,16 +125,20 @@ class _MyLoansPageState extends State<MyLoansPage> {
     try {
       final loans = await _loanService.getUserLoans();
       final userDocs = await UserService.getUserDocuments();
-      final bool hasUploadedDocs = userDocs.any((d) =>
-        (d.uploaded || d.status.toLowerCase() == 'verified' || d.status.toLowerCase() == 'uploaded' || d.status.toLowerCase() == 'approved' || (d.filePath != null && d.filePath!.isNotEmpty)) &&
-        d.status.toLowerCase() != 'rejected'
-      );
       final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
+      final bool allDocsVerifiedAndUploaded = userDocs.isNotEmpty &&
+          userDocs.every((d) =>
+              (d.uploaded ||
+                  d.status.toLowerCase() == 'verified' ||
+                  d.status.toLowerCase() == 'approved' ||
+                  (d.filePath != null && d.filePath!.isNotEmpty)) &&
+              d.status.toLowerCase() != 'rejected');
+      final bool isAllDocsComplete = allDocsUploaded || allDocsVerifiedAndUploaded;
       if (mounted) {
         setState(() {
           _loans = loans;
-          _hasUploadedDocs = hasUploadedDocs;
-          _isAllDocsUploaded = allDocsUploaded;
+          _hasUploadedDocs = isAllDocsComplete;
+          _isAllDocsUploaded = isAllDocsComplete;
           _isLoading = false;
         });
       }
@@ -422,28 +496,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  LanguageService.tr('application_progress'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                Text(
-                  '${loan.getEffectiveProgress(hasUploadedDocs: _hasUploadedDocs)}%',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF311B92),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             _buildProgressStepper(loan),
             const SizedBox(height: 16),
             const Divider(height: 1),
@@ -502,38 +554,44 @@ class _MyLoansPageState extends State<MyLoansPage> {
                           ),
                           if (loan.counselorPhone != null && loan.counselorPhone!.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Row(
+                            GestureDetector(
+                              onTap: () => _launchPhone(loan.counselorPhone!),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.phone_outlined, size: 12, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    loan.counselorPhone!,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF475569),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 3),
+                          GestureDetector(
+                            onTap: () => _launchEmail(loan.counselorEmail ?? 'staffvidyaloans@gmail.com'),
+                            child: Row(
                               children: [
-                                const Icon(Icons.phone_outlined, size: 12, color: Color(0xFF64748B)),
+                                const Icon(Icons.email_outlined, size: 12, color: Color(0xFF64748B)),
                                 const SizedBox(width: 4),
-                                Text(
-                                  loan.counselorPhone!,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF475569),
-                                    fontWeight: FontWeight.w500,
+                                Expanded(
+                                  child: Text(
+                                    loan.counselorEmail ?? 'staffvidyaloans@gmail.com',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF475569),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              const Icon(Icons.email_outlined, size: 12, color: Color(0xFF64748B)),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  loan.counselorEmail ?? 'vidyaloans7@gmail.com',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF475569),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
                           ),
                         ],
                       ),
@@ -541,14 +599,9 @@ class _MyLoansPageState extends State<MyLoansPage> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (loan.counselorPhone != null) ...[
+                        if (loan.counselorPhone != null && loan.counselorPhone!.isNotEmpty) ...[
                           IconButton(
-                            onPressed: () async {
-                              final Uri url = Uri.parse('tel:${loan.counselorPhone}');
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url);
-                              }
-                            },
+                            onPressed: () => _launchPhone(loan.counselorPhone!),
                             icon: const Icon(
                               Icons.phone_in_talk_rounded,
                               color: Color(0xFF10B981),
@@ -565,13 +618,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                           const SizedBox(width: 6),
                         ],
                         IconButton(
-                          onPressed: () async {
-                            final String email = loan.counselorEmail ?? 'vidyaloans7@gmail.com';
-                            final Uri url = Uri.parse('mailto:$email');
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(url);
-                            }
-                          },
+                          onPressed: () => _launchEmail(loan.counselorEmail ?? 'staffvidyaloans@gmail.com'),
                           icon: const Icon(
                             Icons.mail_rounded,
                             color: Color(0xFF311B92),
@@ -1080,91 +1127,169 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
   Widget _buildProgressStepper(Loan loan) {
     final stages = [
-      {
-        'key': 'application_submitted',
-        'label': 'Submitted',
-        'icon': Icons.description,
-      },
-      {
-        'key': 'documents_uploaded',
-        'label': 'Documents',
-        'icon': Icons.upload_file,
-      },
-      {'key': 'under_review', 'label': 'Review', 'icon': Icons.rate_review},
-      {'key': 'sanctioned', 'label': 'Sanctioned', 'icon': Icons.verified},
-      {'key': 'disbursed', 'label': 'Disbursed', 'icon': Icons.payments},
+      {'label': 'Created', 'pct': '10%'},
+      {'label': 'Submitted', 'pct': '25%'},
+      {'label': 'Documents', 'pct': '40%'},
+      {'label': 'Submit to Bank', 'pct': '50%'},
+      {'label': 'Credit Check', 'pct': '75%'},
+      {'label': 'Bank Review', 'pct': '90%'},
+      {'label': 'Sanction', 'pct': '95%'},
+      {'label': 'Disbursed', 'pct': '100%'},
     ];
 
     final int currentStageIndex = loan.getEffectiveStageIndex(hasUploadedDocs: _hasUploadedDocs);
+    final int currentProgress = loan.getEffectiveProgress(hasUploadedDocs: _hasUploadedDocs);
+    final String currentStage = loan.currentStageLabel(hasUploadedDocs: _hasUploadedDocs);
+
+    const primaryColor = Color(0xFF7C3AED);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: List.generate(stages.length, (index) {
-            final isCompleted = index < currentStageIndex;
-            final isCurrent = index == currentStageIndex;
-            final stage = stages[index];
-
-            return Expanded(
-              child: Column(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF5FF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFF3E8FF),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'CURRENT PROGRESS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF9333EA),
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      if (index > 0)
-                        Expanded(
-                          child: Container(
-                            height: 2,
-                            color: isCompleted
-                                ? const Color(0xFF311B92)
-                                : Colors.grey.withValues(alpha: 0.2),
-                          ),
-                        ),
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: isCompleted || isCurrent
-                              ? const Color(0xFF311B92)
-                              : Colors.grey.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          stage['icon'] as IconData,
-                          color: isCompleted || isCurrent
-                              ? Colors.white
-                              : Colors.grey.withValues(alpha: 0.5),
-                          size: 18,
-                        ),
-                      ),
-                      if (index < stages.length - 1)
-                        Expanded(
-                          child: Container(
-                            height: 2,
-                            color: isCompleted
-                                ? const Color(0xFF311B92)
-                                : Colors.grey.withValues(alpha: 0.2),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
                   Text(
-                    stage['label'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: isCurrent
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isCompleted || isCurrent
-                          ? const Color(0xFF311B92)
-                          : Colors.grey.withValues(alpha: 0.6),
+                    currentStage,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E1B4B),
+                    ),
+                  ),
+                  Text(
+                    '$currentProgress%',
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
                     ),
                   ),
                 ],
               ),
-            );
-          }),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            children: List.generate(stages.length, (index) {
+              final isCompleted = index < currentStageIndex;
+              final isCurrent = index == currentStageIndex;
+              final isActive = isCompleted || isCurrent;
+              final stage = stages[index];
+              final isLast = index == stages.length - 1;
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: isActive ? primaryColor : Colors.transparent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isActive
+                                ? primaryColor
+                                : const Color(0xFFCBD5E1),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: isActive
+                            ? const Icon(
+                                Icons.check_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              )
+                            : Center(
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFCBD5E1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                      ),
+                      if (!isLast)
+                        Container(
+                          width: 2,
+                          height: 22,
+                          color: index < currentStageIndex
+                              ? primaryColor
+                              : const Color(0xFFE2E8F0),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            stage['label']!,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isActive
+                                  ? (isCurrent ? primaryColor : const Color(0xFF1E1B4B))
+                                  : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                          Text(
+                            stage['pct']!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isActive
+                                  ? primaryColor
+                                  : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
+          ),
         ),
       ],
     );
@@ -1178,7 +1303,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
       children: [
         _buildDetailRow('Application ID', loan.applicationNumber ?? loan.id),
         _buildDetailRow('University', loan.universityName ?? 'N/A'),
-        _buildDetailRow('Course', loan.courseName ?? 'N/A'),
         _buildDetailRow(
           'Amount',
           '₹${(loan.amount / 100000).toStringAsFixed(1)}L',
