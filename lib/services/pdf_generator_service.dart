@@ -87,18 +87,21 @@ class PdfGeneratorService {
         'student_degree_marksheet',
       ];
 
-      final uploadedTypes = docs
-          .where((d) =>
-              (d.uploaded ||
-                  d.status.toLowerCase() == 'verified' ||
-                  d.status.toLowerCase() == 'approved' ||
-                  (d.filePath != null && d.filePath!.isNotEmpty)) &&
-              d.status.toLowerCase() != 'rejected')
+      // A document is considered accepted when staff marks its status as verified, approved, or accepted
+      final acceptedTypes = docs
+          .where((d) {
+            final st = d.status.toLowerCase().trim();
+            return st == 'verified' ||
+                st == 'approved' ||
+                st == 'accepted' ||
+                st == 'staff_verified' ||
+                st == 'completed';
+          })
           .map((d) => d.docType)
           .toSet();
 
       for (final reqType in requiredTypes) {
-        if (!uploadedTypes.contains(reqType)) {
+        if (!acceptedTypes.contains(reqType)) {
           return false;
         }
       }

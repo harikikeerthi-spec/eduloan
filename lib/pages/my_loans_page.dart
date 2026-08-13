@@ -123,7 +123,29 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
     try {
       final loans = await _loanService.getUserLoans();
-      final bool isAllDocsComplete = await PdfGeneratorService.isEveryDocumentUploaded();
+      final bool allDocsAcceptedByStaff = await PdfGeneratorService.isEveryDocumentUploaded();
+
+      // Check if backend loan status indicates staff has verified/accepted documents
+      final bool loanDocsVerifiedByStaff = loans.any((loan) {
+        final st = loan.status.toLowerCase().trim();
+        final sg = loan.stage.toLowerCase().trim();
+        return st == 'documents_verified' ||
+            st == 'staff_verified' ||
+            st == 'submitted_to_bank' ||
+            st == 'file_logged' ||
+            st == 'under_bank_review' ||
+            st == 'query_raised' ||
+            st == 'sanctioned' ||
+            st == 'approved' ||
+            st == 'disbursed' ||
+            st == 'disbursement_confirmed' ||
+            sg == 'documents_verified' ||
+            sg == 'documents_approved' ||
+            sg == 'submitted_to_bank';
+      });
+
+      final bool isAllDocsComplete = allDocsAcceptedByStaff || loanDocsVerifiedByStaff;
+
       if (mounted) {
         setState(() {
           _loans = loans;
