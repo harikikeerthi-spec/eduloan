@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 import '../models/user_document.dart';
 import 'user_service.dart';
@@ -72,27 +71,29 @@ class PdfGeneratorService {
     'mother_aadhar': 'Mother Aadhar Card',
   };
 
-  /// Returns true if every required document has been uploaded by the user.
+  /// Returns true if every required document in Document Vault has been uploaded and accepted by the user.
   static Future<bool> isEveryDocumentUploaded() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final coappType = prefs.getString('co_applicant_type');
-
-      if (coappType == null || (coappType != 'Salaried' && coappType != 'Self Employed')) {
-        return false;
-      }
-
       final docs = await UserService.getUserDocuments();
       if (docs.isEmpty) return false;
 
+      // Required core student documents in Document Vault
       final requiredTypes = <String>[
-        ...studentDocTypes,
-        if (coappType == 'Salaried') ...coappSalariedTypes else ...coappSelfEmployedTypes,
-        ...parentDocTypes,
+        'student_passport',
+        'student_aadhar',
+        'student_pan',
+        'student_10th_marksheet',
+        'student_12th_marksheet',
+        'student_degree_marksheet',
       ];
 
       final uploadedTypes = docs
-          .where((d) => d.uploaded && d.status.toLowerCase() != 'rejected')
+          .where((d) =>
+              (d.uploaded ||
+                  d.status.toLowerCase() == 'verified' ||
+                  d.status.toLowerCase() == 'approved' ||
+                  (d.filePath != null && d.filePath!.isNotEmpty)) &&
+              d.status.toLowerCase() != 'rejected')
           .map((d) => d.docType)
           .toSet();
 

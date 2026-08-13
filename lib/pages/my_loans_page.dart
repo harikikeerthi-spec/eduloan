@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'apply_loan_page.dart';
 import 'document_vault_page.dart';
 import '../widgets/mesh_background.dart';
-import '../services/user_service.dart';
 import '../models/loan.dart';
 import '../services/loan_service.dart';
 import 'digilocker_auth_page.dart';
@@ -124,16 +123,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
 
     try {
       final loans = await _loanService.getUserLoans();
-      final userDocs = await UserService.getUserDocuments();
-      final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
-      final bool allDocsVerifiedAndUploaded = userDocs.isNotEmpty &&
-          userDocs.every((d) =>
-              (d.uploaded ||
-                  d.status.toLowerCase() == 'verified' ||
-                  d.status.toLowerCase() == 'approved' ||
-                  (d.filePath != null && d.filePath!.isNotEmpty)) &&
-              d.status.toLowerCase() != 'rejected');
-      final bool isAllDocsComplete = allDocsUploaded || allDocsVerifiedAndUploaded;
+      final bool isAllDocsComplete = await PdfGeneratorService.isEveryDocumentUploaded();
       if (mounted) {
         setState(() {
           _loans = loans;
