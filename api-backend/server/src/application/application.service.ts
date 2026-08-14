@@ -152,6 +152,9 @@ export class ApplicationService {
 
     await this.validateApplicationConstraints(userId, null, targetBank, targetCountry, targetUniversity);
 
+    // ── Round-robin staff assignment ────────────────────────────────────────
+    const assignedStaffId = await this.pickNextStaffRoundRobin();
+
     const applicationNumber = await this.generateApplicationNumber();
     const estimatedCompletionAt = new Date();
     estimatedCompletionAt.setDate(estimatedCompletionAt.getDate() + 14);
@@ -169,6 +172,7 @@ export class ApplicationService {
       .insert({
         applicationNumber,
         userId,
+        assignedStaffId: assignedStaffId || null,
         bank: data.bank || 'HDFC Credila',
         loanType: data.loanType || 'Education Loan',
         amount: parseNum(data.amount) || 1000000,
@@ -329,7 +333,118 @@ export class ApplicationService {
       }
     }
 
+    // ── Notify the assigned staff member ─────────────────────────────────────
+    if (application && assignedStaffId) {
+      try {
+        const staffUser = await this.db
+          .from('User')
+          .select('firstName, lastName, email')
+          .eq('id', assignedStaffId)
+          .single();
+
+        const staffName = staffUser.data
+          ? `${staffUser.data.firstName || ''} ${staffUser.data.lastName || ''}`.trim()
+          : 'Staff';
+        const staffEmail = staffUser.data?.email;
+
+        console.log(`[Round-Robin] Application ${application.applicationNumber} assigned to ${staffName} (${assignedStaffId})`);
+
+        this.eventEmitter.emit('staff.assigned', {
+          applicationId: application.id,
+          applicationNumber: application.applicationNumber,
+          assignedStaffId,
+          staffName,
+          staffEmail,
+          candidateName: `${application.firstName || ''} ${application.lastName || ''}`.trim() || application.email,
+          candidateEmail: application.email,
+          loanAmount: application.amount,
+          universityName: application.universityName,
+          targetCountry: application.country,
+          assignedAt: new Date().toISOString(),
+        });
+
+        // Also update the StaffProfile if it exists for this linked user
+        await this.db
+          .from('StaffProfile')
+          .update({ assignedStaffId, updatedAt: new Date().toISOString() })
+          .eq('linkedUserId', userId)
+          .neq('assignedStaffId', assignedStaffId); // only if not already assigned to same staff
+      } catch (staffNotifyErr) {
+        console.error('[Round-Robin] Staff notification failed (non-fatal):', staffNotifyErr);
+      }
+    }
+
     return { success: true, data: application, message: 'Application created successfully' };
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+  // Round-Robin Staff Assignment
+  // Selects the active staff member with the fewest open (non-cancelled,
+  // non-disbursed) LoanApplication assignments.
+  // ────────────────────────────────────────────────────────────────────────────
+  private async pickNextStaffRoundRobin(): Promise<string | null> {
+    try {
+      // 1. Fetch all active staff users (role = 'staff' or 'admin' with isActive)
+      const { data: staffUsers, error: staffErr } = await this.db
+        .from('User')
+        .select('id, firstName, lastName, email')
+        .eq('role', 'staff')
+        .eq('isActive', true);
+
+      if (staffErr) {
+        console.error('[Round-Robin] Failed to fetch staff users:', staffErr);
+        return null;
+      }
+
+      if (!staffUsers || staffUsers.length === 0) {
+        console.warn('[Round-Robin] No active staff found. Application will be unassigned.');
+        return null;
+      }
+
+      // 2. Count active (open) assignments per staff member
+      const { data: assignments, error: assignErr } = await this.db
+        .from('LoanApplication')
+        .select('assignedStaffId')
+        .not('assignedStaffId', 'is', null)
+        .not('status', 'in', '("cancelled","disbursed","rejected")');
+
+      if (assignErr) {
+        console.error('[Round-Robin] Failed to fetch assignment counts:', assignErr);
+        // Fall back: pick first staff
+        return staffUsers[0].id;
+      }
+
+      // 3. Build a count map  { staffId -> count }
+      const countMap = new Map<string, number>();
+      for (const su of staffUsers) {
+        countMap.set(su.id, 0); // initialise all staff with 0
+      }
+      for (const a of (assignments || [])) {
+        if (a.assignedStaffId && countMap.has(a.assignedStaffId)) {
+          countMap.set(a.assignedStaffId, (countMap.get(a.assignedStaffId) || 0) + 1);
+        }
+      }
+
+      // 4. Pick the staff with the minimum assignment count
+      let minCount = Infinity;
+      let selectedStaffId: string | null = null;
+      for (const [id, count] of countMap.entries()) {
+        if (count < minCount) {
+          minCount = count;
+          selectedStaffId = id;
+        }
+      }
+
+      const winner = staffUsers.find(su => su.id === selectedStaffId);
+      if (winner) {
+        console.log(`[Round-Robin] Selected: ${winner.firstName} ${winner.lastName} (${winner.email}) — ${minCount} active assignments`);
+      }
+
+      return selectedStaffId;
+    } catch (e) {
+      console.error('[Round-Robin] Unexpected error during staff selection:', e);
+      return null;
+    }
   }
 
   async submitApplication(applicationId: string, userId: string) {
