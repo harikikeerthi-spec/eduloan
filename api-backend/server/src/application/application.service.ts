@@ -378,18 +378,23 @@ export class ApplicationService {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Round-Robin Staff Assignment
-  // Selects the active staff member with the fewest open (non-cancelled,
-  // non-disbursed) LoanApplication assignments.
+  // Strict Sequential Round-Robin Staff Assignment
+  //
+  // Turn order: App 1 → Staff 1, App 2 → Staff 2, App 3 → Staff 3,
+  //             App 4 → Staff 1, App 5 → Staff 2 … and so on.
+  //
+  // Formula: staffIndex = totalEverAssigned % numberOfActiveStaff
+  // Staff list is sorted by createdAt ASC for a stable, consistent order.
   // ────────────────────────────────────────────────────────────────────────────
   private async pickNextStaffRoundRobin(): Promise<string | null> {
     try {
-      // 1. Fetch all active staff users (role = 'staff' or 'admin' with isActive)
+      // 1. Fetch active staff sorted by createdAt ASC (stable turn order)
       const { data: staffUsers, error: staffErr } = await this.db
         .from('User')
         .select('id, firstName, lastName, email')
         .eq('role', 'staff')
-        .eq('isActive', true);
+        .eq('isActive', true)
+        .order('createdAt', { ascending: true });
 
       if (staffErr) {
         console.error('[Round-Robin] Failed to fetch staff users:', staffErr);
@@ -401,46 +406,29 @@ export class ApplicationService {
         return null;
       }
 
-      // 2. Count active (open) assignments per staff member
-      const { data: assignments, error: assignErr } = await this.db
+      // 2. Count total ever-assigned applications (all statuses) to determine turn
+      const { count: totalAssigned, error: countErr } = await this.db
         .from('LoanApplication')
-        .select('assignedStaffId')
-        .not('assignedStaffId', 'is', null)
-        .not('status', 'in', '("cancelled","disbursed","rejected")');
+        .select('*', { count: 'exact', head: true })
+        .not('assignedStaffId', 'is', null);
 
-      if (assignErr) {
-        console.error('[Round-Robin] Failed to fetch assignment counts:', assignErr);
-        // Fall back: pick first staff
+      if (countErr) {
+        console.error('[Round-Robin] Failed to count assignments, falling back to Staff 1:', countErr);
         return staffUsers[0].id;
       }
 
-      // 3. Build a count map  { staffId -> count }
-      const countMap = new Map<string, number>();
-      for (const su of staffUsers) {
-        countMap.set(su.id, 0); // initialise all staff with 0
-      }
-      for (const a of (assignments || [])) {
-        if (a.assignedStaffId && countMap.has(a.assignedStaffId)) {
-          countMap.set(a.assignedStaffId, (countMap.get(a.assignedStaffId) || 0) + 1);
-        }
-      }
+      // 3. Sequential round-robin: next turn index = total % staffCount
+      const total = totalAssigned ?? 0;
+      const staffCount = staffUsers.length;
+      const nextIndex = total % staffCount;
 
-      // 4. Pick the staff with the minimum assignment count
-      let minCount = Infinity;
-      let selectedStaffId: string | null = null;
-      for (const [id, count] of countMap.entries()) {
-        if (count < minCount) {
-          minCount = count;
-          selectedStaffId = id;
-        }
-      }
+      const selected = staffUsers[nextIndex];
+      console.log(
+        `[Round-Robin] Turn ${total + 1}: Assigned to ${selected.firstName} ${selected.lastName}` +
+        ` (index ${nextIndex}/${staffCount - 1}, id=${selected.id})`
+      );
 
-      const winner = staffUsers.find(su => su.id === selectedStaffId);
-      if (winner) {
-        console.log(`[Round-Robin] Selected: ${winner.firstName} ${winner.lastName} (${winner.email}) — ${minCount} active assignments`);
-      }
-
-      return selectedStaffId;
+      return selected.id;
     } catch (e) {
       console.error('[Round-Robin] Unexpected error during staff selection:', e);
       return null;
