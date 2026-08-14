@@ -253,8 +253,8 @@ class MainNavigationState extends State<MainNavigation> {
 
 
 // ─── Highlighted Loans Icon ───────────────────────────────────────────────────
-// Premium multi-ring glowing animation for the Loans tab button.
-// Dual staggered pulse rings + gradient orb glow + icon scale bounce.
+// Premium dark-highlighted button for the Loans tab.
+// Neat, clean, bold dark circular badge with big crisp icon and subtle elegant glow.
 
 class _HighlightedApplyIcon extends StatefulWidget {
   final bool isActive;
@@ -265,67 +265,26 @@ class _HighlightedApplyIcon extends StatefulWidget {
 }
 
 class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
-    with TickerProviderStateMixin {
-  late final AnimationController _ring1Controller;
-  late final AnimationController _ring2Controller;
-  late final AnimationController _bounceController;
-
-  late final Animation<double> _ring1Scale;
-  late final Animation<double> _ring1Opacity;
-  late final Animation<double> _ring2Scale;
-  late final Animation<double> _ring2Opacity;
-  late final Animation<double> _iconScale;
-  late final Animation<double> _glowOpacity;
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-
-    // Ring 1 — fast gold pulse
-    _ring1Controller = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-
-    // Ring 2 — slightly delayed purple pulse
-    _ring2Controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
-
-    // Bounce / breathe of the icon
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1600),
     )..repeat(reverse: true);
 
-    _ring1Scale = Tween<double>(begin: 0.55, end: 2.0).animate(
-      CurvedAnimation(parent: _ring1Controller, curve: Curves.easeOut),
-    );
-    _ring1Opacity = Tween<double>(begin: 0.85, end: 0.0).animate(
-      CurvedAnimation(parent: _ring1Controller, curve: Curves.easeOut),
-    );
-
-    _ring2Scale = Tween<double>(begin: 0.5, end: 2.4).animate(
-      CurvedAnimation(parent: _ring2Controller, curve: Curves.easeOut),
-    );
-    _ring2Opacity = Tween<double>(begin: 0.55, end: 0.0).animate(
-      CurvedAnimation(parent: _ring2Controller, curve: Curves.easeOut),
-    );
-
-    _iconScale = Tween<double>(begin: 1.0, end: 1.14).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
-    );
-    _glowOpacity = Tween<double>(begin: 0.45, end: 0.85).animate(
-      CurvedAnimation(parent: _bounceController, curve: Curves.easeInOut),
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _ring1Controller.dispose();
-    _ring2Controller.dispose();
-    _bounceController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -335,115 +294,49 @@ class _HighlightedApplyIconState extends State<_HighlightedApplyIcon>
       return const Icon(
         Icons.account_balance_rounded,
         color: Colors.white,
-        size: 26,
+        size: 28,
       );
     }
 
     return AnimatedBuilder(
-      animation: Listenable.merge([_ring1Controller, _ring2Controller, _bounceController]),
-      builder: (context, _) {
-        return SizedBox(
-          width: 48,
-          height: 48,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // ── Ring 2 (outer purple) ──────────────────────────────────────
-              Transform.scale(
-                scale: _ring2Scale.value,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF7C3AED)
-                          .withValues(alpha: _ring2Opacity.value),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF311B92), // Deep Purple
+                  Color(0xFF1E1B4B), // Dark Indigo
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-
-              // ── Ring 1 (inner gold) ────────────────────────────────────────
-              Transform.scale(
-                scale: _ring1Scale.value,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFFCC00)
-                          .withValues(alpha: _ring1Opacity.value),
-                      width: 2.0,
-                    ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF311B92).withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 3),
                 ),
-              ),
-
-              // ── Glowing orb background ─────────────────────────────────────
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFFFCC00).withValues(alpha: _glowOpacity.value * 0.35),
-                      const Color(0xFF311B92).withValues(alpha: _glowOpacity.value * 0.20),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.55, 1.0],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFCC00).withValues(alpha: _glowOpacity.value * 0.4),
-                      blurRadius: 10,
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFF311B92).withValues(alpha: _glowOpacity.value * 0.25),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                    ),
-                  ],
+                BoxShadow(
+                  color: const Color(0xFF7C3AED).withValues(alpha: 0.20),
+                  blurRadius: 16,
+                  spreadRadius: 2,
                 ),
+              ],
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.account_balance_rounded,
+                color: Colors.white,
+                size: 24,
               ),
-
-              // ── Icon with subtle scale bounce ──────────────────────────────
-              Transform.scale(
-                scale: _iconScale.value,
-                child: const Icon(
-                  Icons.account_balance_rounded,
-                  color: Color(0xFF311B92),
-                  size: 24,
-                ),
-              ),
-
-              // ── Hot badge dot at top-right ─────────────────────────────────
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF3B30),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF3B30).withValues(alpha: 0.6),
-                        blurRadius: 5,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
