@@ -305,7 +305,7 @@ export class KycService {
             matches = keywords.some(kw => clean.includes(kw));
         } else if (normalizedType.includes('marksheet_ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor') || normalizedType.includes('degree')) {
             expectedLabel = 'Undergraduate Marksheet/Degree';
-            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'undergraduate', 'bachelor'];
+            const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'university', 'college', 'roll', 'subject', 'result', 'degree', 'semester', 'gpa', 'cgpa', 'transcript', 'undergraduate', 'bachelor', 'provisional', 'consolidated', 'b.tech', 'btech', 'b.e', 'b.sc', 'b.com', 'b.a', 'memo', 'passed', 'registration', 'reg', 'marksheet', 'institute', 'technology', 'engineering', 'science', 'arts', 'commerce'];
             matches = keywords.some(kw => clean.includes(kw));
         } else if (normalizedType.includes('marksheet_pg') || normalizedType.includes('postgrad') || normalizedType.includes('master')) {
             expectedLabel = 'Postgraduate Marksheet/Degree';
@@ -396,8 +396,26 @@ export class KycService {
     }
 
     private getPromptForType(docType: string): string {
+        const normalizedType = docType.toLowerCase().replace(/[_\s-]/g, '_');
+        let expectedTypeDescription = docType.toUpperCase().replace(/_/g, ' ');
+        if (normalizedType.includes('aadhaar') || normalizedType.includes('aadhar') || normalizedType.includes('national_id')) {
+            expectedTypeDescription = 'AADHAAR CARD';
+        } else if (normalizedType.includes('pan')) {
+            expectedTypeDescription = 'PAN CARD';
+        } else if (normalizedType.includes('passport')) {
+            expectedTypeDescription = 'PASSPORT';
+        } else if (normalizedType.includes('marksheet_10') || normalizedType.includes('10th') || normalizedType.includes('ssc')) {
+            expectedTypeDescription = 'GRADE 10 / SSC MARKSHEET';
+        } else if (normalizedType.includes('marksheet_12') || normalizedType.includes('12th') || normalizedType.includes('hsc') || normalizedType.includes('intermediate')) {
+            expectedTypeDescription = 'GRADE 12 / INTERMEDIATE MARKSHEET';
+        } else if (normalizedType.includes('degree') || normalizedType.includes('ug') || normalizedType.includes('undergrad') || normalizedType.includes('bachelor')) {
+            expectedTypeDescription = 'UNDERGRADUATE / BACHELOR DEGREE MARKSHEET, PROVISIONAL CERTIFICATE, OR TRANSCRIPT';
+        } else if (normalizedType.includes('pg') || normalizedType.includes('postgrad') || normalizedType.includes('master')) {
+            expectedTypeDescription = 'POSTGRADUATE DEGREE MARKSHEET OR TRANSCRIPT';
+        }
+
         const baseInstructions = `
-            You are an advanced AI-powered OCR engine specialized in Indian identity documents.
+            You are an advanced AI-powered OCR engine specialized in Indian identity and academic documents.
             Read the document image and extract ONLY text that is visibly printed on the document.
 
             CRITICAL RULES:
@@ -408,17 +426,17 @@ export class KycService {
             - If a field is missing or unreadable, omit it or use null. Never use placeholder names like "Resident Name".
             
             ⚠️  DOCUMENT TYPE VERIFICATION (CRITICAL):
-            - You MUST verify if the uploaded document matches the expected type: ${docType.toUpperCase()}
-            - BEFORE extracting any data, FIRST check for markers of DIFFERENT document types
-            - If you detect markers of a DIFFERENT document type, you MUST:
+            - You MUST verify if the uploaded document matches the expected type: ${expectedTypeDescription}
+            - BEFORE extracting any data, FIRST check for markers of DIFFERENT document types (e.g. Passport/Aadhaar/PAN uploaded in academic slots or vice versa)
+            - If you detect markers of an entirely DIFFERENT document type (e.g. Passport uploaded for Marksheet), you MUST:
               1. Set is_valid to FALSE
               2. Set confidence_score to 0
               3. Set document_type to the actual detected type (not the expected type)
               4. Set fraud_detected to true
               5. Set fraud_reason to 'WRONG_DOCUMENT_TYPE_UPLOADED'
               6. Do NOT extract any fields
-            - DO NOT try to force-fit data from the wrong document type
-            - is_valid should ONLY be true when the document is the CORRECT type and core identity fields are readable
+            - For academic documents (Marksheet, Degree, Consolidated Memo, Provisional Certificate, Transcript, Grade Card), ACCEPT them as MARKSHEET_UG or MARKSHEET.
+            - is_valid should be true when the document is the correct type and core fields are readable.
 
             Return ONLY a JSON object. No markdown, no explanation.
             JSON structure: {
@@ -709,7 +727,6 @@ export class KycService {
             `
         };
 
-        const normalizedType = docType.toLowerCase();
         let targetType = 'generic';
         if (normalizedType.includes('aadhaar') || normalizedType.includes('aadhar') || normalizedType.includes('national_id')) {
             targetType = 'aadhaar';
@@ -766,15 +783,26 @@ export class KycService {
             let documentValidation = parsed.document_validation;
 
             // Check for fraud_reason indicating wrong document type
-            if (parsed.fraud_reason === 'WRONG_DOCUMENT_TYPE_UPLOADED') {
-                isValid = false;
-                validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but the uploaded document appears to be a ${String(parsed.document_type || 'different document').toUpperCase()}. Please upload the correct document.`;
-            } else {
-                // Strict document type validation check
-                const expectedNorm = this.normalizeDocTypeForComparison(docType);
-                const detectedNorm = this.normalizeDocTypeForComparison(parsed.document_type || docType);
+            const expectedNorm = this.normalizeDocTypeForComparison(docType);
+            const detectedNorm = this.normalizeDocTypeForComparison(parsed.document_type || docType);
+            const isExpectedAcademic = ['marksheet_10', 'marksheet_12', 'marksheet_ug', 'marksheet_pg'].includes(expectedNorm);
+            const isDetectedAcademic = ['marksheet_10', 'marksheet_12', 'marksheet_ug', 'marksheet_pg'].includes(detectedNorm);
 
-                if (expectedNorm !== detectedNorm) {
+            if (parsed.fraud_reason === 'WRONG_DOCUMENT_TYPE_UPLOADED') {
+                // If both are academic marksheets (e.g. detected MARKSHEET or DEGREE for student_degree_marksheet), do NOT reject!
+                if (isExpectedAcademic && (isDetectedAcademic || (parsed.document_type && String(parsed.document_type).toLowerCase().includes('marksheet')))) {
+                    isValid = parsed.is_valid !== false || (parsed.confidence_score >= 50);
+                    parsed.fraud_detected = false;
+                    parsed.fraud_reason = undefined;
+                } else {
+                    isValid = false;
+                    validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but the uploaded document appears to be a ${String(parsed.document_type || 'different document').toUpperCase()}. Please upload the correct document.`;
+                }
+            } else {
+                // Document type validation check
+                const isAcademicCompatible = (expectedNorm === 'marksheet_ug' && (detectedNorm === 'marksheet_ug' || isDetectedAcademic || String(parsed.document_type || '').toLowerCase().includes('marksheet')));
+
+                if (expectedNorm !== detectedNorm && !isAcademicCompatible) {
                     isValid = false;
                     validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but detected a ${String(parsed.document_type || 'different document type').toUpperCase()}. Please upload the correct document.`;
                 } else {
@@ -824,27 +852,27 @@ export class KycService {
     }
 
     private normalizeDocTypeForComparison(type: string): string {
-        const t = String(type || '').toLowerCase();
+        const t = String(type || '').toLowerCase().replace(/[_\s-]/g, '_');
         if (t.includes('aadhaar') || t.includes('aadhar') || t.includes('national_id')) {
             return 'aadhaar';
         }
-        if (t.includes('pan')) {
+        if (t.includes('pan') && !t.includes('company')) {
             return 'pan';
         }
         if (t.includes('passport')) {
             return 'passport';
         }
-        if (t.includes('marksheet_10') || t.includes('10th') || t.includes('ssc') || t.includes('grade10') || t.includes('grade_10')) {
+        if (t.includes('marksheet_10') || t.includes('10th') || t.includes('ssc') || t.includes('grade10') || t.includes('grade_10') || t.includes('secondary_school') || t.includes('matriculation')) {
             return 'marksheet_10';
         }
-        if (t.includes('marksheet_12') || t.includes('12th') || t.includes('hsc') || t.includes('intermediate') || t.includes('grade12') || t.includes('grade_12')) {
+        if (t.includes('marksheet_12') || t.includes('12th') || t.includes('hsc') || t.includes('intermediate') || t.includes('grade12') || t.includes('grade_12') || t.includes('higher_secondary')) {
             return 'marksheet_12';
         }
-        if (t.includes('marksheet_ug') || t.includes('ug_degree') || t.includes('ug_transcript') || t.includes('undergrad') || t.includes('undergraduate') || t.includes('degree')) {
-            return 'marksheet_ug';
-        }
-        if (t.includes('marksheet_pg') || t.includes('pg_degree') || t.includes('pg_transcript') || t.includes('postgrad') || t.includes('postgraduate')) {
+        if (t.includes('marksheet_pg') || t.includes('pg_degree') || t.includes('pg_transcript') || t.includes('postgrad') || t.includes('postgraduate') || t.includes('master') || t.includes('mba') || t.includes('mtech') || t.includes('msc')) {
             return 'marksheet_pg';
+        }
+        if (t.includes('marksheet_ug') || t.includes('ug_degree') || t.includes('ug_transcript') || t.includes('undergrad') || t.includes('undergraduate') || t.includes('degree') || t.includes('bachelor') || t.includes('marksheet') || t.includes('transcript') || t.includes('academic') || t.includes('cmm') || t.includes('memo') || t.includes('provisional') || t.includes('consolidated') || t.includes('graduation') || t.includes('btech') || t.includes('be') || t.includes('bsc') || t.includes('bcom') || t.includes('ba')) {
+            return 'marksheet_ug';
         }
         return t;
     }
