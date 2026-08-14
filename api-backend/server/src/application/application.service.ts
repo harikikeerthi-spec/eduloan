@@ -219,8 +219,8 @@ export class ApplicationService {
         collateralValue: parseNum(data.collateralValue),
         collateralDetails: data.collateralDetails,
         status: data.status === 'draft' ? 'draft' : (data.status || 'submitted'),
-        stage: 'application_submitted',
-        progress: data.status === 'draft' ? 10 : 15,
+        stage: data.status === 'draft' ? 'draft' : 'application_submitted',
+        progress: data.status === 'draft' ? 10 : 25,
         submittedAt: data.status === 'draft' ? null : new Date().toISOString(),
         estimatedCompletionAt: estimatedCompletionAt.toISOString(),
         updatedAt: new Date().toISOString(),
@@ -442,7 +442,7 @@ export class ApplicationService {
 
     const { data: updated, error } = await this.db
       .from('LoanApplication')
-      .update({ status: 'submitted', submittedAt: new Date().toISOString(), progress: 15 })
+      .update({ status: 'submitted', stage: 'application_submitted', submittedAt: new Date().toISOString(), progress: 25 })
       .eq('id', applicationId)
       .select()
       .single();

@@ -101,10 +101,7 @@ class Loan {
   String get phoneNumber => phone ?? '';
 
   int getEffectiveProgress({bool hasUploadedDocs = false}) {
-    if (progress > 0) {
-      return progress;
-    }
-
+    int p = progress;
     final st = status.toLowerCase().trim();
     final sg = stage.toLowerCase().trim();
 
@@ -123,13 +120,13 @@ class Loan {
         st == 'counter_offer' ||
         sg == 'sanction' ||
         sg == 'sanctioned') {
-      return 95;
+      return p > 95 ? p : 95;
     }
     if (st == 'under_bank_review' ||
         st == 'bank_review' ||
         sg == 'bank_review' ||
         sg == 'under_bank_review') {
-      return 90;
+      return p > 90 ? p : 90;
     }
     if (st == 'credit_check' ||
         st == 'file_logged' ||
@@ -140,23 +137,20 @@ class Loan {
         sg == 'query_raised' ||
         sg == 'verification' ||
         sg == 'review') {
-      return 75;
+      return p > 75 ? p : 75;
     }
-    if (hasUploadedDocs ||
-        st == 'submitted_to_bank' ||
+    if (st == 'submitted_to_bank' ||
         st == 'submit_to_bank' ||
-        st == 'staff_verified' ||
         sg == 'submitted_to_bank' ||
         sg == 'submit_to_bank') {
-      return 50;
+      return p > 50 ? p : 50;
     }
-    if (st == 'documents_verified' ||
+    if (hasUploadedDocs ||
+        st == 'documents_verified' ||
         st == 'staff_verified' ||
-        st == 'submitted_to_bank' ||
-        st == 'submit_to_bank' ||
         sg == 'documents_verified' ||
         sg == 'documents_approved') {
-      return 40;
+      return p > 40 ? p : 40;
     }
     if (st == 'submitted' ||
         st == 'application_submitted' ||
@@ -167,91 +161,24 @@ class Loan {
         sg == 'submitted' ||
         sg == 'pending' ||
         sg == 'documents_uploaded') {
-      return 25;
+      return p >= 25 ? p : 25;
     }
     if (st == 'created' || sg == 'created' || st == 'draft') {
-      return 10;
+      return p > 0 ? p : 10;
     }
-    return progress > 0 ? progress : 25;
+    return p >= 25 ? p : 25;
   }
 
   int getEffectiveStageIndex({bool hasUploadedDocs = false}) {
-    if (progress > 0) {
-      if (progress >= 100) return 7; // Disbursed
-      if (progress >= 95) return 6;  // Sanction
-      if (progress >= 90) return 5;  // Bank Review
-      if (progress >= 75) return 4;  // Credit Check
-      if (progress >= 50) return 3;  // Submit to Bank
-      if (progress >= 40) return 2;  // Documents
-      if (progress >= 25) return 1;  // Submitted
-      return 0;                      // Created
-    }
-
-    final st = status.toLowerCase().trim();
-    final sg = stage.toLowerCase().trim();
-
-    if (st == 'disbursed' ||
-        st == 'disbursement_confirmed' ||
-        st == 'disbursed_to_university' ||
-        st == 'closed' ||
-        sg == 'disbursement' ||
-        sg == 'disbursed') {
-      return 7;
-    }
-    if (st == 'sanctioned' ||
-        st == 'approved' ||
-        st == 'conditional_sanction' ||
-        st == 'partial_sanction' ||
-        st == 'counter_offer' ||
-        sg == 'sanction' ||
-        sg == 'sanctioned') {
-      return 6;
-    }
-    if (st == 'under_bank_review' ||
-        st == 'bank_review' ||
-        sg == 'bank_review' ||
-        sg == 'under_bank_review') {
-      return 5;
-    }
-    if (st == 'credit_check' ||
-        st == 'file_logged' ||
-        st == 'query_raised' ||
-        st == 'under_review' ||
-        sg == 'credit_check' ||
-        sg == 'file_logged' ||
-        sg == 'query_raised' ||
-        sg == 'verification' ||
-        sg == 'review') {
-      return 4;
-    }
-    if (hasUploadedDocs ||
-        st == 'submitted_to_bank' ||
-        st == 'submit_to_bank' ||
-        st == 'staff_verified' ||
-        sg == 'submitted_to_bank' ||
-        sg == 'submit_to_bank') {
-      return 3;
-    }
-    if (st == 'documents_verified' ||
-        st == 'staff_verified' ||
-        st == 'submitted_to_bank' ||
-        st == 'submit_to_bank' ||
-        sg == 'documents_verified' ||
-        sg == 'documents_approved') {
-      return 2;
-    }
-    if (st == 'submitted' ||
-        st == 'application_submitted' ||
-        st == 'pending' ||
-        st == 'docs_received' ||
-        st == 'documents_uploaded' ||
-        sg == 'application_submitted' ||
-        sg == 'submitted' ||
-        sg == 'pending' ||
-        sg == 'documents_uploaded') {
-      return 1;
-    }
-    return 0;
+    final effProgress = getEffectiveProgress(hasUploadedDocs: hasUploadedDocs);
+    if (effProgress >= 100) return 7; // Disbursed
+    if (effProgress >= 95) return 6;  // Sanction
+    if (effProgress >= 90) return 5;  // Bank Review
+    if (effProgress >= 75) return 4;  // Credit Check
+    if (effProgress >= 50) return 3;  // Submit to Bank
+    if (effProgress >= 40) return 2;  // Documents
+    if (effProgress >= 25) return 1;  // Submitted
+    return 0;                         // Created
   }
 
   String currentStageLabel({bool hasUploadedDocs = false}) {
