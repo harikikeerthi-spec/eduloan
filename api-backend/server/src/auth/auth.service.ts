@@ -38,18 +38,18 @@ export class AuthService {
       role: user.role
     };
 
-    // Generate access token (long-lived 30-day session)
+    // Generate access token (short-lived 15-minute access token)
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '30d') as any,
+      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '15m') as any,
     });
 
-    // Generate refresh token (long-lived 180-day token)
+    // Generate refresh token (long-lived 365-day token)
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION') || '180d') as any,
+      expiresIn: (this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION') || '365d') as any,
     });
 
     // Store refresh token in database
-    // await this.usersService.updateRefreshToken(user.email, refreshToken);
+    await this.usersService.updateRefreshToken(user.email, refreshToken);
 
     return {
       access_token: accessToken,
@@ -535,9 +535,9 @@ export class AuthService {
       }
 
       // Verify that the refresh token matches the one stored in database
-      // if (user.refreshToken !== refreshToken) {
-      //   throw new UnauthorizedException('Invalid refresh token');
-      // }
+      if (user.refreshToken !== refreshToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
       // Generate new tokens
       const tokens = await this.generateTokens(user);
@@ -565,7 +565,11 @@ export class AuthService {
    * Logout user by invalidating refresh token
    */
   async logout(email: string) {
-    // Feature disabled
+    try {
+      await this.usersService.updateRefreshToken(email, null);
+    } catch (e) {
+      console.warn('[AuthService.logout] Failed to clear refresh token:', e);
+    }
     return {
       success: true,
       message: 'Logged out successfully',
