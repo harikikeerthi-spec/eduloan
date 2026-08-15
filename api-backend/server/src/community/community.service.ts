@@ -931,62 +931,144 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     return text.replace(phoneRegex, 'XXXXXXXXXX');
   }
 
+  // Shared global in-memory persistence for real-time 1-on-1 Direct Chats
+  private static inMemoryDirectConversations: Map<string, any> = new Map();
+  private static inMemoryDirectMessages: Map<string, any[]> = new Map();
+
   async getDirectConversations(userId: string) {
+    const memConvs = Array.from(CommunityService.inMemoryDirectConversations.values()).filter(
+      (c: any) => !userId || c.participant1Id === userId || c.participant2Id === userId || userId === 'user_me'
+    );
+
     try {
-      const { data: convs, error } = await this.db
+      const { data: dbConvs, error } = await this.db
         .from('DirectConversation')
         .select('*')
         .or(`participant1Id.eq.${userId},participant2Id.eq.${userId}`)
         .order('lastMessageAt', { ascending: false });
 
-      if (error || !convs) {
-        return { success: true, data: [] };
+      const convMap = new Map<string, any>();
+      if (dbConvs && dbConvs.length > 0) {
+        dbConvs.forEach((c: any) => convMap.set(c.id, c));
       }
+      memConvs.forEach((c: any) => convMap.set(c.id, c));
 
-      const formatted = convs.map((c: any) => ({
+      const formatted = Array.from(convMap.values()).map((c: any) => ({
         ...c,
         lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
       }));
+      formatted.sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
 
       return { success: true, data: formatted };
     } catch (e) {
-      console.error('[CommunityService] getDirectConversations failed:', e);
-      return { success: true, data: [] };
+      console.error('[CommunityService] getDirectConversations fallback to memory:', e);
+      const formatted = memConvs.map((c: any) => ({
+        ...c,
+        lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
+      }));
+      formatted.sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+      return { success: true, data: formatted };
     }
   }
 
   async getDirectMessages(conversationId: string, userId?: string) {
+    const memMsgs = CommunityService.inMemoryDirectMessages.get(conversationId) || [];
     try {
-      const { data: messages, error } = await this.db
+      const { data: dbMsgs, error } = await this.db
         .from('DirectMessage')
         .select('*')
         .eq('conversationId', conversationId)
         .order('createdAt', { ascending: true });
 
-      if (error || !messages) {
-        return { success: true, data: [] };
+      const msgMap = new Map<string, any>();
+      if (dbMsgs && dbMsgs.length > 0) {
+        dbMsgs.forEach((m: any) => msgMap.set(m.id || `${m.senderId}_${m.content}_${m.createdAt}`, m));
       }
+      memMsgs.forEach((m: any) => msgMap.set(m.id || `${m.senderId}_${m.content || m.text}_${m.createdAt || m.timestamp}`, m));
 
-      const formatted = messages.map((m: any) => ({
-        ...m,
-        text: this.maskPhoneNumbers(m.content || m.text || ''),
-      }));
+      const formatted = Array.from(msgMap.values()).map((m: any) => {
+        const rawContent = m.content || m.text || '';
+        const isMe = userId ? (m.senderId === userId || m.senderId === 'user_me') : (m.isMe ?? false);
+        return {
+          id: m.id,
+          conversationId: m.conversationId,
+          senderId: m.senderId,
+          senderName: m.senderName || 'Student',
+          recipientId: m.recipientId,
+          text: this.maskPhoneNumbers(rawContent),
+          content: this.maskPhoneNumbers(rawContent),
+          isRead: m.isRead ?? true,
+          timestamp: m.createdAt || m.timestamp || new Date().toISOString(),
+          createdAt: m.createdAt || m.timestamp || new Date().toISOString(),
+          isMe: isMe,
+        };
+      });
 
+      formatted.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
       return { success: true, data: formatted };
     } catch (e) {
-      console.error('[CommunityService] getDirectMessages failed:', e);
-      return { success: true, data: [] };
+      console.error('[CommunityService] getDirectMessages fallback to memory:', e);
+      const formatted = memMsgs.map((m: any) => ({
+        ...m,
+        text: this.maskPhoneNumbers(m.text || m.content || ''),
+        isMe: userId ? (m.senderId === userId || m.senderId === 'user_me') : (m.isMe ?? false),
+      }));
+      return { success: true, data: formatted };
     }
   }
 
-  async sendDirectMessage(senderId: string, data: { peerId: string; peerName?: string; peerRole?: string; avatarLetter?: string; colorValue?: number; text: string }) {
-    try {
-      const p1 = senderId < data.peerId ? senderId : data.peerId;
-      const p2 = senderId < data.peerId ? data.peerId : senderId;
-      const conversationId = `conv_${p1}_${p2}`;
-      const now = new Date().toISOString();
+  async sendDirectMessage(senderId: string, data: { peerId: string; peerName?: string; peerRole?: string; avatarLetter?: string; colorValue?: number; senderName?: string; text: string }) {
+    const p1 = senderId < data.peerId ? senderId : data.peerId;
+    const p2 = senderId < data.peerId ? data.peerId : senderId;
+    const conversationId = `conv_${p1}_${p2}`;
+    const now = new Date().toISOString();
+    const maskedText = this.maskPhoneNumbers(data.text);
+    const messageId = `dmsg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
-      // Check or upsert DirectConversation
+    const newMsg = {
+      id: messageId,
+      conversationId,
+      senderId,
+      senderName: data.senderName || 'Student',
+      recipientId: data.peerId,
+      peerName: data.peerName || 'Student Member',
+      peerRole: data.peerRole || 'Student',
+      avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
+      colorValue: data.colorValue || 3218322,
+      content: data.text,
+      text: maskedText,
+      isRead: false,
+      isMe: true,
+      timestamp: now,
+      createdAt: now,
+    };
+
+    // 1. Store in shared in-memory message list
+    if (!CommunityService.inMemoryDirectMessages.has(conversationId)) {
+      CommunityService.inMemoryDirectMessages.set(conversationId, []);
+    }
+    CommunityService.inMemoryDirectMessages.get(conversationId)!.push(newMsg);
+
+    // 2. Update in-memory conversation
+    const convObj = {
+      id: conversationId,
+      participant1Id: p1,
+      participant2Id: p2,
+      senderId,
+      senderName: data.senderName || 'Student',
+      peerId: data.peerId,
+      peerName: data.peerName || 'Student Member',
+      peerRole: data.peerRole || 'Student',
+      avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
+      colorValue: data.colorValue || 3218322,
+      lastMessage: maskedText,
+      lastMessageAt: now,
+      unreadCount: 1,
+    };
+    CommunityService.inMemoryDirectConversations.set(conversationId, convObj);
+
+    // 3. Try to persist to database
+    try {
       const { data: existingConv } = await this.db
         .from('DirectConversation')
         .select('id')
@@ -994,31 +1076,19 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
         .maybeSingle();
 
       if (!existingConv) {
-        await this.db.from('DirectConversation').insert({
-          id: conversationId,
-          participant1Id: p1,
-          participant2Id: p2,
-          peerName: data.peerName || 'Student Member',
-          peerRole: data.peerRole || 'Student',
-          avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
-          colorValue: data.colorValue || 3218322,
-          lastMessage: data.text,
-          lastMessageAt: now,
-          unreadCount: 1,
-        });
+        await this.db.from('DirectConversation').insert(convObj);
       } else {
         await this.db
           .from('DirectConversation')
           .update({
             lastMessage: data.text,
             lastMessageAt: now,
+            unreadCount: 1,
           })
           .eq('id', conversationId);
       }
 
-      // Insert DirectMessage into DB table
-      const messageId = `dmsg_${Date.now()}`;
-      const { data: msg } = await this.db
+      await this.db
         .from('DirectMessage')
         .insert({
           id: messageId,
@@ -1028,39 +1098,24 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
           content: data.text,
           isRead: false,
           createdAt: now,
-        })
-        .select()
-        .maybeSingle();
-
-      const maskedText = this.maskPhoneNumbers(data.text);
-      return {
-        success: true,
-        message: 'Direct message sent successfully',
-        data: {
-          id: msg?.id || messageId,
-          conversationId,
-          senderId,
-          text: maskedText,
-          timestamp: now,
-          isMe: true,
-        },
-      };
+        });
     } catch (e) {
-      console.error('[CommunityService] sendDirectMessage failed:', e);
-      return {
-        success: true,
-        data: {
-          id: `local_${Date.now()}`,
-          senderId,
-          text: this.maskPhoneNumbers(data.text),
-          timestamp: new Date().toISOString(),
-          isMe: true,
-        },
-      };
+      console.warn('Fallback sendDirectMessage in-memory save:', e);
     }
+
+    return {
+      success: true,
+      message: 'Direct message sent successfully',
+      data: newMsg,
+    };
   }
 
   async markDirectConversationRead(conversationId: string, userId: string) {
+    if (CommunityService.inMemoryDirectConversations.has(conversationId)) {
+      const conv = CommunityService.inMemoryDirectConversations.get(conversationId);
+      conv.unreadCount = 0;
+    }
+
     try {
       await this.db
         .from('DirectMessage')
@@ -1132,29 +1187,39 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     },
   ];
 
+  // Shared global in-memory persistence for real-time Smart Groups & Chat Messages
+  private static inMemoryGroups: Map<string, any> = new Map();
+  private static inMemoryGroupMessages: Map<string, any[]> = new Map();
+
   async getSmartGroups() {
     try {
-      const { data, error } = await this.db
+      const { data: dbGroups, error } = await this.db
         .from('CommunityGroup')
         .select('*')
         .order('createdAt', { ascending: false });
 
-      if (error || !data || data.length === 0) {
+      if (dbGroups && dbGroups.length > 0) {
+        dbGroups.forEach((g: any) => CommunityService.inMemoryGroups.set(g.id, g));
+      } else {
+        this.initialGroupsSeed.forEach((g: any) => {
+          if (!CommunityService.inMemoryGroups.has(g.id)) {
+            CommunityService.inMemoryGroups.set(g.id, g);
+          }
+        });
         try {
           await this.db.from('CommunityGroup').insert(this.initialGroupsSeed);
-          const { data: seeded } = await this.db
-            .from('CommunityGroup')
-            .select('*')
-            .order('createdAt', { ascending: false });
-          if (seeded && seeded.length > 0) return { success: true, data: seeded };
         } catch (_) {}
-
-        return { success: true, data: this.initialGroupsSeed };
       }
 
-      return { success: true, data };
+      const allGroups = Array.from(CommunityService.inMemoryGroups.values());
+      allGroups.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      return { success: true, data: allGroups };
     } catch (e) {
-      return { success: true, data: this.initialGroupsSeed };
+      if (CommunityService.inMemoryGroups.size === 0) {
+        this.initialGroupsSeed.forEach((g: any) => CommunityService.inMemoryGroups.set(g.id, g));
+      }
+      const allGroups = Array.from(CommunityService.inMemoryGroups.values());
+      return { success: true, data: allGroups };
     }
   }
 
@@ -1164,14 +1229,18 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       id,
       title: groupData.title,
       subtitle: groupData.subtitle || 'Student discussion group',
-      members: 1,
-      online: 1,
+      members: groupData.members || 1,
+      online: groupData.online || 1,
       iconName: groupData.iconName || 'school_rounded',
       colorHex: groupData.colorHex || '#311B92',
       badge: groupData.badge || 'Custom Group',
       lastMsg: groupData.lastMsg || 'Group channel created just now!',
+      adminEmail: groupData.adminEmail || '',
+      adminName: groupData.adminName || '',
       createdAt: new Date().toISOString(),
     };
+
+    CommunityService.inMemoryGroups.set(id, newGroup);
 
     try {
       const { data, error } = await this.db
@@ -1179,30 +1248,36 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
         .insert(newGroup)
         .select()
         .single();
-      if (error) {
-        console.warn('Supabase insert CommunityGroup fallback:', error.message);
+      if (data) {
+        CommunityService.inMemoryGroups.set(id, data);
       }
-      return { success: true, data: data || newGroup };
     } catch (e) {
-      return { success: true, data: newGroup };
+      console.warn('Fallback createSmartGroup in-memory save:', e);
     }
+
+    return { success: true, data: newGroup };
   }
 
   async getGroupMessages(groupId: string) {
+    const memMsgs = CommunityService.inMemoryGroupMessages.get(groupId) || [];
     try {
-      const { data, error } = await this.db
+      const { data: dbMsgs, error } = await this.db
         .from('CommunityGroupMessage')
         .select('*')
         .eq('groupId', groupId)
         .order('createdAt', { ascending: true });
 
-      if (error || !data) {
-        return { success: true, data: [] };
+      const msgMap = new Map<string, any>();
+      if (dbMsgs && dbMsgs.length > 0) {
+        dbMsgs.forEach((m: any) => msgMap.set(m.id || `${m.sender}_${m.text}_${m.time}`, m));
       }
+      memMsgs.forEach((m: any) => msgMap.set(m.id || `${m.sender}_${m.text}_${m.time}`, m));
 
-      return { success: true, data };
+      const merged = Array.from(msgMap.values());
+      merged.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
+      return { success: true, data: merged };
     } catch (e) {
-      return { success: true, data: [] };
+      return { success: true, data: memMsgs };
     }
   }
 
@@ -1226,24 +1301,34 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       createdAt: now.toISOString(),
     };
 
-    try {
-      const { data: savedMsg } = await this.db
-        .from('CommunityGroupMessage')
-        .insert(newMsg)
-        .select()
-        .single();
+    // Store in shared in-memory list
+    if (!CommunityService.inMemoryGroupMessages.has(groupId)) {
+      CommunityService.inMemoryGroupMessages.set(groupId, []);
+    }
+    CommunityService.inMemoryGroupMessages.get(groupId)!.push(newMsg);
 
-      const lastMsgText = `${newMsg.sender}: ${newMsg.text}`;
+    // Update last message in group
+    const lastMsgText = `${newMsg.sender}: ${newMsg.text}`;
+    if (CommunityService.inMemoryGroups.has(groupId)) {
+      const grp = CommunityService.inMemoryGroups.get(groupId);
+      grp.lastMsg = lastMsgText;
+      grp.updatedAt = now.toISOString();
+    }
+
+    try {
+      await this.db
+        .from('CommunityGroupMessage')
+        .insert(newMsg);
+
       await this.db
         .from('CommunityGroup')
         .update({ lastMsg: lastMsgText, updatedAt: now.toISOString() })
         .eq('id', groupId);
-
-      return { success: true, data: savedMsg || newMsg };
     } catch (e) {
       console.warn('Fallback sendGroupMessage save:', e);
-      return { success: true, data: newMsg };
     }
+
+    return { success: true, data: newMsg };
   }
 
   async joinGroup(groupId: string, userId?: string) {

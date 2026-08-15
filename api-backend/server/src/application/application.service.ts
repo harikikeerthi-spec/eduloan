@@ -398,40 +398,29 @@ export class ApplicationService {
 
       if (staffErr) {
         console.error('[Round-Robin] Failed to fetch staff users:', staffErr);
-        return null;
       }
+
+      // Count total ever-assigned applications to determine turn
+      const { count: totalAssigned } = await this.db
+        .from('LoanApplication')
+        .select('*', { count: 'exact', head: true });
+
+      const total = totalAssigned ?? 0;
 
       if (!staffUsers || staffUsers.length === 0) {
-        console.warn('[Round-Robin] No active staff found. Application will be unassigned.');
-        return null;
+        const DEFAULT_STAFF_KEYS = ['priya_sharma', 'rajesh_kumar', 'ananya_reddy', 'vikram_malhotra'];
+        const key = DEFAULT_STAFF_KEYS[total % DEFAULT_STAFF_KEYS.length];
+        return `staff_rr_${key}`;
       }
 
-      // 2. Count total ever-assigned applications (all statuses) to determine turn
-      const { count: totalAssigned, error: countErr } = await this.db
-        .from('LoanApplication')
-        .select('*', { count: 'exact', head: true })
-        .not('assignedStaffId', 'is', null);
-
-      if (countErr) {
-        console.error('[Round-Robin] Failed to count assignments, falling back to Staff 1:', countErr);
-        return staffUsers[0].id;
-      }
-
-      // 3. Sequential round-robin: next turn index = total % staffCount
-      const total = totalAssigned ?? 0;
+      // 3. Sequential round-robin across DB staff users: next turn index = total % staffCount
       const staffCount = staffUsers.length;
       const nextIndex = total % staffCount;
-
       const selected = staffUsers[nextIndex];
-      console.log(
-        `[Round-Robin] Turn ${total + 1}: Assigned to ${selected.firstName} ${selected.lastName}` +
-        ` (index ${nextIndex}/${staffCount - 1}, id=${selected.id})`
-      );
-
       return selected.id;
     } catch (e) {
       console.error('[Round-Robin] Unexpected error during staff selection:', e);
-      return null;
+      return 'staff_rr_priya_sharma';
     }
   }
 
@@ -707,12 +696,19 @@ export class ApplicationService {
           }
         }
 
-        applications.forEach((app: any) => {
-          const staffInfo = app.assignedStaffId ? staffMap.get(app.assignedStaffId) : null;
-          app.counselorName = staffInfo?.counselorName || 'VidhyaLoan Support';
-          app.counselorPhone = staffInfo?.counselorPhone || '+91 9240209000';
-          app.counselorEmail = staffInfo?.counselorEmail || 'vidyaloans7@gmail.com';
-        });
+        for (const app of applications) {
+          if (app.assignedStaffId && staffMap.has(app.assignedStaffId)) {
+            const staffInfo = staffMap.get(app.assignedStaffId);
+            app.counselorName = staffInfo.counselorName;
+            app.counselorPhone = staffInfo.counselorPhone;
+            app.counselorEmail = staffInfo.counselorEmail;
+          } else {
+            const staffInfo = await this.getCounselorDetails(app.assignedStaffId);
+            app.counselorName = staffInfo.counselorName;
+            app.counselorPhone = staffInfo.counselorPhone;
+            app.counselorEmail = staffInfo.counselorEmail;
+          }
+        }
       }
 
       return { success: true, data: applications || [], pagination: { total: count || 0, limit: filters?.limit || 20, offset: filters?.offset || 0 } };
