@@ -122,6 +122,19 @@ class PdfGeneratorService {
     final currencyFormatter = NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 0);
     final dateFormatter = DateFormat('dd MMM yyyy, hh:mm a');
 
+    // Filter documents that are verified / accepted
+    final verifiedDocs = docs.where((d) {
+      final st = d.status.toLowerCase().trim();
+      return d.isDigilocker ||
+          st == 'verified' ||
+          st == 'approved' ||
+          st == 'accepted' ||
+          st == 'staff_verified' ||
+          st == 'completed';
+    }).toList();
+
+    final bool hasVerifiedDocs = verifiedDocs.isNotEmpty;
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -144,7 +157,9 @@ class PdfGeneratorService {
                         ),
                       ),
                       pw.Text(
-                        'Verified Loan Application Dossier',
+                        hasVerifiedDocs
+                            ? 'Official Verified Loan Application & KYC Dossier'
+                            : 'Official Loan Application Summary (Details Dossier)',
                         style: const pw.TextStyle(
                           fontSize: 10,
                           color: PdfColors.grey700,
@@ -158,11 +173,11 @@ class PdfGeneratorService {
                       pw.Container(
                         padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: pw.BoxDecoration(
-                          color: secondaryColor,
+                          color: hasVerifiedDocs ? secondaryColor : PdfColor.fromHex('#3B82F6'),
                           borderRadius: pw.BorderRadius.circular(6),
                         ),
                         child: pw.Text(
-                          (loan.status).toUpperCase(),
+                          hasVerifiedDocs ? (loan.status).toUpperCase() : 'SUBMITTED',
                           style: pw.TextStyle(
                             color: PdfColors.white,
                             fontSize: 10,
@@ -247,7 +262,7 @@ class PdfGeneratorService {
           pw.SizedBox(height: 16),
 
           // Section 2: Co-Applicant Details
-          _buildSectionHeader('2. CO-APPLICANT DETAILS', primaryColor),
+          _buildSectionHeader('2. CO-APPLICANT & FINANCIAL DETAILS', primaryColor),
           pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
@@ -286,78 +301,130 @@ class PdfGeneratorService {
           ),
           pw.SizedBox(height: 16),
 
-          // Section 3: Document Vault Uploaded Documents
-          _buildSectionHeader('3. UPLOADED & VERIFIED DOCUMENTS', primaryColor),
-          pw.SizedBox(height: 8),
-          pw.TableHelper.fromTextArray(
-            headers: ['#', 'Document Name', 'Type / Code', 'Source / Status', 'Upload Date'],
-            data: List<List<String>>.generate(docs.length, (index) {
-              final doc = docs[index];
-              final docTitle = docNames[doc.docType] ?? doc.docType;
-              final uploadDateStr = doc.uploadedAt != null
-                  ? dateFormatter.format(doc.uploadedAt!)
-                  : 'Uploaded';
-              final statusStr = doc.isDigilocker
-                  ? 'DigiLocker Verified'
-                  : doc.status.toUpperCase();
+          // Section 3: Verified Documents (or Verification Pending Notice)
+          if (hasVerifiedDocs) ...[
+            _buildSectionHeader('3. VERIFIED KYC & DOCUMENTS DOSSIER', primaryColor),
+            pw.SizedBox(height: 8),
+            pw.TableHelper.fromTextArray(
+              headers: ['#', 'Document Name', 'Type / Code', 'Verification Source', 'Verified Date'],
+              data: List<List<String>>.generate(verifiedDocs.length, (index) {
+                final doc = verifiedDocs[index];
+                final docTitle = docNames[doc.docType] ?? doc.docType;
+                final uploadDateStr = doc.uploadedAt != null
+                    ? dateFormatter.format(doc.uploadedAt!)
+                    : 'Verified';
+                final statusStr = doc.isDigilocker
+                    ? '✔ DigiLocker Verified'
+                    : '✔ Verified & Accepted';
 
-              return [
-                '${index + 1}',
-                docTitle,
-                doc.docType,
-                statusStr,
-                uploadDateStr,
-              ];
-            }),
-            headerStyle: pw.TextStyle(
-              color: PdfColors.white,
-              fontWeight: pw.FontWeight.bold,
-              fontSize: 9,
-            ),
-            headerDecoration: pw.BoxDecoration(
-              color: primaryColor,
-            ),
-            rowDecoration: const pw.BoxDecoration(
-              border: pw.Border(
-                bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+                return [
+                  '${index + 1}',
+                  docTitle,
+                  doc.docType,
+                  statusStr,
+                  uploadDateStr,
+                ];
+              }),
+              headerStyle: pw.TextStyle(
+                color: PdfColors.white,
+                fontWeight: pw.FontWeight.bold,
+                fontSize: 9,
               ),
-            ),
-            cellAlignment: pw.Alignment.centerLeft,
-            cellStyle: const pw.TextStyle(fontSize: 8),
-            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          ),
-          pw.SizedBox(height: 20),
-
-          // Declaration / Verification Box
-          pw.Container(
-            padding: const pw.EdgeInsets.all(10),
-            decoration: pw.BoxDecoration(
-              color: PdfColor.fromHex('#ECFDF5'),
-              borderRadius: pw.BorderRadius.circular(6),
-              border: pw.Border.all(color: PdfColor.fromHex('#A7F3D0')),
-            ),
-            child: pw.Row(
-              children: [
-                pw.Text(
-                  '✔ Document Verification Complete: ',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromHex('#065F46'),
-                  ),
+              headerDecoration: pw.BoxDecoration(
+                color: primaryColor,
+              ),
+              rowDecoration: const pw.BoxDecoration(
+                border: pw.Border(
+                  bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
                 ),
-                pw.Expanded(
-                  child: pw.Text(
-                    'All required student, co-applicant, and guardian documents have been uploaded and attached to this loan application.',
+              ),
+              cellAlignment: pw.Alignment.centerLeft,
+              cellStyle: const pw.TextStyle(fontSize: 8),
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            ),
+            pw.SizedBox(height: 20),
+
+            // Official Verification Stamp Box
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#ECFDF5'),
+                borderRadius: pw.BorderRadius.circular(8),
+                border: pw.Border.all(color: PdfColor.fromHex('#A7F3D0')),
+              ),
+              child: pw.Row(
+                children: [
+                  pw.Text(
+                    '✔ Document Verification Complete: ',
                     style: pw.TextStyle(
-                      fontSize: 8,
-                      color: PdfColor.fromHex('#064E3B'),
+                      fontSize: 9,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColor.fromHex('#065F46'),
                     ),
                   ),
-                ),
-              ],
+                  pw.Expanded(
+                    child: pw.Text(
+                      'All ${verifiedDocs.length} verified documents listed above have been digitally verified and attached to this loan application.',
+                      style: pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColor.fromHex('#064E3B'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ] else ...[
+            // Notice Box for newly submitted applications with pending doc verification
+            _buildSectionHeader('3. DOCUMENT VERIFICATION STATUS', primaryColor),
+            pw.SizedBox(height: 8),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(14),
+              decoration: pw.BoxDecoration(
+                color: PdfColor.fromHex('#F1F5F9'),
+                borderRadius: pw.BorderRadius.circular(8),
+                border: pw.Border.all(color: PdfColor.fromHex('#CBD5E1')),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    children: [
+                      pw.Container(
+                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColor.fromHex('#F59E0B'),
+                          borderRadius: pw.BorderRadius.circular(4),
+                        ),
+                        child: pw.Text(
+                          'UNDER VERIFICATION',
+                          style: pw.TextStyle(
+                            color: PdfColors.white,
+                            fontSize: 8,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      pw.SizedBox(width: 8),
+                      pw.Text(
+                        'Document Verification in Progress',
+                        style: pw.TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: pw.FontWeight.bold,
+                          color: darkTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    'Your loan application details have been submitted and registered with VidyaLoan. As your KYC and academic documents are verified and accepted, they will automatically be updated and included in this official PDF dossier.',
+                    style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

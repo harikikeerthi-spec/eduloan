@@ -60,7 +60,6 @@ class _UniversityShortlistingPageState
   String? _tempCourse;
   bool _checkingLoanStatus = true;
   bool _hasActiveSubmittedLoan = false;
-  bool _isAllDocsUploaded = false;
   Loan? _activeLoan;
 
   @override
@@ -73,12 +72,10 @@ class _UniversityShortlistingPageState
     try {
       final loans = await LoanService().getUserLoans();
       final activeLoans = loans.where((loan) => loan.status.toLowerCase() != 'rejected').toList();
-      final allDocsUploaded = await PdfGeneratorService.isEveryDocumentUploaded();
       if (activeLoans.isNotEmpty && mounted) {
         setState(() {
           _hasActiveSubmittedLoan = true;
           _activeLoan = activeLoans.first;
-          _isAllDocsUploaded = allDocsUploaded;
           _checkingLoanStatus = false;
         });
         return;
@@ -758,7 +755,7 @@ class _UniversityShortlistingPageState
                             ),
                           ),
                         ),
-                        if (_isAllDocsUploaded && _activeLoan != null) ...[
+                        if (_activeLoan != null) ...[
                           const SizedBox(width: 12),
                           Expanded(
                             child: ElevatedButton.icon(

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import 'secure_storage_service.dart';
 
 // Data Models
 class AiServiceException implements Exception {
@@ -745,8 +746,8 @@ class AiLogicService {
       final name = '$firstName $lastName'.trim().isNotEmpty ? '$firstName $lastName'.trim() : 'Student';
       final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
       final phone = prefs.getString('user_phone') ?? 'N/A';
-      final userId = prefs.getString('userId') ?? '';
-      final token = prefs.getString('auth_token') ?? '';
+      final userId = await SecureStorageService.getUserId() ?? '';
+      final token = await SecureStorageService.getToken() ?? '';
 
       final String baseUrl = await ApiConfig.getBaseUrl();
       final url = Uri.parse('$baseUrl/university-inquiry');
@@ -789,8 +790,8 @@ class AiLogicService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
-      final userId = prefs.getString('userId') ?? '';
-      final token = prefs.getString('auth_token') ?? '';
+      final userId = await SecureStorageService.getUserId() ?? prefs.getString('userId') ?? '';
+      final token = await SecureStorageService.getToken() ?? prefs.getString('auth_token') ?? '';
 
       if (email.isEmpty && userId.isEmpty) return false;
 

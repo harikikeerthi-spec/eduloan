@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import 'api_config.dart';
+import 'secure_storage_service.dart';
 
 class UserService {
   /// Global state tracking for active document uploads
@@ -26,13 +27,11 @@ class UserService {
   }
 
   static Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('auth_token');
+    return await SecureStorageService.getToken();
   }
 
   static Future<String?> _getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('userId');
+    return await SecureStorageService.getUserId();
   }
 
   static Future<List<UserDocument>> getUserDocuments() async {

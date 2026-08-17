@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import 'secure_storage_service.dart';
 
 class DigilockerService {
   // Use dynamic base URL from ApiConfig
   static String get _baseUrl => '${ApiConfig.baseUrl}/digilocker';
 
   Future<Map<String, dynamic>> verifyDigilocker(String authCode, {String? loanId, String? codeVerifier}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = await SecureStorageService.getToken();
  
     try {
       final response = await http.post(

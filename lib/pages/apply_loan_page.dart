@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/mesh_background.dart';
 import '../widgets/rupee_amount_helper.dart';
+import '../models/loan.dart';
 import '../services/loan_service.dart';
 import '../services/auth_service.dart';
 import '../services/ai_logic_service.dart';
+import '../services/pdf_generator_service.dart';
 import 'main_navigation.dart';
 
 class ApplyLoanPage extends StatefulWidget {
@@ -1334,34 +1336,35 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       // Submit loan application
       final loanService = LoanService();
 
-      await loanService.createLoan(
+      final createdLoan = await loanService.createLoan(
         userId: userId,
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         phoneNumber: _phoneController.text,
         email: _emailController.text,
-        dateOfBirth: _dobController.text.trim().isEmpty ? null : _dobController.text.trim(),
+        dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
         targetCountry: _countryController.text,
+        city: _cityController.text.isEmpty ? null : _cityController.text,
+        pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
         universityName: _instituteController.text,
         courseName: _courseController.text,
-        bank: 'Pending Bank Assignment',
+        bank: _bankController.text,
         loanType: _loanTypeController.text,
-        amount: double.parse(_amountController.text.replaceAll(',', '')),
-        tenure: 12, // Default tenure since field was removed
-        purpose: 'Higher Education Loan',
-        fatherName: _fatherNameController.text,
-        fatherPhone: _fatherPhoneController.text,
-        fatherEmail: _fatherEmailController.text,
-        motherName: _motherNameController.text,
-        motherPhone: _motherPhoneController.text,
-        motherEmail: _motherEmailController.text,
-        city: _cityController.text.trim().isEmpty ? null : _cityController.text.trim(),
-        pincode: _pincodeController.text.trim().isEmpty ? null : _pincodeController.text.trim(),
-        country: _countryController.text.trim().isEmpty ? null : _countryController.text.trim(),
+        amount: amountValue,
+        tenure: int.tryParse(_tenureController.text) ?? 5,
+        purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
+        fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
+        fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
+        fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
+        motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
+        motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
+        motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
         hasCollateral: _hasCollateral,
-        collateralDetails: _collateralController.text,
-        hasCoApplicant: true,
-        coApplicantName: _coApplicantNameController.text,
+        collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
+        hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
+        coApplicantName: _coApplicantNameController.text.isEmpty
+            ? null
+            : _coApplicantNameController.text,
         coApplicantRelation: _coApplicantRelationController.text,
         coApplicantPhone: _coApplicantPhoneController.text,
         coApplicantEmail: _coApplicantEmailController.text.isEmpty
@@ -1379,7 +1382,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
       final uniName = _instituteController.text;
       final loanAmt = _amountController.text;
-      final refCode = 'VL-${DateTime.now().year}-${(1000 + (DateTime.now().millisecondsSinceEpoch % 8999))}';
+      final refCode = createdLoan.applicationNumber ?? 'VL-${DateTime.now().year}-${(1000 + (DateTime.now().millisecondsSinceEpoch % 8999))}';
 
       showDialog(
         context: context,
@@ -1388,6 +1391,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           applicationRef: refCode,
           universityName: uniName.isEmpty ? 'Target University' : uniName,
           amount: loanAmt.isEmpty ? '0' : loanAmt,
+          createdLoan: createdLoan,
           onViewLoans: () {
             Navigator.pop(dialogCtx);
             final mainNav = MainNavigation.of(context);
@@ -3017,6 +3021,7 @@ class LoanSuccessDialog extends StatefulWidget {
   final String applicationRef;
   final String universityName;
   final String amount;
+  final Loan? createdLoan;
   final VoidCallback onViewLoans;
   final VoidCallback onGoHome;
 
@@ -3025,6 +3030,7 @@ class LoanSuccessDialog extends StatefulWidget {
     required this.applicationRef,
     required this.universityName,
     required this.amount,
+    this.createdLoan,
     required this.onViewLoans,
     required this.onGoHome,
   });
@@ -3148,7 +3154,6 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                     ),
                     child: Column(
                       children: [
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -3203,8 +3208,56 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  // Action Buttons
+                  const SizedBox(height: 20),
+                  
+                  // PDF Download Action Button
+                  if (widget.createdLoan != null) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Generating loan details PDF...'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          try {
+                            await PdfGeneratorService.downloadApplicationPdf(widget.createdLoan!);
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to download PDF: $e'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                        label: Text(
+                          'Download Loan Details PDF',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
+                  // View My Loans Button
                   SizedBox(
                     width: double.infinity,
                     height: 48,

@@ -1370,7 +1370,6 @@ class _ForumPageState extends State<ForumPage> {
         final status = snapshot.data ?? 'NONE';
         final bool isAdmin = status == 'ADMIN';
         final bool isMember = status == 'APPROVED';
-        final bool isPending = status == 'PENDING';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -1501,18 +1500,18 @@ class _ForumPageState extends State<ForumPage> {
                           if (!isAdmin && !isMember)
                             Row(
                               children: [
-                                Icon(
-                                  isPending ? Icons.hourglass_top_rounded : Icons.lock_outline_rounded,
-                                  size: 11,
-                                  color: isPending ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
+                                const Icon(
+                                  Icons.group_add_rounded,
+                                  size: 12,
+                                  color: Color(0xFF311B92),
                                 ),
-                                const SizedBox(width: 3),
+                                const SizedBox(width: 4),
                                 Text(
-                                  isPending ? 'Request pending approval' : 'Request to join',
+                                  'Tap to join & chat',
                                   style: GoogleFonts.inter(
                                     fontSize: 10.5,
-                                    color: isPending ? const Color(0xFFF59E0B) : const Color(0xFF64748B),
-                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF311B92),
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -2578,14 +2577,46 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     });
   }
 
+  String _formatMessageTime(dynamic timeVal, dynamic createdAtVal) {
+    if (createdAtVal != null && createdAtVal.toString().isNotEmpty) {
+      try {
+        final dt = DateTime.parse(createdAtVal.toString()).toLocal();
+        final now = DateTime.now();
+        final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+        final min = dt.minute.toString().padLeft(2, '0');
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        final timeStr = '$hour:$min $ampm';
+
+        if (isToday) {
+          return timeStr;
+        } else {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          return '${dt.day} ${months[dt.month - 1]}, $timeStr';
+        }
+      } catch (_) {}
+    }
+
+    if (timeVal != null && timeVal.toString().isNotEmpty && timeVal.toString() != 'Just now') {
+      return timeVal.toString();
+    }
+
+    final now = DateTime.now();
+    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
+    final min = now.minute.toString().padLeft(2, '0');
+    final ampm = now.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$min $ampm';
+  }
+
   Future<void> _pollNewMessages() async {
+    if (!_isJoined) return;
     final groupId = widget.group['id'] as String;
     final msgs = await CommunityService().getGroupMessages(groupId);
     if (!mounted) return;
     if (msgs.isEmpty && _messages.isNotEmpty) return;
 
     final parsed = msgs.map((m) {
-      final sender = m['sender'] ?? 'Student';
+      final sender = (m['sender']?.toString().isNotEmpty == true) ? m['sender'].toString() : 'Student Member';
       final colorHex = m['colorHex'] ?? '#311B92';
       Color color;
       try {
@@ -2593,7 +2624,9 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
       } catch (_) {
         color = const Color(0xFF311B92);
       }
-      final isMe = sender == _mySenderName || m['isMe'] == true;
+      final isMe = (sender.toLowerCase().trim() == _mySenderName.toLowerCase().trim()) || m['isMe'] == true;
+      final timeDisplay = _formatMessageTime(m['time'], m['createdAt'] ?? m['timestamp']);
+
       return {
         'id': m['id'],
         'sender': sender,
@@ -2601,7 +2634,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
         'color': color,
         'role': m['role'] ?? 'Student',
         'text': m['text'] ?? '',
-        'time': m['time'] ?? 'Just now',
+        'time': timeDisplay,
         'isMe': isMe,
       };
     }).toList();
@@ -2633,11 +2666,19 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   Future<void> _loadUserAndMessages() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final fname = prefs.getString('user_firstName') ?? '';
-      final lname = prefs.getString('user_lastName') ?? '';
+      final fname = prefs.getString('user_firstName') ?? prefs.getString('firstName') ?? prefs.getString('user_name') ?? prefs.getString('name') ?? '';
+      final lname = prefs.getString('user_lastName') ?? prefs.getString('lastName') ?? '';
       final fullName = '$fname $lname'.trim();
       if (fullName.isNotEmpty) {
         _mySenderName = fullName;
+      } else {
+        final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
+        if (email.isNotEmpty && email.contains('@')) {
+          final prefix = email.split('@')[0];
+          _mySenderName = prefix.isNotEmpty ? '${prefix[0].toUpperCase()}${prefix.substring(1)}' : 'Student';
+        } else {
+          _mySenderName = 'Student';
+        }
       }
     } catch (_) {}
 
@@ -2645,7 +2686,10 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     final adminEmail = widget.group['adminEmail'] as String?;
     final status = await CommunityService().getGroupMembershipStatus(groupId, adminEmail);
     final isJoined = (status == 'ADMIN' || status == 'APPROVED');
-    final msgs = await CommunityService().getGroupMessages(groupId);
+    List<Map<String, dynamic>> msgs = [];
+    if (isJoined) {
+      msgs = await CommunityService().getGroupMessages(groupId);
+    }
     List<Map<String, dynamic>> pendingReqs = [];
     if (status == 'ADMIN') {
       pendingReqs = await CommunityService().getPendingJoinRequests(groupId);
@@ -2657,7 +2701,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
         _isJoined = isJoined;
         _pendingRequests = pendingReqs;
         _messages = msgs.map((m) {
-          final sender = m['sender'] ?? 'Student';
+          final sender = (m['sender']?.toString().isNotEmpty == true) ? m['sender'].toString() : 'Student Member';
           final colorHex = m['colorHex'] ?? '#311B92';
           Color color;
           try {
@@ -2665,7 +2709,9 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
           } catch (_) {
             color = const Color(0xFF311B92);
           }
-          final isMe = sender == _mySenderName || m['isMe'] == true;
+          final isMe = (sender.toLowerCase().trim() == _mySenderName.toLowerCase().trim()) || m['isMe'] == true;
+          final timeDisplay = _formatMessageTime(m['time'], m['createdAt'] ?? m['timestamp']);
+
           return {
             'id': m['id'],
             'sender': sender,
@@ -2673,7 +2719,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             'color': color,
             'role': m['role'] ?? 'Student',
             'text': m['text'] ?? '',
-            'time': m['time'] ?? 'Just now',
+            'time': timeDisplay,
             'isMe': isMe,
           };
         }).toList();
@@ -2689,38 +2735,125 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     }
   }
 
-  void _requestJoinGroup() async {
+  void _joinGroupDirectly() async {
     final groupId = widget.group['id'] as String;
     final title = widget.group['title'] as String? ?? 'Group';
-    final adminEmail = widget.group['adminEmail'] as String?;
 
-    await CommunityService().requestGroupJoin(
-      groupId: groupId,
-      groupTitle: title,
-      adminEmail: adminEmail,
-    );
+    setState(() => _isLoadingMessages = true);
+    await CommunityService().joinGroup(groupId);
 
     if (mounted) {
       setState(() {
-        _membershipStatus = 'PENDING';
+        _membershipStatus = 'APPROVED';
+        _isJoined = true;
       });
+      await _loadUserAndMessages();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '🎉 You joined "$title"! Chats are now unlocked.',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showDeleteMessageDialog(Map<String, dynamic> msg) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 22),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Delete Message?',
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete this message? It will be permanently removed for everyone in the group.',
+          style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF64748B)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteMessage(msg);
+            },
+            child: Text(
+              'Delete',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteMessage(Map<String, dynamic> msg) async {
+    final msgId = msg['id']?.toString();
+    if (msgId == null || msgId.isEmpty) return;
+
+    final groupId = widget.group['id'] as String;
+
+    setState(() {
+      _messages.removeWhere((m) => m['id'] == msgId);
+    });
+
+    await CommunityService().deleteGroupMessage(groupId, msgId);
+
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.send_rounded, color: Colors.white, size: 18),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '📩 Join request sent to Group Admin! Admin will receive mobile & in-app notifications.',
-                ),
-              ),
+              Icon(Icons.delete_outline_rounded, color: Colors.white, size: 18),
+              SizedBox(width: 8),
+              Text('Message deleted successfully'),
             ],
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -2902,15 +3035,20 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     _msgController.clear();
     final groupId = widget.group['id'] as String;
     final now = DateTime.now();
-    final timeStr = '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+    final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
+    final min = now.minute.toString().padLeft(2, '0');
+    final ampm = now.hour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$hour:$min $ampm';
 
     final tempMsg = {
+      'id': 'msg_${now.millisecondsSinceEpoch}',
       'sender': _mySenderName,
       'avatarLetter': _mySenderName.isNotEmpty ? _mySenderName[0].toUpperCase() : 'Y',
       'color': const Color(0xFF311B92),
       'role': 'Student',
       'text': text,
       'time': timeStr,
+      'createdAt': now.toIso8601String(),
       'isMe': true,
     };
 
@@ -2920,12 +3058,14 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
 
     try {
       final msgPayload = {
+        'id': tempMsg['id'],
         'sender': _mySenderName,
         'avatarLetter': tempMsg['avatarLetter'],
         'colorHex': '#311B92',
         'role': 'Student',
         'text': text,
         'time': timeStr,
+        'createdAt': tempMsg['createdAt'],
       };
       await CommunityService().sendGroupMessage(groupId, msgPayload);
     } catch (e) {
@@ -3060,136 +3200,221 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                         valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(18),
-                      itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  final bool isMe = msg['isMe'] == true;
+                  : !_isJoined
+                      ? _buildLockedGroupPreview()
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.all(18),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = _messages[index];
+                            final bool isMe = msg['isMe'] == true;
 
-                  return Align(
-                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.78,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment:
-                            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                        children: [
-                          if (!isMe) ...[
-                            GestureDetector(
-                              onTap: () => _openMemberDirectChatModal(context, msg),
-                              child: CircleAvatar(
-                                radius: 16,
-                                backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
-                                child: Text(
-                                  msg['avatarLetter'],
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: msg['color'] as Color,
-                                  ),
+                            return Align(
+                              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.82,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-
-                          Flexible(
-                            child: Column(
-                              crossAxisAlignment: isMe
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                              children: [
-                                if (!isMe)
-                                  GestureDetector(
-                                    onTap: () => _openMemberDirectChatModal(context, msg),
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 2, bottom: 3),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            msg['sender'],
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11.5,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment:
+                                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                                  children: [
+                                    if (!isMe) ...[
+                                      GestureDetector(
+                                        onTap: () => _openMemberDirectChatModal(context, msg),
+                                        child: CircleAvatar(
+                                          radius: 17,
+                                          backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
+                                          child: Text(
+                                            msg['avatarLetter'],
+                                            style: TextStyle(
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF334155),
+                                              color: msg['color'] as Color,
                                             ),
                                           ),
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                            decoration: BoxDecoration(
-                                              color: (msg['color'] as Color).withValues(alpha: 0.1),
-                                              borderRadius: BorderRadius.circular(6),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
+
+                                    Flexible(
+                                      child: Column(
+                                        crossAxisAlignment: isMe
+                                            ? CrossAxisAlignment.end
+                                            : CrossAxisAlignment.start,
+                                        children: [
+                                          if (!isMe)
+                                            GestureDetector(
+                                              onTap: () => _openMemberDirectChatModal(context, msg),
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(left: 2, bottom: 4),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      msg['sender'],
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 12.5,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: const Color(0xFF1E293B),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                                      decoration: BoxDecoration(
+                                                        color: (msg['color'] as Color).withValues(alpha: 0.1),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        msg['role'],
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: 9.5,
+                                                          fontWeight: FontWeight.w700,
+                                                          color: msg['color'] as Color,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    const Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Color(0xFF311B92)),
+                                                  ],
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 2, bottom: 4),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    'You',
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 12.5,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: const Color(0xFF311B92),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 5),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: Text(
+                                                      'You',
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: const Color(0xFF311B92),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                            child: Text(
-                                              msg['role'],
-                                              style: GoogleFonts.inter(
-                                                fontSize: 9.5,
-                                                fontWeight: FontWeight.w600,
-                                                color: msg['color'] as Color,
+
+                                          GestureDetector(
+                                            onLongPress: () {
+                                              if (isMe) _showDeleteMessageDialog(msg);
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                              decoration: BoxDecoration(
+                                                color: isMe ? const Color(0xFF311B92) : Colors.white,
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft: const Radius.circular(16),
+                                                  topRight: const Radius.circular(16),
+                                                  bottomLeft: Radius.circular(isMe ? 16 : 4),
+                                                  bottomRight: Radius.circular(isMe ? 4 : 16),
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withValues(alpha: 0.04),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Text(
+                                                msg['text'],
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 13.5,
+                                                  color: isMe ? Colors.white : const Color(0xFF1E293B),
+                                                  height: 1.4,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                          const SizedBox(width: 4),
-                                          const Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Color(0xFF311B92)),
+
+                                          const SizedBox(height: 4),
+
+                                          Padding(
+                                            padding: EdgeInsets.only(left: isMe ? 0 : 2, right: isMe ? 2 : 0),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                if (!isMe) ...[
+                                                  Icon(Icons.access_time_rounded, size: 10.5, color: Colors.grey[500]),
+                                                  const SizedBox(width: 3),
+                                                ],
+                                                Text(
+                                                  msg['time'],
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.grey[500],
+                                                  ),
+                                                ),
+                                                if (isMe) ...[
+                                                  const SizedBox(width: 6),
+                                                  GestureDetector(
+                                                    onTap: () => _showDeleteMessageDialog(msg),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.all(3),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.red.withValues(alpha: 0.08),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: const Icon(Icons.delete_outline_rounded, size: 13, color: Color(0xFFEF4444)),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  const Icon(Icons.done_all_rounded, size: 13, color: Color(0xFF311B92)),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
-                                  ),
 
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: isMe ? const Color(0xFF311B92) : Colors.white,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(16),
-                                      topRight: const Radius.circular(16),
-                                      bottomLeft: Radius.circular(isMe ? 16 : 4),
-                                      bottomRight: Radius.circular(isMe ? 4 : 16),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                                    if (isMe) ...[
+                                      const SizedBox(width: 8),
+                                      CircleAvatar(
+                                        radius: 17,
+                                        backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.15),
+                                        child: Text(
+                                          _mySenderName.isNotEmpty ? _mySenderName[0].toUpperCase() : 'U',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF311B92),
+                                          ),
+                                        ),
                                       ),
                                     ],
-                                  ),
-                                  child: Text(
-                                    msg['text'],
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13.5,
-                                      color: isMe ? Colors.white : const Color(0xFF1E293B),
-                                      height: 1.4,
-                                    ),
-                                  ),
+                                  ],
                                 ),
-
-                                const SizedBox(height: 3),
-
-                                Text(
-                                  msg['time'],
-                                  style: GoogleFonts.inter(
-                                    fontSize: 10,
-                                    color: Colors.grey[500],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ),
 
@@ -3211,77 +3436,28 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (_membershipStatus == 'PENDING') ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF97316).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.3)),
+                    ElevatedButton.icon(
+                      onPressed: _joinGroupDirectly,
+                      icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
+                      label: Text(
+                        'Join Group to Start Chatting',
+                        style: GoogleFonts.outfit(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.bold,
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.hourglass_top_rounded, color: Color(0xFFC2410C), size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Join Request Pending Approval',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFFC2410C),
-                                    ),
-                                  ),
-                                  Text(
-                                    'Your join request has been sent to the group admin. You will receive mobile & app notifications when approved.',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11.5,
-                                      color: const Color(0xFF7C2D12),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ] else ...[
-                      Text(
-                        'Ask permission from the group admin to join and participate in this group.',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 12.5,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        elevation: 2,
                       ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: _requestJoinGroup,
-                        icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                        label: Text(
-                          '📩 Request to Join Group',
-                          style: GoogleFonts.outfit(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF311B92),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(double.infinity, 48),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 2,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
@@ -3349,6 +3525,151 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLockedGroupPreview() {
+    final title = widget.group['title'] as String? ?? 'Smart Group';
+    final badge = widget.group['badge'] as String? ?? 'Community';
+    final members = widget.group['members'] as String? ?? '1.2k members';
+    final color = (widget.group['color'] as Color?) ?? const Color(0xFF311B92);
+    final icon = (widget.group['icon'] as IconData?) ?? Icons.groups_rounded;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+              ),
+              child: Center(
+                child: Icon(icon, size: 40, color: color),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                badge,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 19,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.people_alt_rounded, size: 14, color: Color(0xFF64748B)),
+                const SizedBox(width: 4),
+                Text(
+                  members,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: const Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.lock_outline_rounded, color: Color(0xFF311B92), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Group Messages are Hidden',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1E1B4B),
+                          ),
+                        ),
+                        Text(
+                          'Join this group to unlock chats, ask questions and connect with students.',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _joinGroupDirectly,
+              icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
+              label: Text(
+                'Join Group Now',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF311B92),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

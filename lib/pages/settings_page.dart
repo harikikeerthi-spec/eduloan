@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/language_service.dart';
 import '../services/user_service.dart';
+import '../services/secure_storage_service.dart';
 import 'legal_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -129,6 +130,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await prefs.remove('onboarding_shown');
       await prefs.remove('has_registered');
       await prefs.remove('is_onboarded');
+      await SecureStorageService.clearAll();
       try {
         await GoogleAuthService().signOut();
       } catch (e) {

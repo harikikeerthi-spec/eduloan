@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
+import 'secure_storage_service.dart';
 
 class AuthService {
   static dynamic _parseJsonResponse(http.Response response) {
@@ -91,9 +92,18 @@ class AuthService {
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        if (token != null) await prefs.setString('auth_token', token);
-        if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
-        if (data['userId'] != null) await prefs.setString('userId', data['userId']);
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          await SecureStorageService.saveToken(token);
+        }
+        if (refreshToken != null) {
+          await prefs.setString('refresh_token', refreshToken);
+          await SecureStorageService.saveRefreshToken(refreshToken);
+        }
+        if (data['userId'] != null) {
+          await prefs.setString('userId', data['userId']);
+          await SecureStorageService.saveUserId(data['userId']);
+        }
 
         if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
         if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
@@ -156,9 +166,18 @@ class AuthService {
         await prefs.remove('user_profileImage');
         await prefs.setString('user_email', email);
         await prefs.setBool('has_registered', true);
-        if (token != null) await prefs.setString('auth_token', token);
-        if (refreshToken != null) await prefs.setString('refresh_token', refreshToken);
-        if (data['userId'] != null) await prefs.setString('userId', data['userId']);
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          await SecureStorageService.saveToken(token);
+        }
+        if (refreshToken != null) {
+          await prefs.setString('refresh_token', refreshToken);
+          await SecureStorageService.saveRefreshToken(refreshToken);
+        }
+        if (data['userId'] != null) {
+          await prefs.setString('userId', data['userId']);
+          await SecureStorageService.saveUserId(data['userId']);
+        }
 
         if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
         if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);

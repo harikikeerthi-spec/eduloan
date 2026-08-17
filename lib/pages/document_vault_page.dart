@@ -10,6 +10,7 @@ import '../models/user_document.dart';
 import '../services/user_service.dart';
 import '../services/loan_service.dart';
 import '../services/notification_service.dart';
+import '../services/security_service.dart';
 import '../widgets/mesh_background.dart';
 
 class DocumentVaultPage extends StatefulWidget {
@@ -71,7 +72,15 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    SecurityService.enableSecureScreen();
     _fetchDocuments();
+  }
+
+  @override
+  void dispose() {
+    SecurityService.disableSecureScreen();
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCustomDocs() async {
@@ -512,12 +521,20 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Future<void> _uploadDocument(String type, String name) async {
-    // ─── PASSPORT MANDATORY FIRST CHECK ─────────────────────────────────────
+    // ─── PASSPORT OR AADHAR MANDATORY FIRST CHECK ───────────────────────────
     final isPassport = type == 'student_passport' || type.contains('passport');
+    final isAadhar = type == 'student_aadhar' || type == 'aadhar' || type.contains('aadhar') || type.contains('aadhaar');
+    final isPrimaryDoc = isPassport || isAadhar;
+
     final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
     final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
 
-    if (!isPassport && !isPassportUploaded) {
+    final aadharDoc = _findDoc('student_aadhar') ?? _findDoc('aadhar') ?? _findDoc('student_aadhaar') ?? _findDoc('aadhaar');
+    final bool isAadharUploaded = aadharDoc != null && (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
+
+    final bool isPrimaryUploaded = isPassportUploaded || isAadharUploaded;
+
+    if (!isPrimaryDoc && !isPrimaryUploaded) {
       if (mounted) {
         showDialog(
           context: context,
@@ -529,7 +546,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Passport Mandatory First',
+                    'Passport or Aadhar First',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -540,7 +557,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
               ],
             ),
             content: const Text(
-              'Please upload your Passport (Front & Back) first.\n\nAI requires your Passport details to extract your official identity and family records before verifying other documents.',
+              'Please upload either your Passport (Front & Back) or Aadhar Card first.\n\nAI requires your primary identity document to verify your official records before unlocking other documents.',
               style: TextStyle(fontSize: 14, color: Colors.black87),
             ),
             actions: [
@@ -1075,7 +1092,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   Widget _buildPassportMandatoryBanner() {
     final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
     final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
-    if (isPassportUploaded) return const SizedBox.shrink();
+
+    final aadharDoc = _findDoc('student_aadhar') ?? _findDoc('aadhar') ?? _findDoc('student_aadhaar') ?? _findDoc('aadhaar');
+    final bool isAadharUploaded = aadharDoc != null && (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
+
+    if (isPassportUploaded || isAadharUploaded) return const SizedBox.shrink();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1091,7 +1112,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Passport Mandatory First: Please upload your Passport (Front & Back) first. Passport details will be used by AI to verify student, father, and mother records on all other documents.',
+              'Identity Verification: Please upload either your Passport or Aadhar Card first. Once uploaded, all other document slots will automatically open.',
               style: GoogleFonts.outfit(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,

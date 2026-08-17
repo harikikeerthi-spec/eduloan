@@ -6,12 +6,12 @@ import '../models/community.dart';
 import 'api_config.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
+import 'secure_storage_service.dart';
 
 class CommunityService {
   /// Helper to get common headers including auth token
   Future<Map<String, String>> _getHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final token = await SecureStorageService.getToken();
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
@@ -523,9 +523,16 @@ class CommunityService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final localRaw = prefs.getStringList('group_msgs_$groupId') ?? prefs.getStringList('chat_msgs_$groupId') ?? [];
+      final deletedKey = 'deleted_msgs_$groupId';
+      final deletedList = prefs.getStringList(deletedKey) ?? [];
+
       for (var str in localRaw) {
         try {
-          localMsgs.add(Map<String, dynamic>.from(json.decode(str) as Map));
+          final m = Map<String, dynamic>.from(json.decode(str) as Map);
+          final id = m['id']?.toString() ?? '';
+          if (id.isEmpty || !deletedList.contains(id)) {
+            localMsgs.add(m);
+          }
         } catch (_) {}
       }
     } catch (_) {}
@@ -536,22 +543,29 @@ class CommunityService {
         final List raw = response['data'];
         final List<Map<String, dynamic>> serverMsgs = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
-        // Merge server and local messages (avoid duplicates)
+        final prefs = await SharedPreferences.getInstance();
+        final deletedKey = 'deleted_msgs_$groupId';
+        final deletedList = prefs.getStringList(deletedKey) ?? [];
+
+        // Filter out deleted messages
+        final activeLocal = localMsgs.where((m) => !deletedList.contains(m['id']?.toString())).toList();
+        final activeServer = serverMsgs.where((m) => !deletedList.contains(m['id']?.toString())).toList();
+
+        // Merge server and local messages (avoid duplicates and preserve all history)
         final Map<String, Map<String, dynamic>> mergedMap = {};
-        for (var m in localMsgs) {
+        for (var m in activeLocal) {
           final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
           mergedMap[key] = m;
         }
-        for (var m in serverMsgs) {
+        for (var m in activeServer) {
           final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
           mergedMap[key] = m;
         }
 
         final mergedList = mergedMap.values.toList();
         
-        // Save back to local storage
+        // Save back to local storage so every message is permanently stored
         try {
-          final prefs = await SharedPreferences.getInstance();
           final rawList = mergedList.map((m) => json.encode(m)).toList();
           await prefs.setStringList('group_msgs_$groupId', rawList);
         } catch (_) {}
@@ -589,6 +603,40 @@ class CommunityService {
       debugPrint('Error sending group message to backend: $e');
     }
     return msgData;
+  }
+
+  /// Delete message from group (sender only)
+  Future<bool> deleteGroupMessage(String groupId, String messageId) async {
+    try {
+      // 1. Remove from local storage
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'group_msgs_$groupId';
+      final currentList = prefs.getStringList(key) ?? [];
+      currentList.removeWhere((item) {
+        try {
+          final m = json.decode(item) as Map;
+          return m['id']?.toString() == messageId;
+        } catch (_) {
+          return false;
+        }
+      });
+      await prefs.setStringList(key, currentList);
+
+      // Track locally deleted message ID
+      final deletedKey = 'deleted_msgs_$groupId';
+      final deletedList = prefs.getStringList(deletedKey) ?? [];
+      if (!deletedList.contains(messageId)) {
+        deletedList.add(messageId);
+        await prefs.setStringList(deletedKey, deletedList);
+      }
+
+      // 2. Delete on backend
+      await _deleteRequest('/community/groups/$groupId/messages/$messageId');
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting group message: $e');
+      return false;
+    }
   }
 
   /// Join a group channel

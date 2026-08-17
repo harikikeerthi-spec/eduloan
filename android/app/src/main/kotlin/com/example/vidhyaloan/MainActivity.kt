@@ -6,21 +6,40 @@ import android.media.AudioManager
 import android.os.Build
 import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
+import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.vidyaloan/audio_check"
+    private val SECURITY_CHANNEL = "com.vidyaloan/security"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
+        // Audio & Call Detection Channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "isInCallOrMeet") {
                 val inCall = checkCallStatus()
                 result.success(inCall)
             } else {
                 result.notImplemented()
+            }
+        }
+
+        // Bank-Grade Security Channel (FLAG_SECURE Anti-Screen Capture)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SECURITY_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "enableSecureScreen" -> {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
+                }
+                "disableSecureScreen" -> {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
             }
         }
     }

@@ -1269,7 +1269,13 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
       const msgMap = new Map<string, any>();
       if (dbMsgs && dbMsgs.length > 0) {
-        dbMsgs.forEach((m: any) => msgMap.set(m.id || `${m.sender}_${m.text}_${m.time}`, m));
+        dbMsgs.forEach((m: any) => {
+          msgMap.set(m.id || `${m.sender}_${m.text}_${m.time}`, m);
+          if (!memMsgs.some((x: any) => x.id === m.id)) {
+            memMsgs.push(m);
+          }
+        });
+        CommunityService.inMemoryGroupMessages.set(groupId, memMsgs);
       }
       memMsgs.forEach((m: any) => msgMap.set(m.id || `${m.sender}_${m.text}_${m.time}`, m));
 
@@ -1277,6 +1283,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       merged.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
       return { success: true, data: merged };
     } catch (e) {
+      console.warn('[CommunityService] Error fetching messages from DB, using cache:', e);
       return { success: true, data: memMsgs };
     }
   }
@@ -1289,7 +1296,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     const maskedText = this.maskPhoneNumbers(rawText);
 
     const newMsg = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: msgData.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       groupId,
       sender: msgData.sender || 'Student User',
       avatarLetter: msgData.avatarLetter || (msgData.sender ? msgData.sender[0] : 'S'),
@@ -1316,19 +1323,83 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     }
 
     try {
-      await this.db
-        .from('CommunityGroupMessage')
-        .insert(newMsg);
+      // 1. Ensure parent group exists in DB
+      if (CommunityService.inMemoryGroups.has(groupId)) {
+        const parentGrp = CommunityService.inMemoryGroups.get(groupId);
+        await this.db
+          .from('CommunityGroup')
+          .upsert({
+            id: parentGrp.id,
+            title: parentGrp.title,
+            subtitle: parentGrp.subtitle || '',
+            members: parentGrp.members || 1,
+            online: parentGrp.online || 1,
+            iconName: parentGrp.iconName || 'school_rounded',
+            colorHex: parentGrp.colorHex || '#311B92',
+            badge: parentGrp.badge || 'General',
+            lastMsg: lastMsgText,
+            updatedAt: now.toISOString(),
+          }, { onConflict: 'id' });
+      }
 
-      await this.db
-        .from('CommunityGroup')
-        .update({ lastMsg: lastMsgText, updatedAt: now.toISOString() })
-        .eq('id', groupId);
+      // 2. Persist message permanently in database
+      const { error: insertError } = await this.db
+        .from('CommunityGroupMessage')
+        .upsert(newMsg, { onConflict: 'id' });
+
+      if (insertError) {
+        console.error('[CommunityService] DB insert error for group message:', insertError);
+      } else {
+        console.log('[CommunityService] Message stored successfully in database:', newMsg.id);
+      }
     } catch (e) {
       console.warn('Fallback sendGroupMessage save:', e);
     }
 
     return { success: true, data: newMsg };
+  }
+
+  async deleteGroupMessage(groupId: string, messageId: string) {
+    // 1. Remove from in-memory cache
+    if (CommunityService.inMemoryGroupMessages.has(groupId)) {
+      const list = CommunityService.inMemoryGroupMessages.get(groupId) || [];
+      const filtered = list.filter((m: any) => m.id !== messageId);
+      CommunityService.inMemoryGroupMessages.set(groupId, filtered);
+
+      // Update parent group lastMsg
+      if (CommunityService.inMemoryGroups.has(groupId)) {
+        const grp = CommunityService.inMemoryGroups.get(groupId);
+        const newLastMsg = filtered.length > 0
+          ? `${filtered[filtered.length - 1].sender}: ${filtered[filtered.length - 1].text}`
+          : '';
+        grp.lastMsg = newLastMsg;
+        grp.updatedAt = new Date().toISOString();
+        try {
+          await this.db
+            .from('CommunityGroup')
+            .update({ lastMsg: newLastMsg, updatedAt: grp.updatedAt })
+            .eq('id', groupId);
+        } catch (_) {}
+      }
+    }
+
+    // 2. Hard delete directly from PostgreSQL / Supabase CommunityGroupMessage table
+    try {
+      const { error } = await this.db
+        .from('CommunityGroupMessage')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('[CommunityService] Error deleting message from DB:', error);
+      } else {
+        console.log(`[CommunityService] Message ${messageId} successfully deleted from database table CommunityGroupMessage`);
+      }
+    } catch (e) {
+      console.error('[CommunityService] Exception deleting message from DB:', e);
+    }
+
+    return { success: true, message: 'Message deleted from database successfully' };
   }
 
   async joinGroup(groupId: string, userId?: string) {

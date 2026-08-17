@@ -554,16 +554,38 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                       displayVal,
                       style: GoogleFonts.inter(
                         fontSize: 15,
-                        color: isUploaded ? const Color(0xFF1E1B4B) : Colors.grey,
-                        fontWeight: isUploaded ? FontWeight.w700 : FontWeight.w400,
+                        color: isUploaded || hasNumber ? const Color(0xFF1E1B4B) : Colors.grey,
+                        fontWeight: isUploaded || hasNumber ? FontWeight.w700 : FontWeight.w400,
                         letterSpacing: hasNumber ? 0.5 : 0.0,
                       ),
                     ),
                   ],
                 ),
               ),
+              // Edit Document Number Action
+              IconButton(
+                tooltip: 'Edit $label',
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.mode_edit_outline_rounded, size: 18, color: Color(0xFF311B92)),
+                ),
+                onPressed: () {
+                  _showEditDocNumberDialog(
+                    type: type,
+                    label: label,
+                    currentValue: extractedVal,
+                    color: color,
+                    icon: icon,
+                  );
+                },
+              ),
               if (hasNumber)
                 IconButton(
+                  tooltip: 'Copy $label',
                   icon: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -591,5 +613,276 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
         );
       },
     );
+  }
+
+  void _showEditDocNumberDialog({
+    required String type,
+    required String label,
+    required String? currentValue,
+    required Color color,
+    required IconData icon,
+  }) {
+    final bool isRealValue = currentValue != null &&
+        currentValue != 'Not Uploaded Yet' &&
+        currentValue != 'Uploaded (AI Verified)';
+    final textController = TextEditingController(text: isRealValue ? currentValue : '');
+
+    final typeLower = type.toLowerCase();
+    String hint = 'Enter document identifier';
+    TextInputType keyboardType = TextInputType.text;
+    TextCapitalization textCapitalization = TextCapitalization.characters;
+    int? maxLength;
+
+    if (typeLower.contains('pan')) {
+      hint = 'e.g. ABCDE1234F';
+      maxLength = 10;
+    } else if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
+      hint = 'e.g. 1234 5678 9012';
+      keyboardType = TextInputType.number;
+      maxLength = 14;
+    } else if (typeLower.contains('passport')) {
+      hint = 'e.g. A1234567';
+      maxLength = 9;
+    } else if (typeLower.contains('marksheet') || typeLower.contains('degree')) {
+      hint = 'e.g. Roll No / Reg No / Certificate ID';
+      maxLength = 25;
+      textCapitalization = TextCapitalization.characters;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Edit $label',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1E1B4B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'AI OCR Extracted / Manual Correction',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: textController,
+                autofocus: true,
+                keyboardType: keyboardType,
+                textCapitalization: textCapitalization,
+                maxLength: maxLength,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E1B4B),
+                  letterSpacing: 0.5,
+                ),
+                decoration: InputDecoration(
+                  labelText: label,
+                  hintText: hint,
+                  hintStyle: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 13),
+                  labelStyle: GoogleFonts.inter(color: const Color(0xFF311B92)),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  counterText: '',
+                  prefixIcon: Icon(Icons.edit_note_rounded, color: color),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear_rounded, size: 18, color: Colors.grey),
+                    onPressed: () => textController.clear(),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFF311B92), width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        side: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF311B92),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () async {
+                        final newText = textController.text.trim();
+                        await _saveCustomDocNumber(type, label, newText);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      child: Text(
+                        'Save & Update',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _saveCustomDocNumber(String type, String label, String value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId') ?? 'anonymous';
+
+      if (value.isEmpty) {
+        await prefs.remove('ocr_number_${userId}_$type');
+        _localOcrNumbers.remove(type);
+      } else {
+        await prefs.setString('ocr_number_${userId}_$type', value);
+        _localOcrNumbers[type] = value;
+      }
+
+      // Also sync to user profile keys if applicable
+      final typeLower = type.toLowerCase();
+      if (typeLower.contains('pan')) {
+        if (typeLower.contains('father')) {
+          await prefs.setString('father_pan', value);
+        } else if (typeLower.contains('mother')) {
+          await prefs.setString('mother_pan', value);
+        } else if (typeLower.contains('coapp')) {
+          await prefs.setString('coapp_pan', value);
+        } else {
+          await prefs.setString('user_pan', value);
+          await prefs.setString('pan_number', value);
+          await prefs.setString('student_pan', value);
+        }
+      } else if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
+        if (typeLower.contains('father')) {
+          await prefs.setString('father_aadhar', value);
+        } else if (typeLower.contains('mother')) {
+          await prefs.setString('mother_aadhar', value);
+        } else if (typeLower.contains('coapp')) {
+          await prefs.setString('coapp_aadhar', value);
+        } else {
+          await prefs.setString('user_aadhar', value);
+          await prefs.setString('aadhar_number', value);
+          await prefs.setString('student_aadhar', value);
+        }
+      } else if (typeLower.contains('passport')) {
+        await prefs.setString('user_passport', value);
+        await prefs.setString('passport_number', value);
+        await prefs.setString('student_passport', value);
+      }
+
+      setState(() {});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    value.isNotEmpty
+                        ? '$label updated successfully!'
+                        : '$label cleared',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving custom document number: $e');
+    }
   }
 }

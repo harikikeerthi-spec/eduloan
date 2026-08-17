@@ -103,7 +103,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
     if (lower.contains('poonawalla')) return 'assets/images/poonawalla_logo_final.jpg';
     return null;
   }
-  bool _isAllDocsUploaded = false;
   bool _hasUploadedDocs = false;
   String? _error;
 
@@ -150,7 +149,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
         setState(() {
           _loans = loans;
           _hasUploadedDocs = isAllDocsComplete;
-          _isAllDocsUploaded = isAllDocsComplete;
           _isLoading = false;
         });
       }
@@ -308,7 +306,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                   ),
                 ),
               ),
-              if (_loans.isNotEmpty && _isAllDocsUploaded) ...[
+              if (_loans.isNotEmpty) ...[
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
@@ -1009,10 +1007,9 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       ),
                     ),
                   ),
-                  if (_isAllDocsUploaded) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
                         onPressed: () async {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1054,8 +1051,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       ),
                     ),
                   ],
-                ],
-              ),
+                ),
               if (loan.status.toLowerCase() == 'rejected' || loan.stage.toLowerCase() == 'rejected') ...[
                 const SizedBox(height: 16),
                 Container(

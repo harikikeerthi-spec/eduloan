@@ -1077,6 +1077,14 @@ export class CommunityController {
     async approveGroupJoinRequest(@Param('groupId') groupId: string, @Body() body: any) {
         return this.communityService.approveGroupJoinRequest(groupId, body?.requestId);
     }
+
+    @Delete('groups/:groupId/messages/:messageId')
+    async deleteGroupMessage(
+        @Param('groupId') groupId: string,
+        @Param('messageId') messageId: string,
+    ) {
+        return this.communityService.deleteGroupMessage(groupId, messageId);
+    }
 }
 
 
