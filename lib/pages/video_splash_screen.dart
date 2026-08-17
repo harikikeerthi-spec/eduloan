@@ -33,7 +33,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   /// Checks if the device is currently in a cellular call or VoIP meet (Google Meet, Zoom, WhatsApp, Teams)
   Future<bool> _checkActiveCallOrMeet() async {
     try {
-      final bool? inCall = await _audioChannel.invokeMethod<bool>('isInCallOrMeet');
+      final bool? inCall = await _audioChannel
+          .invokeMethod<bool>('isInCallOrMeet')
+          .timeout(const Duration(milliseconds: 350), onTimeout: () => false);
       return inCall ?? false;
     } catch (e) {
       debugPrint('VideoSplashScreen: Call check channel exception: $e');
@@ -42,8 +44,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   }
 
   Future<void> _initializeAndPlay() async {
-    // ── Hard safety net — max 6 seconds ────────────────────────────────
-    Future.delayed(const Duration(seconds: 6), () {
+    // ── Hard safety net — max 3.2 seconds ────────────────────────────────
+    Future.delayed(const Duration(milliseconds: 3200), () {
       if (mounted && !_navigated) {
         debugPrint('VideoSplashScreen: Safety timeout reached. Navigating instantly.');
         FlutterNativeSplash.remove();
@@ -150,7 +152,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       final bool isLoggedIn =
           authToken != null && authToken.isNotEmpty &&
           userId != null && userId.isNotEmpty;
-      final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
 
       if (!mounted) return;
 
@@ -171,8 +172,6 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
           } else {
             Navigator.of(context).pushReplacementNamed('/login');
           }
-        } else if (!onboardingShown) {
-          Navigator.of(context).pushReplacementNamed('/onboarding');
         } else {
           Navigator.of(context).pushReplacementNamed('/home');
         }

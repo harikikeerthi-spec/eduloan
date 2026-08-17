@@ -241,12 +241,6 @@ class PdfGeneratorService {
                   loan.phoneNumber.isEmpty ? 'N/A' : loan.phoneNumber,
                 ),
                 _buildInfoRow('Email Address', loan.email, 'Address / City', '${loan.city ?? "N/A"} ${loan.pincode ?? ""}'.trim()),
-                _buildInfoRow(
-                  'Country',
-                  loan.country ?? loan.targetCountry ?? 'N/A',
-                  '',
-                  '',
-                ),
               ],
             ),
           ),

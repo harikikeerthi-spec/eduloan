@@ -709,6 +709,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       file,
       type,
       password: docPassword,
+      docDisplayName: name,
     );
 
     if (mounted) {
@@ -772,7 +773,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           SnackBar(
             content: Text('$name upload rejected: $errorMessage'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 6),
+            duration: const Duration(seconds: 2),
             action: SnackBarAction(
               label: 'Dismiss',
               textColor: Colors.white,

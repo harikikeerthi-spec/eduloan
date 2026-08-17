@@ -7,6 +7,7 @@ import '../widgets/avatar_selection_dialog.dart';
 import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/language_service.dart';
+import '../services/user_service.dart';
 import 'legal_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -32,41 +33,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    final first = prefs.getString('user_firstName') ?? prefs.getString('user_name') ?? '';
-    final last = prefs.getString('user_lastName') ?? prefs.getString('user_last_name') ?? '';
-    final email = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
-    final profileImg = prefs.getString('user_profileImage');
-    final savedLang = prefs.getString('app_language') ?? 'English (IN)';
-
     setState(() {
-      _email = email;
-      _profileImage = profileImg;
-      _selectedLanguage = savedLang;
-      _userName = '$first $last'.trim();
-      if (_userName.isEmpty) {
-        _userName = email.contains('@') ? email.split('@')[0] : 'Student Account';
-      }
+      _email = prefs.getString('user_email') ?? '';
+      final firstName = prefs.getString('user_firstName') ?? '';
+      final lastName = prefs.getString('user_lastName') ?? '';
+      _userName = '$firstName $lastName'.trim();
+      if (_userName.isEmpty) _userName = 'User';
+      _profileImage = prefs.getString('user_profileImage');
+      _selectedLanguage = prefs.getString('app_language') ?? 'English (IN)';
+      _pushNotifications = prefs.getBool('push_notifications_enabled') ?? true;
     });
-
-    // Also fetch latest profile image from backend if email is available
-    if (email.isNotEmpty && email != 'student@vidhyaloan.com') {
-      try {
-        final profile = await AuthService.getUserDashboard(email);
-        if (profile['success'] == true && profile['user'] != null) {
-          final user = profile['user'];
-          if (user['profileImage'] != null) {
-            await prefs.setString('user_profileImage', user['profileImage']);
-            if (mounted) {
-              setState(() {
-                _profileImage = user['profileImage'];
-              });
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Error fetching profile in SettingsPage: $e');
-      }
-    }
   }
 
   Future<void> _handleLogout() async {
@@ -148,21 +124,144 @@ class _SettingsPageState extends State<SettingsPage> {
       await prefs.remove('user_profileImage');
       await prefs.remove('latest_ai_recommendations');
 
-      // Preserve flags so the 3 slides are never shown again in their lifetime
-      await prefs.setBool('onboarding_shown', true);
-      await prefs.setBool('has_registered', true);
+      await prefs.remove('user_dob');
+      await prefs.remove('user_name');
+      await prefs.remove('onboarding_shown');
+      await prefs.remove('has_registered');
+      await prefs.remove('is_onboarded');
       try {
         await GoogleAuthService().signOut();
       } catch (e) {
         debugPrint('Error during Google/Firebase sign out: $e');
       }
       if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     }
   }
 
   Future<void> _handleDeleteAccount() async {
+    // ─── 1. Check if a document is currently uploading ───────────────────
+    if (UserService.isUploading) {
+      final docName = UserService.currentUploadingDoc ?? 'document';
+      final waitAndProceed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: Colors.white,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFF59E0B), size: 22),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Upload in Progress',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please wait for a sec because your $docName is currently uploading.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Once the upload process completes, your account deletion will proceed safely.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF311B92)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Uploading $docName...',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF311B92),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              ),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                elevation: 0,
+              ),
+              child: Text(
+                'Wait & Delete',
+                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (waitAndProceed != true) return;
+    }
+
+    if (!mounted) return;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -231,10 +330,17 @@ class _SettingsPageState extends State<SettingsPage> {
     if (confirm == true) {
       setState(() => _isLoading = true);
 
+      // If document is uploading, wait for it to finish gracefully before deleting
+      if (UserService.isUploading) {
+        await UserService.waitForCurrentUpload();
+      }
+
       final result = await AuthService.deleteAccount(_email);
 
       if (mounted) {
         setState(() => _isLoading = false);
+        // Clear any global upload snackbars
+        ScaffoldMessenger.of(context).clearSnackBars();
         if (result['success'] == true) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.clear();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/direct_chat_service.dart';
@@ -17,16 +18,23 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
   List<DirectChatConversation> _filteredConversations = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadConversations();
     _searchController.addListener(_onSearchChanged);
+    _refreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted && _searchController.text.trim().isEmpty) {
+        _refreshConversationsSilently();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -40,6 +48,16 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
         _conversations = convs;
         _filteredConversations = convs;
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshConversationsSilently() async {
+    final convs = await _chatService.getConversations();
+    if (mounted && _searchController.text.trim().isEmpty) {
+      setState(() {
+        _conversations = convs;
+        _filteredConversations = convs;
       });
     }
   }

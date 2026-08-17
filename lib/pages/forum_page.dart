@@ -2573,7 +2573,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   void initState() {
     super.initState();
     _loadUserAndMessages();
-    _chatPollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    _chatPollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (mounted) _pollNewMessages();
     });
   }
@@ -2582,6 +2582,8 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     final groupId = widget.group['id'] as String;
     final msgs = await CommunityService().getGroupMessages(groupId);
     if (!mounted) return;
+    if (msgs.isEmpty && _messages.isNotEmpty) return;
+
     final parsed = msgs.map((m) {
       final sender = m['sender'] ?? 'Student';
       final colorHex = m['colorHex'] ?? '#311B92';
@@ -2604,7 +2606,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
       };
     }).toList();
 
-    if (parsed.length != _messages.length) {
+    if (parsed.isNotEmpty && (parsed.length != _messages.length || _messages.isEmpty)) {
       setState(() {
         _messages = parsed;
       });

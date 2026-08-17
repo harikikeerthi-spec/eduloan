@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,22 @@ import '../models/user_document.dart';
 import 'api_config.dart';
 
 class UserService {
+  /// Global state tracking for active document uploads
+  static final ValueNotifier<bool> isUploadingNotifier = ValueNotifier<bool>(false);
+  static final ValueNotifier<String?> currentUploadingDocNotifier = ValueNotifier<String?>(null);
+  static Completer<void>? _currentUploadCompleter;
+
+  static bool get isUploading => isUploadingNotifier.value;
+  static String? get currentUploadingDoc => currentUploadingDocNotifier.value;
+
+  /// Allows caller (e.g. Delete Account / Logout flow) to wait for active upload to finish
+  static Future<void> waitForCurrentUpload({Duration timeout = const Duration(seconds: 30)}) async {
+    if (!isUploadingNotifier.value || _currentUploadCompleter == null) return;
+    try {
+      await _currentUploadCompleter!.future.timeout(timeout);
+    } catch (_) {}
+  }
+
   static Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
@@ -63,7 +80,17 @@ class UserService {
     }
   }
 
-  static Future<String?> uploadDocument(File file, String docType, {String? password}) async {
+  static Future<String?> uploadDocument(
+    File file,
+    String docType, {
+    String? password,
+    String? docDisplayName,
+  }) async {
+    isUploadingNotifier.value = true;
+    currentUploadingDocNotifier.value = docDisplayName ?? docType;
+    final completer = Completer<void>();
+    _currentUploadCompleter = completer;
+
     try {
       final token = await _getToken();
       if (token == null) return 'Authentication token not found.';
@@ -164,6 +191,13 @@ class UserService {
     } catch (e) {
       debugPrint('Error uploading document: $e');
       return 'Error uploading document: $e';
+    } finally {
+      isUploadingNotifier.value = false;
+      currentUploadingDocNotifier.value = null;
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+      _currentUploadCompleter = null;
     }
   }
 

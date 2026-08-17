@@ -21,6 +21,7 @@ model User {
   profileImage       String?
   refreshToken       String?
   role               String             @default("user")
+  documentVerified  Boolean            @default(false)
   updatedAt          DateTime           @default(now()) @updatedAt
   adminProfile      AdminProfile?      @relation("AdminUser")
   auditLogs         AuditLog[]         @relation("AuditInitiator")

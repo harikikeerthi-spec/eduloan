@@ -517,31 +517,78 @@ class CommunityService {
     return groupData;
   }
 
-  /// Get real group messages from backend database
+  /// Get real group messages from backend database & local persistent storage
   Future<List<Map<String, dynamic>>> getGroupMessages(String groupId) async {
+    final List<Map<String, dynamic>> localMsgs = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localRaw = prefs.getStringList('group_msgs_$groupId') ?? prefs.getStringList('chat_msgs_$groupId') ?? [];
+      for (var str in localRaw) {
+        try {
+          localMsgs.add(Map<String, dynamic>.from(json.decode(str) as Map));
+        } catch (_) {}
+      }
+    } catch (_) {}
+
     try {
       final response = await _getRequest('/community/groups/$groupId/messages');
       if (response['success'] == true && response['data'] != null) {
         final List raw = response['data'];
-        return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        final List<Map<String, dynamic>> serverMsgs = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+        // Merge server and local messages (avoid duplicates)
+        final Map<String, Map<String, dynamic>> mergedMap = {};
+        for (var m in localMsgs) {
+          final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
+          mergedMap[key] = m;
+        }
+        for (var m in serverMsgs) {
+          final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
+          mergedMap[key] = m;
+        }
+
+        final mergedList = mergedMap.values.toList();
+        
+        // Save back to local storage
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final rawList = mergedList.map((m) => json.encode(m)).toList();
+          await prefs.setStringList('group_msgs_$groupId', rawList);
+        } catch (_) {}
+
+        return mergedList;
       }
     } catch (e) {
-      debugPrint('Error loading group messages from backend: $e');
+      debugPrint('Error loading group messages from backend, using local: $e');
     }
-    return [];
+
+    return localMsgs;
   }
 
-  /// Send message in real group chat and save to database
+  /// Send message in real group chat and save to database & local storage
   Future<Map<String, dynamic>?> sendGroupMessage(String groupId, Map<String, dynamic> msgData) async {
+    // 1. Immediately persist to local storage so it NEVER disappears
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final key = 'group_msgs_$groupId';
+      final currentList = prefs.getStringList(key) ?? [];
+      currentList.add(json.encode(msgData));
+      await prefs.setStringList(key, currentList);
+    } catch (e) {
+      debugPrint('Error locally persisting group message: $e');
+    }
+
+    // 2. Post to backend so ALL Vidyaloan users receive it
     try {
       final response = await _postRequest('/community/groups/$groupId/messages', msgData);
       if (response['success'] == true && response['data'] != null) {
-        return Map<String, dynamic>.from(response['data'] as Map);
+        final saved = Map<String, dynamic>.from(response['data'] as Map);
+        return saved;
       }
     } catch (e) {
       debugPrint('Error sending group message to backend: $e');
     }
-    return null;
+    return msgData;
   }
 
   /// Join a group channel

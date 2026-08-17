@@ -147,6 +147,48 @@ class DirectChatService {
     _initialized = true;
   }
 
+  Future<String> getMyUserId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? id = prefs.getString('userId') ?? prefs.getString('user_id');
+      if (id != null && id.isNotEmpty) return id;
+      final email = prefs.getString('user_email');
+      if (email != null && email.isNotEmpty) return 'user_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+      final phone = prefs.getString('user_phone');
+      if (phone != null && phone.isNotEmpty) return 'user_${phone.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+      
+      var guestId = prefs.getString('persistent_chat_user_id');
+      if (guestId == null || guestId.isEmpty) {
+        guestId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+        await prefs.setString('persistent_chat_user_id', guestId);
+      }
+      return guestId;
+    } catch (_) {
+      return 'user_me';
+    }
+  }
+
+  Future<String> getMyUserName() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final fname = prefs.getString('user_firstName') ?? '';
+      final lname = prefs.getString('user_lastName') ?? '';
+      final fullName = '$fname $lname'.trim();
+      if (fullName.isNotEmpty) return fullName;
+      final name = prefs.getString('user_name');
+      if (name != null && name.isNotEmpty) return name;
+      return 'You';
+    } catch (_) {
+      return 'You';
+    }
+  }
+
+  String getConversationId(String myId, String peerId) {
+    final p1 = myId.compareTo(peerId) < 0 ? myId : peerId;
+    final p2 = myId.compareTo(peerId) < 0 ? peerId : myId;
+    return 'conv_${p1}_$p2';
+  }
+
   Future<void> _saveToStorage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -159,6 +201,48 @@ class DirectChatService {
 
   Future<List<DirectChatConversation>> getConversations() async {
     await init();
+    final myId = await getMyUserId();
+
+    // Fetch latest conversations from backend server
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http
+          .get(Uri.parse('$baseUrl/community/direct-chats?userId=$myId'))
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = json.decode(response.body);
+        if (decoded['success'] == true && decoded['data'] is List) {
+          final List rawList = decoded['data'];
+          for (var item in rawList) {
+            final Map<String, dynamic> c = Map<String, dynamic>.from(item as Map);
+            final String peerId = (c['participant1Id'] == myId ? c['participant2Id'] : c['participant1Id']) ?? c['peerId'] ?? '';
+            if (peerId.isEmpty) continue;
+
+            final existing = _conversations[peerId];
+            final lastMsg = c['lastMessage'] ?? existing?.lastMessage ?? '';
+            final lastTime = DateTime.tryParse(c['lastMessageAt'] ?? c['lastTimestamp'] ?? '') ?? existing?.lastTimestamp ?? DateTime.now();
+
+            _conversations[peerId] = DirectChatConversation(
+              peerId: peerId,
+              peerName: c['peerName'] ?? existing?.peerName ?? 'Student Member',
+              peerRole: c['peerRole'] ?? existing?.peerRole ?? 'Student',
+              avatarLetter: c['avatarLetter'] ?? existing?.avatarLetter ?? 'S',
+              colorValue: c['colorValue'] ?? existing?.colorValue ?? 0xFF311B92,
+              isOnline: c['isOnline'] ?? existing?.isOnline ?? true,
+              lastMessage: lastMsg,
+              lastTimestamp: lastTime,
+              unreadCount: (c['unreadCount'] is int) ? c['unreadCount'] : (existing?.unreadCount ?? 0),
+              messages: existing?.messages ?? [],
+            );
+          }
+          await _saveToStorage();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing direct conversations from server: $e');
+    }
+
     final list = _conversations.values.toList();
     list.sort((a, b) => b.lastTimestamp.compareTo(a.lastTimestamp));
     return list;
@@ -198,16 +282,87 @@ class DirectChatService {
     return newConv;
   }
 
+  /// Get real-time messages for a peer conversation from backend + local cache
+  Future<List<DirectChatMessage>> getMessagesForPeer(String peerId) async {
+    await init();
+    final conv = _conversations[peerId];
+    final localMsgs = conv?.messages ?? [];
+    final myId = await getMyUserId();
+    final conversationId = getConversationId(myId, peerId);
+
+    try {
+      final baseUrl = await ApiConfig.getBaseUrl();
+      final response = await http
+          .get(Uri.parse('$baseUrl/community/direct-chats/$conversationId/messages?userId=$myId'))
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = json.decode(response.body);
+        if (decoded['success'] == true && decoded['data'] is List) {
+          final List rawList = decoded['data'];
+          final List<DirectChatMessage> serverMsgs = rawList.map((m) {
+            final senderId = m['senderId'] ?? '';
+            final isMe = (senderId == myId || senderId == 'user_me' || m['isMe'] == true);
+            return DirectChatMessage(
+              id: m['id']?.toString() ?? '',
+              senderId: senderId,
+              senderName: m['senderName'] ?? (isMe ? 'You' : (conv?.peerName ?? 'Student')),
+              text: m['text'] ?? m['content'] ?? '',
+              timestamp: DateTime.tryParse(m['timestamp'] ?? m['createdAt'] ?? '') ?? DateTime.now(),
+              isMe: isMe,
+            );
+          }).toList();
+
+          // Merge local and server messages
+          final Map<String, DirectChatMessage> mergedMap = {};
+          for (var m in localMsgs) {
+            mergedMap[m.id.isNotEmpty ? m.id : '${m.senderId}_${m.text}_${m.timestamp}'] = m;
+          }
+          for (var m in serverMsgs) {
+            mergedMap[m.id.isNotEmpty ? m.id : '${m.senderId}_${m.text}_${m.timestamp}'] = m;
+          }
+
+          final mergedList = mergedMap.values.toList();
+          mergedList.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+          if (conv != null) {
+            _conversations[peerId] = DirectChatConversation(
+              peerId: conv.peerId,
+              peerName: conv.peerName,
+              peerRole: conv.peerRole,
+              avatarLetter: conv.avatarLetter,
+              colorValue: conv.colorValue,
+              isOnline: conv.isOnline,
+              lastMessage: mergedList.isNotEmpty ? mergedList.last.text : conv.lastMessage,
+              lastTimestamp: mergedList.isNotEmpty ? mergedList.last.timestamp : conv.lastTimestamp,
+              unreadCount: 0,
+              messages: mergedList,
+            );
+            await _saveToStorage();
+          }
+
+          return mergedList;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading peer direct messages from server: $e');
+    }
+
+    return localMsgs;
+  }
+
   Future<DirectChatMessage> sendMessage(String peerId, String rawText) async {
     await init();
     final conv = _conversations[peerId];
     if (conv == null) throw Exception('Conversation not found');
 
+    final myId = await getMyUserId();
+    final myName = await getMyUserName();
     final now = DateTime.now();
     final msg = DirectChatMessage(
-      id: 'msg_${now.millisecondsSinceEpoch}',
-      senderId: 'user_me',
-      senderName: 'You',
+      id: 'dmsg_${now.millisecondsSinceEpoch}',
+      senderId: myId,
+      senderName: myName,
       text: rawText,
       timestamp: now,
       isMe: true,
@@ -230,26 +385,28 @@ class DirectChatService {
     _conversations[peerId] = updatedConv;
     await _saveToStorage();
 
-    // Dynamically persist message into backend database table
-    _syncMessageToBackend(peerId, conv, rawText);
-
-    // Trigger an automated friendly response if chatting with mock peers
-    _triggerAutoReplyIfNeeded(peerId, rawText);
+    // Dynamically persist message into backend database & broadcast to peer
+    _syncMessageToBackend(peerId, conv, rawText, myId, myName);
 
     return msg;
   }
 
-  Future<void> _syncMessageToBackend(String peerId, DirectChatConversation conv, String text) async {
+  Future<void> _syncMessageToBackend(
+    String peerId,
+    DirectChatConversation conv,
+    String text,
+    String myId,
+    String myName,
+  ) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString('userId') ?? 'user_me';
 
       await http.post(
         Uri.parse('$baseUrl/community/direct-chats/send'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'senderId': userId,
+          'senderId': myId,
+          'senderName': myName,
           'peerId': peerId,
           'peerName': conv.peerName,
           'peerRole': conv.peerRole,
@@ -263,51 +420,10 @@ class DirectChatService {
     }
   }
 
-  void _triggerAutoReplyIfNeeded(String peerId, String userMsgText) {
-    Future.delayed(const Duration(seconds: 2), () async {
-      final conv = _conversations[peerId];
-      if (conv == null) return;
-
-      String replyText = "Thanks for your message! I'm currently reviewing my university documents.";
-      if (userMsgText.toLowerCase().contains('phone') ||
-          userMsgText.toLowerCase().contains('number') ||
-          userMsgText.toLowerCase().contains('call')) {
-        replyText = "Sure, you can ping me here! Note that phone numbers are automatically masked as XXXXXXXXXX for safety.";
-      } else if (userMsgText.toLowerCase().contains('loan') || userMsgText.toLowerCase().contains('bank')) {
-        replyText = "I applied through VidhyaLoan for non-collateral approval. The process was super quick!";
-      }
-
-      final now = DateTime.now();
-      final replyMsg = DirectChatMessage(
-        id: 'reply_${now.millisecondsSinceEpoch}',
-        senderId: peerId,
-        senderName: conv.peerName,
-        text: replyText,
-        timestamp: now,
-        isMe: false,
-      );
-
-      final updatedMsgs = [...conv.messages, replyMsg];
-      _conversations[peerId] = DirectChatConversation(
-        peerId: conv.peerId,
-        peerName: conv.peerName,
-        peerRole: conv.peerRole,
-        avatarLetter: conv.avatarLetter,
-        colorValue: conv.colorValue,
-        isOnline: conv.isOnline,
-        lastMessage: replyText,
-        lastTimestamp: now,
-        unreadCount: conv.unreadCount + 1,
-        messages: updatedMsgs,
-      );
-      await _saveToStorage();
-    });
-  }
-
   Future<void> markAsRead(String peerId) async {
     await init();
     final conv = _conversations[peerId];
-    if (conv == null || conv.unreadCount == 0) return;
+    if (conv == null) return;
 
     _conversations[peerId] = DirectChatConversation(
       peerId: conv.peerId,
@@ -322,6 +438,17 @@ class DirectChatService {
       messages: conv.messages,
     );
     await _saveToStorage();
+
+    try {
+      final myId = await getMyUserId();
+      final conversationId = getConversationId(myId, peerId);
+      final baseUrl = await ApiConfig.getBaseUrl();
+      await http.post(
+        Uri.parse('$baseUrl/community/direct-chats/$conversationId/read'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'userId': myId}),
+      ).timeout(const Duration(seconds: 5));
+    } catch (_) {}
   }
 
   Future<int> getTotalUnreadCount() async {

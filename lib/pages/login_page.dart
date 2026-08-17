@@ -7,7 +7,6 @@ import '../services/google_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'complete_profile_page.dart';
 import 'main_navigation.dart';
-import 'onboarding_page.dart';
 import '../widgets/mesh_background.dart';
 
 class LoginPage extends StatefulWidget {
@@ -28,31 +27,28 @@ class _LoginPageState extends State<LoginPage> {
   bool _isNewUser = false;
   String? _errorMessage;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+      }
+    });
+  }
+
   Future<void> _navigateAfterLogin({
     required bool hasUserDetails,
     required String email,
     required bool isNewUser,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
+    final String firstName = prefs.getString('user_firstName') ?? '';
 
     if (!mounted) return;
 
-    if (hasUserDetails) {
-      if (!onboardingShown) {
-        // Mandatory Onboarding Page completion first
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const OnboardingPage()),
-          (route) => false,
-        );
-      } else {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
-          (route) => false,
-        );
-      }
-    } else {
-      // New user — Complete Profile Page first
+    // 1. Mandatory Profile Details (Onboarding): Without completing profile details, do not let user inside
+    if (!hasUserDetails || firstName.isEmpty) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => CompleteProfilePage(
@@ -62,7 +58,16 @@ class _LoginPageState extends State<LoginPage> {
         ),
         (route) => false,
       );
+      return;
     }
+
+    // 2. Existing users with completed profile enter the app directly without seeing welcome slides
+    await prefs.setBool('onboarding_shown', true);
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
+      (route) => false,
+    );
   }
 
   // Handle Google Login

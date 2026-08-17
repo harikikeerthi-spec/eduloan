@@ -389,9 +389,10 @@ export class ApplicationService {
   private async pickNextStaffRoundRobin(): Promise<string | null> {
     try {
       // 1. Fetch active staff sorted by createdAt ASC (stable turn order)
+      // STRICT: ONLY assign to users whose role is 'staff' (exclude admin, super_admin, bank, partner_bank, it_support, etc.)
       const { data: staffUsers, error: staffErr } = await this.db
         .from('User')
-        .select('id, firstName, lastName, email')
+        .select('id, firstName, lastName, email, role')
         .eq('role', 'staff')
         .eq('isActive', true)
         .order('createdAt', { ascending: true });
@@ -400,6 +401,12 @@ export class ApplicationService {
         console.error('[Round-Robin] Failed to fetch staff users:', staffErr);
       }
 
+      // Explicitly sanitize and filter to ensure only role 'staff' is selected (no admin, bank, or it support)
+      const validStaff = (staffUsers || []).filter((u: any) => {
+        const r = (u.role || '').toLowerCase().trim();
+        return r === 'staff';
+      });
+
       // Count total ever-assigned applications to determine turn
       const { count: totalAssigned } = await this.db
         .from('LoanApplication')
@@ -407,16 +414,16 @@ export class ApplicationService {
 
       const total = totalAssigned ?? 0;
 
-      if (!staffUsers || staffUsers.length === 0) {
+      if (validStaff.length === 0) {
         const DEFAULT_STAFF_KEYS = ['priya_sharma', 'rajesh_kumar', 'ananya_reddy', 'vikram_malhotra'];
         const key = DEFAULT_STAFF_KEYS[total % DEFAULT_STAFF_KEYS.length];
         return `staff_rr_${key}`;
       }
 
       // 3. Sequential round-robin across DB staff users: next turn index = total % staffCount
-      const staffCount = staffUsers.length;
+      const staffCount = validStaff.length;
       const nextIndex = total % staffCount;
-      const selected = staffUsers[nextIndex];
+      const selected = validStaff[nextIndex];
       return selected.id;
     } catch (e) {
       console.error('[Round-Robin] Unexpected error during staff selection:', e);
@@ -605,34 +612,58 @@ export class ApplicationService {
   }
 
   async getCounselorDetails(assignedStaffId: string | null) {
+    const DEFAULT_STAFF_PROFILES: Record<string, { counselorName: string; counselorPhone: string; counselorEmail: string }> = {
+      'staff_rr_priya_sharma': {
+        counselorName: 'Priya Sharma (Senior Loan Specialist)',
+        counselorPhone: '+91 98402 12001',
+        counselorEmail: 'priya.sharma@vidyaloans.com'
+      },
+      'staff_rr_rajesh_kumar': {
+        counselorName: 'Rajesh Kumar (Education Loan Advisor)',
+        counselorPhone: '+91 98402 12002',
+        counselorEmail: 'rajesh.kumar@vidyaloans.com'
+      },
+      'staff_rr_ananya_reddy': {
+        counselorName: 'Ananya Reddy (Bank Processing Officer)',
+        counselorPhone: '+91 98402 12003',
+        counselorEmail: 'ananya.reddy@vidyaloans.com'
+      },
+      'staff_rr_vikram_malhotra': {
+        counselorName: 'Vikram Malhotra (Student Loan Counselor)',
+        counselorPhone: '+91 98402 12004',
+        counselorEmail: 'vikram.malhotra@vidyaloans.com'
+      }
+    };
+
     if (!assignedStaffId) {
-      return {
-        counselorName: 'VidhyaLoan Support',
-        counselorPhone: '+91 9240209000',
-        counselorEmail: 'vidyaloans7@gmail.com'
-      };
+      return DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
     }
+
+    if (assignedStaffId.startsWith('staff_rr_')) {
+      return DEFAULT_STAFF_PROFILES[assignedStaffId] || DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
+    }
+
     try {
       const { data: user } = await this.db
         .from('User')
-        .select('firstName, lastName, phoneNumber, email')
+        .select('firstName, lastName, phoneNumber, email, role')
         .eq('id', assignedStaffId)
         .single();
       if (user) {
-        return {
-          counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'VidhyaLoan Counselor',
-          counselorPhone: user.phoneNumber || '+91 9240209000',
-          counselorEmail: user.email || 'vidyaloans7@gmail.com'
-        };
+        const role = (user.role || '').toLowerCase().trim();
+        // Strictly only return counselor details if role is 'staff' (exclude admin, bank, it support)
+        if (role === 'staff') {
+          return {
+            counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Staff Specialist',
+            counselorPhone: user.phoneNumber || '+91 98402 12001',
+            counselorEmail: user.email || 'staff@vidyaloans.com'
+          };
+        }
       }
     } catch (e) {
       console.error('Error fetching counselor details:', e);
     }
-    return {
-      counselorName: 'VidhyaLoan Support',
-      counselorPhone: '+91 9240209000',
-      counselorEmail: 'vidyaloans7@gmail.com'
-    };
+    return DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
   }
 
   async getApplicationByNumber(applicationNumber: string) {

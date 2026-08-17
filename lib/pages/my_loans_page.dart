@@ -513,143 +513,146 @@ class _MyLoansPageState extends State<MyLoansPage> {
             const Divider(height: 1),
             const SizedBox(height: 12),
             _buildLoanDetails(loan),
-            if (loan.counselorName != null || loan.counselorPhone != null || loan.counselorEmail != null) ...[
-              const SizedBox(height: 16),
-              const Divider(height: 1),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3E5F5), // Soft purple background
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFAB47BC).withValues(alpha: 0.15),
-                  ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // ─── Assigned Staff by Round Robin ─────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF5FF),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFE9D5FF),
+                  width: 1.2,
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF311B92),
-                        shape: BoxShape.circle,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6B21A8), Color(0xFF7C3AED)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      child: const Icon(
-                        Icons.support_agent_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.25),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Assigned Staff',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF311B92),
-                              letterSpacing: 0.3,
+                    child: const Icon(
+                      Icons.support_agent_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'ASSIGNED STAFF',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF7C3AED),
+                                letterSpacing: 0.5,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            loan.counselorName ?? 'VidhyaLoan Support',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          if (loan.counselorPhone != null && loan.counselorPhone!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            GestureDetector(
-                              onTap: () => _launchPhone(loan.counselorPhone!),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.phone_outlined, size: 12, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    loan.counselorPhone!,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF475569),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(width: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'Round-Robin',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF059669),
+                                ),
                               ),
                             ),
                           ],
-                          const SizedBox(height: 3),
-                          GestureDetector(
-                            onTap: () => _launchEmail(loan.counselorEmail ?? 'staffvidyaloans@gmail.com'),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.email_outlined, size: 12, color: Color(0xFF64748B)),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    loan.counselorEmail ?? 'staffvidyaloans@gmail.com',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF475569),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          loan.assignedStaffDisplayName,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1E1B4B),
                           ),
-                        ],
-                      ),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (loan.counselorPhone != null && loan.counselorPhone!.isNotEmpty) ...[
-                          IconButton(
-                            onPressed: () => _launchPhone(loan.counselorPhone!),
-                            icon: const Icon(
-                              Icons.phone_in_talk_rounded,
-                              color: Color(0xFF10B981),
-                              size: 18,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              padding: const EdgeInsets.all(8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        IconButton(
-                          onPressed: () => _launchEmail(loan.counselorEmail ?? 'staffvidyaloans@gmail.com'),
-                          icon: const Icon(
-                            Icons.mail_rounded,
-                            color: Color(0xFF311B92),
-                            size: 18,
-                          ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            padding: const EdgeInsets.all(8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          loan.assignedStaffPhone,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () => _launchPhone(loan.assignedStaffPhone),
+                        tooltip: 'Call Staff',
+                        icon: const Icon(
+                          Icons.phone_in_talk_rounded,
+                          color: Color(0xFF10B981),
+                          size: 18,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.all(8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        onPressed: () => _launchEmail(loan.assignedStaffEmail),
+                        tooltip: 'Email Staff',
+                        icon: const Icon(
+                          Icons.mail_rounded,
+                          color: Color(0xFF7C3AED),
+                          size: 18,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.all(8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
             if (loan.status.toLowerCase() == 'rejected' || loan.stage.toLowerCase() == 'rejected') ...[
               const SizedBox(height: 16),
               const Divider(height: 1),
@@ -873,6 +876,104 @@ class _MyLoansPageState extends State<MyLoansPage> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+
+              // Assigned Staff Info
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFAF5FF),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFFE9D5FF),
+                    width: 1.2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF6B21A8), Color(0xFF7C3AED)],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'ASSIGNED STAFF',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF7C3AED),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'Round-Robin',
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF059669),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            loan.assignedStaffDisplayName,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E1B4B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            loan.assignedStaffPhone,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _launchPhone(loan.assignedStaffPhone),
+                      icon: const Icon(
+                        Icons.phone_in_talk_rounded,
+                        color: Color(0xFF10B981),
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               Row(
@@ -1119,7 +1220,6 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   String _formatDate(DateTime date) {
-    // Simple formatter, can use intl package if available
     final months = [
       'Jan',
       'Feb',
@@ -1137,170 +1237,270 @@ class _MyLoansPageState extends State<MyLoansPage> {
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 
+  String _formatDateTime(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    final min = date.minute.toString().padLeft(2, '0');
+    return '${months[date.month - 1]} ${date.day}\n${hour.toString().padLeft(2, '0')}:$min $period';
+  }
+
   Widget _buildProgressStepper(Loan loan) {
     final stages = [
-      {'label': 'Created', 'pct': '10%'},
-      {'label': 'Submitted', 'pct': '25%'},
-      {'label': 'Documents', 'pct': '40%'},
-      {'label': 'Submit to Bank', 'pct': '50%'},
-      {'label': 'Credit Check', 'pct': '75%'},
-      {'label': 'Bank Review', 'pct': '90%'},
-      {'label': 'Sanction', 'pct': '95%'},
-      {'label': 'Disbursed', 'pct': '100%'},
+      {
+        'label': 'CREATED',
+        'icon': Icons.check_rounded,
+      },
+      {
+        'label': 'SUBMITTED',
+        'icon': Icons.check_rounded,
+      },
+      {
+        'label': 'DOCUMENTS',
+        'icon': Icons.verified_rounded,
+      },
+      {
+        'label': 'SUBMIT TO BANK',
+        'icon': Icons.account_balance_rounded,
+      },
+      {
+        'label': 'CREDIT CHECK',
+        'icon': Icons.credit_card_rounded,
+      },
+      {
+        'label': 'REVIEW',
+        'icon': Icons.edit_note_rounded,
+      },
+      {
+        'label': 'SANCTION',
+        'icon': Icons.assignment_turned_in_rounded,
+      },
+      {
+        'label': 'DISBURSED',
+        'icon': Icons.payments_rounded,
+      },
     ];
 
     final int currentStageIndex = loan.getEffectiveStageIndex(hasUploadedDocs: _hasUploadedDocs);
     final int currentProgress = loan.getEffectiveProgress(hasUploadedDocs: _hasUploadedDocs);
     final String currentStage = loan.currentStageLabel(hasUploadedDocs: _hasUploadedDocs);
 
-    const primaryColor = Color(0xFF7C3AED);
+    const primaryPurple = Color(0xFF7C3AED);
+    const deepPurple = Color(0xFF6B21A8);
+    const completedGreen = Color(0xFF10B981);
+    const completedGreenText = Color(0xFF059669);
+    const inactiveBorder = Color(0xFFE2E8F0);
+    const inactiveIcon = Color(0xFF94A3B8);
+    const inactiveText = Color(0xFF64748B);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ─── Top Stage Header ───────────────────────────────────────────────
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: const Color(0xFFFAF5FF),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: const Color(0xFFF3E8FF),
-              width: 1.5,
+              width: 1.2,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'CURRENT PROGRESS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF9333EA),
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'CURRENT STAGE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF9333EA),
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     currentStage,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1E1B4B),
-                    ),
-                  ),
-                  Text(
-                    '$currentProgress%',
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: primaryColor,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: primaryPurple.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: primaryPurple.withValues(alpha: 0.25)),
+                ),
+                child: Text(
+                  '$currentProgress%',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: primaryPurple,
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Column(
-            children: List.generate(stages.length, (index) {
-              final isCompleted = index < currentStageIndex;
-              final isCurrent = index == currentStageIndex;
-              final isActive = isCompleted || isCurrent;
-              final stage = stages[index];
-              final isLast = index == stages.length - 1;
+        const SizedBox(height: 16),
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
+        // ─── Horizontal 8-Stage Progress Stepper (Matching User Design) ─────
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(stages.length, (index) {
+                final bool isCompleted = index < currentStageIndex;
+                final bool isCurrent = index == currentStageIndex;
+                final stage = stages[index];
+                final IconData iconData = stage['icon'] as IconData;
+                final String label = stage['label'] as String;
+                final bool isLast = index == stages.length - 1;
+
+                const double nodeWidth = 98.0;
+                const double circleSize = 46.0;
+
+                return SizedBox(
+                  width: nodeWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: isActive ? primaryColor : Colors.transparent,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isActive
-                                ? primaryColor
-                                : const Color(0xFFCBD5E1),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: isActive
-                            ? const Icon(
-                                Icons.check_rounded,
-                                color: Colors.white,
-                                size: 14,
-                              )
-                            : Center(
+                      // Node Circle with Left/Right Connecting Line segments
+                      SizedBox(
+                        width: nodeWidth,
+                        height: circleSize,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Left connecting line
+                            if (index > 0)
+                              Positioned(
+                                left: 0,
+                                right: nodeWidth / 2,
+                                top: (circleSize - 3) / 2,
                                 child: Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFCBD5E1),
-                                    shape: BoxShape.circle,
-                                  ),
+                                  height: 3,
+                                  color: index <= currentStageIndex
+                                      ? (index < currentStageIndex ? completedGreen : primaryPurple)
+                                      : inactiveBorder,
                                 ),
                               ),
-                      ),
-                      if (!isLast)
-                        Container(
-                          width: 2,
-                          height: 22,
-                          color: index < currentStageIndex
-                              ? primaryColor
-                              : const Color(0xFFE2E8F0),
+                            // Right connecting line
+                            if (!isLast)
+                              Positioned(
+                                left: nodeWidth / 2,
+                                right: 0,
+                                top: (circleSize - 3) / 2,
+                                child: Container(
+                                  height: 3,
+                                  color: index < currentStageIndex
+                                      ? (index + 1 == currentStageIndex ? primaryPurple : completedGreen)
+                                      : inactiveBorder,
+                                ),
+                              ),
+                            // Circle Badge
+                            Container(
+                              width: circleSize,
+                              height: circleSize,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isCompleted
+                                    ? completedGreen
+                                    : (isCurrent ? Colors.white : const Color(0xFFF8FAFC)),
+                                border: Border.all(
+                                  color: isCompleted
+                                      ? completedGreen
+                                      : (isCurrent ? deepPurple : inactiveBorder),
+                                  width: isCurrent ? 2.5 : (isCompleted ? 2.0 : 1.5),
+                                ),
+                                boxShadow: isCompleted
+                                    ? [
+                                        BoxShadow(
+                                          color: completedGreen.withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : (isCurrent
+                                        ? [
+                                            BoxShadow(
+                                              color: primaryPurple.withValues(alpha: 0.35),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ]
+                                        : null),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  isCompleted ? Icons.check_rounded : iconData,
+                                  size: isCompleted ? 24 : (isCurrent ? 23 : 20),
+                                  color: isCompleted
+                                      ? Colors.white
+                                      : (isCurrent ? deepPurple : inactiveIcon),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Label text below circle
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: (isCompleted || isCurrent)
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: isCompleted
+                              ? completedGreenText
+                              : (isCurrent ? deepPurple : inactiveText),
+                          letterSpacing: 0.2,
+                          height: 1.2,
+                        ),
+                      ),
+
+                      // Subtitle: timestamp for active stage
+                      if (isCurrent) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatDateTime(loan.updatedAt),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B7280),
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            stage['label']!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: isActive
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              color: isActive
-                                  ? (isCurrent ? primaryColor : const Color(0xFF1E1B4B))
-                                  : const Color(0xFF94A3B8),
-                            ),
-                          ),
-                          Text(
-                            stage['pct']!,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: isActive
-                                  ? FontWeight.bold
-                                  : FontWeight.w500,
-                              color: isActive
-                                  ? primaryColor
-                                  : const Color(0xFF94A3B8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ],

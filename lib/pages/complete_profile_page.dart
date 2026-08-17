@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import 'main_navigation.dart';
 import 'onboarding_page.dart';
 import '../widgets/mesh_background.dart';
 
@@ -184,22 +183,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         await prefs.setString('user_name', '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim());
         await prefs.setString('user_phone', _phoneController.text.trim());
         await prefs.setString('user_dob', _dobController.text.trim());
-        final bool onboardingShown = prefs.getBool('onboarding_shown') ?? false;
-
         if (!mounted) return;
-
-        if (!onboardingShown) {
-          // Mandatory Onboarding Page completion first
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const OnboardingPage()),
-            (route) => false,
-          );
-        } else {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
-            (route) => false,
-          );
-        }
+        // Mandatory: After completing profile details, always show the 3 welcome slides next
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnboardingPage()),
+          (route) => false,
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

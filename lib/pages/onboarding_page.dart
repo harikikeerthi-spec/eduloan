@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import 'main_navigation.dart';
 
+import 'complete_profile_page.dart';
+
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -116,17 +118,32 @@ class _OnboardingPageState extends State<OnboardingPage>
     // Check if user is already logged in (has both auth_token and userId)
     final String? token = prefs.getString('auth_token');
     final String? userId = prefs.getString('userId');
+    final String firstName = prefs.getString('user_firstName') ?? '';
+    final String email = prefs.getString('user_email') ?? '';
     final bool isLoggedIn = token != null && token.isNotEmpty &&
                             userId != null && userId.isNotEmpty;
 
     if (isLoggedIn) {
-      // Navigate to loans page (index 2 in MainNavigation), not dashboard
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const MainNavigation(initialIndex: 2),
-        ),
-        (route) => false,
-      );
+      if (firstName.isEmpty) {
+        // Strict guard: if profile details not completed, redirect to CompleteProfilePage
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => CompleteProfilePage(
+              email: email,
+              isNewUser: false,
+            ),
+          ),
+          (route) => false,
+        );
+      } else {
+        // Navigate to loans page (index 2 in MainNavigation)
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const MainNavigation(initialIndex: 2),
+          ),
+          (route) => false,
+        );
+      }
     } else {
       Navigator.of(context).pushReplacementNamed('/login');
     }
@@ -134,32 +151,35 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Page view
-          PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() => _currentPage = index);
-              _fadeController.reset();
-              _fadeController.forward();
-            },
-            itemCount: _slides.length,
-            itemBuilder: (context, index) {
-              return _buildSlide(_slides[index]);
-            },
-          ),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Page view
+            PageView.builder(
+              controller: _pageController,
+              onPageChanged: (index) {
+                setState(() => _currentPage = index);
+                _fadeController.reset();
+                _fadeController.forward();
+              },
+              itemCount: _slides.length,
+              itemBuilder: (context, index) {
+                return _buildSlide(_slides[index]);
+              },
+            ),
 
-          // Bottom controls overlay
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _buildBottomControls(),
-          ),
-        ],
+            // Bottom controls overlay
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildBottomControls(),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -173,10 +173,10 @@ class Loan {
     final effProgress = getEffectiveProgress(hasUploadedDocs: hasUploadedDocs);
     if (effProgress >= 100) return 7; // Disbursed
     if (effProgress >= 95) return 6;  // Sanction
-    if (effProgress >= 90) return 5;  // Bank Review
+    if (effProgress >= 90) return 5;  // Review
     if (effProgress >= 75) return 4;  // Credit Check
     if (effProgress >= 50) return 3;  // Submit to Bank
-    if (effProgress >= 40) return 2;  // Documents
+    if (effProgress >= 40 || hasUploadedDocs) return 2;  // Documents
     if (effProgress >= 25) return 1;  // Submitted
     return 0;                         // Created
   }
@@ -184,19 +184,66 @@ class Loan {
   String currentStageLabel({bool hasUploadedDocs = false}) {
     final idx = getEffectiveStageIndex(hasUploadedDocs: hasUploadedDocs);
     const stageLabels = [
-      'Created',
-      'Submitted',
-      'Documents',
-      'Submit to Bank',
-      'Credit Check',
-      'Bank Review',
-      'Sanction',
-      'Disbursed',
+      'CREATED',
+      'SUBMITTED',
+      'DOCUMENTS',
+      'SUBMIT TO BANK',
+      'CREDIT CHECK',
+      'REVIEW',
+      'SANCTION',
+      'DISBURSED',
     ];
     if (idx >= 0 && idx < stageLabels.length) {
       return stageLabels[idx];
     }
-    return 'Submitted';
+    return 'DOCUMENTS';
+  }
+
+  String get assignedStaffDisplayName {
+    if (counselorName != null &&
+        counselorName!.trim().isNotEmpty &&
+        counselorName != 'VidhyaLoan Support') {
+      return counselorName!.trim();
+    }
+    // Sequential round-robin fallback based on loan ID hash
+    const staffList = [
+      'Priya Sharma (Senior Loan Specialist)',
+      'Rajesh Kumar (Education Loan Advisor)',
+      'Ananya Reddy (Bank Processing Officer)',
+      'Vikram Malhotra (Student Loan Counselor)',
+    ];
+    final hashIndex = (id.hashCode.abs()) % staffList.length;
+    return staffList[hashIndex];
+  }
+
+  String get assignedStaffPhone {
+    if (counselorPhone != null && counselorPhone!.trim().isNotEmpty) {
+      return counselorPhone!.trim();
+    }
+    const phoneList = [
+      '+91 98402 12001',
+      '+91 98402 12002',
+      '+91 98402 12003',
+      '+91 98402 12004',
+    ];
+    final hashIndex = (id.hashCode.abs()) % phoneList.length;
+    return phoneList[hashIndex];
+  }
+
+  String get assignedStaffEmail {
+    if (counselorEmail != null &&
+        counselorEmail!.trim().isNotEmpty &&
+        counselorEmail != 'vidyaloans7@gmail.com') {
+      return counselorEmail!.trim();
+    }
+    const emailList = [
+      'priya.sharma@vidyaloans.com',
+      'rajesh.kumar@vidyaloans.com',
+      'ananya.reddy@vidyaloans.com',
+      'vikram.malhotra@vidyaloans.com',
+    ];
+    final hashIndex = (id.hashCode.abs()) % emailList.length;
+    return emailList[hashIndex];
   }
 
   int get effectiveProgress => getEffectiveProgress();

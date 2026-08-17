@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/direct_chat_service.dart';
@@ -31,33 +32,53 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
   bool _isLoading = true;
   bool _showPhoneAlertBanner = false;
 
+  Timer? _chatPollingTimer;
+
   @override
   void initState() {
     super.initState();
     _loadMessages();
+    _chatPollingTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (mounted) _pollNewMessages();
+    });
   }
 
   @override
   void dispose() {
+    _chatPollingTimer?.cancel();
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _loadMessages() async {
-    final conv = await _chatService.getOrCreateConversation(
+    await _chatService.getOrCreateConversation(
       peerId: widget.peerId,
       peerName: widget.peerName,
       peerRole: widget.peerRole,
       avatarLetter: widget.avatarLetter,
       colorValue: widget.colorValue,
     );
+    final msgs = await _chatService.getMessagesForPeer(widget.peerId);
     await _chatService.markAsRead(widget.peerId);
 
     if (mounted) {
       setState(() {
-        _messages = conv.messages;
+        _messages = msgs;
         _isLoading = false;
+      });
+      _scrollToBottom();
+    }
+  }
+
+  Future<void> _pollNewMessages() async {
+    final msgs = await _chatService.getMessagesForPeer(widget.peerId);
+    if (!mounted) return;
+    if (msgs.isEmpty && _messages.isNotEmpty) return;
+
+    if (msgs.length != _messages.length) {
+      setState(() {
+        _messages = msgs;
       });
       _scrollToBottom();
     }

@@ -354,11 +354,7 @@ export class UsersService {
     }
 
     if (role && role !== 'all') {
-      if (role === 'staff') {
-        query = query.or('role.eq.admin,role.eq.staff');
-      } else {
-        query = query.eq('role', role);
-      }
+      query = query.eq('role', role);
     }
 
     query = query.order('createdAt', { ascending: false });
@@ -382,7 +378,7 @@ export class UsersService {
     const { count: total } = await this.db.from('User').select('*', { count: 'exact', head: true });
     const { count: student } = await this.db.from('User').select('*', { count: 'exact', head: true }).eq('role', 'student');
     const { count: bank } = await this.db.from('User').select('*', { count: 'exact', head: true }).eq('role', 'bank');
-    const { count: staff } = await this.db.from('User').select('*', { count: 'exact', head: true }).or('role.eq.admin,role.eq.staff');
+    const { count: staff } = await this.db.from('User').select('*', { count: 'exact', head: true }).eq('role', 'staff');
     
     return {
       total: total || 0,
