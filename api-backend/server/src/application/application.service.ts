@@ -173,7 +173,7 @@ export class ApplicationService {
         applicationNumber,
         userId,
         assignedStaffId: assignedStaffId || null,
-        bank: data.bank || 'HDFC Credila',
+        bank: data.bank || 'Matching Lenders...',
         loanType: data.loanType || 'Education Loan',
         amount: parseNum(data.amount) || 1000000,
         tenure: parseNum(data.tenure) ? Math.round(parseNum(data.tenure)!) : 84,
@@ -394,7 +394,6 @@ export class ApplicationService {
         .from('User')
         .select('id, firstName, lastName, email, role')
         .eq('role', 'staff')
-        .eq('isActive', true)
         .order('createdAt', { ascending: true });
 
       if (staffErr) {
@@ -614,24 +613,24 @@ export class ApplicationService {
   async getCounselorDetails(assignedStaffId: string | null) {
     const DEFAULT_STAFF_PROFILES: Record<string, { counselorName: string; counselorPhone: string; counselorEmail: string }> = {
       'staff_rr_priya_sharma': {
-        counselorName: 'Priya Sharma (Senior Loan Specialist)',
-        counselorPhone: '+91 98402 12001',
-        counselorEmail: 'priya.sharma@vidyaloans.com'
+        counselorName: 'Vidyaloans Support',
+        counselorPhone: '+91 92402 09000',
+        counselorEmail: 'vidyaloans7@gmail.com'
       },
       'staff_rr_rajesh_kumar': {
-        counselorName: 'Rajesh Kumar (Education Loan Advisor)',
-        counselorPhone: '+91 98402 12002',
-        counselorEmail: 'rajesh.kumar@vidyaloans.com'
+        counselorName: 'Vidyaloans Support',
+        counselorPhone: '+91 92402 09000',
+        counselorEmail: 'vidyaloans7@gmail.com'
       },
       'staff_rr_ananya_reddy': {
-        counselorName: 'Ananya Reddy (Bank Processing Officer)',
-        counselorPhone: '+91 98402 12003',
-        counselorEmail: 'ananya.reddy@vidyaloans.com'
+        counselorName: 'Vidyaloans Support',
+        counselorPhone: '+91 92402 09000',
+        counselorEmail: 'vidyaloans7@gmail.com'
       },
       'staff_rr_vikram_malhotra': {
-        counselorName: 'Vikram Malhotra (Student Loan Counselor)',
-        counselorPhone: '+91 98402 12004',
-        counselorEmail: 'vikram.malhotra@vidyaloans.com'
+        counselorName: 'Vidyaloans Support',
+        counselorPhone: '+91 92402 09000',
+        counselorEmail: 'vidyaloans7@gmail.com'
       }
     };
 

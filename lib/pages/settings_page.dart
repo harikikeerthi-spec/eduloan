@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/mesh_background.dart';
+
 import '../widgets/avatar_selection_dialog.dart';
 import '../services/auth_service.dart';
 import '../services/google_auth_service.dart';
@@ -144,7 +144,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    // ─── 1. Check if a document is currently uploading ───────────────────
+    // â”€â”€â”€ 1. Check if a document is currently uploading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (UserService.isUploading) {
       final docName = UserService.currentUploadingDoc ?? 'document';
       final waitAndProceed = await showDialog<bool>(
@@ -379,11 +379,11 @@ class _SettingsPageState extends State<SettingsPage> {
   void _showLanguageSelectionDialog() {
     final languages = [
       {'name': 'English (IN)', 'native': 'English', 'code': 'en'},
-      {'name': 'Telugu', 'native': 'తెలుగు', 'code': 'te'},
-      {'name': 'Tamil', 'native': 'தமிழ்', 'code': 'ta'},
-      {'name': 'Kannada', 'native': 'ಕನ್ನಡ', 'code': 'kn'},
-      {'name': 'Malayalam', 'native': 'മലയാളം', 'code': 'ml'},
-      {'name': 'Hindi', 'native': 'हिंदी', 'code': 'hi'},
+      {'name': 'Telugu', 'native': 'à°¤à±†à°²à±à°—à±', 'code': 'te'},
+      {'name': 'Tamil', 'native': 'à®¤à®®à®¿à®´à¯', 'code': 'ta'},
+      {'name': 'Kannada', 'native': 'à²•à²¨à³à²¨à²¡', 'code': 'kn'},
+      {'name': 'Malayalam', 'native': 'à´®à´²à´¯à´¾à´³à´‚', 'code': 'ml'},
+      {'name': 'Hindi', 'native': 'à¤¹à¤¿à¤‚à¤¦à¥€', 'code': 'hi'},
     ];
 
     showModalBottomSheet(
@@ -574,485 +574,598 @@ class _SettingsPageState extends State<SettingsPage> {
     final String initialLetter = _userName.isNotEmpty ? _userName[0].toUpperCase() : 'V';
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: MeshBackground(
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
-              : Column(
-                  children: [
-                    // Top App Header
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: Row(
+      backgroundColor: const Color(0xFFF0F2FF),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6C2BD9)))
+          : CustomScrollView(
+              slivers: [
+                // â”€â”€ Gradient Hero Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                SliverAppBar(
+                  expandedHeight: 220,
+                  pinned: true,
+                  elevation: 0,
+                  backgroundColor: const Color(0xFF6C2BD9),
+                  leading: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      margin: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                    ),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF4A00C8), Color(0xFF8B3DFF), Color(0xFFAB5BFF)],
+                        ),
+                      ),
+                      child: Stack(
                         children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
+                          Positioned(
+                            top: -40,
+                            right: -30,
                             child: Container(
-                              padding: const EdgeInsets.all(10),
+                              width: 180,
+                              height: 180,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Color(0xFF1E293B),
-                                size: 18,
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.06),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 14),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                LanguageService.tr('settings'),
-                                style: GoogleFonts.outfit(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF0F172A),
-                                ),
+                          Positioned(
+                            bottom: -20,
+                            left: -50,
+                            child: Container(
+                              width: 150,
+                              height: 150,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.05),
                               ),
-                              Text(
-                                LanguageService.tr('manage_preferences'),
-                                style: GoogleFonts.inter(
-                                  fontSize: 11.5,
-                                  color: const Color(0xFF64748B),
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            ),
+                          ),
+                          SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                        ),
+                                        child: _buildProfileAvatarWidget(initialLetter),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              _userName,
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 3),
+                                            Text(
+                                              _email,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 12.5,
+                                                color: Colors.white.withValues(alpha: 0.8),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.verified_rounded, color: Color(0xFF34D399), size: 13),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Active',
+                                              style: GoogleFonts.outfit(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: const Color(0xFF34D399),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ),
+                  title: Text(
+                    'Settings',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
 
-                    // Main Scrollable Body
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: [
-                          // User Profile Summary Card
-                          Container(
+                // â”€â”€ Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Quick Stats Row
+                        Row(
+                          children: [
+                            _buildStatChip(Icons.tune_rounded, 'Preferences', const Color(0xFF6C2BD9)),
+                            const SizedBox(width: 10),
+                            _buildStatChip(Icons.shield_rounded, 'Secured', const Color(0xFF10B981)),
+                            const SizedBox(width: 10),
+                            _buildStatChip(Icons.language_rounded, _selectedLanguage.split(' ').first, const Color(0xFFF59E0B)),
+                          ],
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        // Section: Preferences
+                        _buildSectionHeader('âš™ï¸  App Preferences', const Color(0xFF6C2BD9)),
+                        const SizedBox(height: 12),
+                        _buildCard([
+                          _buildTile(
+                            icon: Icons.notifications_active_rounded,
+                            gradientColors: [const Color(0xFF6C2BD9), const Color(0xFF9B59B6)],
+                            title: 'Push Notifications',
+                            subtitle: 'Loan status, updates & alerts',
+                            trailing: Transform.scale(
+                              scale: 0.88,
+                              child: Switch.adaptive(
+                                value: _pushNotifications,
+                                activeThumbColor: Colors.white,
+                                activeTrackColor: const Color(0xFF6C2BD9),
+                                inactiveTrackColor: const Color(0xFFE2E8F0),
+                                onChanged: (val) async {
+                                  setState(() => _pushNotifications = val);
+                                  final prefs = await SharedPreferences.getInstance();
+                                  await prefs.setBool('push_notifications_enabled', val);
+                                },
+                              ),
+                            ),
+                          ),
+                          _buildDivider(),
+                          _buildTile(
+                            icon: Icons.language_rounded,
+                            gradientColors: [const Color(0xFF10B981), const Color(0xFF059669)],
+                            title: LanguageService.tr('app_language'),
+                            subtitle: _selectedLanguage,
+                            onTap: _showLanguageSelectionDialog,
+                          ),
+                        ]),
+
+                        const SizedBox(height: 28),
+
+                        // Section: Support & Legal
+                        _buildSectionHeader('ðŸ›¡ï¸  Support & Legal', const Color(0xFF8B5CF6)),
+                        const SizedBox(height: 12),
+                        _buildCard([
+                          _buildTile(
+                            icon: Icons.help_rounded,
+                            gradientColors: [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)],
+                            title: LanguageService.tr('help_center'),
+                            subtitle: 'FAQs, guides & loan support',
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFFFB923C), Color(0xFFF97316)],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Soon',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.construction_rounded, color: Colors.white, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          LanguageService.tr('help_center_coming_soon'),
+                                          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFFF97316),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(),
+                          _buildTile(
+                            icon: Icons.description_rounded,
+                            gradientColors: [const Color(0xFFEC4899), const Color(0xFFDB2777)],
+                            title: LanguageService.tr('terms_policy'),
+                            subtitle: 'Privacy policy, terms & conditions',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const LegalPage(initialTab: 0)),
+                              );
+                            },
+                          ),
+                          _buildDivider(),
+                          _buildTile(
+                            icon: Icons.info_rounded,
+                            gradientColors: [const Color(0xFF64748B), const Color(0xFF475569)],
+                            title: 'Vidyaloans App',
+                            subtitle: 'Version 1.0.4 (Latest Release)',
+                          ),
+                        ]),
+
+                        const SizedBox(height: 28),
+
+                        // Section: Account Actions
+                        _buildSectionHeader('ðŸ‘¤  Account Actions', const Color(0xFFEF4444)),
+                        const SizedBox(height: 12),
+
+                        // Sign Out
+                        GestureDetector(
+                          onTap: _handleLogout,
+                          child: Container(
                             padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFF6C2BD9).withValues(alpha: 0.15)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                                  color: const Color(0xFF6C2BD9).withValues(alpha: 0.08),
                                   blurRadius: 20,
-                                  offset: const Offset(0, 4),
+                                  offset: const Offset(0, 6),
                                 ),
                               ],
                             ),
                             child: Row(
                               children: [
-                                _buildProfileAvatarWidget(initialLetter),
-                                const SizedBox(width: 14),
+                                Container(
+                                  padding: const EdgeInsets.all(11),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF6C2BD9), Color(0xFF9B59B6)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        _userName,
+                                        'Sign Out',
                                         style: GoogleFonts.outfit(
-                                          fontSize: 17,
+                                          fontSize: 15.5,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0F172A),
+                                          color: const Color(0xFF1E293B),
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
                                       Text(
-                                        _email,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12.5,
-                                          color: const Color(0xFF64748B),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                        'Safely sign out from this device',
+                                        style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
                                       ),
                                     ],
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: const Color(0xFF6C2BD9).withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Row(
+                                  child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF6C2BD9), size: 14),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Delete Account
+                        GestureDetector(
+                          onTap: _handleDeleteAccount,
+                          child: Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFF5F5), Color(0xFFFEE2E2)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFFCA5A5).withValues(alpha: 0.7)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFEF4444).withValues(alpha: 0.08),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(11),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 14),
-                                      const SizedBox(width: 4),
                                       Text(
-                                        LanguageService.tr('active'),
-                                        style: GoogleFonts.inter(
-                                          fontSize: 11,
+                                        'Delete Account',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 15.5,
                                           fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF10B981),
+                                          color: const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                      Text(
+                                        'Permanently erase all data & profile',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: const Color(0xFFB91C1C).withValues(alpha: 0.75),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Section 1: Preferences
-                          _buildSectionTitle(LanguageService.tr('app_preferences')),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF311B92).withValues(alpha: 0.04),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                _buildSettingItem(
-                                  icon: Icons.notifications_active_outlined,
-                                  iconBgColor: const Color(0xFF311B92).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFF311B92),
-                                  title: LanguageService.tr('push_notifications'),
-                                  subtitle: LanguageService.tr('loan_status_updates'),
-                                  trailing: Switch.adaptive(
-                                    value: _pushNotifications,
-                                    activeTrackColor: const Color(0xFF311B92),
-                                    onChanged: (val) => setState(() => _pushNotifications = val),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                ),
-                                const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
-                                _buildSettingItem(
-                                  icon: Icons.language_rounded,
-                                  iconBgColor: const Color(0xFF10B981).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFF10B981),
-                                  title: LanguageService.tr('app_language'),
-                                  subtitle: _selectedLanguage,
-                                  onTap: _showLanguageSelectionDialog,
+                                  child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFDC2626), size: 14),
                                 ),
                               ],
                             ),
                           ),
+                        ),
 
-                          const SizedBox(height: 20),
+                        const SizedBox(height: 24),
 
-                          // Section 2: Support & Info
-                          _buildSectionTitle(LanguageService.tr('support_legal')),
-                          const SizedBox(height: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF311B92).withValues(alpha: 0.04),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                 _buildSettingItem(
-                                   icon: Icons.help_outline_rounded,
-                                   iconBgColor: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
-                                   iconColor: const Color(0xFF8B5CF6),
-                                   title: LanguageService.tr('help_center'),
-                                   subtitle: LanguageService.tr('support_coming_soon'),
-                                   trailing: Container(
-                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                     decoration: BoxDecoration(
-                                       color: const Color(0xFFF97316).withValues(alpha: 0.12),
-                                       borderRadius: BorderRadius.circular(12),
-                                       border: Border.all(color: const Color(0xFFF97316).withValues(alpha: 0.3)),
-                                     ),
-                                     child: Text(
-                                       LanguageService.tr('coming_soon'),
-                                       style: GoogleFonts.outfit(
-                                         fontSize: 11,
-                                         fontWeight: FontWeight.bold,
-                                         color: const Color(0xFFC2410C),
-                                       ),
-                                     ),
-                                   ),
-                                   onTap: () {
-                                     ScaffoldMessenger.of(context).showSnackBar(
-                                       SnackBar(
-                                         content: Row(
-                                           children: [
-                                             const Icon(Icons.lock_rounded, color: Colors.white, size: 18),
-                                             const SizedBox(width: 10),
-                                             Expanded(
-                                               child: Text(
-                                                 LanguageService.tr('help_center_coming_soon'),
-                                                 style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                                               ),
-                                             ),
-                                           ],
-                                         ),
-                                         backgroundColor: const Color(0xFFF97316),
-                                         behavior: SnackBarBehavior.floating,
-                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                       ),
-                                     );
-                                   },
-                                 ),
-                                const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
-                                _buildSettingItem(
-                                  icon: Icons.description_outlined,
-                                  iconBgColor: const Color(0xFFEC4899).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFFEC4899),
-                                  title: LanguageService.tr('terms_policy'),
-                                  subtitle: LanguageService.tr('legal_guidelines'),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const LegalPage(initialTab: 0),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const Divider(height: 1, indent: 64, endIndent: 16, color: Color(0xFFF1F5F9)),
-                                _buildSettingItem(
-                                  icon: Icons.info_outline_rounded,
-                                  iconBgColor: const Color(0xFF64748B).withValues(alpha: 0.08),
-                                  iconColor: const Color(0xFF64748B),
-                                  title: 'VidhyaLoan App',
-                                  subtitle: 'Version 1.0.4 (Latest Release)',
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Section 3: Account Actions (Logout & Delete)
-                          _buildSectionTitle('ACCOUNT ACTIONS'),
-                          const SizedBox(height: 8),
-
-                          // Logout Button Card
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _handleLogout,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF311B92).withValues(alpha: 0.04),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF311B92).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                        Icons.logout_rounded,
-                                        color: Color(0xFF311B92),
-                                        size: 22,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Logout',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFF311B92),
-                                            ),
-                                          ),
-                                          Text(
-                                            'Sign out of your account safely',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11.5,
-                                              color: const Color(0xFF64748B),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.arrow_forward_ios_rounded,
-                                      color: Color(0xFF311B92),
-                                      size: 16,
-                                    ),
-                                  ],
+                        Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                'Vidyaloans â€¢ Made with â¤ï¸ in India',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  color: const Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Delete Account Button Card
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: _handleDeleteAccount,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFFCA5A5).withValues(alpha: 0.6)),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFEF4444).withValues(alpha: 0.04),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                        Icons.delete_forever_rounded,
-                                        color: Color(0xFFDC2626),
-                                        size: 22,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Delete Account',
-                                            style: GoogleFonts.outfit(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: const Color(0xFFDC2626),
-                                            ),
-                                          ),
-                                          Text(
-                                            'Permanently remove profile & loan data',
-                                            style: GoogleFonts.inter(
-                                              fontSize: 11.5,
-                                              color: const Color(0xFF991B1B),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Icon(
-                                      Icons.arrow_forward_ios_rounded,
-                                      color: Color(0xFFDC2626),
-                                      size: 16,
-                                    ),
-                                  ],
-                                ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'v1.0.4',
+                                style: GoogleFonts.outfit(fontSize: 10, color: const Color(0xFFCBD5E1)),
                               ),
-                            ),
+                            ],
                           ),
-
-                          const SizedBox(height: 30),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildStatChip(IconData icon, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF334155),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title,
-        style: GoogleFonts.outfit(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFF64748B),
-          letterSpacing: 1.0,
+  Widget _buildSectionHeader(String title, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 18,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [color, color.withValues(alpha: 0.3)],
+            ),
+            borderRadius: BorderRadius.circular(4),
+          ),
         ),
-      ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF334155),
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildSettingItem({
+  Widget _buildCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6C2BD9).withValues(alpha: 0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDivider() {
+    return const Divider(height: 1, indent: 68, endIndent: 16, color: Color(0xFFF1F5F9));
+  }
+
+  Widget _buildTile({
     required IconData icon,
-    required Color iconBgColor,
-    required Color iconColor,
+    required List<Color> gradientColors,
     required String title,
     required String subtitle,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: iconBgColor,
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: gradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradientColors.first.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 19),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.outfit(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 1.5),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              trailing ??
+                  (onTap != null
+                      ? const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFCBD5E1), size: 14)
+                      : const SizedBox.shrink()),
+            ],
+          ),
         ),
-        child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF0F172A),
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.inter(
-          fontSize: 11.5,
-          color: const Color(0xFF64748B),
-        ),
-      ),
-      trailing: trailing ??
-          (onTap != null
-              ? const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF94A3B8), size: 15)
-              : null),
     );
   }
+
+
 }

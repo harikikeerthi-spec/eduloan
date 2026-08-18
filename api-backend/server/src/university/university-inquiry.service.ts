@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { EmailService } from '../auth/email.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UniversityInquiryService {
@@ -29,12 +30,14 @@ export class UniversityInquiryService {
     const { data: inquiry, error } = await this.db
       .from('UniversityInquiry')
       .insert({
+        id: randomUUID(),
         userId: data.userId || null,
         name,
         email,
         mobile,
         universityName: data.universityName,
         type,
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();

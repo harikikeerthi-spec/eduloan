@@ -1136,56 +1136,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
   // ==================== SMART GROUP CHANNELS & REAL CHAT METHODS ====================
 
-  private readonly initialGroupsSeed = [
-    {
-      id: 'usa_fall26',
-      title: 'USA Fall 2026 Aspirants',
-      subtitle: 'NYU, MS in CS, i20 updates & GRE discussion',
-      members: 245,
-      online: 38,
-      iconName: 'school_rounded',
-      colorHex: '#311B92',
-      badge: 'Top Active',
-      lastMsg: 'Rohan: Has anyone received i20 from NYU Tandon?',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'visa_docs',
-      title: 'Visa & Documentation Squad',
-      subtitle: 'F1/J1 visa slots, DS-160 & consulate interview tips',
-      members: 189,
-      online: 24,
-      iconName: 'verified_user_rounded',
-      colorHex: '#10B981',
-      badge: 'Visa Alert',
-      lastMsg: 'Priya: Bulk slots opened for Hyderabad consulate!',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'loan_squad',
-      title: 'Loan & Financial Aid Squad',
-      subtitle: 'Collateral, non-collateral, ROI & sanction letters',
-      members: 312,
-      online: 47,
-      iconName: 'account_balance_rounded',
-      colorHex: '#F59E0B',
-      badge: 'Finance',
-      lastMsg: 'Sneha: VidyaLoan team cleared my application in 48h!',
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 'uk_europe',
-      title: 'UK & Europe Scholars',
-      subtitle: 'CAS letters, UKVI visas, Erasmus & German blocked account',
-      members: 142,
-      online: 19,
-      iconName: 'public_rounded',
-      colorHex: '#3B82F6',
-      badge: 'Global',
-      lastMsg: 'Tanvi: CAS request timeline for University of Manchester?',
-      createdAt: new Date().toISOString(),
-    },
-  ];
+  private readonly initialGroupsSeed = [];
 
   // Shared global in-memory persistence for real-time Smart Groups & Chat Messages
   private static inMemoryGroups: Map<string, any> = new Map();
@@ -1199,26 +1150,24 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
         .order('createdAt', { ascending: false });
 
       if (dbGroups && dbGroups.length > 0) {
-        dbGroups.forEach((g: any) => CommunityService.inMemoryGroups.set(g.id, g));
-      } else {
-        this.initialGroupsSeed.forEach((g: any) => {
-          if (!CommunityService.inMemoryGroups.has(g.id)) {
-            CommunityService.inMemoryGroups.set(g.id, g);
+        dbGroups.forEach((g: any) => {
+          if (!['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id)) {
+            CommunityService.inMemoryGroups.set(g.id, {
+              ...g,
+              adminEmail: g.createdBy || '',
+              adminName: '',
+            });
           }
         });
-        try {
-          await this.db.from('CommunityGroup').insert(this.initialGroupsSeed);
-        } catch (_) {}
       }
 
-      const allGroups = Array.from(CommunityService.inMemoryGroups.values());
+      const allGroups = Array.from(CommunityService.inMemoryGroups.values())
+        .filter((g: any) => !['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id));
       allGroups.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       return { success: true, data: allGroups };
     } catch (e) {
-      if (CommunityService.inMemoryGroups.size === 0) {
-        this.initialGroupsSeed.forEach((g: any) => CommunityService.inMemoryGroups.set(g.id, g));
-      }
-      const allGroups = Array.from(CommunityService.inMemoryGroups.values());
+      const allGroups = Array.from(CommunityService.inMemoryGroups.values())
+        .filter((g: any) => !['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id));
       return { success: true, data: allGroups };
     }
   }
@@ -1242,20 +1191,38 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
     CommunityService.inMemoryGroups.set(id, newGroup);
 
+    const dbGroup = {
+      id,
+      title: newGroup.title,
+      subtitle: newGroup.subtitle,
+      members: newGroup.members,
+      online: newGroup.online,
+      iconName: newGroup.iconName,
+      colorHex: newGroup.colorHex,
+      badge: newGroup.badge,
+      lastMsg: newGroup.lastMsg,
+      createdBy: newGroup.adminEmail || null,
+      createdAt: newGroup.createdAt,
+    };
+
     try {
       const { data, error } = await this.db
         .from('CommunityGroup')
-        .insert(newGroup)
+        .insert(dbGroup)
         .select()
         .single();
       if (data) {
-        CommunityService.inMemoryGroups.set(id, data);
+        CommunityService.inMemoryGroups.set(id, {
+          ...data,
+          adminEmail: data.createdBy || '',
+          adminName: newGroup.adminName,
+        });
       }
     } catch (e) {
       console.warn('Fallback createSmartGroup in-memory save:', e);
     }
 
-    return { success: true, data: newGroup };
+    return { success: true, data: CommunityService.inMemoryGroups.get(id) || newGroup };
   }
 
   async getGroupMessages(groupId: string) {

@@ -130,6 +130,32 @@ export default function StaffDashboardPage() {
     // Document state
     const [userDocuments, setUserDocuments] = useState<any[]>([]);
     const [docsLoading, setDocsLoading] = useState(false);
+    const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!selectedApp) {
+            setUserDocuments([]);
+            setExpandedDoc(null);
+            return;
+        }
+
+        const fetchAppDocs = async () => {
+            setDocsLoading(true);
+            try {
+                const userId = selectedApp.userId || selectedApp.applicantId || selectedApp.user_id;
+                if (userId) {
+                    const docsRes = await documentApi.getUsersDocuments(userId) as any;
+                    setUserDocuments(docsRes.data || []);
+                }
+            } catch (err) {
+                console.error("[Dashboard] Error fetching app docs:", err);
+            } finally {
+                setDocsLoading(false);
+            }
+        };
+
+        fetchAppDocs();
+    }, [selectedApp]);
 
     const loadOverview = useCallback(async () => {
         setLoading(true);
@@ -2558,17 +2584,118 @@ export default function StaffDashboardPage() {
                                 <div className="space-y-6">
                                     <section>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Document Registry</p>
-                                        <div className="space-y-2">
-                                            {['Aadhaar_Card', 'PAN_Card', 'Income_Proof'].map((doc) => (
-                                                <div key={doc} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-all cursor-pointer group bg-white shadow-sm">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="material-symbols-outlined text-slate-400 text-[18px]">description</span>
-                                                        <span className="text-[12px] font-bold text-slate-700">{doc.replace('_', ' ')}</span>
-                                                    </div>
-                                                    <span className="material-symbols-outlined text-slate-300 group-hover:text-slate-900 text-[16px]">download</span>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {docsLoading ? (
+                                            <div className="flex items-center gap-2 p-4 text-[12px] text-slate-500 font-medium">
+                                                <div className="w-4 h-4 border-2 border-indigo-500 border-t-white rounded-full animate-spin" />
+                                                Loading registry...
+                                            </div>
+                                        ) : userDocuments.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {userDocuments.map((doc, idx) => {
+                                                    const docId = doc.id || doc._id || `modal_${idx}`;
+                                                    const isExpanded = expandedDoc === docId;
+                                                    const ocrMeta = doc.verificationMetadata || doc.verification;
+                                                    const hasOcr = !!ocrMeta;
+                                                    const ocrResult = ocrMeta?.ocrResult || ocrMeta;
+                                                    const extractedFields = ocrResult?.extractedFields || ocrResult?.extracted_data;
+                                                    const confidence = ocrResult?.confidence !== undefined ? ocrResult.confidence : ocrMeta?.confidence;
+                                                    const ocrIssues = ocrResult?.ocr_issues || ocrMeta?.details?.ocr_issues || [];
+
+                                                    return (
+                                                        <div key={docId} className="border border-slate-100 rounded-lg p-3 hover:border-slate-200 transition-all bg-white shadow-sm flex flex-col gap-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    <span className="material-symbols-outlined text-indigo-500 text-[18px]">description</span>
+                                                                    <div className="truncate">
+                                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                                            <span className="text-[12px] font-bold text-slate-700 capitalize truncate">{String(doc.docType || doc.type || "Document").replace(/_/g, ' ')}</span>
+                                                                            {hasOcr && (
+                                                                                <span className="px-1 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                                                    AI
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 shrink-0">
+                                                                    {hasOcr && (
+                                                                        <button 
+                                                                            onClick={() => setExpandedDoc(isExpanded ? null : docId)}
+                                                                            className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded transition-all"
+                                                                            title="Inspect OCR"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-[16px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
+                                                                        </button>
+                                                                    )}
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const userId = selectedApp.userId || selectedApp.applicantId || selectedApp.user_id;
+                                                                            const url = doc.filePath || doc.fileUrl || doc.url || `/api/documents/view/${userId}/${doc.docType}`;
+                                                                            window.open(url.startsWith('http') ? url : `/api/documents/view/${userId}/${doc.docType}`, '_blank');
+                                                                        }}
+                                                                        className="p-1 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded transition-all"
+                                                                        title="Download/View File"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[16px]">download</span>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {hasOcr && isExpanded && (
+                                                                <div className="mt-2 pt-2 border-t border-slate-100 space-y-2.5">
+                                                                    {confidence !== undefined && (
+                                                                        <div>
+                                                                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 mb-0.5">
+                                                                                <span>Confidence</span>
+                                                                                <span className="text-indigo-600">{Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%</span>
+                                                                            </div>
+                                                                            <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                                                                                <div 
+                                                                                    className={`h-1 rounded-full ${confidence > 0.8 || confidence > 80 ? 'bg-emerald-500' : confidence > 0.5 || confidence > 50 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                                                                                    style={{ width: `${Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%` }} 
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {extractedFields && Object.keys(extractedFields).length > 0 && (
+                                                                        <div className="bg-slate-50 rounded p-2 text-[10px] space-y-1">
+                                                                            {Object.entries(extractedFields).map(([key, val]: any) => {
+                                                                                if (val === null || val === undefined) return null;
+                                                                                const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                                                                                if (!valStr.trim()) return null;
+                                                                                return (
+                                                                                    <div key={key} className="flex justify-between items-start gap-1">
+                                                                                        <span className="text-slate-400 capitalize shrink-0">{key.replace(/_/g, ' ')}</span>
+                                                                                        <span className="text-slate-700 font-bold text-right break-all">{valStr}</span>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {ocrIssues && ocrIssues.length > 0 && (
+                                                                        <div className="bg-rose-50 border border-rose-100 rounded p-2 text-[9px]">
+                                                                            <p className="font-bold text-rose-700 flex items-center gap-1 mb-0.5">
+                                                                                <span className="material-symbols-outlined text-[10px]">warning</span>
+                                                                                Integrity Alerts
+                                                                            </p>
+                                                                            <ul className="list-disc list-inside text-rose-600 font-medium space-y-0.5">
+                                                                                {ocrIssues.map((issue: string, i: number) => (
+                                                                                    <li key={i}>{issue}</li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <p className="text-[11px] text-slate-400 italic">No uploaded documents</p>
+                                        )}
                                     </section>
                                 </div>
                             </div>

@@ -18,6 +18,9 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
     const [staffNotes, setStaffNotes] = useState<any[]>([]);
     const [newNote, setNewNote] = useState("");
     const [activeTab, setActiveTab] = useState<"details" | "history" | "documents" | "notes" | "verification">("details");
+    const [userDocuments, setUserDocuments] = useState<any[]>([]);
+    const [docsLoading, setDocsLoading] = useState(false);
+    const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchApplicationDetails = async () => {
@@ -41,6 +44,17 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
                     const savedNotes = localStorage.getItem(`app_notes_${applicationId}`);
                     if (savedNotes) {
                         setStaffNotes(JSON.parse(savedNotes));
+                    }
+
+                    // Fetch applicant's actual documents
+                    try {
+                        const userId = foundApp.userId || foundApp.applicantId || foundApp.user_id;
+                        if (userId) {
+                            const docsRes = await documentApi.getUsersDocuments(userId) as any;
+                            setUserDocuments(docsRes.data || []);
+                        }
+                    } catch (docErr) {
+                        console.error("Could not fetch applicant documents:", docErr);
                     }
                 }
             } catch (e) {
@@ -375,11 +389,145 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
 
                 {/* Documents Tab */}
                 {activeTab === "documents" && (
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-8">
-                        <div className="text-center py-12">
-                            <span className="material-symbols-outlined text-[48px] text-slate-300 mx-auto block mb-4">folder_open</span>
-                            <p className="text-slate-500 font-semibold">Click "Pull from DigiLocker" in Staff Actions to load documents</p>
-                        </div>
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+                        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-indigo-500">folder_shared</span>
+                            Applicant Documents Registry
+                        </h2>
+                        {userDocuments.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {userDocuments.map((doc, idx) => {
+                                    const docId = doc.id || doc._id || `doc_${idx}`;
+                                    const isExpanded = expandedDoc === docId;
+                                    const ocrMeta = doc.verificationMetadata || doc.verification;
+                                    const hasOcr = !!ocrMeta;
+                                    const ocrResult = ocrMeta?.ocrResult || ocrMeta;
+                                    const extractedFields = ocrResult?.extractedFields || ocrResult?.extracted_data;
+                                    const confidence = ocrResult?.confidence !== undefined ? ocrResult.confidence : ocrMeta?.confidence;
+                                    const ocrIssues = ocrResult?.ocr_issues || ocrMeta?.details?.ocr_issues || [];
+
+                                    return (
+                                        <div key={docId} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex items-start gap-3 mb-2">
+                                                    <span className="material-symbols-outlined text-slate-400 text-[24px]">description</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <p className="text-[12px] font-bold text-slate-900 capitalize">{String(doc.docType || doc.type || "Document").replace(/_/g, ' ')}</p>
+                                                            {hasOcr && (
+                                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    AI Verified
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] font-medium text-slate-500 truncate">{doc.fileName || doc.filePath?.split('/').pop() || "No filename"}</p>
+                                                    </div>
+                                                </div>
+                                                {doc.uploadedAt && (
+                                                    <p className="text-[10px] font-medium text-slate-400 mb-2">
+                                                        Uploaded: {format(new Date(doc.uploadedAt), "MMM d, yyyy")}
+                                                    </p>
+                                                )}
+
+                                                {hasOcr && isExpanded && (
+                                                    <div className="mt-3 pt-3 border-t border-slate-100 space-y-3">
+                                                        {confidence !== undefined && (
+                                                            <div>
+                                                                <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 mb-1">
+                                                                    <span>OCR Confidence</span>
+                                                                    <span className="text-indigo-600">{Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%</span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                                    <div 
+                                                                        className={`h-1.5 rounded-full ${confidence > 0.8 || confidence > 80 ? 'bg-emerald-500' : confidence > 0.5 || confidence > 50 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                                                                        style={{ width: `${Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%` }} 
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {extractedFields && Object.keys(extractedFields).length > 0 ? (
+                                                            <div className="bg-slate-50 rounded-lg p-2.5 space-y-1.5">
+                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-[12px]">list_alt</span>
+                                                                    Extracted Data
+                                                                </p>
+                                                                <div className="grid grid-cols-1 gap-1 text-[11px]">
+                                                                    {Object.entries(extractedFields).map(([key, val]: any) => {
+                                                                        if (val === null || val === undefined) return null;
+                                                                        const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                                                                        if (!valStr.trim()) return null;
+                                                                        return (
+                                                                            <div key={key} className="flex justify-between items-start gap-2 border-b border-slate-100 pb-1 last:border-0 last:pb-0">
+                                                                                <span className="text-slate-400 capitalize font-medium shrink-0">{key.replace(/_/g, ' ')}</span>
+                                                                                <span className="text-slate-800 font-bold text-right break-all">{valStr}</span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-[10px] italic text-slate-400">No fields extracted</p>
+                                                        )}
+
+                                                        {ocrIssues && ocrIssues.length > 0 && (
+                                                            <div className="bg-rose-50 border border-rose-100 rounded-lg p-2.5 space-y-1">
+                                                                <p className="text-[10px] font-bold text-rose-700 flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-[12px]">warning</span>
+                                                                    OCR Warnings
+                                                                </p>
+                                                                <ul className="list-disc list-inside text-[10px] text-rose-600 font-medium space-y-0.5">
+                                                                    {ocrIssues.map((issue: string, i: number) => (
+                                                                        <li key={i}>{issue}</li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        const userId = application.userId || application.applicantId || application.user_id;
+                                                        const url = doc.filePath || doc.fileUrl || doc.url || `/api/documents/view/${userId}/${doc.docType}`;
+                                                        window.open(url.startsWith('http') ? url : `/api/documents/view/${userId}/${doc.docType}`, '_blank');
+                                                    }}
+                                                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded text-[11px] font-bold transition-all flex items-center gap-1 border border-slate-200"
+                                                >
+                                                    <span className="material-symbols-outlined text-[14px]">visibility</span>
+                                                    View Document
+                                                </button>
+                                                {hasOcr && (
+                                                    <button
+                                                        onClick={() => setExpandedDoc(isExpanded ? null : docId)}
+                                                        className="px-2.5 py-1.5 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50/50 rounded text-[11px] font-bold transition-all flex items-center gap-1"
+                                                    >
+                                                        {isExpanded ? (
+                                                            <>
+                                                                <span>Hide OCR</span>
+                                                                <span className="material-symbols-outlined text-[14px]">expand_less</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <span>OCR Details</span>
+                                                                <span className="material-symbols-outlined text-[14px]">expand_more</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-12">
+                                <span className="material-symbols-outlined text-[48px] text-slate-300 mx-auto block mb-4">folder_open</span>
+                                <p className="text-slate-500 font-semibold">No uploaded documents found for this applicant.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -387,25 +535,140 @@ export default function StaffApplicationDetailPage({ params }: { params: Promise
                 {activeTab === "verification" && (
                     <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="p-8 space-y-6">
-                            <h2 className="text-lg font-bold text-slate-900 mb-6">Document Verification</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {["Aadhaar Card", "PAN Card", "10th Marksheet", "12th Marksheet", "Degree Certificate", "Income Proof"].map((doc, idx) => (
-                                    <div key={idx} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-all">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <span className="material-symbols-outlined text-slate-400 text-[24px]">description</span>
-                                                <div>
-                                                    <p className="text-[12px] font-bold text-slate-900">{doc}</p>
-                                                    <p className="text-[10px] text-slate-500">Not verified yet</p>
+                            <h2 className="text-lg font-bold text-slate-900 mb-2">Applicant Verification Board</h2>
+                            <p className="text-xs text-slate-500 border-b border-slate-100 pb-4">Audit AI OCR verification outputs and approve uploaded credentials.</p>
+                            {userDocuments.length > 0 ? (
+                                <div className="space-y-4">
+                                    {userDocuments.map((doc, idx) => {
+                                        const docId = doc.id || doc._id || `verify_${idx}`;
+                                        const isExpanded = expandedDoc === docId;
+                                        const ocrMeta = doc.verificationMetadata || doc.verification;
+                                        const hasOcr = !!ocrMeta;
+                                        const ocrResult = ocrMeta?.ocrResult || ocrMeta;
+                                        const extractedFields = ocrResult?.extractedFields || ocrResult?.extracted_data;
+                                        const confidence = ocrResult?.confidence !== undefined ? ocrResult.confidence : ocrMeta?.confidence;
+                                        const ocrIssues = ocrResult?.ocr_issues || ocrMeta?.details?.ocr_issues || [];
+
+                                        return (
+                                            <div key={docId} className="p-4 border border-slate-200 rounded-lg hover:shadow-md transition-all bg-white">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="material-symbols-outlined text-indigo-500 text-[28px]">verified_user</span>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-[13px] font-bold text-slate-900 capitalize">{String(doc.docType || doc.type || "Document").replace(/_/g, ' ')}</p>
+                                                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
+                                                                    hasOcr ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                                                                }`}>
+                                                                    {hasOcr ? 'AI Validated' : 'Pending Upload'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-slate-500 mt-0.5">Status: <span className="font-semibold text-indigo-600 uppercase">{doc.status || "uploaded"}</span></p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {hasOcr && (
+                                                            <button 
+                                                                onClick={() => setExpandedDoc(isExpanded ? null : docId)}
+                                                                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded flex items-center gap-1 transition-all"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[14px]">query_stats</span>
+                                                                {isExpanded ? 'Hide OCR' : 'Inspect OCR'}
+                                                            </button>
+                                                        )}
+                                                        <button 
+                                                            onClick={() => {
+                                                                const userId = application.userId || application.applicantId || application.user_id;
+                                                                const url = doc.filePath || doc.fileUrl || doc.url || `/api/documents/view/${userId}/${doc.docType}`;
+                                                                window.open(url.startsWith('http') ? url : `/api/documents/view/${userId}/${doc.docType}`, '_blank');
+                                                            }}
+                                                            className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[11px] font-bold rounded flex items-center gap-1 transition-all"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[14px]">visibility</span>
+                                                            View File
+                                                        </button>
+                                                    </div>
                                                 </div>
+
+                                                {hasOcr && isExpanded && (
+                                                    <div className="mt-4 pt-4 border-t border-slate-150 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {/* Left Column: Metrics & Warnings */}
+                                                        <div className="space-y-3">
+                                                            {confidence !== undefined && (
+                                                                <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
+                                                                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 mb-1">
+                                                                        <span>Confidence Score</span>
+                                                                        <span className="text-indigo-600">{Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                                                        <div 
+                                                                            className={`h-1.5 rounded-full ${confidence > 0.8 || confidence > 80 ? 'bg-emerald-500' : confidence > 0.5 || confidence > 50 ? 'bg-amber-500' : 'bg-rose-500'}`} 
+                                                                            style={{ width: `${Math.round((confidence > 1 ? confidence / 100 : confidence) * 100)}%` }} 
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {ocrIssues && ocrIssues.length > 0 ? (
+                                                                <div className="bg-rose-50 border border-rose-100 rounded-lg p-3">
+                                                                    <p className="text-[10px] font-bold text-rose-700 flex items-center gap-1 mb-1">
+                                                                        <span className="material-symbols-outlined text-[12px]">warning</span>
+                                                                        Document Integrity Alerts
+                                                                    </p>
+                                                                    <ul className="list-disc list-inside text-[10px] text-rose-600 font-medium space-y-0.5">
+                                                                        {ocrIssues.map((issue: string, i: number) => (
+                                                                            <li key={i}>{issue}</li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3">
+                                                                    <p className="text-[10px] font-bold text-emerald-700 flex items-center gap-1">
+                                                                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                                                        No integrity alerts raised
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Right Column: Key-Values */}
+                                                        <div>
+                                                            {extractedFields && Object.keys(extractedFields).length > 0 ? (
+                                                                <div className="bg-slate-50 rounded-lg p-3 space-y-1.5 border border-slate-100">
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                                        <span className="material-symbols-outlined text-[12px]">list_alt</span>
+                                                                        Extracted Fields
+                                                                    </p>
+                                                                    <div className="grid grid-cols-1 gap-1.5 text-[11px]">
+                                                                        {Object.entries(extractedFields).map(([key, val]: any) => {
+                                                                            if (val === null || val === undefined) return null;
+                                                                            const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                                                                            if (!valStr.trim()) return null;
+                                                                            return (
+                                                                                <div key={key} className="flex justify-between items-start gap-2 border-b border-slate-100 pb-1 last:border-0 last:pb-0">
+                                                                                    <span className="text-slate-400 capitalize font-medium shrink-0">{key.replace(/_/g, ' ')}</span>
+                                                                                    <span className="text-slate-800 font-bold text-right break-all">{valStr}</span>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-[10px] italic text-slate-400">No fields extracted</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <button className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded hover:bg-emerald-100 transition-all">
-                                                Verify
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-lg">
+                                    <span className="material-symbols-outlined text-[48px] text-slate-300 mx-auto block mb-4">folder_off</span>
+                                    <p className="text-slate-500 font-semibold">No uploaded documents available for verification.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

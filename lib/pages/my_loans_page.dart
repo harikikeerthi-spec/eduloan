@@ -1216,6 +1216,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
   }
 
   String _formatDate(DateTime date) {
+    final localDate = date.toLocal();
     final months = [
       'Jan',
       'Feb',
@@ -1230,18 +1231,19 @@ class _MyLoansPageState extends State<MyLoansPage> {
       'Nov',
       'Dec',
     ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
+    return '${localDate.day} ${months[localDate.month - 1]} ${localDate.year}';
   }
 
   String _formatDateTime(DateTime date) {
+    final localDate = date.toLocal();
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
-    final hour = date.hour == 0 ? 12 : (date.hour > 12 ? date.hour - 12 : date.hour);
-    final period = date.hour >= 12 ? 'PM' : 'AM';
-    final min = date.minute.toString().padLeft(2, '0');
-    return '${months[date.month - 1]} ${date.day}\n${hour.toString().padLeft(2, '0')}:$min $period';
+    final hour = localDate.hour == 0 ? 12 : (localDate.hour > 12 ? localDate.hour - 12 : localDate.hour);
+    final period = localDate.hour >= 12 ? 'PM' : 'AM';
+    final min = localDate.minute.toString().padLeft(2, '0');
+    return '${months[localDate.month - 1]} ${localDate.day}\n${hour.toString().padLeft(2, '0')}:$min $period';
   }
 
   Widget _buildProgressStepper(Loan loan) {

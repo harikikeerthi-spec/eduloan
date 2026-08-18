@@ -63,12 +63,15 @@ class SecureStorageService {
   static Future<String?> getRefreshToken() async {
     try {
       final token = await _storage.read(key: _keyRefreshToken);
-      if (token != null && token.isNotEmpty) return token;
+
+      if (token != null && token.isNotEmpty) {
+        return token;
+      }
     } catch (e) {
       debugPrint('[SecureStorage] Error reading refresh token: $e');
     }
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_keyRefreshToken);
+
+    return null;
   }
 
   /// Save User ID

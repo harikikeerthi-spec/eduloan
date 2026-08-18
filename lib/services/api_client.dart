@@ -1,37 +1,53 @@
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
-import 'secure_storage_service.dart';
 
-/// Bank-Grade Secure API Client
+import 'secure_storage_service.dart';
+import 'token_refresh_service.dart';
+
+/// Secure API Client
 ///
 /// Features:
-/// 1. Automatic Hardware Keystore JWT Bearer Token Injection (`Authorization: Bearer <token>`).
-/// 2. Strict HTTPS / TLS 1.2+ validation.
-/// 3. SSL Public Key / Certificate Pinning guard for production hosts.
-/// 4. Replay-protection headers (Timestamp & Client Platform).
+/// 1. Automatically adds JWT access token from Secure Storage.
+/// 2. Requires HTTPS in release builds.
+/// 3. Rejects invalid/untrusted certificates in release builds.
+/// 4. Automatically refreshes the access token when an API returns 401.
+/// 5. Retries the original request only once after successful refresh.
 class ApiClient {
   static http.Client? _customClient;
 
-  /// Returns a configured HTTP client with strict SSL validation
+  /// Prevents multiple simultaneous API requests from refreshing
+  /// the token at the same time.
+  static Future<bool>? _refreshingToken;
+
+  /// Returns the configured HTTP client.
   static http.Client get client {
-    if (_customClient != null) return _customClient!;
+    if (_customClient != null) {
+      return _customClient!;
+    }
 
     if (!kIsWeb) {
       final securityContext = SecurityContext.defaultContext;
+
       final httpClient = HttpClient(context: securityContext)
-        ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-          // In production release builds, reject all untrusted / invalid certificates
+        ..badCertificateCallback =
+            (X509Certificate cert, String host, int port) {
           if (kReleaseMode) {
-            debugPrint('[SSL Pinning] Rejecting untrusted certificate for host: $host');
+            debugPrint(
+              '[SSL] Rejecting untrusted certificate for host: $host',
+            );
             return false;
           }
-          // Allow dev / localhost / tunnel self-signed in debug mode only
-          final isDevHost = host == '10.0.2.2' ||
+
+          // Development-only hosts.
+          final isDevHost =
+              host == '10.0.2.2' ||
               host == 'localhost' ||
               host.contains('trycloudflare.com') ||
               host.contains('ngrok');
+
           return isDevHost;
         };
 
@@ -39,18 +55,22 @@ class ApiClient {
     } else {
       _customClient = http.Client();
     }
+
     return _customClient!;
   }
 
-  /// Builds standard secure headers with JWT Bearer token
+  /// Gets the access token from secure storage and creates
+  /// the common security headers.
   static Future<Map<String, String>> getSecureHeaders({
     Map<String, String>? extraHeaders,
   }) async {
     final token = await SecureStorageService.getToken();
+
     final headers = <String, String>{
       'Content-Type': 'application/json',
-      'X-Client-Platform': Platform.isAndroid ? 'Android' : (Platform.isIOS ? 'iOS' : 'Web'),
-      'X-Request-Timestamp': DateTime.now().toUtc().toIso8601String(),
+      'X-Client-Platform': _getPlatform(),
+      'X-Request-Timestamp':
+          DateTime.now().toUtc().toIso8601String(),
     };
 
     if (token != null && token.isNotEmpty) {
@@ -60,21 +80,32 @@ class ApiClient {
     if (extraHeaders != null) {
       headers.addAll(extraHeaders);
     }
+
     return headers;
   }
 
-  /// Secure GET Request
+  /// GET request with automatic token refresh + retry.
   static Future<http.Response> get(
     Uri uri, {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: 30),
   }) async {
     _enforceHttps(uri);
-    final secureHeaders = await getSecureHeaders(extraHeaders: headers);
-    return await client.get(uri, headers: secureHeaders).timeout(timeout);
+
+    return _executeWithRefresh(
+      () async {
+        final secureHeaders =
+            await getSecureHeaders(extraHeaders: headers);
+
+        return client
+            .get(uri, headers: secureHeaders)
+            .timeout(timeout);
+      },
+      uri,
+    );
   }
 
-  /// Secure POST Request
+  /// POST request with automatic token refresh + retry.
   static Future<http.Response> post(
     Uri uri, {
     Map<String, String>? headers,
@@ -82,11 +113,25 @@ class ApiClient {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     _enforceHttps(uri);
-    final secureHeaders = await getSecureHeaders(extraHeaders: headers);
-    return await client.post(uri, headers: secureHeaders, body: body).timeout(timeout);
+
+    return _executeWithRefresh(
+      () async {
+        final secureHeaders =
+            await getSecureHeaders(extraHeaders: headers);
+
+        return client
+            .post(
+              uri,
+              headers: secureHeaders,
+              body: body,
+            )
+            .timeout(timeout);
+      },
+      uri,
+    );
   }
 
-  /// Secure PUT Request
+  /// PUT request with automatic token refresh + retry.
   static Future<http.Response> put(
     Uri uri, {
     Map<String, String>? headers,
@@ -94,11 +139,25 @@ class ApiClient {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     _enforceHttps(uri);
-    final secureHeaders = await getSecureHeaders(extraHeaders: headers);
-    return await client.put(uri, headers: secureHeaders, body: body).timeout(timeout);
+
+    return _executeWithRefresh(
+      () async {
+        final secureHeaders =
+            await getSecureHeaders(extraHeaders: headers);
+
+        return client
+            .put(
+              uri,
+              headers: secureHeaders,
+              body: body,
+            )
+            .timeout(timeout);
+      },
+      uri,
+    );
   }
 
-  /// Secure DELETE Request
+  /// DELETE request with automatic token refresh + retry.
   static Future<http.Response> delete(
     Uri uri, {
     Map<String, String>? headers,
@@ -106,15 +165,123 @@ class ApiClient {
     Duration timeout = const Duration(seconds: 30),
   }) async {
     _enforceHttps(uri);
-    final secureHeaders = await getSecureHeaders(extraHeaders: headers);
-    return await client.delete(uri, headers: secureHeaders, body: body).timeout(timeout);
+
+    return _executeWithRefresh(
+      () async {
+        final secureHeaders =
+            await getSecureHeaders(extraHeaders: headers);
+
+        return client
+            .delete(
+              uri,
+              headers: secureHeaders,
+              body: body,
+            )
+            .timeout(timeout);
+      },
+      uri,
+    );
   }
 
-  /// Enforce HTTPS for non-local production traffic
+  /// Executes an API request.
+  ///
+  /// If the server responds with 401:
+  ///
+  ///     1. Refresh access token.
+  ///     2. Retry the original request once.
+  ///
+  /// If refresh fails, the original 401 response is returned.
+  static Future<http.Response> _executeWithRefresh(
+    Future<http.Response> Function() request,
+    Uri uri,
+  ) async {
+    // First request.
+    final response = await request();
+
+    // Everything except 401 is returned normally.
+    if (response.statusCode != 401) {
+      return response;
+    }
+
+    debugPrint(
+      '[ApiClient] 401 received from ${uri.path}. '
+      'Attempting token refresh...',
+    );
+
+    // Refresh the token.
+    final refreshed = await _refreshAccessToken();
+
+    if (!refreshed) {
+      debugPrint(
+        '[ApiClient] Token refresh failed. '
+        'Returning original 401 response.',
+      );
+
+      return response;
+    }
+
+    debugPrint(
+      '[ApiClient] Token refreshed successfully. '
+      'Retrying ${uri.path}',
+    );
+
+    // Retry exactly once.
+    final retryResponse = await request();
+
+    return retryResponse;
+  }
+
+  /// Refreshes the access token.
+  ///
+  /// If several API requests receive 401 at the same time,
+  /// only ONE refresh request is sent.
+  static Future<bool> _refreshAccessToken() async {
+    if (_refreshingToken != null) {
+      debugPrint(
+        '[ApiClient] Token refresh already running. Waiting...',
+      );
+
+      return await _refreshingToken!;
+    }
+
+    _refreshingToken = TokenRefreshService.refresh();
+
+    try {
+      return await _refreshingToken!;
+    } finally {
+      _refreshingToken = null;
+    }
+  }
+
+  /// Returns the current platform name.
+  static String _getPlatform() {
+    if (kIsWeb) {
+      return 'Web';
+    }
+
+    if (Platform.isAndroid) {
+      return 'Android';
+    }
+
+    if (Platform.isIOS) {
+      return 'iOS';
+    }
+
+    return 'Unknown';
+  }
+
+  /// Enforces HTTPS for production/release traffic.
   static void _enforceHttps(Uri uri) {
-    if (kReleaseMode && uri.scheme != 'https') {
-      if (uri.host != 'localhost' && uri.host != '10.0.2.2') {
-        throw SecurityException('Insecure HTTP request rejected. HTTPS is strictly required.');
+    if (!kReleaseMode) {
+      return;
+    }
+
+    if (uri.scheme != 'https') {
+      if (uri.host != 'localhost' &&
+          uri.host != '10.0.2.2') {
+        throw SecurityException(
+          'Insecure HTTP request rejected. HTTPS is strictly required.',
+        );
       }
     }
   }
@@ -122,7 +289,9 @@ class ApiClient {
 
 class SecurityException implements Exception {
   final String message;
+
   SecurityException(this.message);
+
   @override
   String toString() => 'SecurityException: $message';
 }

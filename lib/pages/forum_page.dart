@@ -2563,8 +2563,8 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   List<Map<String, dynamic>> _messages = [];
   bool _isLoadingMessages = true;
   bool _isJoined = false;
-  String _membershipStatus = 'NONE';
-  List<Map<String, dynamic>> _pendingRequests = [];
+
+
   String _mySenderName = 'You';
   Timer? _chatPollingTimer;
 
@@ -2690,16 +2690,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     if (isJoined) {
       msgs = await CommunityService().getGroupMessages(groupId);
     }
-    List<Map<String, dynamic>> pendingReqs = [];
-    if (status == 'ADMIN') {
-      pendingReqs = await CommunityService().getPendingJoinRequests(groupId);
-    }
 
     if (mounted) {
       setState(() {
-        _membershipStatus = status;
+
         _isJoined = isJoined;
-        _pendingRequests = pendingReqs;
         _messages = msgs.map((m) {
           final sender = (m['sender']?.toString().isNotEmpty == true) ? m['sender'].toString() : 'Student Member';
           final colorHex = m['colorHex'] ?? '#311B92';
@@ -2744,7 +2739,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
 
     if (mounted) {
       setState(() {
-        _membershipStatus = 'APPROVED';
+
         _isJoined = true;
       });
       await _loadUserAndMessages();
@@ -2859,174 +2854,6 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     }
   }
 
-  void _showAdminPendingRequestsModal() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF311B92), size: 24),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Group Admin: Join Requests',
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF0F172A),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Review and approve students who requested to join your group channel.',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 16),
-                if (_pendingRequests.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        'No pending join requests right now.',
-                        style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]),
-                      ),
-                    ),
-                  )
-                else
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: _pendingRequests.length,
-                      separatorBuilder: (ctx, i) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      itemBuilder: (ctx, index) {
-                        final req = _pendingRequests[index];
-                        final name = req['applicantName'] ?? 'Student Applicant';
-                        final email = req['applicantEmail'] ?? '';
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
-                                child: Text(
-                                  name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: const Color(0xFF311B92)),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14)),
-                                    Text(email, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              // ── Approve button ──
-                              GestureDetector(
-                                onTap: () async {
-                                  final groupId = widget.group['id'] as String;
-                                  final messenger = ScaffoldMessenger.of(context);
-                                  await CommunityService().approveGroupJoinRequest(
-                                    groupId: groupId,
-                                    requestId: req['id'] ?? '',
-                                    applicantEmail: email,
-                                    groupTitle: widget.group['title'] ?? 'Group',
-                                  );
-                                  setModalState(() => _pendingRequests.removeAt(index));
-                                  setState(() {
-                                    widget.group['members'] = (widget.group['members'] ?? 1) + 1;
-                                  });
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text('✅ $name approved and notified!'),
-                                      backgroundColor: const Color(0xFF10B981),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              // ── Reject button ──
-                              GestureDetector(
-                                onTap: () async {
-                                  final groupId = widget.group['id'] as String;
-                                  final messenger = ScaffoldMessenger.of(context);
-                                  await CommunityService().rejectGroupJoinRequest(
-                                    groupId: groupId,
-                                    requestId: req['id'] ?? '',
-                                    applicantEmail: email,
-                                    groupTitle: widget.group['title'] ?? 'Group',
-                                  );
-                                  setModalState(() => _pendingRequests.removeAt(index));
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text('❌ $name\'s request rejected.'),
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEF4444),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   void _sendMessage() async {
     final text = _msgController.text.trim();
@@ -3153,34 +2980,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                     ],
                   ),
                 ),
-                if (_membershipStatus == 'ADMIN') ...[
-                  GestureDetector(
-                    onTap: _showAdminPendingRequestsModal,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.mark_email_unread_rounded, size: 14, color: Color(0xFFDC2626)),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Requests (${_pendingRequests.length})',
-                            style: GoogleFonts.outfit(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFFDC2626),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
+
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded, color: Colors.grey),

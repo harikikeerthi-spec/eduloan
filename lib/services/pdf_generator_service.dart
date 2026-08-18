@@ -149,7 +149,7 @@ class PdfGeneratorService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       pw.Text(
-                        'VIDHYALOAN',
+                        'VIDYALOANS',
                         style: pw.TextStyle(
                           fontSize: 24,
                           fontWeight: pw.FontWeight.bold,
@@ -418,7 +418,7 @@ class PdfGeneratorService {
                   ),
                   pw.SizedBox(height: 6),
                   pw.Text(
-                    'Your loan application details have been submitted and registered with VidyaLoan. As your KYC and academic documents are verified and accepted, they will automatically be updated and included in this official PDF dossier.',
+                    'Your loan application details have been submitted and registered with VidyaLoans. As your KYC and academic documents are verified and accepted, they will automatically be updated and included in this official PDF dossier.',
                     style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
                   ),
                 ],

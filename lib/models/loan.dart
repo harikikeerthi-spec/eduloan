@@ -202,32 +202,18 @@ class Loan {
   String get assignedStaffDisplayName {
     if (counselorName != null &&
         counselorName!.trim().isNotEmpty &&
-        counselorName != 'VidhyaLoan Support') {
+        counselorName != 'VidhyaLoan Support' &&
+        counselorName != 'Vidyaloans Support') {
       return counselorName!.trim();
     }
-    // Sequential round-robin fallback based on loan ID hash
-    const staffList = [
-      'Priya Sharma (Senior Loan Specialist)',
-      'Rajesh Kumar (Education Loan Advisor)',
-      'Ananya Reddy (Bank Processing Officer)',
-      'Vikram Malhotra (Student Loan Counselor)',
-    ];
-    final hashIndex = (id.hashCode.abs()) % staffList.length;
-    return staffList[hashIndex];
+    return 'Vidyaloans Support';
   }
 
   String get assignedStaffPhone {
     if (counselorPhone != null && counselorPhone!.trim().isNotEmpty) {
       return counselorPhone!.trim();
     }
-    const phoneList = [
-      '+91 98402 12001',
-      '+91 98402 12002',
-      '+91 98402 12003',
-      '+91 98402 12004',
-    ];
-    final hashIndex = (id.hashCode.abs()) % phoneList.length;
-    return phoneList[hashIndex];
+    return '+91 92402 09000';
   }
 
   String get assignedStaffEmail {
@@ -236,14 +222,7 @@ class Loan {
         counselorEmail != 'vidyaloans7@gmail.com') {
       return counselorEmail!.trim();
     }
-    const emailList = [
-      'priya.sharma@vidyaloans.com',
-      'rajesh.kumar@vidyaloans.com',
-      'ananya.reddy@vidyaloans.com',
-      'vikram.malhotra@vidyaloans.com',
-    ];
-    final hashIndex = (id.hashCode.abs()) % emailList.length;
-    return emailList[hashIndex];
+    return 'vidyaloans7@gmail.com';
   }
 
   int get effectiveProgress => getEffectiveProgress();

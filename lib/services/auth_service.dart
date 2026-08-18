@@ -200,48 +200,75 @@ class AuthService {
     }
   }
 
-  /// Refresh the access token using the refresh token
+  /// Refresh the access token using the securely stored refresh token.
   static Future<bool> refreshToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString('refresh_token');
+      // IMPORTANT:
+      // Read refresh token from secure storage, NOT SharedPreferences.
+      final refreshToken = await SecureStorageService.getRefreshToken();
 
       if (refreshToken == null || refreshToken.isEmpty) {
+        debugPrint('[AuthService] No refresh token available');
         return false;
       }
 
       final baseUrl = await ApiConfig.getBaseUrl();
+
       final response = await http
           .post(
             Uri.parse('$baseUrl/auth/refresh'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'refresh_token': refreshToken}),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'refresh_token': refreshToken,
+            }),
           )
           .timeout(const Duration(seconds: 30));
 
       final data = _parseJsonResponse(response);
+
       if (data is! Map<String, dynamic>) {
+        debugPrint('[AuthService] Invalid refresh response');
         return false;
       }
 
       if (response.statusCode == 200 && data['success'] == true) {
-        final newToken = data['access_token'];
+        final newAccessToken = data['access_token'];
         final newRefreshToken = data['refresh_token'];
 
-        if (newToken != null) {
-          await prefs.setString('auth_token', newToken);
+        if (newAccessToken == null || newAccessToken.toString().isEmpty) {
+          debugPrint('[AuthService] Refresh response has no access token');
+          return false;
         }
-        if (newRefreshToken != null) {
-          await prefs.setString('refresh_token', newRefreshToken);
+
+        // Save new access token securely.
+        await SecureStorageService.saveToken(newAccessToken.toString());
+
+        // Backend rotates the refresh token — save the new one securely.
+        if (newRefreshToken != null &&
+            newRefreshToken.toString().isNotEmpty) {
+          await SecureStorageService.saveRefreshToken(
+            newRefreshToken.toString(),
+          );
         }
+
+        debugPrint('[AuthService] Access token refreshed successfully');
         return true;
-      } else {
-        await prefs.remove('auth_token');
-        await prefs.remove('refresh_token');
+      }
+
+      // Refresh token is invalid/expired.
+      if (response.statusCode == 401) {
+        debugPrint('[AuthService] Refresh token expired or invalid');
+        await SecureStorageService.delete('auth_token');
+        await SecureStorageService.delete('refresh_token');
         return false;
       }
+
+      debugPrint('[AuthService] Token refresh failed: ${response.statusCode}');
+      return false;
     } catch (e) {
-      debugPrint('Error refreshing token: $e');
+      debugPrint('[AuthService] Error refreshing token: $e');
       return false;
     }
   }
