@@ -517,6 +517,33 @@ class CommunityService {
 
   // ==================== REAL COMMUNITY GROUPS & MESSAGES API ====================
 
+  /// Helper to check if a group is one of the obsolete static seed groups
+  static bool isStaticGroup(Map<String, dynamic> g) {
+    final id = (g['id'] ?? '').toString().toLowerCase().trim();
+    final title = (g['title'] ?? '').toString().toLowerCase().trim();
+    const staticIds = {
+      'usa_fall26',
+      'visa_docs',
+      'loan_squad',
+      'uk_europe',
+      'group_1',
+      'group_2',
+      'group_3',
+      'group_4',
+    };
+    const staticTitles = [
+      'usa fall',
+      'visa & documentation',
+      'loan & financial aid',
+      'uk & europe scholars',
+    ];
+    if (staticIds.contains(id)) return true;
+    for (final st in staticTitles) {
+      if (title.contains(st)) return true;
+    }
+    return false;
+  }
+
   /// Get all real group channels from backend database & local custom storage
   Future<List<Map<String, dynamic>>> getGroups() async {
     final List<Map<String, dynamic>> result = [];
@@ -526,16 +553,23 @@ class CommunityService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final currentRaw = prefs.getStringList('custom_smart_groups') ?? [];
+      final List<String> cleanRaw = [];
       for (var str in currentRaw) {
         try {
           final Map<String, dynamic> decoded = Map<String, dynamic>.from(
             json.decode(str) as Map,
           );
-          if (decoded['id'] != null && !existingIds.contains(decoded['id'])) {
+          if (decoded['id'] != null &&
+              !existingIds.contains(decoded['id']) &&
+              !isStaticGroup(decoded)) {
             existingIds.add(decoded['id']);
             result.add(decoded);
+            cleanRaw.add(str);
           }
         } catch (_) {}
+      }
+      if (cleanRaw.length != currentRaw.length) {
+        await prefs.setStringList('custom_smart_groups', cleanRaw);
       }
     } catch (e) {
       debugPrint('Error reading local custom groups: $e');
@@ -548,7 +582,9 @@ class CommunityService {
         final List raw = response['data'];
         for (var e in raw) {
           final Map<String, dynamic> g = Map<String, dynamic>.from(e as Map);
-          if (g['id'] != null && !existingIds.contains(g['id'])) {
+          if (g['id'] != null &&
+              !existingIds.contains(g['id']) &&
+              !isStaticGroup(g)) {
             existingIds.add(g['id']);
             result.add(g);
           }

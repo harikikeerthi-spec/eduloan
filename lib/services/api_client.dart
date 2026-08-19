@@ -78,7 +78,13 @@ class ApiClient {
     }
 
     if (extraHeaders != null) {
-      headers.addAll(extraHeaders);
+      for (final entry in extraHeaders.entries) {
+        if (entry.key.toLowerCase() != 'authorization') {
+          headers[entry.key] = entry.value;
+        } else if (token == null || token.isEmpty) {
+          headers[entry.key] = entry.value;
+        }
+      }
     }
 
     return headers;

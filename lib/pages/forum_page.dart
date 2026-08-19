@@ -154,7 +154,9 @@ class _ForumPageState extends State<ForumPage> {
       final groups = await _communityService.getGroups();
       if (mounted) {
         setState(() {
-          _smartGroups = groups.map((g) {
+          _smartGroups = groups
+              .where((g) => !CommunityService.isStaticGroup(g))
+              .map((g) {
             final iconName = g['iconName'] ?? g['icon'] ?? 'school_rounded';
             final colorHex = g['colorHex'] ?? g['color'] ?? '#311B92';
             return {

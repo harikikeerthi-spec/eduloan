@@ -5,20 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 import 'api_config.dart';
 import 'api_client.dart';
-import 'secure_storage_service.dart';
 
 class LoanService {
-  Future<Map<String, String>> _getHeaders() async {
-    final token = await SecureStorageService.getToken();
-    debugPrint(
-      'LoanService: Sending request with token: ${token != null ? "Present (Starts with ${token.substring(0, 10)}...)" : "MISSING"}',
-    );
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
-
   Future<Loan> createLoan({
     required String userId,
     required String firstName,
@@ -56,11 +44,9 @@ class LoanService {
     bool isRetry = false,
   }) async {
     try {
-      final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await ApiClient.post(
         Uri.parse('$baseUrl/applications'),
-        headers: headers,
         body: json.encode({
           'userId': userId,
           'firstName': firstName,
@@ -120,11 +106,9 @@ class LoanService {
 
   Future<List<Loan>> getUserLoans({bool isRetry = false}) async {
     try {
-      final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await ApiClient.get(
         Uri.parse('$baseUrl/applications/my'),
-        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -142,11 +126,9 @@ class LoanService {
 
   Future<Loan> getLoanById(String loanId) async {
     try {
-      final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await ApiClient.get(
         Uri.parse('$baseUrl/applications/$loanId'),
-        headers: headers,
       );
 
       if (response.statusCode == 200) {
@@ -163,12 +145,10 @@ class LoanService {
   Future<void> deleteLoan(String loanId) async {
     debugPrint('[LoanService] Attempting to delete loan: $loanId');
     try {
-      final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
       debugPrint('[LoanService] URL: $baseUrl/auth/application/$loanId');
       final response = await ApiClient.delete(
         Uri.parse('$baseUrl/auth/application/$loanId'),
-        headers: headers,
       );
 
       debugPrint('[LoanService] Response status: ${response.statusCode}');

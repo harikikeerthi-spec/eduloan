@@ -38,9 +38,9 @@ export class AuthService {
       role: user.role
     };
 
-    // Generate access token (short-lived 15-minute access token)
+    // Generate access token (long-lived 30-day token for seamless mobile sessions)
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '15m') as any,
+      expiresIn: (this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION') || '30d') as any,
     });
 
     // Generate refresh token (long-lived 365-day token)

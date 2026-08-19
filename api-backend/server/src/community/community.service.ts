@@ -1142,6 +1142,21 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
   private static inMemoryGroups: Map<string, any> = new Map();
   private static inMemoryGroupMessages: Map<string, any[]> = new Map();
 
+  private isStaticGroup(g: any): boolean {
+    if (!g) return false;
+    const id = String(g.id || '').toLowerCase();
+    const title = String(g.title || '').toLowerCase().trim();
+    const staticIds = ['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe', 'group_1', 'group_2', 'group_3', 'group_4'];
+    const staticTitles = [
+      'usa fall 2026 aspirants',
+      'visa & documentation squad',
+      'visa & documentation s...',
+      'loan & financial aid squad',
+      'uk & europe scholars',
+    ];
+    return staticIds.includes(id) || staticTitles.some(st => title.startsWith(st) || title.includes('usa fall') || title.includes('visa & documentation') || title.includes('loan & financial aid') || title.includes('uk & europe scholars'));
+  }
+
   async getSmartGroups() {
     try {
       const { data: dbGroups, error } = await this.db
@@ -1151,7 +1166,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
       if (dbGroups && dbGroups.length > 0) {
         dbGroups.forEach((g: any) => {
-          if (!['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id)) {
+          if (!this.isStaticGroup(g)) {
             CommunityService.inMemoryGroups.set(g.id, {
               ...g,
               adminEmail: g.createdBy || '',
@@ -1162,12 +1177,12 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       }
 
       const allGroups = Array.from(CommunityService.inMemoryGroups.values())
-        .filter((g: any) => !['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id));
+        .filter((g: any) => !this.isStaticGroup(g));
       allGroups.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       return { success: true, data: allGroups };
     } catch (e) {
       const allGroups = Array.from(CommunityService.inMemoryGroups.values())
-        .filter((g: any) => !['usa_fall26', 'visa_docs', 'loan_squad', 'uk_europe'].includes(g.id));
+        .filter((g: any) => !this.isStaticGroup(g));
       return { success: true, data: allGroups };
     }
   }

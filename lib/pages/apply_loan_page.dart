@@ -1338,44 +1338,96 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       // Submit loan application
       final loanService = LoanService();
 
-      final createdLoan = await loanService.createLoan(
-        userId: userId,
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
-        phoneNumber: _phoneController.text,
-        email: _emailController.text,
-        dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
-        targetCountry: _countryController.text,
-        city: _cityController.text.isEmpty ? null : _cityController.text,
-        pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
-        universityName: _instituteController.text,
-        courseName: _courseController.text.isNotEmpty ? _courseController.text : _fieldOfStudyController.text,
-        bank: 'Matching Lenders',
-        loanType: _loanTypeController.text,
-        amount: amountValue,
-        tenure: int.tryParse(_tenureController.text),
-        purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
-        fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
-        fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
-        fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
-        motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
-        motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
-        motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
-        hasCollateral: _hasCollateral,
-        collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
-        hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
-        coApplicantName: _coApplicantNameController.text.isEmpty
-            ? null
-            : _coApplicantNameController.text,
-        coApplicantRelation: _coApplicantRelationController.text,
-        coApplicantPhone: _coApplicantPhoneController.text,
-        coApplicantEmail: _coApplicantEmailController.text.isEmpty
-            ? null
-            : _coApplicantEmailController.text,
-        coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
-        fieldOfStudy: _fieldOfStudyController.text,
-        admissionStatus: _admissionStatusController.text,
-      );
+      Loan createdLoan;
+      try {
+        createdLoan = await loanService.createLoan(
+          userId: userId,
+          firstName: _firstNameController.text,
+          lastName: _lastNameController.text,
+          phoneNumber: _phoneController.text,
+          email: _emailController.text,
+          dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
+          targetCountry: _countryController.text,
+          city: _cityController.text.isEmpty ? null : _cityController.text,
+          pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
+          universityName: _instituteController.text,
+          courseName: _courseController.text.isNotEmpty ? _courseController.text : _fieldOfStudyController.text,
+          bank: 'Matching Lenders',
+          loanType: _loanTypeController.text,
+          amount: amountValue,
+          tenure: int.tryParse(_tenureController.text),
+          purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
+          fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
+          fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
+          fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
+          motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
+          motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
+          motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
+          hasCollateral: _hasCollateral,
+          collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
+          hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
+          coApplicantName: _coApplicantNameController.text.isEmpty
+              ? null
+              : _coApplicantNameController.text,
+          coApplicantRelation: _coApplicantRelationController.text,
+          coApplicantPhone: _coApplicantPhoneController.text,
+          coApplicantEmail: _coApplicantEmailController.text.isEmpty
+              ? null
+              : _coApplicantEmailController.text,
+          coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
+          fieldOfStudy: _fieldOfStudyController.text,
+          admissionStatus: _admissionStatusController.text,
+        );
+      } catch (err) {
+        final errStr = err.toString().toLowerCase();
+        if (errStr.contains('token') || errStr.contains('session') || errStr.contains('unauthorized') || errStr.contains('expired')) {
+          final refreshed = await AuthService.refreshToken();
+          if (refreshed) {
+            createdLoan = await loanService.createLoan(
+              userId: userId,
+              firstName: _firstNameController.text,
+              lastName: _lastNameController.text,
+              phoneNumber: _phoneController.text,
+              email: _emailController.text,
+              dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
+              targetCountry: _countryController.text,
+              city: _cityController.text.isEmpty ? null : _cityController.text,
+              pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
+              universityName: _instituteController.text,
+              courseName: _courseController.text.isNotEmpty ? _courseController.text : _fieldOfStudyController.text,
+              bank: 'Matching Lenders',
+              loanType: _loanTypeController.text,
+              amount: amountValue,
+              tenure: int.tryParse(_tenureController.text),
+              purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
+              fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
+              fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
+              fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
+              motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
+              motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
+              motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
+              hasCollateral: _hasCollateral,
+              collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
+              hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
+              coApplicantName: _coApplicantNameController.text.isEmpty
+                  ? null
+                  : _coApplicantNameController.text,
+              coApplicantRelation: _coApplicantRelationController.text,
+              coApplicantPhone: _coApplicantPhoneController.text,
+              coApplicantEmail: _coApplicantEmailController.text.isEmpty
+                  ? null
+                  : _coApplicantEmailController.text,
+              coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
+              fieldOfStudy: _fieldOfStudyController.text,
+              admissionStatus: _admissionStatusController.text,
+            );
+          } else {
+            rethrow;
+          }
+        } else {
+          rethrow;
+        }
+      }
 
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
