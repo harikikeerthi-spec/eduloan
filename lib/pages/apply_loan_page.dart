@@ -1103,7 +1103,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         _coApplicantRelationController.text = rel;
                       });
                       final prefs = await SharedPreferences.getInstance();
+                      final userId = prefs.getString('userId') ?? 'anonymous';
                       await prefs.setString('co_applicant_relation', rel);
+                      await prefs.setString('co_applicant_relation_$userId', rel);
                       if (context.mounted) Navigator.pop(context);
                     },
                   );

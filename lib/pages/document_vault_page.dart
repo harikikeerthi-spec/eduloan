@@ -280,6 +280,18 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       if (isPanContent && !isPassportContent) {
         return 'You are uploading a PAN Card in the Passport slot. Please change it and upload your Passport.';
       }
+      if (isPassportContent) {
+        final hasParentsKeywords = contentText.contains('father') ||
+            contentText.contains('mother') ||
+            contentText.contains('guardian') ||
+            contentText.contains('spouse') ||
+            contentText.contains('file no') ||
+            contentText.contains('old passport');
+        final isPdf = pathLower.endsWith('.pdf');
+        if (!hasParentsKeywords && !isPdf) {
+          return 'You have uploaded only the front page of your Passport. Please upload both Front & Back pages (or a combined 2-page PDF/image) containing your Parents\' details (Father & Mother names).';
+        }
+      }
     }
 
     return null;
@@ -291,7 +303,8 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     await _loadFingerprints();
 
     final prefs = await SharedPreferences.getInstance();
-    _coApplicantRelation = prefs.getString('co_applicant_relation');
+    final userId = prefs.getString('userId') ?? 'anonymous';
+    _coApplicantRelation = prefs.getString('co_applicant_relation_$userId') ?? prefs.getString('co_applicant_relation');
 
     try {
       final loans = await LoanService().getUserLoans();
@@ -300,6 +313,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         if (lastLoan.coApplicantRelation != null && lastLoan.coApplicantRelation!.isNotEmpty) {
           _coApplicantRelation = lastLoan.coApplicantRelation;
           await prefs.setString('co_applicant_relation', _coApplicantRelation!);
+          await prefs.setString('co_applicant_relation_$userId', _coApplicantRelation!);
         }
       }
     } catch (e) {
@@ -358,17 +372,27 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       return _documents.firstWhere((doc) {
         final dt = doc.docType.trim().toLowerCase().replaceAll('-', '_');
         if (targetClean.contains('pan')) {
-          if (targetClean.startsWith('father') && dt.contains('father') && dt.contains('pan')) return true;
-          if (targetClean.startsWith('mother') && dt.contains('mother') && dt.contains('pan')) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && dt.contains('pan')) return true;
-          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if ((targetClean.startsWith('father') || targetClean.contains('father')) && (dt.contains('father') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('mother') || targetClean.contains('mother')) && (dt.contains('mother') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('spouse') || targetClean.contains('spouse')) && (dt.contains('spouse') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('brother') || targetClean.contains('brother')) && (dt.contains('brother') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('sister') || targetClean.contains('sister')) && (dt.contains('sister') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('uncle') || targetClean.contains('uncle')) && (dt.contains('uncle') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if ((targetClean.startsWith('aunt') || targetClean.contains('aunt')) && (dt.contains('aunt') || dt.contains('coapp')) && dt.contains('pan')) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant') || (_coApplicantRelation != null && dt.contains(_coApplicantRelation!.toLowerCase()))) && dt.contains('pan')) return true;
+          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp') && !dt.contains('spouse')) return true;
           if (dt == 'pan' || dt == 'pan_card') return true;
         }
         if (targetClean.contains('aadhar') || targetClean.contains('aadhaar')) {
-          if (targetClean.startsWith('father') && dt.contains('father') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('mother') && dt.contains('mother') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if ((targetClean.startsWith('father') || targetClean.contains('father')) && (dt.contains('father') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('mother') || targetClean.contains('mother')) && (dt.contains('mother') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('spouse') || targetClean.contains('spouse')) && (dt.contains('spouse') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('brother') || targetClean.contains('brother')) && (dt.contains('brother') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('sister') || targetClean.contains('sister')) && (dt.contains('sister') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('uncle') || targetClean.contains('uncle')) && (dt.contains('uncle') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if ((targetClean.startsWith('aunt') || targetClean.contains('aunt')) && (dt.contains('aunt') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant') || (_coApplicantRelation != null && (dt.contains(_coApplicantRelation!.toLowerCase())))) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
+          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp') && !dt.contains('spouse')) return true;
           if (dt == 'aadhar' || dt == 'aadhaar' || dt == 'aadhar_card' || dt == 'aadhaar_card') return true;
         }
         if (targetClean.contains('passport')) {
@@ -834,7 +858,24 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     String category,
     Map<String, List<Map<String, String>>> baseDocs,
   ) {
-    final Map<String, List<Map<String, String>>> combined = Map.from(baseDocs);
+    Map<String, List<Map<String, String>>> combined;
+
+    if (category == 'Co-Applicant') {
+      final rel = (_coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty)
+          ? _coApplicantRelation!.trim()
+          : 'Co-Applicant';
+      final relSlug = rel.toLowerCase().replaceAll(' ', '_');
+      final headerKey = 'KYC ($rel)';
+
+      combined = {
+        headerKey: [
+          {'name': '$rel PAN Card', 'type': '${relSlug}_pan'},
+          {'name': '$rel Aadhar Card', 'type': '${relSlug}_aadhar'},
+        ],
+      };
+    } else {
+      combined = Map.from(baseDocs);
+    }
 
     if (category == 'Parents' && _coApplicantRelation != null) {
       final relLower = _coApplicantRelation!.trim().toLowerCase();
@@ -1050,6 +1091,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildTabBar() {
+    final hasCoAppRelation = _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
+    final coAppTabTitle = hasCoAppRelation ? 'Co-Applicant (${_coApplicantRelation!.trim()})' : 'Co-Applicant';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -1068,10 +1112,155 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         overlayColor: WidgetStateProperty.all(
           const Color(0xFF311B92).withValues(alpha: 0.1),
         ),
-        tabs: const [
-          Tab(text: 'Student'),
-          Tab(text: 'Co-Applicant'),
-          Tab(text: 'Parents'),
+        tabs: [
+          const Tab(text: 'Student'),
+          Tab(text: coAppTabTitle),
+          const Tab(text: 'Parents'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoApplicantHeaderBanner() {
+    final hasCoAppRelation = _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
+    final relationName = hasCoAppRelation ? _coApplicantRelation!.trim() : null;
+
+    if (relationName == null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF311B92).withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline_rounded, color: Color(0xFF311B92), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Your Co-Applicant type will automatically reflect the relationship selected in your Loan Application (Father, Mother, Spouse, etc.).',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  color: const Color(0xFF311B92),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF311B92).withValues(alpha: 0.08),
+            const Color(0xFF512DA8).withValues(alpha: 0.03),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF311B92),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.badge_rounded, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Co-Applicant Type:',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF311B92),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(
+                        relationName,
+                        style: GoogleFonts.outfit(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Configured from your loan application. Upload $relationName KYC documents below.',
+                  style: GoogleFonts.outfit(
+                    fontSize: 11.5,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParentsHeaderBanner() {
+    if (_coApplicantRelation == null || _coApplicantRelation!.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final relLower = _coApplicantRelation!.trim().toLowerCase();
+    final isFather = relLower == 'father' || relLower.contains('father');
+    final isMother = relLower == 'mother' || relLower.contains('mother');
+
+    if (!isFather && !isMother) return const SizedBox.shrink();
+
+    final relDisplay = isFather ? 'Father' : 'Mother';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF16A34A), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$relDisplay is designated as your Co-Applicant. You can manage $relDisplay\'s KYC documents in the Co-Applicant ($relDisplay) tab.',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                color: const Color(0xFF166534),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1082,11 +1271,17 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildCoApplicantTab() {
-    return _buildSectionList(_getCombinedDocs('Co-Applicant', _coApplicantDocs));
+    return _buildSectionList(
+      _getCombinedDocs('Co-Applicant', _coApplicantDocs),
+      headerBanner: _buildCoApplicantHeaderBanner(),
+    );
   }
 
   Widget _buildParentsTab() {
-    return _buildSectionList(_getCombinedDocs('Parents', _parentsDocs));
+    return _buildSectionList(
+      _getCombinedDocs('Parents', _parentsDocs),
+      headerBanner: _buildParentsHeaderBanner(),
+    );
   }
 
   Widget _buildPassportMandatoryBanner() {
@@ -1125,7 +1320,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     );
   }
 
-  Widget _buildSectionList(Map<String, List<Map<String, String>>> sections) {
+  Widget _buildSectionList(
+    Map<String, List<Map<String, String>>> sections, {
+    Widget? headerBanner,
+  }) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -1138,6 +1336,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           _buildPassportMandatoryBanner(),
+          if (headerBanner != null) headerBanner,
           ...sections.entries.map((entry) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

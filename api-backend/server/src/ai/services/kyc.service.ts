@@ -295,6 +295,22 @@ export class KycService {
             const isPan = clean.includes('income tax') || clean.includes('permanent account') || /([a-z]){5}([0-9]){4}([a-z]){1}/i.test(clean);
             
             matches = hasPassportKeywords && !isAadhaar && !isPan;
+
+            // Check if back page / parents details are present
+            const hasBackPageKeywords = clean.includes('father') ||
+                clean.includes('mother') ||
+                clean.includes('guardian') ||
+                clean.includes('spouse') ||
+                clean.includes('address') ||
+                clean.includes('file no') ||
+                clean.includes('old passport');
+
+            if (matches && !hasBackPageKeywords && !isPdf) {
+                return {
+                    is_valid: false,
+                    error: 'You have uploaded only the front page of your Passport. Please upload both Front & Back pages containing your Parents\' details (Father & Mother names).'
+                };
+            }
         } else if (normalizedType.includes('marksheet_10') || normalizedType.includes('10th') || normalizedType.includes('ssc')) {
             expectedLabel = 'Grade 10 Marksheet';
             const keywords = ['marks', 'grade', 'score', 'certificate', 'examination', 'board', 'school', 'roll', 'subject', 'result', 'ssc', 'cbse', 'icse', 'matriculation', 'secondary'];
@@ -531,6 +547,11 @@ export class KycService {
             passport: `
                 EXPECTED DOCUMENT TYPE: PASSPORT (Travel document issued by Passport Office)
 
+                ⚠️  MANDATORY REQUIREMENT: BOTH FRONT & BACK PAGES ARE REQUIRED!
+                - Indian Passports must include BOTH the Front Biodata page (photo, passport number, candidate name, MRZ) AND the Back page (Father's name, Mother's name, Address, File number).
+                - If the user uploaded ONLY the Front page without the Back page (no Father/Mother name or address visible):
+                  Set is_valid=false, fraud_reason='MISSING_PASSPORT_BACK_PAGE', error="You have uploaded only the front page of your Passport. Please upload both Front & Back pages containing Parents' names (Father & Mother).", missing_fields=["passport_back_page", "father_name", "mother_name"].
+
                 ⚠️  REJECT IMMEDIATELY IF YOU DETECT:
                 - "AADHAAR" or "UNIQUE IDENTIFICATION" or "UIDAI"
                 - "INCOME TAX" or "PERMANENT ACCOUNT" or "PAN CARD"
@@ -551,6 +572,7 @@ export class KycService {
                 - given_names, surname: use when full_name line is split on the card
                 - father_name: full Name of Father / Legal Guardian as printed on passport back page
                 - mother_name: full Name of Mother as printed on passport back page
+                - spouse_name: full Name of Spouse as printed on passport back page (if present)
                 - dob (DD/MM/YYYY)
                 - gender: lowercase "male" or "female"
                 - date_of_issue (DD/MM/YYYY)
@@ -563,7 +585,7 @@ export class KycService {
                 - nationality: e.g. "INDIAN"
                 - address: full address printed on the passport (address page). Use string or:
                   { "address1", "address2", "city", "state", "pincode", "country" }
-                is_valid: true when passport with readable name and passport_number.
+                is_valid: true when passport with readable name, passport_number, AND back page with father_name or mother_name.
             `,
             marksheet_10: `
                 EXPECTED DOCUMENT TYPE: GRADE 10 / SSC MARKSHEET/CERTIFICATE
@@ -777,6 +799,7 @@ export class KycService {
             const lowerType = String(docType || '').toLowerCase();
             const isAadhaar = lowerType.includes('aadhaar') || lowerType.includes('aadhar') || lowerType.includes('national_id');
             const isPan = lowerType.includes('pan');
+            const isPassport = lowerType.includes('passport');
 
             let isValid = parsed.is_valid ?? (parsed.confidence_score >= 60);
             let validationError: string | undefined;
@@ -798,6 +821,9 @@ export class KycService {
                     isValid = false;
                     validationError = `Document type mismatch: Expected a valid ${docType.toUpperCase().replace(/_/g, ' ')}, but the uploaded document appears to be a ${String(parsed.document_type || 'different document').toUpperCase()}. Please upload the correct document.`;
                 }
+            } else if (parsed.fraud_reason === 'MISSING_PASSPORT_BACK_PAGE') {
+                isValid = false;
+                validationError = parsed.error || 'You have uploaded only the front page of your Passport. Please upload both Front & Back pages containing Parents\' names (Father & Mother).';
             } else {
                 // Document type validation check
                 const isAcademicCompatible = (expectedNorm === 'marksheet_ug' && (detectedNorm === 'marksheet_ug' || isDetectedAcademic || String(parsed.document_type || '').toLowerCase().includes('marksheet')));
@@ -818,6 +844,12 @@ export class KycService {
                         if (!panValidation.is_valid) {
                             isValid = false;
                             validationError = panValidation.error;
+                        }
+                    } else if (isPassport) {
+                        const passportValidation = this.validatePassportDocument(parsed, extracted);
+                        if (!passportValidation.is_valid) {
+                            isValid = false;
+                            validationError = passportValidation.error;
                         }
                     } else if (!extracted.full_name && Object.keys(extracted).length === 0) {
                         isValid = false;
@@ -903,6 +935,59 @@ export class KycService {
             return {
                 is_valid: false,
                 error: `Could not read required Aadhaar fields: ${failedLabels.join(', ')}`,
+            };
+        }
+
+        return { is_valid: true };
+    }
+
+    private validatePassportDocument(
+        parsed: any,
+        extracted: any,
+    ): { is_valid: boolean; error?: string } {
+        const failedLabels: string[] = [];
+
+        if (!extracted.passport_number) {
+            failedLabels.push('passport number');
+        }
+        if (!extracted.full_name && !extracted.given_names) {
+            failedLabels.push('candidate name');
+        }
+
+        if (failedLabels.length > 0) {
+            return {
+                is_valid: false,
+                error: `Could not read required Passport fields: ${failedLabels.join(', ')}`,
+            };
+        }
+
+        // Check for Back Page / Parents' Details
+        const rawSummary = String(
+            parsed.raw_text_summary ||
+            parsed.rawOcrText ||
+            extracted.raw_text_summary ||
+            '',
+        ).toLowerCase();
+
+        const hasFatherName = !!(extracted.father_name && String(extracted.father_name).trim().length > 1);
+        const hasMotherName = !!(extracted.mother_name && String(extracted.mother_name).trim().length > 1);
+        const hasGuardianName = !!(extracted.guardian_name && String(extracted.guardian_name).trim().length > 1);
+        const hasSpouseName = !!(extracted.spouse_name && String(extracted.spouse_name).trim().length > 1);
+
+        const hasBackKeywords = rawSummary.includes('father') ||
+            rawSummary.includes('mother') ||
+            rawSummary.includes('guardian') ||
+            rawSummary.includes('spouse') ||
+            rawSummary.includes('old passport') ||
+            rawSummary.includes('file no') ||
+            rawSummary.includes('file number');
+
+        const hasBackPage = hasFatherName || hasMotherName || hasGuardianName || hasSpouseName || hasBackKeywords;
+
+        if (!hasBackPage) {
+            return {
+                is_valid: false,
+                error: 'You have uploaded only the front page of your Passport. Please upload both Front & Back pages (or a combined 2-page PDF/image) containing your Parents\' details (Father & Mother names).',
             };
         }
 
@@ -1181,6 +1266,21 @@ export class KycService {
                         && !lower.includes('mrz');
                 });
                 if (nameLine) data.full_name = nameLine.replace(/\s+/g, ' ').trim();
+            }
+
+            const fatherMatch = clean.match(/(?:father|legal guardian|father's name|father name|name of father)[:\s]*([^\n]+)/i);
+            if (fatherMatch) {
+                data.father_name = fatherMatch[1].trim().replace(/\s+/g, ' ');
+            }
+
+            const motherMatch = clean.match(/(?:mother|mother's name|mother name|name of mother)[:\s]*([^\n]+)/i);
+            if (motherMatch) {
+                data.mother_name = motherMatch[1].trim().replace(/\s+/g, ' ');
+            }
+
+            const spouseMatch = clean.match(/(?:spouse|spouse's name|spouse name|name of spouse)[:\s]*([^\n]+)/i);
+            if (spouseMatch) {
+                data.spouse_name = spouseMatch[1].trim().replace(/\s+/g, ' ');
             }
 
             const pinMatch = clean.match(/\b\d{6}\b/);

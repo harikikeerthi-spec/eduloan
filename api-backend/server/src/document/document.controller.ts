@@ -139,6 +139,25 @@ export class DocumentController {
         );
       }
 
+      // ── 1.2 Passport Complete (Front & Back) Validation ──────────────────
+      if (isPassportDoc) {
+        const pData = kycResult.extracted_data || {};
+        const hasParentsName = !!(pData.father_name || pData.mother_name || pData.guardian_name || pData.spouse_name);
+        const rawSummary = String(kycResult.raw_text_summary || '').toLowerCase();
+        const hasBackKeywords = rawSummary.includes('father') ||
+          rawSummary.includes('mother') ||
+          rawSummary.includes('guardian') ||
+          rawSummary.includes('spouse') ||
+          rawSummary.includes('file no') ||
+          rawSummary.includes('old passport');
+
+        if (!hasParentsName && !hasBackKeywords) {
+          throw new BadRequestException(
+            'You have uploaded only the front page of your Passport. Please upload both Front & Back pages (or a combined 2-page PDF/image) containing your Parents\' details (Father & Mother names).'
+          );
+        }
+      }
+
       // ── 1.5 Cross-Verify Details Against Passport Reference ───────────────
       if (!isPassportDoc && passportDoc && passportDoc.verificationMetadata) {
         const pMeta = passportDoc.verificationMetadata?.details?.extractedFields || passportDoc.verificationMetadata || {};
