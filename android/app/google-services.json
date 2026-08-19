@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "496981213875",
-    "project_id": "vidhyalaons",
-    "storage_bucket": "vidhyalaons.firebasestorage.app"
+    "project_number": "135351691177",
+    "project_id": "vidyaloans-bd43f",
+    "storage_bucket": "vidyaloans-bd43f.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:496981213875:android:0c49219f0427ddbdb8e6c6",
+        "mobilesdk_app_id": "1:135351691177:android:d58e94f789d39bffe906b8",
         "android_client_info": {
-          "package_name": "com.example.VidyaLoan"
+          "package_name": "com.example.vidyaloans"
         }
       },
       "oauth_client": [
         {
-          "client_id": "496981213875-cnnp0pkko933aocfc4d4t9u5es6uph91.apps.googleusercontent.com",
+          "client_id": "135351691177-p10cl08ph90l88m55715ng7fsfi5m11v.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.VidyaLoan",
+            "package_name": "com.example.vidyaloans",
             "certificate_hash": "55c8a96225441ce8a3554074f3521a7d7bc195f7"
           }
         },
         {
-          "client_id": "496981213875-7imkhflkb3b805bo6fga84hqpe7dapcr.apps.googleusercontent.com",
+          "client_id": "135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAy9-WE0DkcMSgQoKoufaAyo08FvDUTjg0"
+          "current_key": "AIzaSyBjFwMBjbQowPCMKxgqimV8XIq402fsE_w"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "496981213875-7imkhflkb3b805bo6fga84hqpe7dapcr.apps.googleusercontent.com",
+              "client_id": "135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

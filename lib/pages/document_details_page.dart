@@ -43,18 +43,15 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
       final userId = prefs.getString('userId') ?? 'anonymous';
       _coApplicantRelation = prefs.getString('co_applicant_relation_$userId') ?? prefs.getString('co_applicant_relation');
 
-      // Load local OCR cached numbers for this specific user
+      // Load local OCR cached numbers strictly for this specific active userId
       final keys = prefs.getKeys();
       final prefix = 'ocr_number_${userId}_';
+      _localOcrNumbers.clear();
+      _userProfileNumbers.clear();
+
       for (var k in keys) {
         if (k.startsWith(prefix)) {
           final type = k.replaceFirst(prefix, '');
-          final val = prefs.getString(k);
-          if (val != null && val.isNotEmpty) {
-            _localOcrNumbers[type] = val;
-          }
-        } else if (k.startsWith('ocr_number_') && !k.contains('_user_') && !k.contains('_anon_')) {
-          final type = k.replaceFirst('ocr_number_', '');
           final val = prefs.getString(k);
           if (val != null && val.isNotEmpty) {
             _localOcrNumbers[type] = val;
@@ -158,6 +155,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
   }
 
   String? _getExtractedNumberForDoc(String type) {
+    // If the document is NOT uploaded at all, NEVER display an OCR number
+    if (!_isDocUploaded(type)) {
+      return null;
+    }
+
     final doc = _findDocInDetails(type);
     if (doc != null && doc.extractedNumber != null && doc.extractedNumber!.trim().isNotEmpty) {
       return doc.extractedNumber!.trim();
@@ -213,9 +215,14 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     final doc = _findDocInDetails(type);
     if (doc != null) {
       final s = doc.status.toLowerCase();
-      return doc.uploaded || s == 'uploaded' || s == 'verified' || s == 'approved' || s == 'completed' || (doc.filePath != null && doc.filePath!.isNotEmpty);
+      return doc.uploaded ||
+          s == 'uploaded' ||
+          s == 'verified' ||
+          s == 'approved' ||
+          s == 'completed' ||
+          (doc.filePath != null && doc.filePath!.isNotEmpty);
     }
-    return _localOcrNumbers.containsKey(type);
+    return false;
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_client.dart';
 import 'api_config.dart';
 import 'secure_storage_service.dart';
 
@@ -705,9 +706,8 @@ class AiLogicService {
   ) async {
     final String baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl/ai/$endpoint');
-    final response = await http.post(
+    final response = await ApiClient.post(
       url,
-      headers: {'Content-Type': 'application/json'},
       body: jsonEncode(body),
     );
 
@@ -721,9 +721,8 @@ class AiLogicService {
   Future<dynamic> _getRequest(String endpoint) async {
     final String baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl/ai/$endpoint');
-    final response = await http.get(
+    final response = await ApiClient.get(
       url,
-      headers: {'Content-Type': 'application/json'},
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -747,21 +746,12 @@ class AiLogicService {
       final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
       final phone = prefs.getString('user_phone') ?? 'N/A';
       final userId = await SecureStorageService.getUserId() ?? '';
-      final token = await SecureStorageService.getToken() ?? '';
 
       final String baseUrl = await ApiConfig.getBaseUrl();
       final url = Uri.parse('$baseUrl/university-inquiry');
 
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      if (token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-
-      final response = await http.post(
+      final response = await ApiClient.post(
         url,
-        headers: headers,
         body: jsonEncode({
           'name': name,
           'email': email,
@@ -791,7 +781,6 @@ class AiLogicService {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
       final userId = await SecureStorageService.getUserId() ?? prefs.getString('userId') ?? '';
-      final token = await SecureStorageService.getToken() ?? prefs.getString('auth_token') ?? '';
 
       if (email.isEmpty && userId.isEmpty) return false;
 
@@ -800,16 +789,8 @@ class AiLogicService {
         '$baseUrl/university-inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
       );
 
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
-      if (token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-
-      final response = await http.get(
+      final response = await ApiClient.get(
         url,
-        headers: headers,
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -1967,9 +1948,8 @@ class AiLogicService {
     // Sync with backend
     try {
       final String baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.post(
+      final response = await ApiClient.post(
         Uri.parse('$baseUrl/ai/university/favorite'),
-        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': userId,
           'universityName': uni.name,
@@ -2013,9 +1993,8 @@ class AiLogicService {
 
     try {
       final String baseUrl = await ApiConfig.getBaseUrl();
-      await http.post(
+      await ApiClient.post(
         Uri.parse('$baseUrl/ai/university/view'),
-        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'userId': userId,
           'universityName': uni.name,

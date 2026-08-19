@@ -7,6 +7,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import 'api_config.dart';
+import 'api_client.dart';
 import 'secure_storage_service.dart';
 
 class UserService {
@@ -42,12 +43,8 @@ class UserService {
       if (userId == null) return [];
 
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.get(
+      final response = await ApiClient.get(
         Uri.parse('$baseUrl/documents/$userId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
       );
 
       if (response.statusCode == 200) {
@@ -208,9 +205,8 @@ class UserService {
       if (userId == null) return false;
 
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.delete(
+      final response = await ApiClient.delete(
         Uri.parse('$baseUrl/documents/$userId/$docType'),
-        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {

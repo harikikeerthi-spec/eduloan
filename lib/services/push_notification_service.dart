@@ -4,14 +4,22 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'secure_storage_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   debugPrint('Handling background push notification: ${message.messageId}');
   await PushNotificationService.saveNotificationLocally(
-    title: message.notification?.title ?? message.data['title'] ?? 'VidyaLoans Notification',
-    body: message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? '',
+    title:
+        message.notification?.title ??
+        message.data['title'] ??
+        'VidyaLoans Notification',
+    body:
+        message.notification?.body ??
+        message.data['body'] ??
+        message.data['message'] ??
+        '',
     type: message.data['type'] ?? 'PUSH',
   );
 }
@@ -24,7 +32,8 @@ class PushNotificationService {
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'vidyaloan_high_importance_channel',
     'VidyaLoans Notifications',
-    description: 'High priority notifications for loan status updates and announcements',
+    description:
+        'High priority notifications for loan status updates and announcements',
     importance: Importance.max,
     playSound: true,
   );
@@ -39,17 +48,20 @@ class PushNotificationService {
         provisional: false,
       );
 
-      debugPrint('Push Notification Authorization status: ${settings.authorizationStatus}');
+      debugPrint(
+        'Push Notification Authorization status: ${settings.authorizationStatus}',
+      );
 
       // 2. Initialize Local Notifications Plugin
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
-      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
+      const DarwinInitializationSettings iosSettings =
+          DarwinInitializationSettings(
+            requestAlertPermission: true,
+            requestBadgePermission: true,
+            requestSoundPermission: true,
+          );
 
       const InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
@@ -65,7 +77,9 @@ class PushNotificationService {
 
       // Create Android Notification Channel
       final androidPlugin = _localNotifications
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(_channel);
       }
@@ -75,10 +89,19 @@ class PushNotificationService {
 
       // 4. Foreground Messaging Listener
       FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-        debugPrint('Received foreground push message: ${message.notification?.title}');
+        debugPrint(
+          'Received foreground push message: ${message.notification?.title}',
+        );
 
-        final title = message.notification?.title ?? message.data['title'] ?? 'VidyaLoan Notification';
-        final body = message.notification?.body ?? message.data['body'] ?? message.data['message'] ?? '';
+        final title =
+            message.notification?.title ??
+            message.data['title'] ??
+            'VidyaLoan Notification';
+        final body =
+            message.notification?.body ??
+            message.data['body'] ??
+            message.data['message'] ??
+            '';
 
         // Show system push notification banner
         await showLocalNotification(
@@ -115,10 +138,12 @@ class PushNotificationService {
     String? payload,
   }) async {
     try {
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      const AndroidNotificationDetails
+      androidDetails = AndroidNotificationDetails(
         'vidyaloan_high_importance_channel',
         'VidyaLoan Notifications',
-        channelDescription: 'High priority notifications for loan status updates and announcements',
+        channelDescription:
+            'High priority notifications for loan status updates and announcements',
         importance: Importance.max,
         priority: Priority.high,
         ticker: 'ticker',
@@ -127,7 +152,11 @@ class PushNotificationService {
 
       const NotificationDetails platformDetails = NotificationDetails(
         android: androidDetails,
-        iOS: DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
       );
 
       await _localNotifications.show(
@@ -146,9 +175,7 @@ class PushNotificationService {
     try {
       String? token = await _fcm.getToken();
       if (token != null) {
-        debugPrint('FCM Device Token: $token');
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('fcm_token', token);
+        await SecureStorageService.write('fcm_token', token);
       }
       return token;
     } catch (e) {

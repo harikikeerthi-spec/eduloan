@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_client.dart';
 import 'api_config.dart';
 import 'secure_storage_service.dart';
 
@@ -9,12 +10,18 @@ class AuthService {
   static dynamic _parseJsonResponse(http.Response response) {
     final body = response.body.trim();
     if (body.isEmpty) {
-      return {'success': false, 'message': 'Empty response from server (${response.statusCode})'};
-    }
-    if (body.startsWith('<') || body.startsWith('Internal Server Error') || body.startsWith('Bad Gateway')) {
       return {
         'success': false,
-        'message': 'Server is updating (${response.statusCode}). Please try again in a few seconds.',
+        'message': 'Empty response from server (${response.statusCode})',
+      };
+    }
+    if (body.startsWith('<') ||
+        body.startsWith('Internal Server Error') ||
+        body.startsWith('Bad Gateway')) {
+      return {
+        'success': false,
+        'message':
+            'Server is updating (${response.statusCode}). Please try again in a few seconds.',
       };
     }
     try {
@@ -22,7 +29,8 @@ class AuthService {
     } catch (e) {
       return {
         'success': false,
-        'message': 'Invalid response format (${response.statusCode}). Please try again.',
+        'message':
+            'Invalid response format (${response.statusCode}). Please try again.',
       };
     }
   }
@@ -58,7 +66,10 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please check your internet connection.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please check your internet connection.',
+      };
     }
   }
 
@@ -79,7 +90,12 @@ class AuthService {
 
       final data = _parseJsonResponse(response);
       if (data is! Map<String, dynamic>) {
-        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+        return {
+          'success': false,
+          'message': data is Map && data['message'] != null
+              ? data['message']
+              : 'Unexpected server response',
+        };
       }
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
@@ -105,9 +121,15 @@ class AuthService {
           await SecureStorageService.saveUserId(data['userId']);
         }
 
-        if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
-        if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
-        if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
+        if (data['firstName'] != null) {
+          await prefs.setString('user_firstName', data['firstName']);
+        }
+        if (data['lastName'] != null) {
+          await prefs.setString('user_lastName', data['lastName']);
+        }
+        if (data['phoneNumber'] != null) {
+          await prefs.setString('user_phone', data['phoneNumber']);
+        }
 
         return {
           'success': true,
@@ -116,13 +138,13 @@ class AuthService {
           'message': data['message'] ?? 'OTP verified successfully',
         };
       } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Invalid OTP',
-        };
+        return {'success': false, 'message': data['message'] ?? 'Invalid OTP'};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please try again.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please try again.',
+      };
     }
   }
 
@@ -145,15 +167,18 @@ class AuthService {
           .post(
             Uri.parse('$baseUrl/auth/firebase'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'idToken': idToken,
-            }),
+            body: jsonEncode({'idToken': idToken}),
           )
           .timeout(const Duration(seconds: 30));
 
       final data = _parseJsonResponse(response);
       if (data is! Map<String, dynamic>) {
-        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+        return {
+          'success': false,
+          'message': data is Map && data['message'] != null
+              ? data['message']
+              : 'Unexpected server response',
+        };
       }
 
       if ((response.statusCode == 200 || response.statusCode == 201) &&
@@ -179,9 +204,15 @@ class AuthService {
           await SecureStorageService.saveUserId(data['userId']);
         }
 
-        if (data['firstName'] != null) await prefs.setString('user_firstName', data['firstName']);
-        if (data['lastName'] != null) await prefs.setString('user_lastName', data['lastName']);
-        if (data['phoneNumber'] != null) await prefs.setString('user_phone', data['phoneNumber']);
+        if (data['firstName'] != null) {
+          await prefs.setString('user_firstName', data['firstName']);
+        }
+        if (data['lastName'] != null) {
+          await prefs.setString('user_lastName', data['lastName']);
+        }
+        if (data['phoneNumber'] != null) {
+          await prefs.setString('user_phone', data['phoneNumber']);
+        }
 
         return {
           'success': true,
@@ -196,7 +227,10 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please try again.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please try again.',
+      };
     }
   }
 
@@ -217,12 +251,8 @@ class AuthService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/auth/refresh'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'refresh_token': refreshToken,
-            }),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh_token': refreshToken}),
           )
           .timeout(const Duration(seconds: 30));
 
@@ -246,8 +276,7 @@ class AuthService {
         await SecureStorageService.saveToken(newAccessToken.toString());
 
         // Backend rotates the refresh token — save the new one securely.
-        if (newRefreshToken != null &&
-            newRefreshToken.toString().isNotEmpty) {
+        if (newRefreshToken != null && newRefreshToken.toString().isNotEmpty) {
           await SecureStorageService.saveRefreshToken(
             newRefreshToken.toString(),
           );
@@ -306,7 +335,12 @@ class AuthService {
 
       final data = _parseJsonResponse(response);
       if (data is! Map<String, dynamic>) {
-        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+        return {
+          'success': false,
+          'message': data is Map && data['message'] != null
+              ? data['message']
+              : 'Unexpected server response',
+        };
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -335,45 +369,44 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please try again.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please try again.',
+      };
     }
   }
 
   /// Fetches user dashboard data (Profile)
-  static Future<Map<String, dynamic>> getUserDashboard(String email) async {
+  static Future<Map<String, dynamic>> getUserDashboard(
+    String email,
+  ) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/auth/dashboard'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': email}),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await ApiClient.post(
+        Uri.parse('$baseUrl/auth/dashboard'),
+        body: jsonEncode({'email': email}),
+      ).timeout(const Duration(seconds: 30));
 
       final data = _parseJsonResponse(response);
       if (data is! Map<String, dynamic>) {
-        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+        return {
+          'success': false,
+          'message': data is Map && data['message'] != null
+              ? data['message']
+              : 'Unexpected server response',
+        };
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return {
-          'success': true,
-          'user': data,
-          'data': data,
-        };
-      } else if (response.statusCode == 401) {
-        final refreshed = await refreshToken();
-        if (refreshed) {
-          return getUserDashboard(email);
-        } else {
-          return {'success': false, 'message': 'Session expired. Please log in again.'};
-        }
+        return {'success': true, 'user': data, 'data': data};
       } else {
         return {'success': false, 'message': 'Failed to fetch dashboard data'};
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please try again.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please try again.',
+      };
     }
   }
 
@@ -381,21 +414,27 @@ class AuthService {
   static Future<Map<String, dynamic>> deleteAccount(String email) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
-      
-      final response = await http.post(
-        Uri.parse('$baseUrl/users/delete-self'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'email': email}),
-      ).timeout(const Duration(seconds: 30));
+      final token = await SecureStorageService.getToken();
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/users/delete-self'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       final data = _parseJsonResponse(response);
       if (data is! Map<String, dynamic>) {
-        return {'success': false, 'message': data is Map && data['message'] != null ? data['message'] : 'Unexpected server response'};
+        return {
+          'success': false,
+          'message': data is Map && data['message'] != null
+              ? data['message']
+              : 'Unexpected server response',
+        };
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -410,7 +449,10 @@ class AuthService {
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Connection error. Please try again.'};
+      return {
+        'success': false,
+        'message': 'Connection error. Please try again.',
+      };
     }
   }
 }

@@ -81,7 +81,10 @@ class CommunityService {
   }
 
   /// Helper for DELETE requests
-  Future<dynamic> _deleteRequest(String endpoint, {bool isRetry = false}) async {
+  Future<dynamic> _deleteRequest(
+    String endpoint, {
+    bool isRetry = false,
+  }) async {
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -128,7 +131,8 @@ class CommunityService {
       };
 
       final queryString = Uri(queryParameters: queryParams).query;
-      final endpoint = '/community/forum/posts${queryString.isNotEmpty ? '?$queryString' : ''}';
+      final endpoint =
+          '/community/forum/posts${queryString.isNotEmpty ? '?$queryString' : ''}';
 
       final response = await _getRequest(endpoint);
       if (response['success'] == true && response['data'] != null) {
@@ -233,7 +237,9 @@ class CommunityService {
         'tags': tags,
       });
     } catch (e) {
-      debugPrint('Primary endpoint failed ($e), trying fallback /community/posts');
+      debugPrint(
+        'Primary endpoint failed ($e), trying fallback /community/posts',
+      );
       try {
         response = await _postRequest('/community/posts', {
           'title': title,
@@ -242,7 +248,8 @@ class CommunityService {
           'tags': tags,
         });
       } catch (err) {
-        if (e.toString().contains('CONTENT_NOT_RELEVANT') || err.toString().contains('CONTENT_NOT_RELEVANT')) {
+        if (e.toString().contains('CONTENT_NOT_RELEVANT') ||
+            err.toString().contains('CONTENT_NOT_RELEVANT')) {
           rethrow;
         }
         return ForumPost(
@@ -263,7 +270,9 @@ class CommunityService {
       }
     }
 
-    if (response != null && response['success'] == true && response['data'] != null) {
+    if (response != null &&
+        response['success'] == true &&
+        response['data'] != null) {
       return ForumPost.fromJson(response['data']);
     }
     throw Exception(response?['message'] ?? 'Failed to create post');
@@ -287,9 +296,15 @@ class CommunityService {
 
   Future<bool> toggleLikePost(String postId) async {
     try {
-      final response = await _postRequest('/community/forum/posts/$postId/like', {});
+      final response = await _postRequest(
+        '/community/forum/posts/$postId/like',
+        {},
+      );
       return response['success'] == true;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
       return true;
     }
   }
@@ -311,24 +326,45 @@ class CommunityService {
       );
       return response;
     } catch (e) {
-      return {'success': true, 'data': {'id': 'c_${DateTime.now().millisecondsSinceEpoch}', 'text': content}};
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
+
+      return {
+        'success': true,
+        'data': {
+          'id': 'c_${DateTime.now().millisecondsSinceEpoch}',
+          'text': content,
+        },
+      };
     }
   }
 
   Future<Map<String, dynamic>> deleteForumComment(String commentId) async {
     try {
-      final response = await _deleteRequest('/community/forum/comments/$commentId');
+      final response = await _deleteRequest(
+        '/community/forum/comments/$commentId',
+      );
       return response;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
       return {'success': true};
     }
   }
 
   Future<Map<String, dynamic>> likeForumComment(String commentId) async {
     try {
-      final response = await _postRequest('/community/forum/comments/$commentId/like', {});
+      final response = await _postRequest(
+        '/community/forum/comments/$commentId/like',
+        {},
+      );
       return response;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
       return {'success': true};
     }
   }
@@ -346,6 +382,10 @@ class CommunityService {
       });
       return response;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
+
       return {'isDuplicate': false};
     }
   }
@@ -392,19 +432,23 @@ class CommunityService {
   }
 
   /// Send and persist a Smart Group Chat message to database & local storage
-  Future<Map<String, dynamic>> sendChatMessage(String channelId, dynamic textOrData) async {
+  Future<Map<String, dynamic>> sendChatMessage(
+    String channelId,
+    dynamic textOrData,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final key = 'chat_msgs_$channelId';
       final currentList = prefs.getStringList(key) ?? [];
-      
+
       Map<String, dynamic> msgObj;
       if (textOrData is Map<String, dynamic>) {
         msgObj = textOrData;
       } else {
         final textStr = textOrData.toString();
         final now = DateTime.now();
-        final timeStr = '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
+        final timeStr =
+            '${now.hour % 12 == 0 ? 12 : now.hour % 12}:${now.minute.toString().padLeft(2, '0')} ${now.hour >= 12 ? 'PM' : 'AM'}';
         msgObj = {
           'sender': 'You',
           'avatarLetter': 'Y',
@@ -425,6 +469,10 @@ class CommunityService {
       );
       return response;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
+
       debugPrint('Fallback local chat save for channel $channelId: $e');
       return {'success': true};
     }
@@ -436,24 +484,32 @@ class CommunityService {
       final prefs = await SharedPreferences.getInstance();
       final key = 'chat_msgs_$channelId';
       final currentList = prefs.getStringList(key) ?? [];
-      return currentList.map((s) => json.decode(s) as Map<String, dynamic>).toList();
+      return currentList
+          .map((s) => json.decode(s) as Map<String, dynamic>)
+          .toList();
     } catch (e) {
       return [];
     }
   }
 
   /// Persist Poll vote & update state
-  Future<Map<String, dynamic>> submitPollVote(String pollId, int optionIndex) async {
+  Future<Map<String, dynamic>> submitPollVote(
+    String pollId,
+    int optionIndex,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('poll_voted_$pollId', optionIndex);
 
-      final response = await _postRequest(
-        '/community/polls/$pollId/vote',
-        {'optionIndex': optionIndex},
-      );
+      final response = await _postRequest('/community/polls/$pollId/vote', {
+        'optionIndex': optionIndex,
+      });
       return response;
     } catch (e) {
+      if (e.toString().contains('Session expired')) {
+        rethrow;
+      }
+
       debugPrint('Fallback local poll vote save for $pollId: $e');
       return {'success': true};
     }
@@ -472,7 +528,9 @@ class CommunityService {
       final currentRaw = prefs.getStringList('custom_smart_groups') ?? [];
       for (var str in currentRaw) {
         try {
-          final Map<String, dynamic> decoded = Map<String, dynamic>.from(json.decode(str) as Map);
+          final Map<String, dynamic> decoded = Map<String, dynamic>.from(
+            json.decode(str) as Map,
+          );
           if (decoded['id'] != null && !existingIds.contains(decoded['id'])) {
             existingIds.add(decoded['id']);
             result.add(decoded);
@@ -504,7 +562,9 @@ class CommunityService {
   }
 
   /// Create real group channel in backend database and local custom storage
-  Future<Map<String, dynamic>?> createGroup(Map<String, dynamic> groupData) async {
+  Future<Map<String, dynamic>?> createGroup(
+    Map<String, dynamic> groupData,
+  ) async {
     await saveCustomGroup(groupData);
     try {
       final response = await _postRequest('/community/groups', groupData);
@@ -522,7 +582,10 @@ class CommunityService {
     final List<Map<String, dynamic>> localMsgs = [];
     try {
       final prefs = await SharedPreferences.getInstance();
-      final localRaw = prefs.getStringList('group_msgs_$groupId') ?? prefs.getStringList('chat_msgs_$groupId') ?? [];
+      final localRaw =
+          prefs.getStringList('group_msgs_$groupId') ??
+          prefs.getStringList('chat_msgs_$groupId') ??
+          [];
       final deletedKey = 'deleted_msgs_$groupId';
       final deletedList = prefs.getStringList(deletedKey) ?? [];
 
@@ -541,29 +604,37 @@ class CommunityService {
       final response = await _getRequest('/community/groups/$groupId/messages');
       if (response['success'] == true && response['data'] != null) {
         final List raw = response['data'];
-        final List<Map<String, dynamic>> serverMsgs = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        final List<Map<String, dynamic>> serverMsgs = raw
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
 
         final prefs = await SharedPreferences.getInstance();
         final deletedKey = 'deleted_msgs_$groupId';
         final deletedList = prefs.getStringList(deletedKey) ?? [];
 
         // Filter out deleted messages
-        final activeLocal = localMsgs.where((m) => !deletedList.contains(m['id']?.toString())).toList();
-        final activeServer = serverMsgs.where((m) => !deletedList.contains(m['id']?.toString())).toList();
+        final activeLocal = localMsgs
+            .where((m) => !deletedList.contains(m['id']?.toString()))
+            .toList();
+        final activeServer = serverMsgs
+            .where((m) => !deletedList.contains(m['id']?.toString()))
+            .toList();
 
         // Merge server and local messages (avoid duplicates and preserve all history)
         final Map<String, Map<String, dynamic>> mergedMap = {};
         for (var m in activeLocal) {
-          final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
+          final key =
+              m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
           mergedMap[key] = m;
         }
         for (var m in activeServer) {
-          final key = m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
+          final key =
+              m['id']?.toString() ?? '${m['sender']}_${m['text']}_${m['time']}';
           mergedMap[key] = m;
         }
 
         final mergedList = mergedMap.values.toList();
-        
+
         // Save back to local storage so every message is permanently stored
         try {
           final rawList = mergedList.map((m) => json.encode(m)).toList();
@@ -580,7 +651,10 @@ class CommunityService {
   }
 
   /// Send message in real group chat and save to database & local storage
-  Future<Map<String, dynamic>?> sendGroupMessage(String groupId, Map<String, dynamic> msgData) async {
+  Future<Map<String, dynamic>?> sendGroupMessage(
+    String groupId,
+    Map<String, dynamic> msgData,
+  ) async {
     // 1. Immediately persist to local storage so it NEVER disappears
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -594,7 +668,10 @@ class CommunityService {
 
     // 2. Post to backend so ALL Vidyaloan users receive it
     try {
-      final response = await _postRequest('/community/groups/$groupId/messages', msgData);
+      final response = await _postRequest(
+        '/community/groups/$groupId/messages',
+        msgData,
+      );
       if (response['success'] == true && response['data'] != null) {
         final saved = Map<String, dynamic>.from(response['data'] as Map);
         return saved;
@@ -667,7 +744,9 @@ class CommunityService {
       await prefs.setStringList('joined_group_ids', joined);
 
       final userId = prefs.getString('userId') ?? '';
-      await _postRequest('/community/groups/$groupId/leave', {'userId': userId});
+      await _postRequest('/community/groups/$groupId/leave', {
+        'userId': userId,
+      });
       return true;
     } catch (e) {
       debugPrint('Error leaving group: $e');
@@ -676,13 +755,18 @@ class CommunityService {
   }
 
   /// Check group membership status: 'ADMIN', 'APPROVED', 'PENDING', or 'NONE'
-  Future<String> getGroupMembershipStatus(String groupId, String? adminEmail) async {
+  Future<String> getGroupMembershipStatus(
+    String groupId,
+    String? adminEmail,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final myEmail = prefs.getString('user_email') ?? '';
-      
+
       // Admin check
-      if (adminEmail != null && adminEmail.isNotEmpty && myEmail == adminEmail) {
+      if (adminEmail != null &&
+          adminEmail.isNotEmpty &&
+          myEmail == adminEmail) {
         return 'ADMIN';
       }
 
@@ -716,8 +800,11 @@ class CommunityService {
       final prefs = await SharedPreferences.getInstance();
       final fname = prefs.getString('user_firstName') ?? '';
       final lname = prefs.getString('user_lastName') ?? '';
-      final applicantName = '$fname $lname'.trim().isEmpty ? 'Student Applicant' : '$fname $lname'.trim();
-      final applicantEmail = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
+      final applicantName = '$fname $lname'.trim().isEmpty
+          ? 'Student Applicant'
+          : '$fname $lname'.trim();
+      final applicantEmail =
+          prefs.getString('user_email') ?? 'student@vidhyaloan.com';
 
       // 1. Store local pending status
       final pending = prefs.getStringList('pending_join_request_ids') ?? [];
@@ -746,7 +833,8 @@ class CommunityService {
       // 4. Trigger In-App Notification & Heads-up Mobile Push Notification for Group Admin!
       await NotificationService.pushNotification(
         title: '📌 New Group Join Request',
-        message: '$applicantName has requested to join your group "$groupTitle". Tap to review & approve.',
+        message:
+            '$applicantName has requested to join your group "$groupTitle". Tap to review & approve.',
         type: 'GROUP_JOIN_REQUEST',
       );
 
@@ -758,7 +846,9 @@ class CommunityService {
   }
 
   /// Get pending requests for admin
-  Future<List<Map<String, dynamic>>> getPendingJoinRequests(String groupId) async {
+  Future<List<Map<String, dynamic>>> getPendingJoinRequests(
+    String groupId,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final adminReqKey = 'admin_pending_requests_$groupId';
@@ -785,7 +875,8 @@ class CommunityService {
       currentAdminReqs.removeWhere((str) {
         try {
           final map = json.decode(str) as Map;
-          return map['id'] == requestId || map['applicantEmail'] == applicantEmail;
+          return map['id'] == requestId ||
+              map['applicantEmail'] == applicantEmail;
         } catch (_) {
           return false;
         }
@@ -807,7 +898,8 @@ class CommunityService {
       // Send confirmation notification to applicant
       await NotificationService.pushNotification(
         title: '🎉 Group Request Approved!',
-        message: 'Group Admin approved your request to join "$groupTitle". Welcome to the group channel!',
+        message:
+            'Group Admin approved your request to join "$groupTitle". Welcome to the group channel!',
         type: 'GROUP_JOIN_APPROVED',
       );
 
@@ -817,6 +909,7 @@ class CommunityService {
       return true;
     }
   }
+
   /// Admin rejects a join request
   Future<bool> rejectGroupJoinRequest({
     required String groupId,
@@ -831,7 +924,8 @@ class CommunityService {
       currentAdminReqs.removeWhere((str) {
         try {
           final map = json.decode(str) as Map;
-          return map['id'] == requestId || map['applicantEmail'] == applicantEmail;
+          return map['id'] == requestId ||
+              map['applicantEmail'] == applicantEmail;
         } catch (_) {
           return false;
         }
@@ -851,7 +945,8 @@ class CommunityService {
       // Notify applicant of rejection
       await NotificationService.pushNotification(
         title: '❌ Group Request Declined',
-        message: 'Your request to join "$groupTitle" was not approved by the admin.',
+        message:
+            'Your request to join "$groupTitle" was not approved by the admin.',
         type: 'GROUP_JOIN_REJECTED',
       );
 
@@ -862,5 +957,3 @@ class CommunityService {
     }
   }
 }
-
-

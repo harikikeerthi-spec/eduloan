@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 import 'api_config.dart';
-import 'auth_service.dart';
+import 'api_client.dart';
 import 'secure_storage_service.dart';
 
 class LoanService {
@@ -58,7 +58,7 @@ class LoanService {
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.post(
+      final response = await ApiClient.post(
         Uri.parse('$baseUrl/applications'),
         headers: headers,
         body: json.encode({
@@ -101,47 +101,6 @@ class LoanService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         return Loan.fromJson(data['data']);
-      } else if (response.statusCode == 401 && !isRetry) {
-        final refreshed = await AuthService.refreshToken();
-        if (refreshed) {
-          return createLoan(
-            userId: userId,
-            firstName: firstName,
-            lastName: lastName,
-            phoneNumber: phoneNumber,
-            email: email,
-            targetCountry: targetCountry,
-            universityName: universityName,
-            courseName: courseName,
-            bank: bank,
-            loanType: loanType,
-            amount: amount,
-            tenure: tenure,
-            purpose: purpose,
-            fatherName: fatherName,
-            fatherPhone: fatherPhone,
-            fatherEmail: fatherEmail,
-            motherName: motherName,
-            motherPhone: motherPhone,
-            motherEmail: motherEmail,
-            city: city,
-            pincode: pincode,
-            country: country,
-            hasCollateral: hasCollateral,
-            collateralDetails: collateralDetails,
-            hasCoApplicant: hasCoApplicant,
-            coApplicantName: coApplicantName,
-            coApplicantRelation: coApplicantRelation,
-            coApplicantPhone: coApplicantPhone,
-            coApplicantEmail: coApplicantEmail,
-            coApplicantIncome: coApplicantIncome,
-            fieldOfStudy: fieldOfStudy,
-            admissionStatus: admissionStatus,
-            isRetry: true,
-          );
-        } else {
-          throw Exception('Session expired. Please log in again.');
-        }
       } else {
         String serverMsg = '';
         try {
@@ -163,7 +122,7 @@ class LoanService {
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.get(
+      final response = await ApiClient.get(
         Uri.parse('$baseUrl/applications/my'),
         headers: headers,
       );
@@ -172,13 +131,6 @@ class LoanService {
         final data = json.decode(response.body);
         final List<dynamic> loansJson = data['data'];
         return loansJson.map((json) => Loan.fromJson(json)).toList();
-      } else if (response.statusCode == 401 && !isRetry) {
-        final refreshed = await AuthService.refreshToken();
-        if (refreshed) {
-          return getUserLoans(isRetry: true);
-        } else {
-          throw Exception('Session expired. Please log in again.');
-        }
       } else {
         throw Exception('Failed to fetch loans: ${response.statusCode}');
       }
@@ -192,7 +144,7 @@ class LoanService {
     try {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await http.get(
+      final response = await ApiClient.get(
         Uri.parse('$baseUrl/applications/$loanId'),
         headers: headers,
       );
@@ -214,7 +166,7 @@ class LoanService {
       final headers = await _getHeaders();
       final baseUrl = await ApiConfig.getBaseUrl();
       debugPrint('[LoanService] URL: $baseUrl/auth/application/$loanId');
-      final response = await http.delete(
+      final response = await ApiClient.delete(
         Uri.parse('$baseUrl/auth/application/$loanId'),
         headers: headers,
       );

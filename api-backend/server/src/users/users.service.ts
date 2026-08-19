@@ -1073,6 +1073,26 @@ export class UsersService {
   }
 
   async deleteUser(userId: string) {
+    try {
+      // 1. Delete user documents & loan applications
+      await this.db.from('UserDocument').delete().eq('userId', userId);
+      await this.db.from('LoanApplication').delete().eq('userId', userId);
+      await this.db.from('OnboardingApplication').delete().eq('userId', userId);
+      await this.db.from('Notification').delete().eq('userId', userId);
+      await this.db.from('UserAcademicProfile').delete().eq('userId', userId);
+      await this.db.from('UserFinancialProfile').delete().eq('userId', userId);
+      await this.db.from('UserStudyPreference').delete().eq('userId', userId);
+      await this.db.from('AiEligibilityCheck').delete().eq('userId', userId);
+      await this.db.from('AiLoanRecommendation').delete().eq('userId', userId);
+      await this.db.from('AiSopAnalysis').delete().eq('userId', userId);
+      await this.db.from('AiGradeConversion').delete().eq('userId', userId);
+      await this.db.from('AiUniversityComparison').delete().eq('userId', userId);
+      await this.db.from('AiAdmitPrediction').delete().eq('userId', userId);
+      await this.db.from('AiVisaInterview').delete().eq('userId', userId);
+    } catch (cleanupErr) {
+      console.warn(`[UsersService.deleteUser] Non-fatal error cleaning related tables for ${userId}:`, cleanupErr);
+    }
+
     const { error } = await this.db
       .from('User')
       .delete()
