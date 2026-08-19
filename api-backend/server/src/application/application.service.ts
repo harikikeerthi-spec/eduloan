@@ -173,10 +173,10 @@ export class ApplicationService {
         applicationNumber,
         userId,
         assignedStaffId: assignedStaffId || null,
-        bank: data.bank || 'Matching Lenders...',
+        bank: data.assignedBank ? data.assignedBank : 'Matching Lenders',
         loanType: data.loanType || 'Education Loan',
         amount: parseNum(data.amount) || 1000000,
-        tenure: parseNum(data.tenure) ? Math.round(parseNum(data.tenure)!) : 84,
+        tenure: parseNum(data.tenure) ? Math.round(parseNum(data.tenure)!) : null,
         purpose: data.purpose || 'Higher Education',
         firstName: data.firstName || '',
         lastName: data.lastName || '',
@@ -197,7 +197,7 @@ export class ApplicationService {
         annualIncome: parseNum(data.annualIncome),
         workExperience: parseNum(data.workExperience) ? Math.round(parseNum(data.workExperience)!) : null,
         universityName: data.universityName || data.university || 'Target University',
-        courseName: data.courseName || data.courseType || data.course || 'Master of Science',
+        courseName: data.courseName || data.fieldOfStudy || data.courseType || data.course || null,
         courseDuration: parseNum(data.courseDuration) ? Math.round(parseNum(data.courseDuration)!) : 24,
         courseStartDate: this.parseDate(data.courseStartDate),
 
@@ -311,7 +311,7 @@ export class ApplicationService {
           const firstName = application.firstName || application.user?.firstName || '';
           const lastName = application.lastName || application.user?.lastName || '';
           const userName = `${firstName} ${lastName}`.trim() || 'Student';
-          const bankName = application.bank || 'our partner bank';
+          const bankName = application.assignedBank || 'Matching Lenders';
           await this.emailService.sendLoanSubmissionEmail(email, userName, bankName, application);
         }
       } catch (e) {
@@ -325,7 +325,7 @@ export class ApplicationService {
           const firstName = application.user?.firstName || application.firstName || '';
           const lastName = application.user?.lastName || application.lastName || '';
           const userName = `${firstName} ${lastName}`.trim() || 'Student';
-          const bankName = application.bank || 'our partner bank';
+          const bankName = application.assignedBank || 'Matching Lenders';
           await this.emailService.sendLoanTrackingEmail(registeredEmail, userName, bankName, application);
         }
       } catch (e) {
@@ -414,19 +414,17 @@ export class ApplicationService {
       const total = totalAssigned ?? 0;
 
       if (validStaff.length === 0) {
-        const DEFAULT_STAFF_KEYS = ['priya_sharma', 'rajesh_kumar', 'ananya_reddy', 'vikram_malhotra'];
-        const key = DEFAULT_STAFF_KEYS[total % DEFAULT_STAFF_KEYS.length];
-        return `staff_rr_${key}`;
+        return null;
       }
 
-      // 3. Sequential round-robin across DB staff users: next turn index = total % staffCount
+      // 3. Sequential assignment across actual DB staff users: next turn index = total % staffCount
       const staffCount = validStaff.length;
       const nextIndex = total % staffCount;
       const selected = validStaff[nextIndex];
       return selected.id;
     } catch (e) {
-      console.error('[Round-Robin] Unexpected error during staff selection:', e);
-      return 'staff_rr_priya_sharma';
+      console.error('[Staff Assignment] Unexpected error during staff selection:', e);
+      return null;
     }
   }
 
@@ -481,7 +479,7 @@ export class ApplicationService {
         const firstName = application.firstName || application.user?.firstName || '';
         const lastName = application.lastName || application.user?.lastName || '';
         const userName = `${firstName} ${lastName}`.trim() || 'Student';
-        const bankName = application.bank || 'our partner bank';
+        const bankName = application.assignedBank || 'Matching Lenders';
         await this.emailService.sendLoanSubmissionEmail(email, userName, bankName, application);
       }
     } catch (e) {
@@ -495,7 +493,7 @@ export class ApplicationService {
         const firstName = application.user?.firstName || application.firstName || '';
         const lastName = application.user?.lastName || application.lastName || '';
         const userName = `${firstName} ${lastName}`.trim() || 'Student';
-        const bankName = application.bank || 'our partner bank';
+        const bankName = application.assignedBank || 'Matching Lenders';
         await this.emailService.sendLoanTrackingEmail(registeredEmail, userName, bankName, application);
       }
     } catch (e) {
@@ -611,35 +609,12 @@ export class ApplicationService {
   }
 
   async getCounselorDetails(assignedStaffId: string | null) {
-    const DEFAULT_STAFF_PROFILES: Record<string, { counselorName: string; counselorPhone: string; counselorEmail: string }> = {
-      'staff_rr_priya_sharma': {
-        counselorName: 'Vidyaloans Support',
-        counselorPhone: '+91 92402 09000',
-        counselorEmail: 'vidyaloans7@gmail.com'
-      },
-      'staff_rr_rajesh_kumar': {
-        counselorName: 'Vidyaloans Support',
-        counselorPhone: '+91 92402 09000',
-        counselorEmail: 'vidyaloans7@gmail.com'
-      },
-      'staff_rr_ananya_reddy': {
-        counselorName: 'Vidyaloans Support',
-        counselorPhone: '+91 92402 09000',
-        counselorEmail: 'vidyaloans7@gmail.com'
-      },
-      'staff_rr_vikram_malhotra': {
-        counselorName: 'Vidyaloans Support',
-        counselorPhone: '+91 92402 09000',
-        counselorEmail: 'vidyaloans7@gmail.com'
-      }
-    };
-
-    if (!assignedStaffId) {
-      return DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
-    }
-
-    if (assignedStaffId.startsWith('staff_rr_')) {
-      return DEFAULT_STAFF_PROFILES[assignedStaffId] || DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
+    if (!assignedStaffId || assignedStaffId.startsWith('staff_rr_')) {
+      return {
+        counselorName: null,
+        counselorPhone: null,
+        counselorEmail: null,
+      };
     }
 
     try {
@@ -650,19 +625,22 @@ export class ApplicationService {
         .single();
       if (user) {
         const role = (user.role || '').toLowerCase().trim();
-        // Strictly only return counselor details if role is 'staff' (exclude admin, bank, it support)
         if (role === 'staff') {
           return {
-            counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Staff Specialist',
-            counselorPhone: user.phoneNumber || '+91 98402 12001',
-            counselorEmail: user.email || 'staff@vidyaloans.com'
+            counselorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || null,
+            counselorPhone: user.phoneNumber || null,
+            counselorEmail: user.email || null,
           };
         }
       }
     } catch (e) {
       console.error('Error fetching counselor details:', e);
     }
-    return DEFAULT_STAFF_PROFILES['staff_rr_priya_sharma'];
+    return {
+      counselorName: null,
+      counselorPhone: null,
+      counselorEmail: null,
+    };
   }
 
   async getApplicationByNumber(applicationNumber: string) {

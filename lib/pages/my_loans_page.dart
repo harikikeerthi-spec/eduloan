@@ -558,34 +558,14 @@ class _MyLoansPageState extends State<MyLoansPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'ASSIGNED STAFF',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF7C3AED),
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'Round-Robin',
-                                style: TextStyle(
-                                  fontSize: 8,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF059669),
-                                ),
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'ASSIGNED LOAN SPECIALIST',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7C3AED),
+                            letterSpacing: 0.5,
+                          ),
                         ),
                         const SizedBox(height: 3),
                         Text(
@@ -612,8 +592,14 @@ class _MyLoansPageState extends State<MyLoansPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        onPressed: () => _launchPhone(loan.assignedStaffPhone),
-                        tooltip: 'Call Staff',
+                        onPressed: () {
+                          if (loan.hasAssignedStaff) {
+                            _launchPhone(loan.assignedStaffPhone);
+                          } else {
+                            _launchPhone('+919240209000');
+                          }
+                        },
+                        tooltip: loan.hasAssignedStaff ? 'Call Specialist' : 'Call Support',
                         icon: const Icon(
                           Icons.phone_in_talk_rounded,
                           color: Color(0xFF10B981),
@@ -630,8 +616,14 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       ),
                       const SizedBox(width: 6),
                       IconButton(
-                        onPressed: () => _launchEmail(loan.assignedStaffEmail),
-                        tooltip: 'Email Staff',
+                        onPressed: () {
+                          if (loan.hasAssignedStaff) {
+                            _launchEmail(loan.assignedStaffEmail);
+                          } else {
+                            _launchEmail('support@vidyaloans.in');
+                          }
+                        },
+                        tooltip: loan.hasAssignedStaff ? 'Email Specialist' : 'Email Support',
                         icon: const Icon(
                           Icons.mail_rounded,
                           color: Color(0xFF7C3AED),
@@ -912,40 +904,20 @@ class _MyLoansPageState extends State<MyLoansPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              const Text(
-                                'ASSIGNED STAFF',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF7C3AED),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Round-Robin',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF059669),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const Text(
+                            'ASSIGNED LOAN SPECIALIST',
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF7C3AED),
+                              letterSpacing: 0.5,
+                            ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
                             loan.assignedStaffDisplayName,
                             style: const TextStyle(
-                              fontSize: 12.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E1B4B),
                             ),
@@ -954,7 +926,7 @@ class _MyLoansPageState extends State<MyLoansPage> {
                           Text(
                             loan.assignedStaffPhone,
                             style: const TextStyle(
-                              fontSize: 10.5,
+                              fontSize: 11,
                               color: Color(0xFF64748B),
                               fontWeight: FontWeight.w500,
                             ),
@@ -962,13 +934,57 @@ class _MyLoansPageState extends State<MyLoansPage> {
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => _launchPhone(loan.assignedStaffPhone),
-                      icon: const Icon(
-                        Icons.phone_in_talk_rounded,
-                        color: Color(0xFF10B981),
-                        size: 18,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (loan.hasAssignedStaff) {
+                              _launchPhone(loan.assignedStaffPhone);
+                            } else {
+                              _launchPhone('+919240209000');
+                            }
+                          },
+                          tooltip: loan.hasAssignedStaff ? 'Call Specialist' : 'Call Support',
+                          icon: const Icon(
+                            Icons.phone_in_talk_rounded,
+                            color: Color(0xFF10B981),
+                            size: 18,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: const EdgeInsets.all(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        IconButton(
+                          onPressed: () {
+                            if (loan.hasAssignedStaff) {
+                              _launchEmail(loan.assignedStaffEmail);
+                            } else {
+                              _launchEmail('support@vidyaloans.in');
+                            }
+                          },
+                          tooltip: loan.hasAssignedStaff ? 'Email Specialist' : 'Email Support',
+                          icon: const Icon(
+                            Icons.mail_rounded,
+                            color: Color(0xFF7C3AED),
+                            size: 18,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: const EdgeInsets.all(8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

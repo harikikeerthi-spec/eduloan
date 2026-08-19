@@ -784,15 +784,21 @@ export class EmailService {
     const appNum = application.applicationNumber || 'N/A';
     const loanType = (application.loanType || 'Education').toUpperCase();
     const amount = application.amount ? `₹${Number(application.amount).toLocaleString('en-IN')}` : 'N/A';
-    const tenure = application.tenure ? `${application.tenure} months` : 'N/A';
     const university = application.universityName || 'N/A';
-    const course = application.courseName || 'N/A';
+
+    // Show "Matching Lenders" until assigned to a specific bank by staff
+    const isAssigned = !!application.assignedBank || (bankName && bankName !== 'Matching Lenders' && bankName !== 'Matching Lenders...' && bankName !== 'our partner bank' && !['submitted', 'application_submitted', 'draft', 'pending'].includes(application.stage || application.status));
+    const displayBank = isAssigned ? (application.assignedBank || bankName) : 'Matching Lenders';
+
+    const greetingText = isAssigned
+      ? `Thank you for choosing VidyaLoan. We have received your loan application for <strong>${displayBank}</strong>. Below is a summary of your application details. Please retain this information for your records.`
+      : `Thank you for choosing VidyaLoan. We have received your loan application. Our expert financial advisors are currently evaluating your profile to match you with the best lending partner. Below is a summary of your application details.`;
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"VidyaLoan" <noreply@vidyaloan.com>',
       to: userName ? `"${userName}" <${email}>` : email,
       subject: `📝 Loan Application Submitted Successfully - #${appNum}`,
-      text: `Dear ${userName},\n\nYour loan application for ${bankName} has been submitted successfully.\n\nApplication Number: ${appNum}\nLoan Type: ${loanType}\nAmount: ${amount}\nBank Name: ${bankName}\n\nWarm regards,\nThe VidyaLoan Team`,
+      text: `Dear ${userName},\n\nYour loan application has been submitted successfully.\n\nApplication Number: ${appNum}\nLoan Type: ${loanType}\nAmount: ${amount}\nBank Partner: ${displayBank}\n\nWarm regards,\nThe VidyaLoan Team`,
       html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -856,7 +862,7 @@ export class EmailService {
             <td style="background:#ffffff;padding:36px 40px 20px;">
               <p style="color:#374151;font-size:15px;line-height:1.75;margin:0 0 24px;">
                 Dear <strong>${userName}</strong>, <br><br>
-                Thank you for choosing VidyaLoan. We have received your loan application for <strong>${bankName}</strong>. Below is a summary of your application details. Please retain this information for your records.
+                ${greetingText}
               </p>
 
               <!-- Application Details Table/Grid -->
@@ -871,7 +877,7 @@ export class EmailService {
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Bank Partner</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#111827;font-weight:600;font-size:14px;">${bankName}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#111827;font-weight:600;font-size:14px;">${displayBank}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Loan Type</td>
@@ -881,20 +887,10 @@ export class EmailService {
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Requested Amount</td>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#059669;font-weight:700;font-size:14px;">${amount}</td>
                 </tr>
-                ${tenure !== 'N/A' ? `
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Tenure</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#111827;font-size:14px;">${tenure}</td>
-                </tr>` : ''}
                 ${university !== 'N/A' ? `
                 <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">University</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Target University</td>
                   <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#111827;font-size:14px;">${university}</td>
-                </tr>` : ''}
-                ${course !== 'N/A' ? `
-                <tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:14px;">Course</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;color:#111827;font-size:14px;">${course}</td>
                 </tr>` : ''}
               </table>
               
@@ -909,7 +905,7 @@ export class EmailService {
                     <div style="background:#ede9fe;color:#7c3aed;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px;font-weight:bold;font-size:12px;">1</div>
                   </td>
                   <td style="padding:8px 0 8px 10px;color:#4b5563;font-size:13px;line-height:1.5;">
-                    <strong style="color:#111827;">Document Verification:</strong> Please ensure all required documents are uploaded. You can instantly link your DigiLocker profile to automatically sync your verified identity and academic certificates for faster approval.
+                    <strong style="color:#111827;">Document Verification:</strong> Please ensure all required documents are uploaded in the Document Vault.
                   </td>
                 </tr>
                 <tr>
@@ -917,7 +913,7 @@ export class EmailService {
                     <div style="background:#ede9fe;color:#7c3aed;width:24px;height:24px;border-radius:50%;text-align:center;line-height:24px;font-weight:bold;font-size:12px;">2</div>
                   </td>
                   <td style="padding:8px 0 8px 10px;color:#4b5563;font-size:13px;line-height:1.5;">
-                    <strong style="color:#111827;">Credit Check & Review:</strong> Our financial team and <strong>${bankName}</strong>'s underwriters will perform credit verification.
+                    <strong style="color:#111827;">Advisor Review & Bank Allocation:</strong> Our financial advisors evaluate your profile and route your application to the best-matching lending partner.
                   </td>
                 </tr>
                 <tr>
@@ -1018,11 +1014,14 @@ export class EmailService {
     const loanType = (application.loanType || 'Education').toUpperCase();
     const progress = application.progress || 15;
 
+    const isAssigned = !!application.assignedBank || (bankName && bankName !== 'Matching Lenders' && bankName !== 'Matching Lenders...' && bankName !== 'our partner bank' && !['submitted', 'application_submitted', 'draft', 'pending'].includes(application.stage || application.status));
+    const displayBank = isAssigned ? (application.assignedBank || bankName) : 'Matching Lenders';
+
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"VidyaLoan" <noreply@vidyaloan.com>',
       to: email,
       subject: `📈 Application Progress Tracker - #${appNum}`,
-      text: `Dear ${userName},\n\nYour loan application progress tracker is active.\n\nApplication Number: #${appNum}\nBank Partner: ${bankName}\nLoan Type: ${loanType}\nCurrent Stage: Application Submitted\nProgress: ${progress}%\n\nYou can track the progress of your application on the VidyaLoan dashboard: ${frontendUrl}/dashboard\n\nWarm regards,\nThe VidyaLoan Team`,
+      text: `Dear ${userName},\n\nYour loan application progress tracker is active.\n\nApplication Number: #${appNum}\nBank Partner: ${displayBank}\nLoan Type: ${loanType}\nCurrent Stage: Application Submitted\nProgress: ${progress}%\n\nYou can track the progress of your application on the VidyaLoan dashboard: ${frontendUrl}/dashboard\n\nWarm regards,\nThe VidyaLoan Team`,
       html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -1086,7 +1085,7 @@ export class EmailService {
             <td style="background:#ffffff;padding:36px 40px 24px;">
               <p style="color:#374151;font-size:15px;line-height:1.75;margin:0 0 24px;">
                 Dear <strong>${userName}</strong>, <br><br>
-                Your loan application for <strong>${bankName}</strong> has been registered on the VidyaLoan system. You can follow the complete journey of your application from submission to disbursement here.
+                Your loan application (Bank Partner: <strong>${displayBank}</strong>) has been registered on the VidyaLoan system. You can follow the complete journey of your application from submission to disbursement here.
               </p>
 
               <!-- Progress bar container -->

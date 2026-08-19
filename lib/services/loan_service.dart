@@ -31,7 +31,7 @@ class LoanService {
     required String bank,
     required String loanType,
     required double amount,
-    required int tenure,
+    int? tenure,
     String? purpose,
     String? fatherName,
     String? fatherPhone,

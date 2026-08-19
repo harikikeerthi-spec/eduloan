@@ -199,34 +199,64 @@ class Loan {
     return 'DOCUMENTS';
   }
 
+  bool get hasAssignedStaff {
+    if (counselorName == null) return false;
+    final name = counselorName!.trim().toLowerCase();
+    if (name.isEmpty ||
+        name.contains('support') ||
+        name.contains('priya') ||
+        name.contains('rajesh') ||
+        name.contains('ananya') ||
+        name.contains('vikram') ||
+        name.contains('counselor') ||
+        name.contains('specialist')) {
+      return false;
+    }
+    return true;
+  }
+
   String get assignedStaffDisplayName {
-    if (counselorName != null &&
-        counselorName!.trim().isNotEmpty &&
-        counselorName != 'VidhyaLoan Support' &&
-        counselorName != 'Vidyaloans Support') {
+    if (hasAssignedStaff) {
       return counselorName!.trim();
     }
-    return 'Vidyaloans Support';
+    return 'Assigning Loan Specialist...';
   }
 
   String get assignedStaffPhone {
-    if (counselorPhone != null && counselorPhone!.trim().isNotEmpty) {
+    if (hasAssignedStaff && counselorPhone != null && counselorPhone!.trim().isNotEmpty) {
       return counselorPhone!.trim();
     }
-    return '+91 92402 09000';
+    return 'Will be allocated shortly';
   }
 
   String get assignedStaffEmail {
-    if (counselorEmail != null &&
-        counselorEmail!.trim().isNotEmpty &&
-        counselorEmail != 'vidyaloans7@gmail.com') {
+    if (hasAssignedStaff && counselorEmail != null && counselorEmail!.trim().isNotEmpty) {
       return counselorEmail!.trim();
     }
-    return 'vidyaloans7@gmail.com';
+    return 'support@vidyaloans.in';
   }
 
   int get effectiveProgress => getEffectiveProgress();
   int get effectiveStageIndex => getEffectiveStageIndex();
+
+  static DateTime _parseDate(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is DateTime) return val.toLocal();
+    final s = val.toString().trim();
+    if (s.isEmpty) return DateTime.now();
+    try {
+      if (s.endsWith('Z') || s.contains('+') || RegExp(r'-\d{2}:\d{2}$').hasMatch(s)) {
+        return DateTime.parse(s).toLocal();
+      }
+      return DateTime.parse('${s}Z').toLocal();
+    } catch (_) {
+      try {
+        return DateTime.parse(s).toLocal();
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+  }
 
   factory Loan.fromJson(Map<String, dynamic> json) {
     var docsList = <ApplicationDocument>[];
@@ -247,7 +277,7 @@ class Loan {
       universityName: json['universityName'],
       targetCountry: json['targetCountry'] ?? json['country'],
       courseName: json['courseName'],
-      bank: json['bank']?.toString() ?? 'Unknown Bank',
+      bank: json['bank']?.toString() ?? 'Matching Lenders...',
       loanType: json['loanType']?.toString() ?? 'Education Loan',
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       tenure: json['tenure'] != null
@@ -259,12 +289,8 @@ class Loan {
       progress: json['progress'] != null
           ? int.tryParse(json['progress'].toString()) ?? 0
           : 0,
-      date: json['date'] != null
-          ? DateTime.parse(json['date'])
-          : DateTime.now(),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : DateTime.now(),
+      date: _parseDate(json['submittedAt'] ?? json['date'] ?? json['createdAt']),
+      updatedAt: _parseDate(json['updatedAt'] ?? json['submittedAt'] ?? json['date']),
       counselorName: json['counselorName']?.toString(),
       counselorPhone: json['counselorPhone']?.toString(),
       counselorEmail: json['counselorEmail']?.toString(),
@@ -339,14 +365,28 @@ class Loan {
 
   String get displayBank {
     final b = bank.toLowerCase().trim();
+    final st = status.toLowerCase().trim();
+    final sg = stage.toLowerCase().trim();
+
     if (b.isEmpty ||
         b == 'any bank' ||
         b == 'any' ||
         b == 'unknown bank' ||
         b == 'not assigned' ||
         b == 'all banks' ||
+        b == 'matching lenders' ||
+        b == 'matching lenders...' ||
         b == 'pending bank assignment' ||
-        b.contains('pending')) {
+        b.contains('pending') ||
+        b.contains('matching') ||
+        st == 'submitted' ||
+        st == 'application_submitted' ||
+        st == 'pending' ||
+        st == 'draft' ||
+        sg == 'application_submitted' ||
+        sg == 'submitted' ||
+        sg == 'created' ||
+        sg == 'pending') {
       return 'Matching Lenders...';
     }
     return bank;
