@@ -3682,7 +3682,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   Widget _buildLockedGroupPreview() {
     final title = widget.group['title'] as String? ?? 'Smart Group';
     final badge = widget.group['badge'] as String? ?? 'Community';
-    final members = widget.group['members'] as String? ?? '1.2k members';
+    final members = (widget.group['members'] != null)
+        ? (widget.group['members'].toString().contains('members')
+            ? widget.group['members'].toString()
+            : '${widget.group['members']} members')
+        : '1.2k members';
     final color = (widget.group['color'] as Color?) ?? const Color(0xFF311B92);
     final icon = (widget.group['icon'] as IconData?) ?? Icons.groups_rounded;
 

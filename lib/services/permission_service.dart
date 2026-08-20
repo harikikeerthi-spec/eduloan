@@ -31,14 +31,8 @@ class PermissionService {
     } catch (e) {
       debugPrint('Startup Photos Request Error: $e');
     }
-
-    // 4. Location
-    try {
-      await requestLocationPermission();
-    } catch (e) {
-      debugPrint('Startup Location Request Error: $e');
-    }
   }
+
   /// Checks if a specific permission is granted.
   static Future<bool> isGranted(Permission permission) async {
     final status = await permission.status;
@@ -66,12 +60,6 @@ class PermissionService {
   /// Request Phone Calls permission.
   static Future<bool> requestPhonePermission() async {
     return await request(Permission.phone);
-  }
-
-  /// Request Location permission.
-  static Future<bool> requestLocationPermission() async {
-    // Standard when-in-use location
-    return await request(Permission.locationWhenInUse);
   }
 
   /// Request Photos/Storage permission depending on platform and OS version.
