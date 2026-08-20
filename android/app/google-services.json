@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:135351691177:android:d58e94f789d39bffe906b8",
         "android_client_info": {
-          "package_name": "com.example.vidyaloans"
+          "package_name": "in.vidyaloans.app"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "135351691177-p10cl08ph90l88m55715ng7fsfi5m11v.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.vidyaloans",
+            "package_name": "in.vidyaloans.app",
             "certificate_hash": "55c8a96225441ce8a3554074f3521a7d7bc195f7"
           }
         },
