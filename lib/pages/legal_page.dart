@@ -264,7 +264,8 @@ class LegalPage extends StatefulWidget {
   State<LegalPage> createState() => _LegalPageState();
 }
 
-class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMixin {
+class _LegalPageState extends State<LegalPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final Set<int> _expandedTerms = {0}; // Start with 1st section open
   final Set<int> _expandedPrivacy = {0};
@@ -275,7 +276,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTab,
+    );
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {});
@@ -294,7 +299,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
     setState(() {
       if (isPrivacy) {
         if (expand) {
-          _expandedPrivacy.addAll(List.generate(_privacySections.length, (i) => i));
+          _expandedPrivacy.addAll(
+            List.generate(_privacySections.length, (i) => i),
+          );
         } else {
           _expandedPrivacy.clear();
         }
@@ -339,11 +346,15 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: const Color(0xFF311B92).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF311B92,
+                          ).withValues(alpha: 0.12),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.06),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -374,9 +385,14 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                color: const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -427,15 +443,21 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.06),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
                         ],
                       ),
                       child: Icon(
-                        _isSearchOpen ? Icons.close_rounded : Icons.search_rounded,
-                        color: _isSearchOpen ? Colors.white : const Color(0xFF311B92),
+                        _isSearchOpen
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                        color: _isSearchOpen
+                            ? Colors.white
+                            : const Color(0xFF311B92),
                         size: 19,
                       ),
                     ),
@@ -452,7 +474,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.2)),
+                  border: Border.all(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.2),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF311B92).withValues(alpha: 0.08),
@@ -464,15 +488,30 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                 child: TextField(
                   controller: _searchController,
                   autofocus: true,
-                  onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
-                  style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF0F172A)),
+                  onChanged: (val) =>
+                      setState(() => _searchQuery = val.trim().toLowerCase()),
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    color: const Color(0xFF0F172A),
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Search clauses, terms, privacy topics...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF94A3B8)),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF311B92), size: 20),
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF311B92),
+                      size: 20,
+                    ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF94A3B8)),
+                            icon: const Icon(
+                              Icons.clear_rounded,
+                              size: 18,
+                              color: Color(0xFF94A3B8),
+                            ),
                             onPressed: () => setState(() {
                               _searchController.clear();
                               _searchQuery = '';
@@ -480,7 +519,10 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 13,
+                      horizontal: 14,
+                    ),
                   ),
                 ),
               ),
@@ -516,8 +558,14 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelPadding: const EdgeInsets.symmetric(vertical: 2),
                 dividerColor: Colors.transparent,
-                labelStyle: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600),
+                labelStyle: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
                 labelColor: Colors.white,
                 unselectedLabelColor: const Color(0xFF475569),
                 tabs: const [
@@ -642,7 +690,10 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.16),
                                   borderRadius: BorderRadius.circular(8),
@@ -702,14 +753,21 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.article_outlined, size: 14, color: Colors.white),
+                          const Icon(
+                            Icons.article_outlined,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             '${isPrivacy ? _privacySections.length : _termsSections.length} Key Clauses',
@@ -725,7 +783,10 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                     GestureDetector(
                       onTap: () => _toggleAll(isPrivacy, !isAllExpanded),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -740,7 +801,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         child: Row(
                           children: [
                             Icon(
-                              isAllExpanded ? Icons.unfold_less_rounded : Icons.unfold_more_rounded,
+                              isAllExpanded
+                                  ? Icons.unfold_less_rounded
+                                  : Icons.unfold_more_rounded,
                               size: 15,
                               color: const Color(0xFF311B92),
                             ),
@@ -771,9 +834,21 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
 
   Widget _buildTrustHighlights() {
     final highlights = [
-      {'icon': Icons.lock_outline_rounded, 'title': '256-Bit SSL', 'desc': 'Bank-grade security'},
-      {'icon': Icons.account_balance_outlined, 'title': 'RBI Partners', 'desc': 'Regulated lenders'},
-      {'icon': Icons.security_outlined, 'title': 'Zero Reselling', 'desc': 'Private database'},
+      {
+        'icon': Icons.lock_outline_rounded,
+        'title': '256-Bit SSL',
+        'desc': 'Bank-grade security',
+      },
+      {
+        'icon': Icons.account_balance_outlined,
+        'title': 'RBI Partners',
+        'desc': 'Regulated lenders',
+      },
+      {
+        'icon': Icons.security_outlined,
+        'title': 'Zero Reselling',
+        'desc': 'Private database',
+      },
     ];
 
     return Container(
@@ -800,7 +875,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
               ),
               child: Column(
                 children: [
-                  Icon(h['icon'] as IconData, size: 18, color: const Color(0xFF311B92)),
+                  Icon(
+                    h['icon'] as IconData,
+                    size: 18,
+                    color: const Color(0xFF311B92),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     h['title'] as String,
@@ -882,12 +961,17 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                       decoration: BoxDecoration(
                         gradient: isOpen
                             ? LinearGradient(
-                                colors: [section.accentColor, section.accentColor.withValues(alpha: 0.8)],
+                                colors: [
+                                  section.accentColor,
+                                  section.accentColor.withValues(alpha: 0.8),
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               )
                             : null,
-                        color: isOpen ? null : section.accentColor.withValues(alpha: 0.1),
+                        color: isOpen
+                            ? null
+                            : section.accentColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
@@ -908,9 +992,14 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: section.accentColor.withValues(alpha: 0.1),
+                                  color: section.accentColor.withValues(
+                                    alpha: 0.1,
+                                  ),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -931,7 +1020,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                             style: GoogleFonts.outfit(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
-                              color: isOpen ? const Color(0xFF1E1B4B) : const Color(0xFF1E293B),
+                              color: isOpen
+                                  ? const Color(0xFF1E1B4B)
+                                  : const Color(0xFF1E293B),
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -953,7 +1044,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         ),
                         child: Icon(
                           Icons.keyboard_arrow_down_rounded,
-                          color: isOpen ? section.accentColor : const Color(0xFF64748B),
+                          color: isOpen
+                              ? section.accentColor
+                              : const Color(0xFF64748B),
                           size: 20,
                         ),
                       ),
@@ -976,14 +1069,19 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         const SizedBox(height: 12),
 
                         // Key Highlights Pill Box (if available)
-                        if (section.highlights != null && section.highlights!.isNotEmpty) ...[
+                        if (section.highlights != null &&
+                            section.highlights!.isNotEmpty) ...[
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: section.accentColor.withValues(alpha: 0.05),
+                              color: section.accentColor.withValues(
+                                alpha: 0.05,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: section.accentColor.withValues(alpha: 0.15),
+                                color: section.accentColor.withValues(
+                                  alpha: 0.15,
+                                ),
                               ),
                             ),
                             child: Column(
@@ -991,7 +1089,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                               children: [
                                 Row(
                                   children: [
-                                    Icon(Icons.check_circle_rounded, size: 14, color: section.accentColor),
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 14,
+                                      color: section.accentColor,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       'KEY TAKEAWAYS',
@@ -1005,32 +1107,35 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                ...section.highlights!.map((h) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '✓  ',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: section.accentColor,
+                                ...section.highlights!.map(
+                                  (h) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 4),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '✓  ',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: section.accentColor,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            h,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: const Color(0xFF334155),
                                             ),
                                           ),
-                                          Expanded(
-                                            child: Text(
-                                              h,
-                                              style: GoogleFonts.inter(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                                color: const Color(0xFF334155),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1061,15 +1166,23 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                               if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Copied "${section.title}" to clipboard'),
+                                  content: Text(
+                                    'Copied "${section.title}" to clipboard',
+                                  ),
                                   backgroundColor: const Color(0xFF311B92),
                                   behavior: SnackBarBehavior.floating,
                                   duration: const Duration(seconds: 2),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.copy_rounded, size: 14, color: Color(0xFF311B92)),
+                            icon: const Icon(
+                              Icons.copy_rounded,
+                              size: 14,
+                              color: Color(0xFF311B92),
+                            ),
                             label: Text(
                               'Copy Clause',
                               style: GoogleFonts.outfit(
@@ -1079,16 +1192,25 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                               ),
                             ),
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.06),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              backgroundColor: const Color(
+                                0xFF311B92,
+                              ).withValues(alpha: 0.06),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  crossFadeState: isOpen ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  crossFadeState: isOpen
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
                   duration: const Duration(milliseconds: 240),
                 ),
               ],
@@ -1108,11 +1230,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1E1B4B),
-            Color(0xFF311B92),
-            Color(0xFF4C1D95),
-          ],
+          colors: [Color(0xFF1E1B4B), Color(0xFF311B92), Color(0xFF4C1D95)],
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
@@ -1147,7 +1265,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                         color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.support_agent_rounded, color: Colors.white, size: 22),
+                      child: const Icon(
+                        Icons.support_agent_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1175,11 +1297,23 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                   ],
                 ),
                 const SizedBox(height: 16),
-                _contactRow(Icons.email_outlined, 'support@Vidyaloans.in', 'Email Support'),
+                _contactRow(
+                  Icons.email_outlined,
+                  'support@Vidyaloans.in',
+                  'Email Support',
+                ),
                 const SizedBox(height: 8),
-                _contactRow(Icons.phone_outlined, '+91 8143797779', 'Call Helpline'),
+                _contactRow(
+                  Icons.phone_outlined,
+                  '+91 8143797779',
+                  'Call Helpline',
+                ),
                 const SizedBox(height: 8),
-                _contactRow(Icons.location_on_outlined, 'Nuzvid, Andhra Pradesh, India - 521201', 'Official Address'),
+                _contactRow(
+                  Icons.location_on_outlined,
+                  'Nuzvid, Andhra Pradesh, India - 521201',
+                  'Official Address',
+                ),
               ],
             ),
           ),
@@ -1201,7 +1335,9 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
               backgroundColor: const Color(0xFF311B92),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           );
         },
@@ -1246,7 +1382,11 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
                   color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(Icons.copy_rounded, color: Colors.white, size: 13),
+                child: const Icon(
+                  Icons.copy_rounded,
+                  color: Colors.white,
+                  size: 13,
+                ),
               ),
             ],
           ),
@@ -1290,34 +1430,47 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
             ),
             child: Column(
               children: [
-                const Icon(Icons.search_off_rounded, size: 42, color: Color(0xFF94A3B8)),
+                const Icon(
+                  Icons.search_off_rounded,
+                  size: 42,
+                  color: Color(0xFF94A3B8),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   'No matching clauses found',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Try searching for terms like "eligibility", "OCR", or "liability"',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF64748B),
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           )
         else
-          ...filtered.asMap().entries.map((e) => _buildSectionCard(
-                section: e.value,
-                index: e.key,
-                expandedSet: _expandedTerms,
-                onToggle: (idx) => setState(() {
-                  if (_expandedTerms.contains(idx)) {
-                    _expandedTerms.remove(idx);
-                  } else {
-                    _expandedTerms.add(idx);
-                  }
-                }),
-              )),
+          ...filtered.asMap().entries.map(
+            (e) => _buildSectionCard(
+              section: e.value,
+              index: e.key,
+              expandedSet: _expandedTerms,
+              onToggle: (idx) => setState(() {
+                if (_expandedTerms.contains(idx)) {
+                  _expandedTerms.remove(idx);
+                } else {
+                  _expandedTerms.add(idx);
+                }
+              }),
+            ),
+          ),
         _buildContactCard(),
       ],
     );
@@ -1356,34 +1509,47 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
             ),
             child: Column(
               children: [
-                const Icon(Icons.search_off_rounded, size: 42, color: Color(0xFF94A3B8)),
+                const Icon(
+                  Icons.search_off_rounded,
+                  size: 42,
+                  color: Color(0xFF94A3B8),
+                ),
                 const SizedBox(height: 10),
                 Text(
                   'No matching privacy topics found',
-                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1E293B)),
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1E293B),
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Try searching for terms like "encryption", "DigiLocker", or "deletion"',
-                  style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF64748B),
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           )
         else
-          ...filtered.asMap().entries.map((e) => _buildSectionCard(
-                section: e.value,
-                index: e.key,
-                expandedSet: _expandedPrivacy,
-                onToggle: (idx) => setState(() {
-                  if (_expandedPrivacy.contains(idx)) {
-                    _expandedPrivacy.remove(idx);
-                  } else {
-                    _expandedPrivacy.add(idx);
-                  }
-                }),
-              )),
+          ...filtered.asMap().entries.map(
+            (e) => _buildSectionCard(
+              section: e.value,
+              index: e.key,
+              expandedSet: _expandedPrivacy,
+              onToggle: (idx) => setState(() {
+                if (_expandedPrivacy.contains(idx)) {
+                  _expandedPrivacy.remove(idx);
+                } else {
+                  _expandedPrivacy.add(idx);
+                }
+              }),
+            ),
+          ),
         _buildContactCard(),
       ],
     );
@@ -1400,10 +1566,7 @@ class _LegalPageState extends State<LegalPage> with SingleTickerProviderStateMix
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: [
-                  _buildTermsTab(),
-                  _buildPrivacyTab(),
-                ],
+                children: [_buildTermsTab(), _buildPrivacyTab()],
               ),
             ),
           ],

@@ -34,32 +34,41 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     if (_searchQuery.isEmpty) {
       if (widget.selectedCountry != null && widget.selectedCountry != 'Other') {
         return InstitutesData.allInstitutes
-            .where((i) => i.state.toLowerCase() == widget.selectedCountry!.toLowerCase())
+            .where(
+              (i) =>
+                  i.state.toLowerCase() ==
+                  widget.selectedCountry!.toLowerCase(),
+            )
             .toList();
       }
       return InstitutesData.allInstitutes;
     }
-    
+
     final localMatches = InstitutesData.allInstitutes.where((institute) {
-      bool matchesSearch = institute.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      bool matchesSearch =
+          institute.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           institute.type.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           institute.state.toLowerCase().contains(_searchQuery.toLowerCase());
-          
+
       if (widget.selectedCountry != null && widget.selectedCountry != 'Other') {
-        return matchesSearch && institute.state.toLowerCase() == widget.selectedCountry!.toLowerCase();
+        return matchesSearch &&
+            institute.state.toLowerCase() ==
+                widget.selectedCountry!.toLowerCase();
       }
       return matchesSearch;
     }).toList();
-    
+
     combined.addAll(localMatches);
-    
+
     // Add AI institutes that aren't already in local matches
     for (var aiInst in _aiInstitutes) {
-      if (!combined.any((local) => local.name.toLowerCase() == aiInst.name.toLowerCase())) {
+      if (!combined.any(
+        (local) => local.name.toLowerCase() == aiInst.name.toLowerCase(),
+      )) {
         combined.add(aiInst);
       }
     }
-    
+
     return combined;
   }
 
@@ -97,7 +106,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     });
 
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    
+
     if (value.trim().length < 3) {
       setState(() {
         _aiInstitutes = [];
@@ -162,15 +171,25 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     });
 
     try {
-      final courses = await AiLogicService().searchUniversityCourses(institute.name, '');
+      final courses = await AiLogicService().searchUniversityCourses(
+        institute.name,
+        '',
+      );
       final List<String> mappedCourses = courses
           .map((c) => c['name'] ?? 'Unknown Course')
           .where((name) => name != 'Unknown Course')
           .toList();
 
-      final List<String> finalCourses = mappedCourses.isNotEmpty 
-          ? mappedCourses 
-          : (institute.courses.isNotEmpty ? institute.courses : ['MS Computer Science', 'MBA', 'Data Science', 'Engineering']);
+      final List<String> finalCourses = mappedCourses.isNotEmpty
+          ? mappedCourses
+          : (institute.courses.isNotEmpty
+                ? institute.courses
+                : [
+                    'MS Computer Science',
+                    'MBA',
+                    'Data Science',
+                    'Engineering',
+                  ]);
 
       if (mounted && _selectedInstitute?.name == institute.name) {
         setState(() {
@@ -186,8 +205,8 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
       }
     } catch (e) {
       if (mounted && _selectedInstitute?.name == institute.name) {
-        final List<String> fallbackCourses = institute.courses.isNotEmpty 
-            ? institute.courses 
+        final List<String> fallbackCourses = institute.courses.isNotEmpty
+            ? institute.courses
             : ['MS Computer Science', 'MBA', 'Data Science', 'Engineering'];
         setState(() {
           _fetchedCoursesCache[institute.name] = fallbackCourses;
@@ -212,9 +231,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
       ),
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        decoration: const BoxDecoration(color: Colors.white),
         child: MeshBackground(
           child: Column(
             children: [
@@ -464,9 +481,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
             child: Center(
               child: Text(
                 'No courses found for this university.',
-                style: TextStyle(
-                  color: Colors.black.withValues(alpha: 0.5),
-                ),
+                style: TextStyle(color: Colors.black.withValues(alpha: 0.5)),
               ),
             ),
           )
@@ -485,48 +500,45 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
               },
             ),
           ),
-          if (_selectedCourse != null && !_hasAppliedForLoan)
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final navigator = Navigator.of(context);
-                    navigator.pop();
-                    navigator.push(
-                      MaterialPageRoute(
-                        builder: (context) => ApplyLoanPage(
-                          initialUniversity: _selectedInstitute!.name,
-                          initialCourse: _selectedCourse!,
-                          initialCountry: _selectedInstitute!.state,
-                        ),
+        if (_selectedCourse != null && !_hasAppliedForLoan)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: () {
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
+                  navigator.push(
+                    MaterialPageRoute(
+                      builder: (context) => ApplyLoanPage(
+                        initialUniversity: _selectedInstitute!.name,
+                        initialCourse: _selectedCourse!,
+                        initialCountry: _selectedInstitute!.state,
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF311B92),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    elevation: 2,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF311B92),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    'Apply Loan',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Apply Loan',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
             ),
+          ),
       ],
     );
   }
@@ -540,11 +552,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
         color: const Color(0xFF6366F1).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Icon(
-        Icons.school,
-        color: Color(0xFF6366F1),
-        size: 24,
-      ),
+      child: const Icon(Icons.school, color: Color(0xFF6366F1), size: 24),
     );
   }
 
@@ -619,10 +627,12 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                   const SizedBox(height: 4),
                   Builder(
                     builder: (context) {
-                      final cachedCourses = _fetchedCoursesCache[institute.name];
-                      final coursesCount = cachedCourses?.length ?? institute.courses.length;
-                      final subtitleText = coursesCount == 0 
-                          ? 'Explore AI Courses' 
+                      final cachedCourses =
+                          _fetchedCoursesCache[institute.name];
+                      final coursesCount =
+                          cachedCourses?.length ?? institute.courses.length;
+                      final subtitleText = coursesCount == 0
+                          ? 'Explore AI Courses'
                           : '$coursesCount Courses Available';
                       return Text(
                         subtitleText,
@@ -699,28 +709,64 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
     List<_CourseRenderItem> items = [];
 
     if (groups['Bachelors']!.isNotEmpty) {
-      items.add(_CourseRenderItem(category: 'Bachelors', count: groups['Bachelors']!.length, isHeader: true));
+      items.add(
+        _CourseRenderItem(
+          category: 'Bachelors',
+          count: groups['Bachelors']!.length,
+          isHeader: true,
+        ),
+      );
       if (_expandedCategories.contains('Bachelors')) {
         for (var course in groups['Bachelors']!) {
-          items.add(_CourseRenderItem(category: 'Bachelors', course: course, isHeader: false));
+          items.add(
+            _CourseRenderItem(
+              category: 'Bachelors',
+              course: course,
+              isHeader: false,
+            ),
+          );
         }
       }
     }
 
     if (groups['Masters']!.isNotEmpty) {
-      items.add(_CourseRenderItem(category: 'Masters', count: groups['Masters']!.length, isHeader: true));
+      items.add(
+        _CourseRenderItem(
+          category: 'Masters',
+          count: groups['Masters']!.length,
+          isHeader: true,
+        ),
+      );
       if (_expandedCategories.contains('Masters')) {
         for (var course in groups['Masters']!) {
-          items.add(_CourseRenderItem(category: 'Masters', course: course, isHeader: false));
+          items.add(
+            _CourseRenderItem(
+              category: 'Masters',
+              course: course,
+              isHeader: false,
+            ),
+          );
         }
       }
     }
 
     if (groups['Doctorate']!.isNotEmpty) {
-      items.add(_CourseRenderItem(category: 'Doctorate', count: groups['Doctorate']!.length, isHeader: true));
+      items.add(
+        _CourseRenderItem(
+          category: 'Doctorate',
+          count: groups['Doctorate']!.length,
+          isHeader: true,
+        ),
+      );
       if (_expandedCategories.contains('Doctorate')) {
         for (var course in groups['Doctorate']!) {
-          items.add(_CourseRenderItem(category: 'Doctorate', course: course, isHeader: false));
+          items.add(
+            _CourseRenderItem(
+              category: 'Doctorate',
+              course: course,
+              isHeader: false,
+            ),
+          );
         }
       }
     }
@@ -760,8 +806,8 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
         child: Row(
           children: [
             Icon(
-              category == 'Masters' 
-                  ? Icons.workspace_premium 
+              category == 'Masters'
+                  ? Icons.workspace_premium
                   : (category == 'Bachelors' ? Icons.school : Icons.psychology),
               color: const Color(0xFF311B92),
             ),
@@ -814,12 +860,12 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected 
+            color: isSelected
                 ? const Color(0xFF311B92).withValues(alpha: 0.08)
                 : const Color(0xFF311B92).withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected 
+              color: isSelected
                   ? const Color(0xFF311B92)
                   : const Color(0xFF311B92).withValues(alpha: 0.08),
               width: isSelected ? 1.5 : 1.0,
@@ -831,7 +877,9 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF311B92) : const Color(0xFF6366F1),
+                  color: isSelected
+                      ? const Color(0xFF311B92)
+                      : const Color(0xFF6366F1),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -848,7 +896,7 @@ class _InstituteSelectionModalState extends State<InstituteSelectionModal> {
               ),
               Icon(
                 isSelected ? Icons.check_circle : Icons.check_circle_outline,
-                color: isSelected 
+                color: isSelected
                     ? const Color(0xFF311B92)
                     : const Color(0xFF311B92).withValues(alpha: 0.3),
                 size: 20,

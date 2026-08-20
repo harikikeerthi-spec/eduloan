@@ -60,6 +60,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
     return '${name.substring(0, 2)}${'*' * (name.length - 2)}@$domain';
   }
+
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _instituteController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
@@ -72,7 +73,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
   // Education & Status
   final TextEditingController _fieldOfStudyController = TextEditingController();
-  final TextEditingController _admissionStatusController = TextEditingController();
+  final TextEditingController _admissionStatusController =
+      TextEditingController();
 
   final List<String> _fieldOfStudyOptions = [
     'Undergraduate Abroad',
@@ -95,7 +97,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   final TextEditingController _motherNameController = TextEditingController();
   final TextEditingController _motherPhoneController = TextEditingController();
   final TextEditingController _motherEmailController = TextEditingController();
-  
+
   // Residential Details
   final TextEditingController _pincodeController = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
@@ -108,11 +110,16 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   bool _isVerifyingUniversity = false;
   Timer? _universityCheckTimer;
 
-  final TextEditingController _coApplicantNameController = TextEditingController();
-  final TextEditingController _coApplicantRelationController = TextEditingController();
-  final TextEditingController _coApplicantPhoneController = TextEditingController();
-  final TextEditingController _coApplicantEmailController = TextEditingController();
-  final TextEditingController _coApplicantIncomeController = TextEditingController();
+  final TextEditingController _coApplicantNameController =
+      TextEditingController();
+  final TextEditingController _coApplicantRelationController =
+      TextEditingController();
+  final TextEditingController _coApplicantPhoneController =
+      TextEditingController();
+  final TextEditingController _coApplicantEmailController =
+      TextEditingController();
+  final TextEditingController _coApplicantIncomeController =
+      TextEditingController();
 
   final List<String> _relations = [
     'Father',
@@ -136,193 +143,460 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
   static final Map<String, List<String>> _knownUniversitiesByCountry = {
     'usa': [
-      'Harvard University', 'Massachusetts Institute of Technology', 'MIT',
-      'Stanford University', 'Columbia University', 'University of California',
-      'UC Berkeley', 'UCLA', 'Yale University', 'Princeton University',
-      'Cornell University', 'New York University', 'NYU',
-      'Carnegie Mellon University', 'University of Texas at Dallas',
-      'University of Southern California', 'Northeastern University',
-      'Arizona State University', 'University of Illinois',
-      'University of Michigan', 'University of Wisconsin',
-      'Purdue University', 'Ohio State University', 'Penn State University',
-      'University of Pennsylvania', 'Duke University', 'Johns Hopkins University',
-      'University of Chicago', 'Northwestern University', 'Brown University',
-      'Dartmouth College', 'Rice University', 'Vanderbilt University',
-      'Emory University', 'Georgetown University', 'Tufts University',
-      'Boston University', 'Boston College', 'University of Notre Dame',
-      'University of Florida', 'University of Georgia', 'University of Virginia',
-      'University of Washington', 'University of Minnesota',
-      'University of Maryland', 'Rutgers University', 'Indiana University',
-      'Iowa State University', 'Kansas State University',
-      'Texas A&M University', 'University of Houston', 'Drexel University',
-      'Temple University', 'George Mason University', 'American University',
-      'George Washington University', 'Illinois Institute of Technology',
-      'New Jersey Institute of Technology', 'NJIT', 'Stony Brook University',
-      'University of Rochester', 'Case Western Reserve University',
-      'Tulane University', 'Fordham University', 'Yeshiva University',
-      'Florida State University', 'University of South Florida',
-      'Florida International University', 'University of Miami',
-      'Binghamton University', 'University at Buffalo', 'SUNY Buffalo',
-      'Rochester Institute of Technology', 'RIT', 'Rensselaer Polytechnic Institute',
-      'RPI', 'University of Connecticut', 'University of Massachusetts',
-      'UMass Amherst', 'University of Colorado Boulder',
-      'University of California Santa Barbara', 'UCSB',
-      'University of California San Diego', 'UCSD',
-      'University of California Davis', 'UC Davis',
-      'University of California Irvine', 'UC Irvine',
-      'University of California Santa Cruz', 'UCSC',
-      'University of California Riverside', 'UC Riverside',
-      'Colorado State University', 'University of Utah',
-      'Oregon State University', 'University of Oregon',
-      'Washington State University', 'University of Nevada',
-      'University of Arizona', 'University of New Mexico',
-      'University of Missouri', 'University of Iowa', 'University of Kansas',
-      'University of Kentucky', 'University of Tennessee',
-      'Auburn University', 'University of Alabama', 'Mississippi State University',
-      'Louisiana State University', 'LSU', 'Clemson University',
-      'University of South Carolina', 'Virginia Tech',
+      'Harvard University',
+      'Massachusetts Institute of Technology',
+      'MIT',
+      'Stanford University',
+      'Columbia University',
+      'University of California',
+      'UC Berkeley',
+      'UCLA',
+      'Yale University',
+      'Princeton University',
+      'Cornell University',
+      'New York University',
+      'NYU',
+      'Carnegie Mellon University',
+      'University of Texas at Dallas',
+      'University of Southern California',
+      'Northeastern University',
+      'Arizona State University',
+      'University of Illinois',
+      'University of Michigan',
+      'University of Wisconsin',
+      'Purdue University',
+      'Ohio State University',
+      'Penn State University',
+      'University of Pennsylvania',
+      'Duke University',
+      'Johns Hopkins University',
+      'University of Chicago',
+      'Northwestern University',
+      'Brown University',
+      'Dartmouth College',
+      'Rice University',
+      'Vanderbilt University',
+      'Emory University',
+      'Georgetown University',
+      'Tufts University',
+      'Boston University',
+      'Boston College',
+      'University of Notre Dame',
+      'University of Florida',
+      'University of Georgia',
+      'University of Virginia',
+      'University of Washington',
+      'University of Minnesota',
+      'University of Maryland',
+      'Rutgers University',
+      'Indiana University',
+      'Iowa State University',
+      'Kansas State University',
+      'Texas A&M University',
+      'University of Houston',
+      'Drexel University',
+      'Temple University',
+      'George Mason University',
+      'American University',
+      'George Washington University',
+      'Illinois Institute of Technology',
+      'New Jersey Institute of Technology',
+      'NJIT',
+      'Stony Brook University',
+      'University of Rochester',
+      'Case Western Reserve University',
+      'Tulane University',
+      'Fordham University',
+      'Yeshiva University',
+      'Florida State University',
+      'University of South Florida',
+      'Florida International University',
+      'University of Miami',
+      'Binghamton University',
+      'University at Buffalo',
+      'SUNY Buffalo',
+      'Rochester Institute of Technology',
+      'RIT',
+      'Rensselaer Polytechnic Institute',
+      'RPI',
+      'University of Connecticut',
+      'University of Massachusetts',
+      'UMass Amherst',
+      'University of Colorado Boulder',
+      'University of California Santa Barbara',
+      'UCSB',
+      'University of California San Diego',
+      'UCSD',
+      'University of California Davis',
+      'UC Davis',
+      'University of California Irvine',
+      'UC Irvine',
+      'University of California Santa Cruz',
+      'UCSC',
+      'University of California Riverside',
+      'UC Riverside',
+      'Colorado State University',
+      'University of Utah',
+      'Oregon State University',
+      'University of Oregon',
+      'Washington State University',
+      'University of Nevada',
+      'University of Arizona',
+      'University of New Mexico',
+      'University of Missouri',
+      'University of Iowa',
+      'University of Kansas',
+      'University of Kentucky',
+      'University of Tennessee',
+      'Auburn University',
+      'University of Alabama',
+      'Mississippi State University',
+      'Louisiana State University',
+      'LSU',
+      'Clemson University',
+      'University of South Carolina',
+      'Virginia Tech',
     ],
     'united states': [
-      'Harvard University', 'MIT', 'Stanford University', 'Columbia University',
-      'Yale University', 'Princeton University', 'Cornell University', 'NYU',
-      'Carnegie Mellon University', 'University of Southern California',
-      'Northeastern University', 'Arizona State University',
+      'Harvard University',
+      'MIT',
+      'Stanford University',
+      'Columbia University',
+      'Yale University',
+      'Princeton University',
+      'Cornell University',
+      'NYU',
+      'Carnegie Mellon University',
+      'University of Southern California',
+      'Northeastern University',
+      'Arizona State University',
     ],
     'uk': [
-      'University of Oxford', 'Oxford University', 'University of Cambridge',
-      'Cambridge University', 'Imperial College London', 'University College London',
-      'UCL', 'London School of Economics', 'LSE', 'University of Edinburgh',
-      'King\'s College London', 'University of Manchester', 'University of Warwick',
-      'University of Bristol', 'University of Birmingham', 'University of Leeds',
-      'University of Sheffield', 'University of Nottingham', 'University of Glasgow',
-      'University of Southampton', 'University of Liverpool', 'Durham University',
-      'Newcastle University', 'Queen Mary University', 'QMUL',
-      'Loughborough University', 'University of Exeter', 'University of Bath',
-      'University of Surrey', 'University of Reading', 'University of Leicester',
-      'City University London', 'Brunel University', 'Aston University',
-      'University of Kent', 'University of Sussex', 'University of East Anglia',
-      'Heriot-Watt University', 'University of Aberdeen', 'University of Strathclyde',
-      'University of Dundee', 'Glasgow Caledonian University',
-      'Queen\'s University Belfast', 'Cardiff University', 'Swansea University',
-      'University of Coventry', 'Coventry University', 'De Montfort University',
-      'Manchester Metropolitan University', 'Leeds Beckett University',
-      'Northumbria University', 'Teesside University', 'University of Salford',
-      'University of Huddersfield', 'Sheffield Hallam University',
-      'Bournemouth University', 'University of Portsmouth',
-      'University of Brighton', 'Kingston University', 'University of Westminster',
-      'Middlesex University', 'University of Hertfordshire',
-      'University of Bedfordshire', 'University of Northampton',
-      'University of Derby', 'University of Lincoln', 'Anglia Ruskin University',
-      'University of Greenwich', 'University of East London',
-      'London Metropolitan University', 'University of Bolton',
+      'University of Oxford',
+      'Oxford University',
+      'University of Cambridge',
+      'Cambridge University',
+      'Imperial College London',
+      'University College London',
+      'UCL',
+      'London School of Economics',
+      'LSE',
+      'University of Edinburgh',
+      'King\'s College London',
+      'University of Manchester',
+      'University of Warwick',
+      'University of Bristol',
+      'University of Birmingham',
+      'University of Leeds',
+      'University of Sheffield',
+      'University of Nottingham',
+      'University of Glasgow',
+      'University of Southampton',
+      'University of Liverpool',
+      'Durham University',
+      'Newcastle University',
+      'Queen Mary University',
+      'QMUL',
+      'Loughborough University',
+      'University of Exeter',
+      'University of Bath',
+      'University of Surrey',
+      'University of Reading',
+      'University of Leicester',
+      'City University London',
+      'Brunel University',
+      'Aston University',
+      'University of Kent',
+      'University of Sussex',
+      'University of East Anglia',
+      'Heriot-Watt University',
+      'University of Aberdeen',
+      'University of Strathclyde',
+      'University of Dundee',
+      'Glasgow Caledonian University',
+      'Queen\'s University Belfast',
+      'Cardiff University',
+      'Swansea University',
+      'University of Coventry',
+      'Coventry University',
+      'De Montfort University',
+      'Manchester Metropolitan University',
+      'Leeds Beckett University',
+      'Northumbria University',
+      'Teesside University',
+      'University of Salford',
+      'University of Huddersfield',
+      'Sheffield Hallam University',
+      'Bournemouth University',
+      'University of Portsmouth',
+      'University of Brighton',
+      'Kingston University',
+      'University of Westminster',
+      'Middlesex University',
+      'University of Hertfordshire',
+      'University of Bedfordshire',
+      'University of Northampton',
+      'University of Derby',
+      'University of Lincoln',
+      'Anglia Ruskin University',
+      'University of Greenwich',
+      'University of East London',
+      'London Metropolitan University',
+      'University of Bolton',
     ],
     'united kingdom': [
-      'University of Oxford', 'University of Cambridge', 'Imperial College London',
-      'UCL', 'LSE', 'University of Edinburgh', 'King\'s College London',
-      'University of Manchester', 'University of Warwick', 'University of Bristol',
+      'University of Oxford',
+      'University of Cambridge',
+      'Imperial College London',
+      'UCL',
+      'LSE',
+      'University of Edinburgh',
+      'King\'s College London',
+      'University of Manchester',
+      'University of Warwick',
+      'University of Bristol',
     ],
     'canada': [
-      'University of Toronto', 'University of British Columbia', 'UBC',
-      'McGill University', 'University of Waterloo', 'University of Alberta',
-      'McMaster University', 'Western University', 'University of Montreal',
-      'Queen\'s University', 'University of Ottawa', 'Dalhousie University',
-      'University of Calgary', 'Simon Fraser University', 'SFU',
-      'University of Victoria', 'University of Manitoba',
-      'University of Saskatchewan', 'Carleton University',
-      'York University', 'Ryerson University', 'Toronto Metropolitan University',
-      'Concordia University', 'University of Windsor', 'Brock University',
-      'University of Guelph', 'Wilfrid Laurier University', 'Lakehead University',
-      'OCAD University', 'Seneca College', 'Humber College', 'George Brown College',
-      'Sheridan College', 'Durham College', 'Centennial College', 'Fanshawe College',
-      'Conestoga College', 'Mohawk College', 'Algonquin College',
-      'BCIT', 'British Columbia Institute of Technology', 'NAIT', 'SAIT',
-      'Douglas College', 'Langara College', 'Camosun College',
+      'University of Toronto',
+      'University of British Columbia',
+      'UBC',
+      'McGill University',
+      'University of Waterloo',
+      'University of Alberta',
+      'McMaster University',
+      'Western University',
+      'University of Montreal',
+      'Queen\'s University',
+      'University of Ottawa',
+      'Dalhousie University',
+      'University of Calgary',
+      'Simon Fraser University',
+      'SFU',
+      'University of Victoria',
+      'University of Manitoba',
+      'University of Saskatchewan',
+      'Carleton University',
+      'York University',
+      'Ryerson University',
+      'Toronto Metropolitan University',
+      'Concordia University',
+      'University of Windsor',
+      'Brock University',
+      'University of Guelph',
+      'Wilfrid Laurier University',
+      'Lakehead University',
+      'OCAD University',
+      'Seneca College',
+      'Humber College',
+      'George Brown College',
+      'Sheridan College',
+      'Durham College',
+      'Centennial College',
+      'Fanshawe College',
+      'Conestoga College',
+      'Mohawk College',
+      'Algonquin College',
+      'BCIT',
+      'British Columbia Institute of Technology',
+      'NAIT',
+      'SAIT',
+      'Douglas College',
+      'Langara College',
+      'Camosun College',
     ],
     'australia': [
-      'University of Melbourne', 'University of Sydney', 'Australian National University',
-      'ANU', 'University of Queensland', 'Monash University', 'UNSW Sydney',
-      'University of Western Australia', 'University of Adelaide', 'UQ',
-      'RMIT University', 'RMIT', 'Royal Melbourne Institute of Technology',
-      'Deakin University', 'La Trobe University', 'Swinburne University',
-      'Swinburne University of Technology', 'Macquarie University',
-      'University of Technology Sydney', 'UTS',
-      'Queensland University of Technology', 'QUT',
-      'Curtin University', 'Murdoch University', 'Edith Cowan University',
-      'James Cook University', 'Griffith University', 'Bond University',
-      'University of Wollongong', 'Charles Darwin University',
-      'University of Newcastle', 'University of New England',
-      'University of Southern Queensland', 'USQ',
-      'University of the Sunshine Coast', 'Central Queensland University', 'CQUniversity',
-      'Southern Cross University', 'Western Sydney University',
-      'Charles Sturt University', 'Victoria University',
-      'Federation University', 'Australian Catholic University', 'ACU',
-      'Torrens University', 'Think Education',
-      'University of South Australia', 'UniSA',
-      'Flinders University', 'University of Tasmania', 'UTAS',
-      'University of Canberra', 'University of New South Wales', 'UNSW',
+      'University of Melbourne',
+      'University of Sydney',
+      'Australian National University',
+      'ANU',
+      'University of Queensland',
+      'Monash University',
+      'UNSW Sydney',
+      'University of Western Australia',
+      'University of Adelaide',
+      'UQ',
+      'RMIT University',
+      'RMIT',
+      'Royal Melbourne Institute of Technology',
+      'Deakin University',
+      'La Trobe University',
+      'Swinburne University',
+      'Swinburne University of Technology',
+      'Macquarie University',
+      'University of Technology Sydney',
+      'UTS',
+      'Queensland University of Technology',
+      'QUT',
+      'Curtin University',
+      'Murdoch University',
+      'Edith Cowan University',
+      'James Cook University',
+      'Griffith University',
+      'Bond University',
+      'University of Wollongong',
+      'Charles Darwin University',
+      'University of Newcastle',
+      'University of New England',
+      'University of Southern Queensland',
+      'USQ',
+      'University of the Sunshine Coast',
+      'Central Queensland University',
+      'CQUniversity',
+      'Southern Cross University',
+      'Western Sydney University',
+      'Charles Sturt University',
+      'Victoria University',
+      'Federation University',
+      'Australian Catholic University',
+      'ACU',
+      'Torrens University',
+      'Think Education',
+      'University of South Australia',
+      'UniSA',
+      'Flinders University',
+      'University of Tasmania',
+      'UTAS',
+      'University of Canberra',
+      'University of New South Wales',
+      'UNSW',
     ],
     'germany': [
-      'Technical University of Munich', 'TUM', 'Ludwig Maximilian University',
-      'LMU Munich', 'Heidelberg University', 'Humboldt University of Berlin',
-      'RWTH Aachen University', 'Free University of Berlin',
-      'Karlsruhe Institute of Technology', 'KIT', 'TU Berlin',
-      'University of Hamburg', 'University of Stuttgart', 'TU Dresden',
-      'University of Bonn', 'University of Frankfurt', 'Goethe University',
-      'University of Cologne', 'University of Freiburg', 'University of Tübingen',
-      'University of Erlangen-Nuremberg', 'FAU', 'Saarland University',
-      'Jacobs University', 'Constructor University',
+      'Technical University of Munich',
+      'TUM',
+      'Ludwig Maximilian University',
+      'LMU Munich',
+      'Heidelberg University',
+      'Humboldt University of Berlin',
+      'RWTH Aachen University',
+      'Free University of Berlin',
+      'Karlsruhe Institute of Technology',
+      'KIT',
+      'TU Berlin',
+      'University of Hamburg',
+      'University of Stuttgart',
+      'TU Dresden',
+      'University of Bonn',
+      'University of Frankfurt',
+      'Goethe University',
+      'University of Cologne',
+      'University of Freiburg',
+      'University of Tübingen',
+      'University of Erlangen-Nuremberg',
+      'FAU',
+      'Saarland University',
+      'Jacobs University',
+      'Constructor University',
     ],
     'france': [
-      'PSL Research University', 'Institut Polytechnique de Paris', 'Sorbonne University',
-      'HEC Paris', 'University of Paris-Saclay', 'INSEAD', 'Sciences Po',
-      'Ecole Polytechnique', 'Ecole Normale Superieure', 'ENS',
-      'University of Paris', 'Paris Dauphine University', 'ESSEC Business School',
-      'EDHEC Business School', 'Grenoble École de Management',
+      'PSL Research University',
+      'Institut Polytechnique de Paris',
+      'Sorbonne University',
+      'HEC Paris',
+      'University of Paris-Saclay',
+      'INSEAD',
+      'Sciences Po',
+      'Ecole Polytechnique',
+      'Ecole Normale Superieure',
+      'ENS',
+      'University of Paris',
+      'Paris Dauphine University',
+      'ESSEC Business School',
+      'EDHEC Business School',
+      'Grenoble École de Management',
     ],
     'ireland': [
-      'Trinity College Dublin', 'University College Dublin', 'UCD',
-      'National University of Ireland Galway', 'University College Cork',
-      'Dublin City University', 'DCU', 'Maynooth University',
-      'Dublin Institute of Technology', 'TU Dublin', 'Limerick Institute of Technology',
+      'Trinity College Dublin',
+      'University College Dublin',
+      'UCD',
+      'National University of Ireland Galway',
+      'University College Cork',
+      'Dublin City University',
+      'DCU',
+      'Maynooth University',
+      'Dublin Institute of Technology',
+      'TU Dublin',
+      'Limerick Institute of Technology',
       'Technological University Dublin',
     ],
     'singapore': [
-      'National University of Singapore', 'NUS', 'Nanyang Technological University', 'NTU',
-      'Singapore Management University', 'SMU', 'Singapore University of Technology',
-      'SUTD', 'Singapore Institute of Technology', 'SIT',
+      'National University of Singapore',
+      'NUS',
+      'Nanyang Technological University',
+      'NTU',
+      'Singapore Management University',
+      'SMU',
+      'Singapore University of Technology',
+      'SUTD',
+      'Singapore Institute of Technology',
+      'SIT',
     ],
     'new zealand': [
-      'University of Auckland', 'Auckland University of Technology', 'AUT',
-      'University of Otago', 'Victoria University of Wellington',
-      'Massey University', 'University of Canterbury', 'Lincoln University',
+      'University of Auckland',
+      'Auckland University of Technology',
+      'AUT',
+      'University of Otago',
+      'Victoria University of Wellington',
+      'Massey University',
+      'University of Canterbury',
+      'Lincoln University',
       'Waikato University',
     ],
     'netherlands': [
-      'Delft University of Technology', 'TU Delft', 'University of Amsterdam',
-      'Leiden University', 'Eindhoven University of Technology',
-      'Utrecht University', 'Wageningen University', 'Tilburg University',
-      'Radboud University', 'University of Groningen', 'Erasmus University Rotterdam',
-      'VU Amsterdam', 'Maastricht University',
+      'Delft University of Technology',
+      'TU Delft',
+      'University of Amsterdam',
+      'Leiden University',
+      'Eindhoven University of Technology',
+      'Utrecht University',
+      'Wageningen University',
+      'Tilburg University',
+      'Radboud University',
+      'University of Groningen',
+      'Erasmus University Rotterdam',
+      'VU Amsterdam',
+      'Maastricht University',
     ],
     'sweden': [
-      'Karolinska Institute', 'Lund University', 'Uppsala University',
-      'Stockholm University', 'Royal Institute of Technology', 'KTH',
-      'Chalmers University of Technology', 'Gothenburg University',
-      'Umeå University', 'Linköping University',
+      'Karolinska Institute',
+      'Lund University',
+      'Uppsala University',
+      'Stockholm University',
+      'Royal Institute of Technology',
+      'KTH',
+      'Chalmers University of Technology',
+      'Gothenburg University',
+      'Umeå University',
+      'Linköping University',
     ],
     'switzerland': [
-      'ETH Zurich', 'EPFL', 'University of Zurich', 'University of Geneva',
-      'University of Basel', 'IMD Business School', 'University of Bern',
+      'ETH Zurich',
+      'EPFL',
+      'University of Zurich',
+      'University of Geneva',
+      'University of Basel',
+      'IMD Business School',
+      'University of Bern',
     ],
     'uae': [
-      'Khalifa University', 'American University of Sharjah',
-      'Abu Dhabi University', 'University of Dubai',
-      'American University in Dubai', 'Heriot-Watt University Dubai',
-      'Middlesex University Dubai', 'University of Wollongong Dubai',
+      'Khalifa University',
+      'American University of Sharjah',
+      'Abu Dhabi University',
+      'University of Dubai',
+      'American University in Dubai',
+      'Heriot-Watt University Dubai',
+      'Middlesex University Dubai',
+      'University of Wollongong Dubai',
     ],
     'india': [
-      'Indian Institute of Science', 'IISc', 'IIT Bombay', 'IIT Delhi',
-      'IIT Madras', 'IIT Kharagpur', 'IIT Kanpur', 'University of Delhi', 'BITS Pilani',
+      'Indian Institute of Science',
+      'IISc',
+      'IIT Bombay',
+      'IIT Delhi',
+      'IIT Madras',
+      'IIT Kharagpur',
+      'IIT Kanpur',
+      'University of Delhi',
+      'BITS Pilani',
     ],
   };
 
@@ -352,7 +626,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     final countryLower = country.toLowerCase();
 
     // Block India as destination
-    if (countryLower == 'india' || countryLower == 'bharat' || countryLower == 'hindustan') {
+    if (countryLower == 'india' ||
+        countryLower == 'bharat' ||
+        countryLower == 'hindustan') {
       setState(() {
         _universityLocationWarning =
             '❌ Vidyaloans is for abroad studies only. India is not eligible. '
@@ -365,13 +641,39 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
     // Block known Indian university keywords
     final indianUniKeywords = [
-      'iit ', 'iit-', 'iim ', 'iim-', 'iisc', 'iiit', 'bits pilani', 'nit ',
-      'anna university', 'vtu', 'jntu', 'amity university', 'manipal university',
-      'srm university', 'lpu ', 'thapar', 'christ university', 'symbiosis',
-      'osmania', 'saveetha', 'kalinga', 'sharda', 'university of delhi',
-      'university of mumbai', 'university of bangalore', 'pune university',
-      'calicut university', 'kerala university', 'andhra university',
-      'mysore university', 'aligarh', 'banaras hindu', 'bhu',
+      'iit ',
+      'iit-',
+      'iim ',
+      'iim-',
+      'iisc',
+      'iiit',
+      'bits pilani',
+      'nit ',
+      'anna university',
+      'vtu',
+      'jntu',
+      'amity university',
+      'manipal university',
+      'srm university',
+      'lpu ',
+      'thapar',
+      'christ university',
+      'symbiosis',
+      'osmania',
+      'saveetha',
+      'kalinga',
+      'sharda',
+      'university of delhi',
+      'university of mumbai',
+      'university of bangalore',
+      'pune university',
+      'calicut university',
+      'kerala university',
+      'andhra university',
+      'mysore university',
+      'aligarh',
+      'banaras hindu',
+      'bhu',
     ];
     for (var kw in indianUniKeywords) {
       if (uniLower.contains(kw)) {
@@ -379,7 +681,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           _universityLocationWarning =
               '❌ Indian universities are not eligible for Vidyaloans. '
               'Please enter a university located abroad.';
-          _fieldErrors[_instituteController] = 'Indian universities not eligible';
+          _fieldErrors[_instituteController] =
+              'Indian universities not eligible';
           _isVerifyingUniversity = false;
         });
         return;
@@ -388,9 +691,18 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
     // ── Check local known-university dictionary (instant) ──────────────────
     String normalizedSelected = countryLower;
-    if (['usa', 'united states', 'united states of america'].contains(countryLower)) {
+    if ([
+      'usa',
+      'united states',
+      'united states of america',
+    ].contains(countryLower)) {
       normalizedSelected = 'usa';
-    } else if (['uk', 'united kingdom', 'britain', 'england'].contains(countryLower)) {
+    } else if ([
+      'uk',
+      'united kingdom',
+      'britain',
+      'england',
+    ].contains(countryLower)) {
       normalizedSelected = 'uk';
     }
 
@@ -418,7 +730,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           _universityLocationWarning =
               '❌ Indian universities are not eligible for Vidyaloans. '
               'Please enter a university located abroad.';
-          _fieldErrors[_instituteController] = 'Indian universities not eligible';
+          _fieldErrors[_instituteController] =
+              'Indian universities not eligible';
           _isVerifyingUniversity = false;
         });
         return;
@@ -430,7 +743,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               '⚠️ "$university" is located in ${foundCountryKey!.toUpperCase()}, '
               'NOT in $country. Please select a university in $country, '
               'or change your target country.';
-          _fieldErrors[_instituteController] = 'University not in selected country';
+          _fieldErrors[_instituteController] =
+              'University not in selected country';
           _isVerifyingUniversity = false;
         });
         return;
@@ -469,17 +783,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 '⚠️ "$university" could not be found as a recognised university. '
                 'Please double-check the name and ensure it is an accredited institution.';
             _fieldErrors[_instituteController] = 'University not recognised';
-          } else if (!countryMatch && actualCountry != null && actualCountry.isNotEmpty) {
+          } else if (!countryMatch &&
+              actualCountry != null &&
+              actualCountry.isNotEmpty) {
             _universityLocationWarning =
                 '❌ "$university" is located in $actualCountry, NOT in $country. '
                 'Please select a university actually in $country, or change your target country.';
-            _fieldErrors[_instituteController] = 'University not in selected country';
+            _fieldErrors[_instituteController] =
+                'University not in selected country';
           } else if (confidence == 'low') {
             // AI unsure — soft advisory only, don't block
             _universityLocationWarning =
                 '⚠️ Could not fully verify "$university" in $country. '
                 'Please confirm this university is in $country before submitting.';
-            _fieldErrors[_instituteController] = 'University could not be verified';
+            _fieldErrors[_instituteController] =
+                'University could not be verified';
           } else {
             // AI confirmed it matches — clear
             _universityLocationWarning = null;
@@ -578,7 +896,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }
 
   String _amountInLakhsLabel = '';
-  
+
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -633,7 +951,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     if (widget.initialCountry != null) {
       final country = widget.initialCountry!;
       _countryController.text = country;
-      final normalizedCountries = _countries.map((c) => c.toLowerCase()).toList();
+      final normalizedCountries = _countries
+          .map((c) => c.toLowerCase())
+          .toList();
       if (!normalizedCountries.contains(country.toLowerCase())) {
         _isManualCountryEntry = true;
         _selectedCountryFlag = _getFlagForCountry(country);
@@ -710,18 +1030,30 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     void updateFromLocal() {
       if (!mounted) return;
       setState(() {
-        _firstNameController.text = prefs.getString('user_firstName') ?? prefs.getString('user_name') ?? '';
-        _lastNameController.text = prefs.getString('user_lastName') ?? prefs.getString('user_last_name') ?? '';
-        final rawPhone = prefs.getString('user_phone') ??
-                               prefs.getString('user_phoneNumber') ??
-                               prefs.getString('user_phone_number') ??
-                               prefs.getString('phone_number') ?? '';
+        _firstNameController.text =
+            prefs.getString('user_firstName') ??
+            prefs.getString('user_name') ??
+            '';
+        _lastNameController.text =
+            prefs.getString('user_lastName') ??
+            prefs.getString('user_last_name') ??
+            '';
+        final rawPhone =
+            prefs.getString('user_phone') ??
+            prefs.getString('user_phoneNumber') ??
+            prefs.getString('user_phone_number') ??
+            prefs.getString('phone_number') ??
+            '';
         final rawEmail = prefs.getString('user_email') ?? '';
 
         _phoneController.text = rawPhone;
         _emailController.text = rawEmail;
-        _displayPhoneController.text = rawPhone.isNotEmpty ? _maskPhone(rawPhone) : '';
-        _displayEmailController.text = rawEmail.isNotEmpty ? _maskEmail(rawEmail) : '';
+        _displayPhoneController.text = rawPhone.isNotEmpty
+            ? _maskPhone(rawPhone)
+            : '';
+        _displayEmailController.text = rawEmail.isNotEmpty
+            ? _maskEmail(rawEmail)
+            : '';
 
         String dobVal = prefs.getString('user_dob') ?? '';
         if (dobVal.contains('-') && !dobVal.contains('/')) {
@@ -751,11 +1083,17 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
           final firstName = user['firstName']?.toString() ?? '';
           final lastName = user['lastName']?.toString() ?? '';
-          final phone = user['phoneNumber']?.toString() ?? user['phone']?.toString() ?? '';
-          final dob = user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '';
+          final phone =
+              user['phoneNumber']?.toString() ??
+              user['phone']?.toString() ??
+              '';
+          final dob =
+              user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '';
 
-          if (firstName.isNotEmpty) await prefs.setString('user_firstName', firstName);
-          if (lastName.isNotEmpty) await prefs.setString('user_lastName', lastName);
+          if (firstName.isNotEmpty)
+            await prefs.setString('user_firstName', firstName);
+          if (lastName.isNotEmpty)
+            await prefs.setString('user_lastName', lastName);
           if (phone.isNotEmpty) await prefs.setString('user_phone', phone);
           if (dob.isNotEmpty) await prefs.setString('user_dob', dob);
 
@@ -771,7 +1109,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   bool _isAmountExceedingLimit = false;
 
   void _updateAmountLabel([String? _]) {
-    final text = _amountController.text.replaceAll(',', '').replaceAll(RegExp(r'[^0-9]'), '');
+    final text = _amountController.text
+        .replaceAll(',', '')
+        .replaceAll(RegExp(r'[^0-9]'), '');
     if (text.isEmpty) {
       setState(() {
         _amountInLakhsLabel = '';
@@ -807,8 +1147,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     }
   }
 
-
-
   final List<String> _countries = [
     'USA',
     'UK',
@@ -834,7 +1172,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     'Other',
   ];
 
-
   void _showCountrySelection() {
     String searchQuery = '';
     showModalBottomSheet(
@@ -844,7 +1181,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
           final query = searchQuery.trim().toLowerCase();
-          final isUnrecognizedCountry = query.contains('pakistan') ||
+          final isUnrecognizedCountry =
+              query.contains('pakistan') ||
               query.contains('bangladesh') ||
               query == 'pak' ||
               query == 'bangla' ||
@@ -885,7 +1223,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 4,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
@@ -899,12 +1240,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                           searchQuery = val;
                         });
                       },
-                      style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF0F172A)),
+                      style: GoogleFonts.outfit(
+                        fontSize: 14,
+                        color: const Color(0xFF0F172A),
+                      ),
                       decoration: const InputDecoration(
                         hintText: 'Search target country...',
                         hintStyle: TextStyle(color: Color(0xFF94A3B8)),
                         border: InputBorder.none,
-                        icon: Icon(Icons.search, color: Color(0xFF64748B), size: 20),
+                        icon: Icon(
+                          Icons.search,
+                          color: Color(0xFF64748B),
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
@@ -919,16 +1267,24 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                              border: Border.all(
+                                color: const Color(0xFFEF4444),
+                                width: 1.2,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.cancel_outlined, color: Color(0xFFDC2626), size: 30),
+                                const Icon(
+                                  Icons.cancel_outlined,
+                                  color: Color(0xFFDC2626),
+                                  size: 30,
+                                ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Country not recognized',
@@ -954,90 +1310,114 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                           ),
                         )
                       : (filteredCountries.isEmpty && query.isNotEmpty)
-                          ? Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Container(
-                                padding: const EdgeInsets.all(18),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFEF2F2),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 28),
-                                    const SizedBox(width: 14),
-                                    Expanded(
-                                      child: Text(
-                                        'Country not recognized',
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF991B1B),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                      ? Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFFEF4444),
+                                width: 1.2,
                               ),
-                            )
-                          : ListView.builder(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: filteredCountries.length,
-                              itemBuilder: (context, index) {
-                                final country = filteredCountries[index];
-                                final flag = country == 'Other' ? '🌍' : _getFlagForCountry(country);
-                                final isSelected = _countryController.text == country;
-                                return ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                  leading: flag.isNotEmpty
-                                      ? Container(
-                                          width: 44,
-                                          height: 44,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? const Color(0xFF311B92).withValues(alpha: 0.1)
-                                                : const Color(0xFFF3F4F6),
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              flag,
-                                              style: const TextStyle(fontSize: 24),
-                                            ),
-                                          ),
-                                        )
-                                      : null,
-                                  title: Text(
-                                    country,
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  color: Color(0xFFDC2626),
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Text(
+                                    'Country not recognized',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF991B1B),
                                     ),
                                   ),
-                                  trailing: isSelected
-                                      ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
-                                      : const Icon(Icons.chevron_right, color: Colors.grey),
-                                  onTap: () {
-                                    setState(() {
-                                      if (country == 'Other') {
-                                        _countryController.clear();
-                                        _isManualCountryEntry = true;
-                                        _selectedCountryFlag = '';
-                                      } else {
-                                        _countryController.text = country;
-                                        _isManualCountryEntry = false;
-                                        _selectedCountryFlag = flag;
-                                        _fieldErrors.remove(_countryController);
-                                        _validateUniversityLocation();
-                                      }
-                                    });
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
+                                ),
+                              ],
                             ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          itemCount: filteredCountries.length,
+                          itemBuilder: (context, index) {
+                            final country = filteredCountries[index];
+                            final flag = country == 'Other'
+                                ? '🌍'
+                                : _getFlagForCountry(country);
+                            final isSelected =
+                                _countryController.text == country;
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                              ),
+                              leading: flag.isNotEmpty
+                                  ? Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? const Color(
+                                                0xFF311B92,
+                                              ).withValues(alpha: 0.1)
+                                            : const Color(0xFFF3F4F6),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          flag,
+                                          style: const TextStyle(fontSize: 24),
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                              title: Text(
+                                country,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? const Color(0xFF311B92)
+                                      : Colors.black87,
+                                ),
+                              ),
+                              trailing: isSelected
+                                  ? const Icon(
+                                      Icons.check_circle,
+                                      color: Color(0xFF10B981),
+                                    )
+                                  : const Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.grey,
+                                    ),
+                              onTap: () {
+                                setState(() {
+                                  if (country == 'Other') {
+                                    _countryController.clear();
+                                    _isManualCountryEntry = true;
+                                    _selectedCountryFlag = '';
+                                  } else {
+                                    _countryController.text = country;
+                                    _isManualCountryEntry = false;
+                                    _selectedCountryFlag = flag;
+                                    _fieldErrors.remove(_countryController);
+                                    _validateUniversityLocation();
+                                  }
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -1046,7 +1426,6 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       ),
     );
   }
-
 
   void _showRelationSelection() {
     showModalBottomSheet(
@@ -1091,12 +1470,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     title: Text(
                       rel,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? const Color(0xFF311B92)
+                            : Colors.black87,
                       ),
                     ),
                     trailing: isSelected
-                        ? const Icon(Icons.check_circle, color: Color(0xFF10B981))
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF10B981),
+                          )
                         : null,
                     onTap: () async {
                       setState(() {
@@ -1105,7 +1491,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       final prefs = await SharedPreferences.getInstance();
                       final userId = prefs.getString('userId') ?? 'anonymous';
                       await prefs.setString('co_applicant_relation', rel);
-                      await prefs.setString('co_applicant_relation_$userId', rel);
+                      await prefs.setString(
+                        'co_applicant_relation_$userId',
+                        rel,
+                      );
                       if (context.mounted) Navigator.pop(context);
                     },
                   );
@@ -1158,16 +1547,26 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   final option = _fieldOfStudyOptions[index];
                   final isSelected = _fieldOfStudyController.text == option;
                   return ListTile(
-                    leading: const Icon(Icons.interests_outlined, color: Color(0xFF311B92)),
+                    leading: const Icon(
+                      Icons.interests_outlined,
+                      color: Color(0xFF311B92),
+                    ),
                     title: Text(
                       option,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? const Color(0xFF311B92)
+                            : Colors.black87,
                       ),
                     ),
                     trailing: isSelected
-                        ? const Icon(Icons.check_circle, color: Color(0xFF311B92))
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF311B92),
+                          )
                         : null,
                     onTap: () {
                       setState(() {
@@ -1225,16 +1624,26 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   final option = _admissionStatusOptions[index];
                   final isSelected = _admissionStatusController.text == option;
                   return ListTile(
-                    leading: const Icon(Icons.verified_user_outlined, color: Color(0xFF311B92)),
+                    leading: const Icon(
+                      Icons.verified_user_outlined,
+                      color: Color(0xFF311B92),
+                    ),
                     title: Text(
                       option,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? const Color(0xFF311B92) : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? const Color(0xFF311B92)
+                            : Colors.black87,
                       ),
                     ),
                     trailing: isSelected
-                        ? const Icon(Icons.check_circle, color: Color(0xFF311B92))
+                        ? const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF311B92),
+                          )
                         : null,
                     onTap: () {
                       setState(() {
@@ -1349,22 +1758,42 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
           targetCountry: _countryController.text,
           city: _cityController.text.isEmpty ? null : _cityController.text,
-          pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
+          pincode: _pincodeController.text.isEmpty
+              ? null
+              : _pincodeController.text,
           universityName: _instituteController.text,
-          courseName: _courseController.text.isNotEmpty ? _courseController.text : _fieldOfStudyController.text,
+          courseName: _courseController.text.isNotEmpty
+              ? _courseController.text
+              : _fieldOfStudyController.text,
           bank: 'Matching Lenders',
           loanType: _loanTypeController.text,
           amount: amountValue,
           tenure: int.tryParse(_tenureController.text),
-          purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
-          fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
-          fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
-          fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
-          motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
-          motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
-          motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
+          purpose: _purposeController.text.isEmpty
+              ? 'Higher Education'
+              : _purposeController.text,
+          fatherName: _fatherNameController.text.isEmpty
+              ? null
+              : _fatherNameController.text,
+          fatherPhone: _fatherPhoneController.text.isEmpty
+              ? null
+              : _fatherPhoneController.text,
+          fatherEmail: _fatherEmailController.text.isEmpty
+              ? null
+              : _fatherEmailController.text,
+          motherName: _motherNameController.text.isEmpty
+              ? null
+              : _motherNameController.text,
+          motherPhone: _motherPhoneController.text.isEmpty
+              ? null
+              : _motherPhoneController.text,
+          motherEmail: _motherEmailController.text.isEmpty
+              ? null
+              : _motherEmailController.text,
           hasCollateral: _hasCollateral,
-          collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
+          collateralDetails: _collateralController.text.isEmpty
+              ? null
+              : _collateralController.text,
           hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
           coApplicantName: _coApplicantNameController.text.isEmpty
               ? null
@@ -1374,13 +1803,18 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           coApplicantEmail: _coApplicantEmailController.text.isEmpty
               ? null
               : _coApplicantEmailController.text,
-          coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
+          coApplicantIncome: double.tryParse(
+            _coApplicantIncomeController.text.replaceAll(',', ''),
+          ),
           fieldOfStudy: _fieldOfStudyController.text,
           admissionStatus: _admissionStatusController.text,
         );
       } catch (err) {
         final errStr = err.toString().toLowerCase();
-        if (errStr.contains('token') || errStr.contains('session') || errStr.contains('unauthorized') || errStr.contains('expired')) {
+        if (errStr.contains('token') ||
+            errStr.contains('session') ||
+            errStr.contains('unauthorized') ||
+            errStr.contains('expired')) {
           final refreshed = await AuthService.refreshToken();
           if (refreshed) {
             createdLoan = await loanService.createLoan(
@@ -1389,25 +1823,47 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               lastName: _lastNameController.text,
               phoneNumber: _phoneController.text,
               email: _emailController.text,
-              dateOfBirth: _dobController.text.isEmpty ? null : _dobController.text,
+              dateOfBirth: _dobController.text.isEmpty
+                  ? null
+                  : _dobController.text,
               targetCountry: _countryController.text,
               city: _cityController.text.isEmpty ? null : _cityController.text,
-              pincode: _pincodeController.text.isEmpty ? null : _pincodeController.text,
+              pincode: _pincodeController.text.isEmpty
+                  ? null
+                  : _pincodeController.text,
               universityName: _instituteController.text,
-              courseName: _courseController.text.isNotEmpty ? _courseController.text : _fieldOfStudyController.text,
+              courseName: _courseController.text.isNotEmpty
+                  ? _courseController.text
+                  : _fieldOfStudyController.text,
               bank: 'Matching Lenders',
               loanType: _loanTypeController.text,
               amount: amountValue,
               tenure: int.tryParse(_tenureController.text),
-              purpose: _purposeController.text.isEmpty ? 'Higher Education' : _purposeController.text,
-              fatherName: _fatherNameController.text.isEmpty ? null : _fatherNameController.text,
-              fatherPhone: _fatherPhoneController.text.isEmpty ? null : _fatherPhoneController.text,
-              fatherEmail: _fatherEmailController.text.isEmpty ? null : _fatherEmailController.text,
-              motherName: _motherNameController.text.isEmpty ? null : _motherNameController.text,
-              motherPhone: _motherPhoneController.text.isEmpty ? null : _motherPhoneController.text,
-              motherEmail: _motherEmailController.text.isEmpty ? null : _motherEmailController.text,
+              purpose: _purposeController.text.isEmpty
+                  ? 'Higher Education'
+                  : _purposeController.text,
+              fatherName: _fatherNameController.text.isEmpty
+                  ? null
+                  : _fatherNameController.text,
+              fatherPhone: _fatherPhoneController.text.isEmpty
+                  ? null
+                  : _fatherPhoneController.text,
+              fatherEmail: _fatherEmailController.text.isEmpty
+                  ? null
+                  : _fatherEmailController.text,
+              motherName: _motherNameController.text.isEmpty
+                  ? null
+                  : _motherNameController.text,
+              motherPhone: _motherPhoneController.text.isEmpty
+                  ? null
+                  : _motherPhoneController.text,
+              motherEmail: _motherEmailController.text.isEmpty
+                  ? null
+                  : _motherEmailController.text,
               hasCollateral: _hasCollateral,
-              collateralDetails: _collateralController.text.isEmpty ? null : _collateralController.text,
+              collateralDetails: _collateralController.text.isEmpty
+                  ? null
+                  : _collateralController.text,
               hasCoApplicant: _coApplicantNameController.text.trim().isNotEmpty,
               coApplicantName: _coApplicantNameController.text.isEmpty
                   ? null
@@ -1417,7 +1873,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               coApplicantEmail: _coApplicantEmailController.text.isEmpty
                   ? null
                   : _coApplicantEmailController.text,
-              coApplicantIncome: double.tryParse(_coApplicantIncomeController.text.replaceAll(',', '')),
+              coApplicantIncome: double.tryParse(
+                _coApplicantIncomeController.text.replaceAll(',', ''),
+              ),
               fieldOfStudy: _fieldOfStudyController.text,
               admissionStatus: _admissionStatusController.text,
             );
@@ -1436,7 +1894,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
 
       final uniName = _instituteController.text;
       final loanAmt = _amountController.text;
-      final refCode = createdLoan.applicationNumber ?? 'VL-${DateTime.now().year}-${(1000 + (DateTime.now().millisecondsSinceEpoch % 8999))}';
+      final refCode =
+          createdLoan.applicationNumber ??
+          'VL-${DateTime.now().year}-${(1000 + (DateTime.now().millisecondsSinceEpoch % 8999))}';
 
       showDialog(
         context: context,
@@ -1528,8 +1988,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           targetCountryLower == 'bangla' ||
           targetCountryLower == 'pk' ||
           targetCountryLower == 'bd') {
-        setState(() => _fieldErrors[_countryController] = 'Country not recognized');
-        _showError('Country not recognized. Education loans are not supported for this destination.');
+        setState(
+          () => _fieldErrors[_countryController] = 'Country not recognized',
+        );
+        _showError(
+          'Country not recognized. Education loans are not supported for this destination.',
+        );
         return false;
       }
       if (_instituteController.text.trim().isEmpty) {
@@ -1552,7 +2016,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         _showError('Please select your admission status');
         return false;
       }
-      final rawAmount = _amountController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      final rawAmount = _amountController.text.replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
       if (rawAmount.isEmpty) {
         setState(() => _fieldErrors[_amountController] = 'Required');
         _showError('Please enter the desired loan amount');
@@ -1560,7 +2027,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       }
       final amountVal = double.tryParse(rawAmount) ?? 0;
       if (amountVal <= 0) {
-        setState(() => _fieldErrors[_amountController] = 'Enter positive amount');
+        setState(
+          () => _fieldErrors[_amountController] = 'Enter positive amount',
+        );
         _showError('Please enter a valid loan amount');
         return false;
       }
@@ -1572,7 +2041,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     } else if (step == 1) {
       // PERSONAL DETAILS
       if (_firstNameController.text.length < 3) {
-        setState(() => _fieldErrors[_firstNameController] = 'Enter at least 3 chars');
+        setState(
+          () => _fieldErrors[_firstNameController] = 'Enter at least 3 chars',
+        );
         _showError('First name must be at least 3 characters long');
         return false;
       }
@@ -1594,10 +2065,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       }
       if (phone.split('').toSet().length < 3) {
         setState(() => _fieldErrors[_phoneController] = 'Invalid pattern');
-        _showError('Phone number cannot be highly repetitive (e.g., 8787878787)');
+        _showError(
+          'Phone number cannot be highly repetitive (e.g., 8787878787)',
+        );
         return false;
       }
-      if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+      if (_emailController.text.isEmpty ||
+          !_emailController.text.contains('@')) {
         setState(() => _fieldErrors[_emailController] = 'Enter valid email');
         _showError('Please enter a valid email address');
         return false;
@@ -1628,38 +2102,57 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         return false;
       }
       if (_coApplicantNameController.text.trim().length > 30) {
-        setState(() => _fieldErrors[_coApplicantNameController] = 'Max 30 chars');
+        setState(
+          () => _fieldErrors[_coApplicantNameController] = 'Max 30 chars',
+        );
         _showError('Co-applicant\'s name must not exceed 30 characters');
         return false;
       }
       if (_coApplicantRelationController.text.isEmpty) {
-        setState(() => _fieldErrors[_coApplicantRelationController] = 'Required');
+        setState(
+          () => _fieldErrors[_coApplicantRelationController] = 'Required',
+        );
         _showError('Co-applicant relationship is required');
         return false;
       }
-      String caPhone = _coApplicantPhoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      String caPhone = _coApplicantPhoneController.text.replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
       if (caPhone.length != 10) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Enter 10 digits');
+        setState(
+          () => _fieldErrors[_coApplicantPhoneController] = 'Enter 10 digits',
+        );
         _showError('Co-applicant\'s phone number must be 10 digits');
         return false;
       }
       if (!RegExp(r'^[6-9]').hasMatch(caPhone)) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Must start with 6-9');
+        setState(
+          () =>
+              _fieldErrors[_coApplicantPhoneController] = 'Must start with 6-9',
+        );
         _showError('Enter a valid Indian mobile number for co-applicant');
         return false;
       }
       if (caPhone.split('').toSet().length < 3) {
-        setState(() => _fieldErrors[_coApplicantPhoneController] = 'Invalid pattern');
+        setState(
+          () => _fieldErrors[_coApplicantPhoneController] = 'Invalid pattern',
+        );
         _showError('Co-applicant\'s phone number cannot be highly repetitive');
         return false;
       }
-      if (_coApplicantEmailController.text.isNotEmpty && !_coApplicantEmailController.text.contains('@')) {
-        setState(() => _fieldErrors[_coApplicantEmailController] = 'Enter valid email');
+      if (_coApplicantEmailController.text.isNotEmpty &&
+          !_coApplicantEmailController.text.contains('@')) {
+        setState(
+          () => _fieldErrors[_coApplicantEmailController] = 'Enter valid email',
+        );
         _showError('Please enter a valid email address for co-applicant');
         return false;
       }
       if (_coApplicantEmailController.text.length > 30) {
-        setState(() => _fieldErrors[_coApplicantEmailController] = 'Max 30 chars');
+        setState(
+          () => _fieldErrors[_coApplicantEmailController] = 'Max 30 chars',
+        );
         _showError('Co-applicant\'s email must not exceed 30 characters');
         return false;
       }
@@ -1671,7 +2164,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       }
       final income = double.tryParse(incomeText);
       if (income == null || income <= 0) {
-        setState(() => _fieldErrors[_coApplicantIncomeController] = 'Enter positive amount');
+        setState(
+          () => _fieldErrors[_coApplicantIncomeController] =
+              'Enter positive amount',
+        );
         _showError('Enter a valid positive annual income');
         return false;
       }
@@ -1749,7 +2245,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
     );
   }
 
-  final List<String> _stepLabels = ['Academic', 'Personal', 'Address', 'Co-Applicant', 'Review'];
+  final List<String> _stepLabels = [
+    'Academic',
+    'Personal',
+    'Address',
+    'Co-Applicant',
+    'Review',
+  ];
 
   Widget _buildCustomProgressHeader() {
     return Container(
@@ -1767,24 +2269,36 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 // Connector Line (Background)
                 Positioned(
                   top: 14, // Vertical center of circle
-                  left: index == 0 ? 0.5 : 0, // Don't extend left for first step
-                  right: index == 4 ? 0.5 : 0, // Don't extend right for last step
+                  left: index == 0
+                      ? 0.5
+                      : 0, // Don't extend left for first step
+                  right: index == 4
+                      ? 0.5
+                      : 0, // Don't extend right for last step
                   child: Row(
                     children: [
                       Expanded(
                         child: Container(
                           height: 2,
-                          color: index > 0 && isPassed || (index > 0 && isActive && index <= _currentStep)
-                              ? const Color(0xFF311B92) 
-                              : (index > 0 ? Colors.black.withValues(alpha: 0.1) : Colors.transparent),
+                          color:
+                              index > 0 && isPassed ||
+                                  (index > 0 &&
+                                      isActive &&
+                                      index <= _currentStep)
+                              ? const Color(0xFF311B92)
+                              : (index > 0
+                                    ? Colors.black.withValues(alpha: 0.1)
+                                    : Colors.transparent),
                         ),
                       ),
                       Expanded(
                         child: Container(
                           height: 2,
                           color: index < 4 && isPassed
-                              ? const Color(0xFF311B92) 
-                              : (index < 4 ? Colors.black.withValues(alpha: 0.1) : Colors.transparent),
+                              ? const Color(0xFF311B92)
+                              : (index < 4
+                                    ? Colors.black.withValues(alpha: 0.1)
+                                    : Colors.transparent),
                         ),
                       ),
                     ],
@@ -1799,23 +2313,33 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: isCurrent 
-                            ? const Color(0xFF311B92) 
-                            : (isActive ? const Color(0xFF311B92).withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.1)),
+                        color: isCurrent
+                            ? const Color(0xFF311B92)
+                            : (isActive
+                                  ? const Color(
+                                      0xFF311B92,
+                                    ).withValues(alpha: 0.6)
+                                  : Colors.black.withValues(alpha: 0.1)),
                         shape: BoxShape.circle,
-                        boxShadow: isCurrent ? [
-                          BoxShadow(
-                            color: const Color(0xFF311B92).withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ] : null,
+                        boxShadow: isCurrent
+                            ? [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFF311B92,
+                                  ).withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Center(
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
-                            color: isCurrent || isActive ? Colors.white : Colors.black.withValues(alpha: 0.4),
+                            color: isCurrent || isActive
+                                ? Colors.white
+                                : Colors.black.withValues(alpha: 0.4),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -1828,8 +2352,12 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                       textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
                         fontSize: 11,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
-                        color: isActive ? const Color(0xFF311B92) : const Color(0xFF94A3B8),
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        color: isActive
+                            ? const Color(0xFF311B92)
+                            : const Color(0xFF94A3B8),
                       ),
                     ),
                   ],
@@ -1876,11 +2404,17 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF311B92).withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+                  border: Border.all(
+                    color: const Color(0xFF311B92).withValues(alpha: 0.15),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 20, color: Color(0xFF311B92)),
+                    const Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: Color(0xFF311B92),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -1907,7 +2441,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               if (_isVerifyingUniversity)
                 Container(
                   margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF311B92).withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(12),
@@ -1945,12 +2482,19 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFEF4444), width: 1.2),
+                    border: Border.all(
+                      color: const Color(0xFFEF4444),
+                      width: 1.2,
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 22),
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Color(0xFFDC2626),
+                        size: 22,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -1968,7 +2512,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 ),
             ],
             const SizedBox(height: 18),
-            _buildSectionHeader('Financial Information', Icons.account_balance_wallet_outlined),
+            _buildSectionHeader(
+              'Financial Information',
+              Icons.account_balance_wallet_outlined,
+            ),
             _buildTextInput(
               hint: 'Desired Loan Amount (₹)',
               icon: Icons.currency_rupee,
@@ -1984,7 +2531,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             if (_amountInLakhsLabel.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: _isAmountExceedingLimit
                       ? const Color(0xFFFEF2F2)
@@ -2000,9 +2550,13 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 child: Row(
                   children: [
                     Icon(
-                      _isAmountExceedingLimit ? Icons.warning_amber_rounded : Icons.info_outline,
+                      _isAmountExceedingLimit
+                          ? Icons.warning_amber_rounded
+                          : Icons.info_outline,
                       size: 18,
-                      color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
+                      color: _isAmountExceedingLimit
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFF311B92),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -2011,7 +2565,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: _isAmountExceedingLimit ? const Color(0xFFDC2626) : const Color(0xFF311B92),
+                          color: _isAmountExceedingLimit
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF311B92),
                         ),
                       ),
                     ),
@@ -2023,7 +2579,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 1:
         return _buildStepContainer(
           children: [
-            _buildSectionHeader("Personal Details", Icons.person_outline_rounded),
+            _buildSectionHeader(
+              "Personal Details",
+              Icons.person_outline_rounded,
+            ),
             _buildTextInput(
               hint: 'First Name',
               icon: Icons.person_outline,
@@ -2056,7 +2615,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock_rounded, color: Color(0xFF64748B), size: 15),
+                    Icon(
+                      Icons.lock_rounded,
+                      color: Color(0xFF64748B),
+                      size: 15,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'Verified',
@@ -2083,7 +2646,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock_rounded, color: Color(0xFF64748B), size: 15),
+                    Icon(
+                      Icons.lock_rounded,
+                      color: Color(0xFF64748B),
+                      size: 15,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'Verified',
@@ -2109,7 +2676,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock_rounded, color: Color(0xFF64748B), size: 15),
+                    Icon(
+                      Icons.lock_rounded,
+                      color: Color(0xFF64748B),
+                      size: 15,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'Verified',
@@ -2188,7 +2759,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       case 3:
         return _buildStepContainer(
           children: [
-            _buildSectionHeader("Co-Applicant Details", Icons.people_outline_rounded),
+            _buildSectionHeader(
+              "Co-Applicant Details",
+              Icons.people_outline_rounded,
+            ),
             _buildTextInput(
               hint: 'Co-applicant Name',
               icon: Icons.person_outline,
@@ -2266,10 +2840,15 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF311B92),
                   side: const BorderSide(color: Color(0xFF311B92)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: const Text('Back', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Back',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -2289,16 +2868,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF311B92),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(
                 _currentStep == 4
                     ? 'Submit Application'
                     : _currentStep == 3
-                        ? 'Review Details'
-                        : 'Continue',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                    ? 'Review Details'
+                    : 'Continue',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -2345,7 +2929,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(8),
@@ -2356,7 +2943,11 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         SizedBox(width: 4),
                         Text(
                           'Ready to submit',
-                          style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -2365,7 +2956,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                _instituteController.text.isEmpty ? 'Target University' : _instituteController.text,
+                _instituteController.text.isEmpty
+                    ? 'Target University'
+                    : _instituteController.text,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -2393,12 +2986,22 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                     children: [
                       const Text(
                         'LOAN AMOUNT REQUESTED',
-                        style: TextStyle(color: Colors.white60, fontSize: 9, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _amountController.text.isEmpty ? '₹0' : '₹${_amountController.text}',
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        _amountController.text.isEmpty
+                            ? '₹0'
+                            : '₹${_amountController.text}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -2415,7 +3018,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             _buildReviewRow('Country', _countryController.text),
             _buildReviewRow('University', _instituteController.text),
             _buildReviewRow('Field of Study', _fieldOfStudyController.text),
-            _buildReviewRow('Admission Status', _admissionStatusController.text),
+            _buildReviewRow(
+              'Admission Status',
+              _admissionStatusController.text,
+            ),
             _buildReviewRow('Amount', '₹${_amountController.text}'),
           ],
           onEdit: () => setState(() => _currentStep = 0),
@@ -2425,7 +3031,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           'Personal Details',
           Icons.person_outline_rounded,
           [
-            _buildReviewRow('Name', '${_firstNameController.text} ${_lastNameController.text}'),
+            _buildReviewRow(
+              'Name',
+              '${_firstNameController.text} ${_lastNameController.text}',
+            ),
             _buildReviewRow('Phone', _phoneController.text),
             _buildReviewRow('Email', _emailController.text),
           ],
@@ -2438,7 +3047,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           [
             _buildReviewRow("Pincode / ZIP", _pincodeController.text),
             _buildReviewRow("City", _cityController.text),
-            _buildReviewRow("State", _stateController.text.isEmpty ? 'N/A' : _stateController.text),
+            _buildReviewRow(
+              "State",
+              _stateController.text.isEmpty ? 'N/A' : _stateController.text,
+            ),
             _buildReviewRow("Country", _resCountryController.text),
           ],
           onEdit: () => setState(() => _currentStep = 2),
@@ -2449,10 +3061,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
           Icons.people_outline_rounded,
           [
             _buildReviewRow('Name', _coApplicantNameController.text),
-            _buildReviewRow('Relationship', _coApplicantRelationController.text),
+            _buildReviewRow(
+              'Relationship',
+              _coApplicantRelationController.text,
+            ),
             _buildReviewRow('Phone', _coApplicantPhoneController.text),
-            _buildReviewRow('Email', _coApplicantEmailController.text.isEmpty ? 'N/A' : _coApplicantEmailController.text),
-            _buildReviewRow('Annual Income', '₹${_coApplicantIncomeController.text}'),
+            _buildReviewRow(
+              'Email',
+              _coApplicantEmailController.text.isEmpty
+                  ? 'N/A'
+                  : _coApplicantEmailController.text,
+            ),
+            _buildReviewRow(
+              'Annual Income',
+              '₹${_coApplicantIncomeController.text}',
+            ),
           ],
           onEdit: () => setState(() => _currentStep = 3),
         ),
@@ -2477,7 +3100,9 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.12)),
+        border: Border.all(
+          color: const Color(0xFF311B92).withValues(alpha: 0.12),
+        ),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF311B92).withValues(alpha: 0.07),
@@ -2531,14 +3156,21 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                 GestureDetector(
                   onTap: onEdit,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.mode_edit_outline_rounded, size: 13, color: Colors.white),
+                        Icon(
+                          Icons.mode_edit_outline_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
                         SizedBox(width: 4),
                         Text(
                           'Edit',
@@ -2561,11 +3193,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             padding: const EdgeInsets.all(14),
             child: Column(
               children: [
-                for (int i = 0; i < children.length; i++) ...
-                  [
-                    children[i],
-                    if (i < children.length - 1) const SizedBox(height: 10),
-                  ],
+                for (int i = 0; i < children.length; i++) ...[
+                  children[i],
+                  if (i < children.length - 1) const SizedBox(height: 10),
+                ],
               ],
             ),
           ),
@@ -2679,24 +3310,28 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
   }) {
     final errorText = _fieldErrors[controller];
     final hasError = errorText != null;
-    final isPhoneField = keyboardType == TextInputType.phone || hint.toLowerCase().contains('phone');
-    final isEmailField = keyboardType == TextInputType.emailAddress || hint.toLowerCase().contains('email');
-    final isPincodeField = hint.toLowerCase().contains('pincode') || hint.toLowerCase().contains('zip');
+    final isPhoneField =
+        keyboardType == TextInputType.phone ||
+        hint.toLowerCase().contains('phone');
+    final isEmailField =
+        keyboardType == TextInputType.emailAddress ||
+        hint.toLowerCase().contains('email');
+    final isPincodeField =
+        hint.toLowerCase().contains('pincode') ||
+        hint.toLowerCase().contains('zip');
     final effectiveFormatters = (isPhoneField && !readOnly)
         ? [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(10),
           ]
         : (isPincodeField && !readOnly)
-            ? [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ]
-            : isEmailField
-                ? [
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
-                  ]
-                : inputFormatters;
+        ? [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(6),
+          ]
+        : isEmailField
+        ? [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]'))]
+        : inputFormatters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2704,9 +3339,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
-            color: hasError
-                ? const Color(0xFFFEF2F2)
-                : const Color(0xFFF8FAFC),
+            color: hasError ? const Color(0xFFFEF2F2) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: hasError
@@ -2728,10 +3361,15 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                   maxLength: (isPhoneField && !readOnly)
                       ? 10
                       : (isPincodeField && !readOnly)
-                          ? 6
-                          : null,
+                      ? 6
+                      : null,
                   buildCounter: (isPhoneField || isPincodeField)
-                      ? (context, {required currentLength, required isFocused, maxLength}) => null
+                      ? (
+                          context, {
+                          required currentLength,
+                          required isFocused,
+                          maxLength,
+                        }) => null
                       : null,
                   inputFormatters: effectiveFormatters,
                   onChanged: (val) {
@@ -2782,7 +3420,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                             ),
                           )
                         : null,
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                   ),
                 ),
               ),
@@ -2825,7 +3466,8 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
       children: [
         InkWell(
           onTap: () {
-            if (hasError) setState(() => _fieldErrors[_countryController] = null);
+            if (hasError)
+              setState(() => _fieldErrors[_countryController] = null);
             _showCountrySelection();
           },
           borderRadius: BorderRadius.circular(14),
@@ -2902,9 +3544,7 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
           decoration: BoxDecoration(
-            color: hasError
-                ? const Color(0xFFFEF2F2)
-                : const Color(0xFFF8FAFC),
+            color: hasError ? const Color(0xFFFEF2F2) : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: hasError
@@ -2922,13 +3562,16 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
                         key: ValueKey(flag),
                         margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                          color: const Color(
+                            0xFF311B92,
+                          ).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(flag,
-                            style: const TextStyle(fontSize: 16)),
+                        child: Text(flag, style: const TextStyle(fontSize: 16)),
                       )
                     : Container(
                         key: const ValueKey('globe'),
@@ -3009,7 +3652,10 @@ class _ApplyLoanPageState extends State<ApplyLoanPage> {
             child: Text(
               errorText,
               style: const TextStyle(
-                  color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                color: Colors.red,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
       ],
@@ -3093,7 +3739,8 @@ class LoanSuccessDialog extends StatefulWidget {
   State<LoanSuccessDialog> createState() => _LoanSuccessDialogState();
 }
 
-class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTickerProviderStateMixin {
+class _LoanSuccessDialogState extends State<LoanSuccessDialog>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -3243,9 +3890,14 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                color: const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -3263,7 +3915,7 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // PDF Download Action Button
                   if (widget.createdLoan != null) ...[
                     SizedBox(
@@ -3278,7 +3930,9 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                             ),
                           );
                           try {
-                            await PdfGeneratorService.downloadApplicationPdf(widget.createdLoan!);
+                            await PdfGeneratorService.downloadApplicationPdf(
+                              widget.createdLoan!,
+                            );
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -3298,7 +3952,10 @@ class _LoanSuccessDialogState extends State<LoanSuccessDialog> with SingleTicker
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+                        icon: const Icon(
+                          Icons.picture_as_pdf_rounded,
+                          size: 20,
+                        ),
                         label: Text(
                           'Download Loan Details PDF',
                           style: GoogleFonts.outfit(

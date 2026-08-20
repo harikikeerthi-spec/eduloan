@@ -387,7 +387,9 @@ class _MentorsPageState extends State<MentorsPage> {
                           return Container(
                             width: 60,
                             height: 60,
-                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.1),
                             child: Center(
                               child: Text(
                                 mentor.name.isNotEmpty
@@ -559,7 +561,9 @@ class _MentorsPageState extends State<MentorsPage> {
       decoration: BoxDecoration(
         color: const Color(0xFF311B92).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.1)),
+        border: Border.all(
+          color: const Color(0xFF311B92).withValues(alpha: 0.1),
+        ),
       ),
       child: Text(
         label,

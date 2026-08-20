@@ -120,18 +120,19 @@ class _OnboardingPageState extends State<OnboardingPage>
     final String? userId = prefs.getString('userId');
     final String firstName = prefs.getString('user_firstName') ?? '';
     final String email = prefs.getString('user_email') ?? '';
-    final bool isLoggedIn = token != null && token.isNotEmpty &&
-                            userId != null && userId.isNotEmpty;
+    final bool isLoggedIn =
+        token != null &&
+        token.isNotEmpty &&
+        userId != null &&
+        userId.isNotEmpty;
 
     if (isLoggedIn) {
       if (firstName.isEmpty) {
         // Strict guard: if profile details not completed, redirect to CompleteProfilePage
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => CompleteProfilePage(
-              email: email,
-              isNewUser: false,
-            ),
+            builder: (context) =>
+                CompleteProfilePage(email: email, isNewUser: false),
           ),
           (route) => false,
         );
@@ -269,8 +270,11 @@ class _OnboardingPageState extends State<OnboardingPage>
 
                     // Feature rows
                     ...slide.features.map(
-                      (f) => _buildFeatureRow(f, slide.accentColor,
-                          slide.glowColor),
+                      (f) => _buildFeatureRow(
+                        f,
+                        slide.accentColor,
+                        slide.glowColor,
+                      ),
                     ),
                   ],
                 ),
@@ -375,16 +379,16 @@ class _OnboardingPageState extends State<OnboardingPage>
         ],
       ),
       child: Center(
-        child: Text(
-          slide.badge,
-          style: const TextStyle(fontSize: 44),
-        ),
+        child: Text(slide.badge, style: const TextStyle(fontSize: 44)),
       ),
     );
   }
 
   Widget _buildFeatureRow(
-      _Feature feature, Color accentColor, Color glowColor) {
+    _Feature feature,
+    Color accentColor,
+    Color glowColor,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -547,8 +551,11 @@ class _OnboardingPageState extends State<OnboardingPage>
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const Icon(Icons.arrow_forward_rounded,
-                            color: Colors.white, size: 22),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ],
                     ),
                   ),
@@ -582,10 +589,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
-                        colors: [
-                          slide.glowColor,
-                          slide.accentColor,
-                        ],
+                        colors: [slide.glowColor, slide.accentColor],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),

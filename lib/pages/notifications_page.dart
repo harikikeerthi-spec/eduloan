@@ -151,7 +151,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
             features: [
               {
                 'title': 'Zero Markup Rates',
-                'desc': 'Best exchange rates with instant university transfers.',
+                'desc':
+                    'Best exchange rates with instant university transfers.',
               },
               {
                 'title': 'Direct University Pay',
@@ -159,7 +160,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
               },
               {
                 'title': 'Pre-departure Assistance',
-                'desc': 'Receive your student multi-currency card at your doorstep.',
+                'desc':
+                    'Receive your student multi-currency card at your doorstep.',
               },
             ],
           ),

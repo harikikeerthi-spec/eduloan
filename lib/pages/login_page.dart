@@ -51,10 +51,8 @@ class _LoginPageState extends State<LoginPage> {
     if (!hasUserDetails || firstName.isEmpty) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => CompleteProfilePage(
-            email: email,
-            isNewUser: isNewUser,
-          ),
+          builder: (context) =>
+              CompleteProfilePage(email: email, isNewUser: isNewUser),
         ),
         (route) => false,
       );
@@ -65,7 +63,9 @@ class _LoginPageState extends State<LoginPage> {
     await prefs.setBool('onboarding_shown', true);
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
+      MaterialPageRoute(
+        builder: (context) => const MainNavigation(initialIndex: 2),
+      ),
       (route) => false,
     );
   }
@@ -111,7 +111,9 @@ class _LoginPageState extends State<LoginPage> {
           isNewUser: true,
         );
       } else {
-        _handleError(result['message'] ?? 'Failed to sync with VidyaLoan server');
+        _handleError(
+          result['message'] ?? 'Failed to sync with VidyaLoan server',
+        );
       }
     } catch (e) {
       _handleError('Google Sign-In failed: $e');
@@ -278,7 +280,10 @@ class _LoginPageState extends State<LoginPage> {
                   // --- Main Content Card ---
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 26,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
@@ -288,7 +293,9 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF311B92).withValues(alpha: 0.08),
+                          color: const Color(
+                            0xFF311B92,
+                          ).withValues(alpha: 0.08),
                           blurRadius: 30,
                           offset: const Offset(0, 10),
                           spreadRadius: -2,
@@ -329,7 +336,10 @@ class _LoginPageState extends State<LoginPage> {
                         if (_errorMessage != null)
                           Container(
                             margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(12),
@@ -375,7 +385,9 @@ class _LoginPageState extends State<LoginPage> {
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-zA-Z0-9@.]'),
+                                ),
                               ],
                               style: GoogleFonts.inter(
                                 fontSize: 14,
@@ -419,14 +431,19 @@ class _LoginPageState extends State<LoginPage> {
                               child: Ink(
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF281C9D), Color(0xFF4F46E5)],
+                                    colors: [
+                                      Color(0xFF281C9D),
+                                      Color(0xFF4F46E5),
+                                    ],
                                     begin: Alignment.centerLeft,
                                     end: Alignment.centerRight,
                                   ),
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
+                                      color: const Color(
+                                        0xFF4F46E5,
+                                      ).withValues(alpha: 0.35),
                                       blurRadius: 12,
                                       offset: const Offset(0, 6),
                                     ),
@@ -468,7 +485,9 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                ),
                                 child: Text(
                                   'OR',
                                   style: GoogleFonts.inter(
@@ -494,7 +513,9 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(
                             height: 48,
                             child: OutlinedButton(
-                              onPressed: _isLoading ? null : _handleGoogleSignIn,
+                              onPressed: _isLoading
+                                  ? null
+                                  : _handleGoogleSignIn,
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 side: const BorderSide(
@@ -513,8 +534,13 @@ class _LoginPageState extends State<LoginPage> {
                                     'https://www.google.com/s2/favicons?domain=google.com&sz=128',
                                     height: 20,
                                     width: 20,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.g_mobiledata, size: 22, color: Color(0xFF4285F4)),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.g_mobiledata,
+                                              size: 22,
+                                              color: Color(0xFF4285F4),
+                                            ),
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
@@ -532,7 +558,10 @@ class _LoginPageState extends State<LoginPage> {
                         ] else ...[
                           // OTP Input
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFEEF2FF),
                               borderRadius: BorderRadius.circular(14),
@@ -567,9 +596,12 @@ class _LoginPageState extends State<LoginPage> {
                                 TextButton(
                                   onPressed: _resetFlow,
                                   style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
                                     minimumSize: const Size(0, 32),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                   ),
                                   child: Text(
                                     'Change',
@@ -637,14 +669,19 @@ class _LoginPageState extends State<LoginPage> {
                               child: Ink(
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF281C9D), Color(0xFF4F46E5)],
+                                    colors: [
+                                      Color(0xFF281C9D),
+                                      Color(0xFF4F46E5),
+                                    ],
                                     begin: Alignment.centerLeft,
                                     end: Alignment.centerRight,
                                   ),
                                   borderRadius: BorderRadius.circular(14),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
+                                      color: const Color(
+                                        0xFF4F46E5,
+                                      ).withValues(alpha: 0.35),
                                       blurRadius: 12,
                                       offset: const Offset(0, 6),
                                     ),
@@ -679,7 +716,10 @@ class _LoginPageState extends State<LoginPage> {
                             child: TextButton(
                               onPressed: _isLoading ? null : _handleEmailSubmit,
                               style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
                                 minimumSize: const Size(0, 32),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),

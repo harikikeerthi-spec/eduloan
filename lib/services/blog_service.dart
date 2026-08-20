@@ -8,7 +8,8 @@ class BlogService {
   static final List<Blog> _fallbackBlogs = [
     Blog(
       id: 'blog_1',
-      title: 'Complete Guide to Collateral vs Non-Collateral Study Loans in 2026',
+      title:
+          'Complete Guide to Collateral vs Non-Collateral Study Loans in 2026',
       slug: 'collateral-vs-non-collateral-loans-2026',
       excerpt:
           'Understand key differences between secured loans with property collateral and unsecured education loans from top banks and NBFCs.',
@@ -88,7 +89,8 @@ class BlogService {
     ),
     Blog(
       id: 'blog_5',
-      title: 'Section 80E Tax Deduction: Maximize Education Loan Interest Relief',
+      title:
+          'Section 80E Tax Deduction: Maximize Education Loan Interest Relief',
       slug: 'section-80e-tax-deduction-guide',
       excerpt:
           'Everything you need to know about claiming 100% tax deduction on education loan interest payments under Income Tax Act.',
@@ -152,7 +154,9 @@ class BlogService {
   Future<Blog> getBlogBySlug(String slug) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
-      final response = await ApiClient.get(Uri.parse('$baseUrl/blogs/slug/$slug'));
+      final response = await ApiClient.get(
+        Uri.parse('$baseUrl/blogs/slug/$slug'),
+      );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);

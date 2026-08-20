@@ -253,7 +253,9 @@ class _EventsPageState extends State<EventsPage> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF311B92).withValues(alpha: 0.05),
+                          color: const Color(
+                            0xFF311B92,
+                          ).withValues(alpha: 0.05),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

@@ -105,7 +105,11 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1E293B),
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Row(
@@ -162,7 +166,11 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
               color: Colors.white.withValues(alpha: 0.35),
               child: Row(
                 children: [
-                  const Icon(Icons.shield_outlined, color: Color(0xFF311B92), size: 18),
+                  const Icon(
+                    Icons.shield_outlined,
+                    color: Color(0xFF311B92),
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -178,229 +186,261 @@ class _DirectChatsPageState extends State<DirectChatsPage> {
               ),
             ),
 
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  style: GoogleFonts.inter(fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'Search chats or group members...',
+                    hintStyle: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.clear_rounded,
+                              size: 18,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            onPressed: () => _searchController.clear(),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: GoogleFonts.inter(fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Search chats or group members...',
-                  hintStyle: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF94A3B8)),
-                  prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8), size: 20),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF94A3B8)),
-                          onPressed: () => _searchController.clear(),
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
             ),
-          ),
 
-          // Chat List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
-                : _filteredConversations.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF311B92).withValues(alpha: 0.08),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.forum_outlined,
-                                size: 48,
-                                color: Color(0xFF311B92),
-                              ),
+            // Chat List
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF311B92),
+                      ),
+                    )
+                  : _filteredConversations.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFF311B92,
+                              ).withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No Direct Messages Yet',
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1E293B),
-                              ),
+                            child: const Icon(
+                              Icons.forum_outlined,
+                              size: 48,
+                              color: Color(0xFF311B92),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Tap any member name in group chats to start\na 1-on-1 person to person conversation.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: const Color(0xFF64748B),
-                              ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Direct Messages Yet',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1E293B),
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Tap any member name in group chats to start\na 1-on-1 person to person conversation.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadConversations,
+                      color: const Color(0xFF311B92),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadConversations,
-                        color: const Color(0xFF311B92),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: _filteredConversations.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 10),
-                          itemBuilder: (context, index) {
-                            final conv = _filteredConversations[index];
-                            final Color mainColor = Color(conv.colorValue);
+                        itemCount: _filteredConversations.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final conv = _filteredConversations[index];
+                          final Color mainColor = Color(conv.colorValue);
 
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.03),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: Stack(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor: mainColor.withValues(alpha: 0.15),
-                                      child: Text(
-                                        conv.avatarLetter,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: mainColor,
-                                        ),
+                              leading: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 24,
+                                    backgroundColor: mainColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    child: Text(
+                                      conv.avatarLetter,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: mainColor,
                                       ),
                                     ),
-                                    if (conv.isOnline)
-                                      Positioned(
-                                        right: 0,
-                                        bottom: 0,
-                                        child: Container(
-                                          width: 14,
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF10B981),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
+                                  ),
+                                  if (conv.isOnline)
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: Container(
+                                        width: 14,
+                                        height: 14,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 2,
                                           ),
                                         ),
                                       ),
-                                  ],
-                                ),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        conv.peerName,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF0F172A),
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatTime(conv.lastTimestamp),
-                                      style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        color: const Color(0xFF94A3B8),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 3),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: mainColor.withValues(alpha: 0.08),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        conv.peerRole,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: mainColor,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      conv.maskedLastMessage,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        color: conv.unreadCount > 0
-                                            ? const Color(0xFF0F172A)
-                                            : const Color(0xFF64748B),
-                                        fontWeight: conv.unreadCount > 0
-                                            ? FontWeight.w600
-                                            : FontWeight.normal,
+                                ],
+                              ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      conv.peerName,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: const Color(0xFF0F172A),
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
-                                trailing: conv.unreadCount > 0
-                                    ? Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF311B92),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Text(
-                                          '${conv.unreadCount}',
-                                          style: GoogleFonts.inter(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Color(0xFFCBD5E1),
-                                      ),
-                                onTap: () => _openChatDetail(conv),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _formatTime(conv.lastTimestamp),
+                                    style: GoogleFonts.inter(
+                                      fontSize: 11,
+                                      color: const Color(0xFF94A3B8),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: mainColor.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      conv.peerRole,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: mainColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    conv.maskedLastMessage,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: conv.unreadCount > 0
+                                          ? const Color(0xFF0F172A)
+                                          : const Color(0xFF64748B),
+                                      fontWeight: conv.unreadCount > 0
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                              trailing: conv.unreadCount > 0
+                                  ? Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF311B92),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        '${conv.unreadCount}',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                              onTap: () => _openChatDetail(conv),
+                            ),
+                          );
+                        },
                       ),
-          ),
-        ],
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 

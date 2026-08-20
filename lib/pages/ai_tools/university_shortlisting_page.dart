@@ -71,7 +71,9 @@ class _UniversityShortlistingPageState
   Future<void> _checkActiveLoanStatus() async {
     try {
       final loans = await LoanService().getUserLoans();
-      final activeLoans = loans.where((loan) => loan.status.toLowerCase() != 'rejected').toList();
+      final activeLoans = loans
+          .where((loan) => loan.status.toLowerCase() != 'rejected')
+          .toList();
       if (activeLoans.isNotEmpty && mounted) {
         setState(() {
           _hasActiveSubmittedLoan = true;
@@ -81,7 +83,9 @@ class _UniversityShortlistingPageState
         return;
       }
     } catch (e) {
-      debugPrint('UniversityShortlisting: Error checking active loan status: $e');
+      debugPrint(
+        'UniversityShortlisting: Error checking active loan status: $e',
+      );
     }
     if (mounted) {
       setState(() {
@@ -589,7 +593,10 @@ class _UniversityShortlistingPageState
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937)),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1F2937),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
@@ -617,7 +624,10 @@ class _UniversityShortlistingPageState
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937)),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1F2937),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
@@ -698,15 +708,22 @@ class _UniversityShortlistingPageState
                           final mainNav = MainNavigation.of(context);
                           if (mainNav != null) {
                             mainNav.switchToTab(2);
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            Navigator.of(
+                              context,
+                            ).popUntil((route) => route.isFirst);
                           } else {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const MyLoansPage()),
+                              MaterialPageRoute(
+                                builder: (context) => const MyLoansPage(),
+                              ),
                             );
                           }
                         },
-                        icon: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white),
+                        icon: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: Colors.white,
+                        ),
                         label: Text(
                           'Track My Application',
                           style: GoogleFonts.outfit(
@@ -733,11 +750,17 @@ class _UniversityShortlistingPageState
                             onPressed: () async {
                               await Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const DocumentVaultPage()),
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const DocumentVaultPage(),
+                                ),
                               );
                               _checkActiveLoanStatus();
                             },
-                            icon: const Icon(Icons.folder_shared_outlined, color: Color(0xFF311B92)),
+                            icon: const Icon(
+                              Icons.folder_shared_outlined,
+                              color: Color(0xFF311B92),
+                            ),
                             label: Text(
                               'Doc Vault',
                               style: GoogleFonts.outfit(
@@ -762,24 +785,33 @@ class _UniversityShortlistingPageState
                               onPressed: () async {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Generating loan application PDF...'),
+                                    content: Text(
+                                      'Generating loan application PDF...',
+                                    ),
                                     duration: Duration(seconds: 2),
                                   ),
                                 );
                                 try {
-                                  await PdfGeneratorService.downloadApplicationPdf(_activeLoan!);
+                                  await PdfGeneratorService.downloadApplicationPdf(
+                                    _activeLoan!,
+                                  );
                                 } catch (e) {
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Failed to download PDF: $e'),
+                                        content: Text(
+                                          'Failed to download PDF: $e',
+                                        ),
                                         backgroundColor: Colors.redAccent,
                                       ),
                                     );
                                   }
                                 }
                               },
-                              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                              icon: const Icon(
+                                Icons.picture_as_pdf_rounded,
+                                color: Colors.white,
+                              ),
                               label: Text(
                                 'Download PDF',
                                 style: GoogleFonts.outfit(
@@ -790,7 +822,9 @@ class _UniversityShortlistingPageState
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF10B981),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
@@ -1746,7 +1780,9 @@ class _UniversityShortlistingPageState
 
           Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
-              _addAiMessage("Noted. What was your stream/major in 12th class? (e.g. Science, Commerce, Arts)");
+              _addAiMessage(
+                "Noted. What was your stream/major in 12th class? (e.g. Science, Commerce, Arts)",
+              );
             } else {
               _addAiMessage("Noted. And what was your bachelor's course?");
             }
@@ -1782,9 +1818,7 @@ class _UniversityShortlistingPageState
 
           Future.delayed(const Duration(milliseconds: 100), () {
             if (_activeFlow == 'bachelors') {
-              _addAiMessage(
-                "Got it. What was your 12th board percentage/GPA?",
-              );
+              _addAiMessage("Got it. What was your 12th board percentage/GPA?");
             } else {
               _addAiMessage(
                 "Got it. What was your graduation CGPA? (on a scale of 10)",
@@ -2054,7 +2088,11 @@ class _UniversityShortlistingPageState
               context,
               MaterialPageRoute(
                 builder: (context) => ApplyLoanPage(
-                  initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
+                  initialUniversity:
+                      _selectedUniversity ??
+                      (_selectedUniversities.isNotEmpty
+                          ? _selectedUniversities.first['name']
+                          : null),
                   initialCourse: _bachelorCourse ?? _tempCourse,
                   initialCountry: _selectedCountry,
                 ),
@@ -2430,7 +2468,8 @@ class _UniversityShortlistingPageState
               _generateShortlist();
             } else {
               setState(() {
-                _flow = (_activeFlow == 'evaluate' ||
+                _flow =
+                    (_activeFlow == 'evaluate' ||
                         _activeFlow == 'masters' ||
                         _activeFlow == 'bachelors')
                     ? 'evaluate_get_results'
@@ -2458,7 +2497,11 @@ class _UniversityShortlistingPageState
               context,
               MaterialPageRoute(
                 builder: (context) => ApplyLoanPage(
-                  initialUniversity: _selectedUniversity ?? (_selectedUniversities.isNotEmpty ? _selectedUniversities.first['name'] : null),
+                  initialUniversity:
+                      _selectedUniversity ??
+                      (_selectedUniversities.isNotEmpty
+                          ? _selectedUniversities.first['name']
+                          : null),
                   initialCourse: _bachelorCourse ?? _tempCourse,
                   initialCountry: _selectedCountry,
                 ),
@@ -3584,9 +3627,11 @@ class _TestScoresInputState extends State<_TestScoresInput> {
     final max = _maxValues[key];
 
     if (min != null && score < min) {
-      _errors[key] = "Value must be at least ${key == 'IELTS' ? min : min.toInt()}";
+      _errors[key] =
+          "Value must be at least ${key == 'IELTS' ? min : min.toInt()}";
     } else if (max != null && score > max) {
-      _errors[key] = "Value must not exceed ${key == 'IELTS' ? max : max.toInt()}";
+      _errors[key] =
+          "Value must not exceed ${key == 'IELTS' ? max : max.toInt()}";
     } else {
       _errors[key] = null;
     }
@@ -4697,7 +4742,9 @@ class _LoanResultsState extends State<_LoanResults> {
                     scrollDirection: Axis.horizontal,
                     children: [
                       GestureDetector(
-                        onTap: () => widget.onAction(widget.recommendation!.primary.bank),
+                        onTap: () => widget.onAction(
+                          widget.recommendation!.primary.bank,
+                        ),
                         child: _LenderCard(
                           color: const Color(0xFFE3F2FD),
                           offer: widget.recommendation!.primary,
@@ -4709,11 +4756,13 @@ class _LoanResultsState extends State<_LoanResults> {
                           onTap: () => widget.onAction(offer.bank),
                           child: _LenderCard(
                             color:
-                                widget.recommendation!.alternatives.indexOf(offer) %
+                                widget.recommendation!.alternatives.indexOf(
+                                          offer,
+                                        ) %
                                         2 ==
-                                        0
-                                    ? const Color(0xFFF5F5F5)
-                                    : const Color(0xFFFFFDE7),
+                                    0
+                                ? const Color(0xFFF5F5F5)
+                                : const Color(0xFFFFFDE7),
                             offer: offer,
                             isLocked: isLocked,
                           ),
@@ -4759,7 +4808,7 @@ class _LoanResultsState extends State<_LoanResults> {
                             requiresCoApplicant: true,
                             requiresCollateral: false,
                             bestFor: 'Fast approval',
-                        ),
+                          ),
                           isLocked: isLocked,
                         ),
                       ),
@@ -4853,7 +4902,8 @@ class _LenderCard extends StatelessWidget {
     if (name.contains('incred')) return 'incred.com';
     if (name.contains('auxilo')) return 'auxilo.com';
     if (name.contains('idfc')) return 'idfcfirstbank.com';
-    if (name.contains('bob') || name.contains('baroda')) return 'bankofbaroda.in';
+    if (name.contains('bob') || name.contains('baroda'))
+      return 'bankofbaroda.in';
     if (name.contains('pnb') || name.contains('punjab')) return 'pnbindia.in';
     return 'google.com';
   }
@@ -4873,17 +4923,22 @@ class _LenderCard extends StatelessWidget {
     } else if (name.contains('idfc')) {
       localAssetPath = 'assets/images/idfc_logo.png';
     } else if (name.contains('sbi') || name.contains('state bank')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
+      networkLogoUrl =
+          'https://upload.wikimedia.org/wikipedia/en/thumb/5/58/State_Bank_of_India_logo.svg/1280px-State_Bank_of_India_logo.svg.png';
     } else if (name.contains('icici')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
+      networkLogoUrl =
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/ICICI_Bank_Logo.svg/1280px-ICICI_Bank_Logo.svg.png';
     } else if (name.contains('axis')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
+      networkLogoUrl =
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Axis_Bank_logo.svg/1280px-Axis_Bank_logo.svg.png';
     } else if (name.contains('incred')) {
       networkLogoUrl = 'https://incred.com/images/logo.png';
     } else if (name.contains('bob') || name.contains('baroda')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
+      networkLogoUrl =
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Bank_of_Baroda_Logo.svg/1280px-Bank_of_Baroda_Logo.svg.png';
     } else if (name.contains('pnb') || name.contains('punjab')) {
-      networkLogoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/500px-Punjab_National_Bank.svg.png';
+      networkLogoUrl =
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Punjab_National_Bank.svg/500px-Punjab_National_Bank.svg.png';
     }
 
     Widget logoImage;
@@ -4896,11 +4951,8 @@ class _LenderCard extends StatelessWidget {
           return Image.network(
             'https://www.google.com/s2/favicons?domain=$domain&sz=128',
             fit: BoxFit.contain,
-            errorBuilder: (context, error2, stackTrace2) => const Icon(
-              Icons.account_balance,
-              size: 14,
-              color: Colors.grey,
-            ),
+            errorBuilder: (context, error2, stackTrace2) =>
+                const Icon(Icons.account_balance, size: 14, color: Colors.grey),
           );
         },
       );
@@ -4913,11 +4965,8 @@ class _LenderCard extends StatelessWidget {
           return Image.network(
             'https://www.google.com/s2/favicons?domain=$domain&sz=128',
             fit: BoxFit.contain,
-            errorBuilder: (context, error2, stackTrace2) => const Icon(
-              Icons.account_balance,
-              size: 14,
-              color: Colors.grey,
-            ),
+            errorBuilder: (context, error2, stackTrace2) =>
+                const Icon(Icons.account_balance, size: 14, color: Colors.grey),
           );
         },
       );
@@ -4926,11 +4975,8 @@ class _LenderCard extends StatelessWidget {
       logoImage = Image.network(
         'https://www.google.com/s2/favicons?domain=$domain&sz=128',
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => const Icon(
-          Icons.account_balance,
-          size: 14,
-          color: Colors.grey,
-        ),
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.account_balance, size: 14, color: Colors.grey),
       );
     }
 
@@ -4949,9 +4995,7 @@ class _LenderCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipOval(
-        child: logoImage,
-      ),
+      child: ClipOval(child: logoImage),
     );
   }
 
@@ -5033,7 +5077,9 @@ class _LenderCard extends StatelessWidget {
             children: [
               Expanded(child: _buildMetric("INTEREST\nRATE", offer.rate)),
               const SizedBox(width: 8),
-              Expanded(child: _buildMetric("PROCESSING\nTIME", offer.processingTime)),
+              Expanded(
+                child: _buildMetric("PROCESSING\nTIME", offer.processingTime),
+              ),
               const SizedBox(width: 8),
               Expanded(child: _buildMetric("SAVINGS", offer.savings)),
             ],

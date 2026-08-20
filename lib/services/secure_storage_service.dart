@@ -13,9 +13,7 @@ class SecureStorageService {
       encryptedSharedPreferences: true,
       resetOnError: true,
     ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
+    iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
   static const String _keyAuthToken = 'auth_token';

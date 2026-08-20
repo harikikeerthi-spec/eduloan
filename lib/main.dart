@@ -36,9 +36,9 @@ void main() async {
   await Firebase.initializeApp();
   await PushNotificationService.initialize();
   await LanguageService.init();
-  
+
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  
+
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -59,90 +59,81 @@ class MyApp extends StatelessWidget {
       builder: (context, activeLang, child) {
         return MaterialApp(
           title: 'Vidyaloans',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorSchemeSeed: const Color(0xFF311B92), // Deep Purple
-        fontFamily: GoogleFonts.outfit().fontFamily,
-        scaffoldBackgroundColor: Colors.white,
-        cardColor: Colors.white,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorSchemeSeed: const Color(0xFF311B92), // Deep Purple
+            fontFamily: GoogleFonts.outfit().fontFamily,
+            scaffoldBackgroundColor: Colors.white,
+            cardColor: Colors.white,
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              color: Colors.white,
+            ),
+            textTheme: const TextTheme(
+              displayMedium: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+              ),
+              titleLarge: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+              titleMedium: TextStyle(color: Colors.black, fontSize: 14),
+              bodyLarge: TextStyle(color: Colors.black, fontSize: 14),
+              bodyMedium: TextStyle(color: Color(0xFF374151), fontSize: 12),
+              bodySmall: TextStyle(color: Colors.grey, fontSize: 10),
+            ),
           ),
-          color: Colors.white,
-        ),
-        textTheme: const TextTheme(
-          displayMedium: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 28,
-          ),
-          titleLarge: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-          titleMedium: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-          ),
-          bodyLarge: TextStyle(
-            color: Colors.black,
-            fontSize: 14,
-          ),
-          bodyMedium: TextStyle(
-            color: Color(0xFF374151),
-            fontSize: 12,
-          ),
-          bodySmall: TextStyle(
-            color: Colors.grey,
-            fontSize: 10,
-          ),
-        ),
-      ),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: const TextScaler.linear(0.82),
-          ),
-          child: child!,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(0.82)),
+              child: child!,
+            );
+          },
+          home: const VideoSplashScreen(),
+          routes: {
+            '/login': (context) => const LoginPage(),
+            '/onboarding': (context) => const OnboardingPage(),
+            '/home': (context) => const MainNavigation(initialIndex: 2),
+            '/apply-loan': (context) => const ApplyLoanPage(),
+            '/emi-calculator': (context) => const EmiCalculatorPage(),
+            '/ai': (context) => const AiToolsPage(),
+            '/ai/eligibility': (context) => const EligibilityCheckerPage(),
+            '/ai/grade-converter': (context) => const GradeConverterPage(),
+            '/ai/bot': (context) => const CustomerCareBotPage(),
+            '/ai/university-compare': (context) =>
+                const UniversityComparePage(),
+            '/university-compare': (context) =>
+                const UniversityComparePage(), // Added alias for Community Page
+            '/ai/admit-predictor': (context) => const AdmitPredictorPage(),
+            '/ai/sop-writer': (context) => const SopWriterPage(),
+            '/ai/university-shortlist': (context) =>
+                const UniversityShortlistingPage(),
+            '/ai/visa-simulator': (context) => const VisaInterviewPage(),
+            '/master-plan': (context) => const UniversityShortlistingPage(),
+            '/ai/recommendations': (context) =>
+                const UniversityShortlistingPage(
+                  initialFlow: 'recommendations',
+                ),
+            '/community/mentors': (context) => const MentorsPage(),
+            '/community/events': (context) => const EventsPage(),
+            '/community/forum': (context) => const ForumPage(),
+            '/community/forum/create': (context) => const CreatePostPage(),
+            '/community/forum/detail': (context) => const ForumPostDetailPage(),
+            '/notifications': (context) => const NotificationsPage(),
+            '/direct-chats': (context) => const DirectChatsPage(),
+            '/blogs': (context) => const BlogsPage(),
+          },
         );
-      },
-      home: const VideoSplashScreen(),
-      routes: {
-        '/login': (context) => const LoginPage(),
-        '/onboarding': (context) => const OnboardingPage(),
-        '/home': (context) => const MainNavigation(initialIndex: 2),
-        '/apply-loan': (context) => const ApplyLoanPage(),
-        '/emi-calculator': (context) => const EmiCalculatorPage(),
-        '/ai': (context) => const AiToolsPage(),
-        '/ai/eligibility': (context) => const EligibilityCheckerPage(),
-        '/ai/grade-converter': (context) => const GradeConverterPage(),
-        '/ai/bot': (context) => const CustomerCareBotPage(),
-        '/ai/university-compare': (context) => const UniversityComparePage(),
-        '/university-compare': (context) =>
-            const UniversityComparePage(), // Added alias for Community Page
-        '/ai/admit-predictor': (context) => const AdmitPredictorPage(),
-        '/ai/sop-writer': (context) => const SopWriterPage(),
-        '/ai/university-shortlist': (context) =>
-            const UniversityShortlistingPage(),
-        '/ai/visa-simulator': (context) => const VisaInterviewPage(),
-        '/master-plan': (context) => const UniversityShortlistingPage(),
-        '/ai/recommendations': (context) =>
-            const UniversityShortlistingPage(initialFlow: 'recommendations'),
-        '/community/mentors': (context) => const MentorsPage(),
-        '/community/events': (context) => const EventsPage(),
-        '/community/forum': (context) => const ForumPage(),
-        '/community/forum/create': (context) => const CreatePostPage(),
-        '/community/forum/detail': (context) => const ForumPostDetailPage(),
-        '/notifications': (context) => const NotificationsPage(),
-        '/direct-chats': (context) => const DirectChatsPage(),
-        '/blogs': (context) => const BlogsPage(),
-      },
-    );
       },
     );
   }

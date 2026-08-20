@@ -86,10 +86,8 @@ class MainNavigationState extends State<MainNavigation> {
         if (email.isNotEmpty) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (context) => CompleteProfilePage(
-                email: email,
-                isNewUser: false,
-              ),
+              builder: (context) =>
+                  CompleteProfilePage(email: email, isNewUser: false),
             ),
             (route) => false,
           );
@@ -203,7 +201,9 @@ class MainNavigationState extends State<MainNavigation> {
           BottomBarItem(
             inActiveItem: const _HighlightedApplyIcon(isActive: false),
             activeItem: const _HighlightedApplyIcon(isActive: true),
-            itemLabel: _hasAppliedForLoan ? LanguageService.tr('my_loans') : LanguageService.tr('apply'),
+            itemLabel: _hasAppliedForLoan
+                ? LanguageService.tr('my_loans')
+                : LanguageService.tr('apply'),
           ),
           // 3 - Explore (AI Tools)
           BottomBarItem(
@@ -238,7 +238,6 @@ class MainNavigationState extends State<MainNavigation> {
     );
   }
 }
-
 
 // ─── Highlighted Loans Icon ───────────────────────────────────────────────────
 // Premium dark-highlighted button for the Loans tab.

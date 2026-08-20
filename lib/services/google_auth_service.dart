@@ -8,15 +8,20 @@ class GoogleAuthService {
   // google_sign_in v6 uses GoogleSignIn() constructor, not singleton
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
-    serverClientId: '135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com',
+    serverClientId:
+        '135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com',
   );
 
   /// Handles Google Sign-In and returns the Firebase User
   Future<User?> signInWithGoogle() async {
     try {
       // Force account picker to appear every time by clearing any cached session
-      await _googleSignIn.signOut().catchError((_) => null as GoogleSignInAccount?);
-      await _googleSignIn.disconnect().catchError((_) => null as GoogleSignInAccount?);
+      await _googleSignIn.signOut().catchError(
+        (_) => null as GoogleSignInAccount?,
+      );
+      await _googleSignIn.disconnect().catchError(
+        (_) => null as GoogleSignInAccount?,
+      );
 
       // 1. Trigger the Google Authentication flow — always shows account picker
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -44,8 +49,9 @@ class GoogleAuthService {
         idToken: idToken,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
       return userCredential.user;
     } catch (e) {
       debugPrint('Error during Google Sign-In: $e');

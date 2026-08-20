@@ -10,6 +10,8 @@ import '../services/google_auth_service.dart';
 import '../services/user_service.dart';
 import '../services/secure_storage_service.dart';
 import 'legal_page.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/permission_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -18,30 +20,115 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage>
+    with WidgetsBindingObserver {
   String _email = '';
   String _userName = '';
   String? _profileImage;
   bool _isLoading = false;
   bool _pushNotifications = true;
 
+  bool _notificationsGranted = false;
+  bool _phoneGranted = false;
+  bool _locationGranted = false;
+  bool _photosGranted = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkPermissionsStatus();
+    }
+  }
+
+  Future<void> _checkPermissionsStatus() async {
+    final notif = await PermissionService.isGranted(Permission.notification);
+    final phone = await PermissionService.isGranted(Permission.phone);
+    final loc = await PermissionService.isGranted(Permission.locationWhenInUse);
+    final photos =
+        await PermissionService.isGranted(Permission.photos) ||
+        await PermissionService.isGranted(Permission.storage);
+
+    if (mounted) {
+      setState(() {
+        _notificationsGranted = notif;
+        _phoneGranted = phone;
+        _locationGranted = loc;
+        _photosGranted = photos;
+      });
+    }
+  }
+
+  Future<void> _togglePermission({
+    required Permission permission,
+    required bool currentlyGranted,
+    required String name,
+    required String rationale,
+    required IconData icon,
+    required Color themeColor,
+  }) async {
+    if (currentlyGranted) {
+      await PermissionService.showSettingsDialog(
+        context: context,
+        title: '$name Access Enabled',
+        description:
+            'To disable $name permission, please turn it off in the system settings of your device.',
+        icon: icon,
+        themeColor: themeColor,
+      );
+    } else {
+      bool granted;
+      if (permission == Permission.photos) {
+        granted = await PermissionService.requestPhotosPermission();
+      } else {
+        granted = await PermissionService.request(permission);
+      }
+
+      if (!granted) {
+        final isPermanent = await PermissionService.isPermanentlyDenied(
+          permission,
+        );
+        if (isPermanent && mounted) {
+          PermissionService.showSettingsDialog(
+            context: context,
+            title: '$name Access Required',
+            description: rationale,
+            icon: icon,
+            themeColor: themeColor,
+          );
+        }
+      }
+      await _checkPermissionsStatus();
+    }
   }
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _email = prefs.getString('user_email') ?? '';
-      final firstName = prefs.getString('user_firstName') ?? '';
-      final lastName = prefs.getString('user_lastName') ?? '';
-      _userName = '$firstName $lastName'.trim();
-      if (_userName.isEmpty) _userName = 'User';
-      _profileImage = prefs.getString('user_profileImage');
-      _pushNotifications = prefs.getBool('push_notifications_enabled') ?? true;
-    });
+    if (mounted) {
+      setState(() {
+        _email = prefs.getString('user_email') ?? '';
+        final firstName = prefs.getString('user_firstName') ?? '';
+        final lastName = prefs.getString('user_lastName') ?? '';
+        _userName = '$firstName $lastName'.trim();
+        if (_userName.isEmpty) _userName = 'User';
+        _profileImage = prefs.getString('user_profileImage');
+        _pushNotifications =
+            prefs.getBool('push_notifications_enabled') ?? true;
+      });
+    }
+    await _checkPermissionsStatus();
   }
 
   Future<void> _handleLogout() async {
@@ -58,7 +145,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: const Color(0xFF311B92).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.logout_rounded, color: Color(0xFF311B92), size: 20),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: Color(0xFF311B92),
+                size: 20,
+              ),
             ),
             const SizedBox(width: 10),
             Text(
@@ -85,25 +176,37 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () => Navigator.pop(context, false),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF311B92),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               elevation: 0,
             ),
             child: Text(
               'Yes, Logout',
-              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -149,7 +252,9 @@ class _SettingsPageState extends State<SettingsPage> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
           backgroundColor: Colors.white,
           title: Row(
             children: [
@@ -159,7 +264,11 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.hourglass_top_rounded, color: Color(0xFFF59E0B), size: 22),
+                child: const Icon(
+                  Icons.hourglass_top_rounded,
+                  color: Color(0xFFF59E0B),
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -208,7 +317,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF311B92)),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF311B92),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -232,25 +344,43 @@ class _SettingsPageState extends State<SettingsPage> {
               onPressed: () => Navigator.pop(ctx, false),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFCBD5E1)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
               ),
               child: Text(
                 'Cancel',
-                style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+                style: GoogleFonts.inter(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
               ),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFDC2626),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 elevation: 0,
               ),
               child: Text(
                 'Wait & Delete',
-                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
@@ -275,7 +405,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444), size: 22),
+              child: const Icon(
+                Icons.delete_forever_rounded,
+                color: Color(0xFFEF4444),
+                size: 22,
+              ),
             ),
             const SizedBox(width: 10),
             Text(
@@ -302,25 +436,37 @@ class _SettingsPageState extends State<SettingsPage> {
             onPressed: () => Navigator.pop(context, false),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Color(0xFFCBD5E1)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
               elevation: 0,
             ),
             child: Text(
               'Delete Permanently',
-              style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
@@ -352,21 +498,32 @@ class _SettingsPageState extends State<SettingsPage> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Your account has been deleted successfully.'),
+                content: const Text(
+                  'Your account has been deleted successfully.',
+                ),
                 backgroundColor: const Color(0xFF10B981),
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             );
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+            Navigator.of(
+              context,
+            ).pushNamedAndRemoveUntil('/', (route) => false);
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Failed to delete account. Please try again later.'),
+              content: Text(
+                result['message'] ??
+                    'Failed to delete account. Please try again later.',
+              ),
               backgroundColor: const Color(0xFFEF4444),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
@@ -419,7 +576,10 @@ class _SettingsPageState extends State<SettingsPage> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: (avatarData['color'] as Color).withValues(alpha: 0.15),
-            border: Border.all(color: (avatarData['color'] as Color).withValues(alpha: 0.5), width: 2),
+            border: Border.all(
+              color: (avatarData['color'] as Color).withValues(alpha: 0.5),
+              width: 2,
+            ),
           ),
           child: Icon(
             avatarData['icon'] as IconData,
@@ -446,14 +606,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final String initialLetter = _userName.isNotEmpty ? _userName[0].toUpperCase() : 'V';
+    final String initialLetter = _userName.isNotEmpty
+        ? _userName[0].toUpperCase()
+        : 'V';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: MeshBackground(
         child: SafeArea(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF311B92)),
+                )
               : Column(
                   children: [
                     // Top App Header
@@ -523,7 +687,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               borderRadius: BorderRadius.circular(22),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF311B92).withValues(alpha: 0.06),
+                                  color: const Color(
+                                    0xFF311B92,
+                                  ).withValues(alpha: 0.06),
                                   blurRadius: 20,
                                   offset: const Offset(0, 4),
                                 ),
@@ -535,7 +701,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         _userName,
@@ -559,16 +726,29 @@ class _SettingsPageState extends State<SettingsPage> {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                    color: const Color(
+                                      0xFF10B981,
+                                    ).withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF10B981,
+                                      ).withValues(alpha: 0.3),
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 14),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        color: Color(0xFF10B981),
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Active',
@@ -590,23 +770,41 @@ class _SettingsPageState extends State<SettingsPage> {
                           // Quick Status Badges
                           Row(
                             children: [
-                              _buildStatChip(Icons.notifications_active_rounded, _pushNotifications ? 'Alerts On' : 'Alerts Off', const Color(0xFF6C2BD9)),
+                              _buildStatChip(
+                                Icons.notifications_active_rounded,
+                                _pushNotifications ? 'Alerts On' : 'Alerts Off',
+                                const Color(0xFF6C2BD9),
+                              ),
                               const SizedBox(width: 10),
-                              _buildStatChip(Icons.shield_rounded, 'Protected', const Color(0xFF10B981)),
+                              _buildStatChip(
+                                Icons.shield_rounded,
+                                'Protected',
+                                const Color(0xFF10B981),
+                              ),
                               const SizedBox(width: 10),
-                              _buildStatChip(Icons.verified_user_rounded, 'v1.0.4', const Color(0xFFF59E0B)),
+                              _buildStatChip(
+                                Icons.verified_user_rounded,
+                                'v1.0.4',
+                                const Color(0xFFF59E0B),
+                              ),
                             ],
                           ),
 
                           const SizedBox(height: 24),
 
                           // Section 1: Preferences
-                          _buildSectionHeader('PREFERENCES', const Color(0xFF6C2BD9)),
+                          _buildSectionHeader(
+                            'PREFERENCES',
+                            const Color(0xFF6C2BD9),
+                          ),
                           const SizedBox(height: 10),
                           _buildCard([
                             _buildTile(
                               icon: Icons.notifications_active_rounded,
-                              gradientColors: [const Color(0xFF6C2BD9), const Color(0xFF9B59B6)],
+                              gradientColors: [
+                                const Color(0xFF6C2BD9),
+                                const Color(0xFF9B59B6),
+                              ],
                               title: 'Push Notifications',
                               subtitle: 'Loan status, updates & alerts',
                               trailing: Transform.scale(
@@ -618,8 +816,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                   inactiveTrackColor: const Color(0xFFE2E8F0),
                                   onChanged: (val) async {
                                     setState(() => _pushNotifications = val);
-                                    final prefs = await SharedPreferences.getInstance();
-                                    await prefs.setBool('push_notifications_enabled', val);
+                                    final prefs =
+                                        await SharedPreferences.getInstance();
+                                    await prefs.setBool(
+                                      'push_notifications_enabled',
+                                      val,
+                                    );
                                   },
                                 ),
                               ),
@@ -628,20 +830,158 @@ class _SettingsPageState extends State<SettingsPage> {
 
                           const SizedBox(height: 24),
 
+                          // Section: App Permissions
+                          _buildSectionHeader(
+                            'APP PERMISSIONS',
+                            const Color(0xFF0284C7),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildCard([
+                            _buildTile(
+                              icon: Icons.notifications_active_rounded,
+                              gradientColors: [
+                                const Color(0xFF0284C7),
+                                const Color(0xFF38BDF8),
+                              ],
+                              title: 'System Notifications',
+                              subtitle: 'Real-time loan progress & alerts',
+                              trailing: Text(
+                                _notificationsGranted ? 'Allowed' : 'Configure',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: _notificationsGranted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              onTap: () => _togglePermission(
+                                permission: Permission.notification,
+                                currentlyGranted: _notificationsGranted,
+                                name: 'Notifications',
+                                rationale:
+                                    'Please enable notifications permission in settings to receive real-time loan progress updates.',
+                                icon: Icons.notifications_active_rounded,
+                                themeColor: const Color(0xFF0284C7),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTile(
+                              icon: Icons.phone_callback_rounded,
+                              gradientColors: [
+                                const Color(0xFF10B981),
+                                const Color(0xFF34D399),
+                              ],
+                              title: 'Phone Call Access',
+                              subtitle: 'Direct support dialing from the app',
+                              trailing: Text(
+                                _phoneGranted ? 'Allowed' : 'Configure',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: _phoneGranted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              onTap: () => _togglePermission(
+                                permission: Permission.phone,
+                                currentlyGranted: _phoneGranted,
+                                name: 'Phone calls',
+                                rationale:
+                                    'Please enable phone call permissions in settings to reach our loan support experts directly.',
+                                icon: Icons.phone_callback_rounded,
+                                themeColor: const Color(0xFF10B981),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTile(
+                              icon: Icons.location_on_rounded,
+                              gradientColors: [
+                                const Color(0xFFF59E0B),
+                                const Color(0xFFFBBF24),
+                              ],
+                              title: 'Location Services',
+                              subtitle: 'Find nearby partner banks & offices',
+                              trailing: Text(
+                                _locationGranted ? 'Allowed' : 'Configure',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: _locationGranted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              onTap: () => _togglePermission(
+                                permission: Permission.locationWhenInUse,
+                                currentlyGranted: _locationGranted,
+                                name: 'Location',
+                                rationale:
+                                    'Please enable location permissions in settings to identify local partner bank branches.',
+                                icon: Icons.location_on_rounded,
+                                themeColor: const Color(0xFFF59E0B),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTile(
+                              icon: Icons.photo_library_rounded,
+                              gradientColors: [
+                                const Color(0xFFEC4899),
+                                const Color(0xFFF472B6),
+                              ],
+                              title: 'Photos & Storage',
+                              subtitle: 'Upload documents & custom avatars',
+                              trailing: Text(
+                                _photosGranted ? 'Allowed' : 'Configure',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: _photosGranted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              onTap: () => _togglePermission(
+                                permission: Permission.photos,
+                                currentlyGranted: _photosGranted,
+                                name: 'Photos',
+                                rationale:
+                                    'Please enable photo library access in settings to upload files and select profile avatars.',
+                                icon: Icons.photo_library_rounded,
+                                themeColor: const Color(0xFFEC4899),
+                              ),
+                            ),
+                          ]),
+
+                          const SizedBox(height: 24),
+
                           // Section 2: Support & Legal
-                          _buildSectionHeader('SUPPORT & LEGAL', const Color(0xFF8B5CF6)),
+                          _buildSectionHeader(
+                            'SUPPORT & LEGAL',
+                            const Color(0xFF8B5CF6),
+                          ),
                           const SizedBox(height: 10),
                           _buildCard([
                             _buildTile(
                               icon: Icons.help_rounded,
-                              gradientColors: [const Color(0xFF8B5CF6), const Color(0xFFA78BFA)],
+                              gradientColors: [
+                                const Color(0xFF8B5CF6),
+                                const Color(0xFFA78BFA),
+                              ],
                               title: 'Connect with Support',
                               subtitle: 'FAQs, guides & loan assistance',
                               trailing: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFFFB923C), Color(0xFFF97316)],
+                                    colors: [
+                                      Color(0xFFFB923C),
+                                      Color(0xFFF97316),
+                                    ],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -659,19 +999,27 @@ class _SettingsPageState extends State<SettingsPage> {
                                   SnackBar(
                                     content: Row(
                                       children: [
-                                        const Icon(Icons.support_agent_rounded, color: Colors.white, size: 18),
+                                        const Icon(
+                                          Icons.support_agent_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Text(
                                             'Help Center & live support is coming soon!',
-                                            style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+                                            style: GoogleFonts.outfit(
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                     backgroundColor: const Color(0xFFF97316),
                                     behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
                                   ),
                                 );
                               },
@@ -679,20 +1027,29 @@ class _SettingsPageState extends State<SettingsPage> {
                             _buildDivider(),
                             _buildTile(
                               icon: Icons.description_rounded,
-                              gradientColors: [const Color(0xFFEC4899), const Color(0xFFDB2777)],
+                              gradientColors: [
+                                const Color(0xFFEC4899),
+                                const Color(0xFFDB2777),
+                              ],
                               title: 'Terms & Privacy Policy',
                               subtitle: 'Privacy policy, terms & conditions',
                               onTap: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const LegalPage(initialTab: 0)),
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const LegalPage(initialTab: 0),
+                                  ),
                                 );
                               },
                             ),
                             _buildDivider(),
                             _buildTile(
                               icon: Icons.info_rounded,
-                              gradientColors: [const Color(0xFF64748B), const Color(0xFF475569)],
+                              gradientColors: [
+                                const Color(0xFF64748B),
+                                const Color(0xFF475569),
+                              ],
                               title: 'Vidyaloans App',
                               subtitle: 'Version 1.0.4 (Latest Release)',
                             ),
@@ -701,7 +1058,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           const SizedBox(height: 24),
 
                           // Section 3: Account Actions
-                          _buildSectionHeader('ACCOUNT ACTIONS', const Color(0xFFEF4444)),
+                          _buildSectionHeader(
+                            'ACCOUNT ACTIONS',
+                            const Color(0xFFEF4444),
+                          ),
                           const SizedBox(height: 10),
 
                           // Sign Out
@@ -712,10 +1072,16 @@ class _SettingsPageState extends State<SettingsPage> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFF6C2BD9).withValues(alpha: 0.15)),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFF6C2BD9,
+                                  ).withValues(alpha: 0.15),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF6C2BD9).withValues(alpha: 0.06),
+                                    color: const Color(
+                                      0xFF6C2BD9,
+                                    ).withValues(alpha: 0.06),
                                     blurRadius: 18,
                                     offset: const Offset(0, 4),
                                   ),
@@ -727,16 +1093,24 @@ class _SettingsPageState extends State<SettingsPage> {
                                     padding: const EdgeInsets.all(11),
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFF6C2BD9), Color(0xFF9B59B6)],
+                                        colors: [
+                                          Color(0xFF6C2BD9),
+                                          Color(0xFF9B59B6),
+                                        ],
                                       ),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(Icons.logout_rounded, color: Colors.white, size: 20),
+                                    child: const Icon(
+                                      Icons.logout_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Sign Out',
@@ -748,7 +1122,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                         ),
                                         Text(
                                           'Safely sign out from this device',
-                                          style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B)),
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: const Color(0xFF64748B),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -756,10 +1133,16 @@ class _SettingsPageState extends State<SettingsPage> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF6C2BD9).withValues(alpha: 0.08),
+                                      color: const Color(
+                                        0xFF6C2BD9,
+                                      ).withValues(alpha: 0.08),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF6C2BD9), size: 14),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      color: Color(0xFF6C2BD9),
+                                      size: 14,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -775,13 +1158,22 @@ class _SettingsPageState extends State<SettingsPage> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFFFF5F5), Color(0xFFFEE2E2)],
+                                  colors: [
+                                    Color(0xFFFFF5F5),
+                                    Color(0xFFFEE2E2),
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFFCA5A5).withValues(alpha: 0.7)),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFFCA5A5,
+                                  ).withValues(alpha: 0.7),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFEF4444).withValues(alpha: 0.06),
+                                    color: const Color(
+                                      0xFFEF4444,
+                                    ).withValues(alpha: 0.06),
                                     blurRadius: 18,
                                     offset: const Offset(0, 4),
                                   ),
@@ -793,16 +1185,24 @@ class _SettingsPageState extends State<SettingsPage> {
                                     padding: const EdgeInsets.all(11),
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
-                                        colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
+                                        colors: [
+                                          Color(0xFFDC2626),
+                                          Color(0xFFEF4444),
+                                        ],
                                       ),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
-                                    child: const Icon(Icons.delete_forever_rounded, color: Colors.white, size: 20),
+                                    child: const Icon(
+                                      Icons.delete_forever_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Delete Account',
@@ -816,7 +1216,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                           'Permanently erase all data & profile',
                                           style: GoogleFonts.inter(
                                             fontSize: 12,
-                                            color: const Color(0xFFB91C1C).withValues(alpha: 0.75),
+                                            color: const Color(
+                                              0xFFB91C1C,
+                                            ).withValues(alpha: 0.75),
                                           ),
                                         ),
                                       ],
@@ -825,10 +1227,16 @@ class _SettingsPageState extends State<SettingsPage> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                                      color: const Color(
+                                        0xFFEF4444,
+                                      ).withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFDC2626), size: 14),
+                                    child: const Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      color: Color(0xFFDC2626),
+                                      size: 14,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -852,7 +1260,10 @@ class _SettingsPageState extends State<SettingsPage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'v1.0.4',
-                                  style: GoogleFonts.outfit(fontSize: 10.5, color: const Color(0xFFCBD5E1)),
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 10.5,
+                                    color: const Color(0xFFCBD5E1),
+                                  ),
                                 ),
                               ],
                             ),
@@ -950,7 +1361,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, indent: 68, endIndent: 16, color: Color(0xFFF1F5F9));
+    return const Divider(
+      height: 1,
+      indent: 68,
+      endIndent: 16,
+      color: Color(0xFFF1F5F9),
+    );
   }
 
   Widget _buildTile({
@@ -1015,7 +1431,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               trailing ??
                   (onTap != null
-                      ? const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFCBD5E1), size: 14)
+                      ? const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Color(0xFFCBD5E1),
+                          size: 14,
+                        )
                       : const SizedBox.shrink()),
             ],
           ),

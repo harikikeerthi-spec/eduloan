@@ -27,7 +27,7 @@ class LogoService {
     'University of Idaho': 'uidaho.edu',
     'Oregon State University': 'oregonstate.edu',
     'University of Northern Colorado': 'unco.edu',
-    
+
     // UK
     'University of Oxford': 'ox.ac.uk',
     'University of Cambridge': 'cam.ac.uk',
@@ -35,19 +35,19 @@ class LogoService {
     'London School of Economics (LSE)': 'lse.ac.uk',
     'University College London (UCL)': 'ucl.ac.uk',
     'University of Edinburgh': 'ed.ac.uk',
-    
+
     // Canada
     'University of Toronto': 'utoronto.ca',
     'University of British Columbia (UBC)': 'ubc.ca',
     'McGill University': 'mcgill.ca',
     'University of Waterloo': 'uwaterloo.ca',
-    
+
     // Australia
     'University of Melbourne': 'unimelb.edu.au',
     'University of Sydney': 'sydney.edu.au',
     'Australian National University (ANU)': 'anu.edu.au',
     'University of New South Wales (UNSW)': 'unsw.edu.au',
-    
+
     // Europe & Asia
     'ETH Zurich': 'ethz.ch',
     'Technical University of Munich (TUM)': 'tum.de',
@@ -94,7 +94,7 @@ class LogoService {
             domain = domain.replaceAll(RegExp(r'^www\.'), '');
             domain = domain.replaceAll(RegExp(r'/$'), '');
             domain = domain.split('/')[0];
-            
+
             final logo = await getValidLogoForDomain(domain);
             if (logo != null) {
               _cache[name] = logo;
@@ -108,9 +108,12 @@ class LogoService {
       final url =
           'https://autocomplete.clearbit.com/v1/companies/suggest?query=$encodedName';
       final response = await http
-          .get(Uri.parse(url), headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-          })
+          .get(
+            Uri.parse(url),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            },
+          )
           .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
@@ -143,17 +146,25 @@ class LogoService {
 
   static Future<bool> isUrlValid(String url) async {
     try {
-      final response = await http.head(
-        Uri.parse(url),
-        headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-      ).timeout(const Duration(seconds: 3));
+      final response = await http
+          .head(
+            Uri.parse(url),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            },
+          )
+          .timeout(const Duration(seconds: 3));
       if (response.statusCode == 200) return true;
     } catch (_) {
       try {
-        final response = await http.get(
-          Uri.parse(url),
-          headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-        ).timeout(const Duration(seconds: 3));
+        final response = await http
+            .get(
+              Uri.parse(url),
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+              },
+            )
+            .timeout(const Duration(seconds: 3));
         if (response.statusCode == 200) return true;
       } catch (_) {}
     }

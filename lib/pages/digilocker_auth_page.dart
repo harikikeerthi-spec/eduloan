@@ -10,7 +10,7 @@ class DigilockerAuthPage extends StatefulWidget {
 
   const DigilockerAuthPage({
     super.key,
-    this.clientId = 'UN64D05F18', 
+    this.clientId = 'UN64D05F18',
     this.redirectUri = 'https://vidhyaloan.com/callback',
   });
 
@@ -23,9 +23,13 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
   late final String _codeVerifier;
 
   String _generateRandomString(int length) {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const charset =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
   }
 
   String _generateCodeChallenge(String verifier) {
@@ -37,48 +41,60 @@ class _DigilockerAuthPageState extends State<DigilockerAuthPage> {
   @override
   void initState() {
     super.initState();
-    
+
     _codeVerifier = _generateRandomString(64);
     final codeChallenge = _generateCodeChallenge(_codeVerifier);
 
     // Production DigiLocker OAuth Authorize URL
-    final uri = Uri.parse('https://api.digitallocker.gov.in/public/oauth2/2/authorize').replace(queryParameters: {
-      'response_type': 'code',
-      'client_id': widget.clientId,
-      'redirect_uri': widget.redirectUri,
-      'state': 'vidhyaloan_auth_state',
-      'code_challenge': codeChallenge,
-      'code_challenge_method': 'S256',
-    });
-    final authUrl = uri.toString(); 
+    final uri =
+        Uri.parse(
+          'https://api.digitallocker.gov.in/public/oauth2/2/authorize',
+        ).replace(
+          queryParameters: {
+            'response_type': 'code',
+            'client_id': widget.clientId,
+            'redirect_uri': widget.redirectUri,
+            'state': 'vidhyaloan_auth_state',
+            'code_challenge': codeChallenge,
+            'code_challenge_method': 'S256',
+          },
+        );
+    final authUrl = uri.toString();
     debugPrint('DEBUG: Auth URL (v7-NoScope): $authUrl');
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (String url) => debugPrint('DEBUG: WebView started loading: $url'),
-          onPageFinished: (String url) => debugPrint('DEBUG: WebView finished loading: $url'),
-          onWebResourceError: (WebResourceError error) => debugPrint('DEBUG: WebView Error: ${error.description}'),
+          onPageStarted: (String url) =>
+              debugPrint('DEBUG: WebView started loading: $url'),
+          onPageFinished: (String url) =>
+              debugPrint('DEBUG: WebView finished loading: $url'),
+          onWebResourceError: (WebResourceError error) =>
+              debugPrint('DEBUG: WebView Error: ${error.description}'),
           onNavigationRequest: (NavigationRequest request) {
             debugPrint('DEBUG: WebView navigating to: ${request.url}');
             // Intercept both the production redirectUri AND the mock callback
-            if (request.url.startsWith(widget.redirectUri) || request.url.contains('/api/digilocker/callback')) {
+            if (request.url.startsWith(widget.redirectUri) ||
+                request.url.contains('/api/digilocker/callback')) {
               debugPrint('DEBUG: Callback detected: ${request.url}');
               final uri = Uri.parse(request.url);
               final code = uri.queryParameters['code'];
-              
+
               if (code != null) {
                 debugPrint('DEBUG: Auth code extracted: $code');
-                debugPrint('DEBUG: Code verifier being returned: $_codeVerifier');
+                debugPrint(
+                  'DEBUG: Code verifier being returned: $_codeVerifier',
+                );
                 // Return both code and verifier
-                Navigator.of(context).pop({
-                  'code': code,
-                  'code_verifier': _codeVerifier,
-                });
+                Navigator.of(
+                  context,
+                ).pop({'code': code, 'code_verifier': _codeVerifier});
                 return NavigationDecision.prevent;
               } else {
-                debugPrint('DEBUG: No auth code found in callback: ${request.url}');
+                debugPrint(
+                  'DEBUG: No auth code found in callback: ${request.url}',
+                );
                 Navigator.of(context).pop(null);
                 return NavigationDecision.prevent;
               }

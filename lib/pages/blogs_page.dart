@@ -107,8 +107,9 @@ class _BlogsPageState extends State<BlogsPage> {
                     }
 
                     final fetchedBlogs = snapshot.data!;
-                    final blogsToDisplay =
-                        _allBlogs.isEmpty ? fetchedBlogs : _filteredBlogs;
+                    final blogsToDisplay = _allBlogs.isEmpty
+                        ? fetchedBlogs
+                        : _filteredBlogs;
 
                     if (blogsToDisplay.isEmpty) {
                       return Center(
@@ -289,99 +290,108 @@ class _BlogsPageState extends State<BlogsPage> {
                   top: Radius.circular(16),
                 ),
                 child: blog.featuredImage!.startsWith('http')
-                  ? Image.network(
-                  blog.featuredImage!,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 180,
-                      color: Colors.grey[200],
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF311B92).withValues(alpha: 0.1),
-                            const Color(0xFF7E57C2).withValues(alpha: 0.1),
-                          ],
-                        ),
-                      ),
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.article_outlined,
-                              size: 48,
-                              color: Color(0xFF311B92),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Blog Image',
-                              style: TextStyle(
-                                color: Color(0xFF311B92),
-                                fontWeight: FontWeight.w500,
+                    ? Image.network(
+                        blog.featuredImage!,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 180,
+                            color: Colors.grey[200],
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                )
-                  : Image.asset(
-                  blog.featuredImage!,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF311B92).withValues(alpha: 0.1),
-                            const Color(0xFF7E57C2).withValues(alpha: 0.1),
-                          ],
-                        ),
-                      ),
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.article_outlined,
-                              size: 48,
-                              color: Color(0xFF311B92),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Blog Image',
-                              style: TextStyle(
-                                color: Color(0xFF311B92),
-                                fontWeight: FontWeight.w500,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 180,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(
+                                    0xFF311B92,
+                                  ).withValues(alpha: 0.1),
+                                  const Color(
+                                    0xFF7E57C2,
+                                  ).withValues(alpha: 0.1),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.article_outlined,
+                                    size: 48,
+                                    color: Color(0xFF311B92),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Blog Image',
+                                    style: TextStyle(
+                                      color: Color(0xFF311B92),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    : Image.asset(
+                        blog.featuredImage!,
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 180,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(
+                                    0xFF311B92,
+                                  ).withValues(alpha: 0.1),
+                                  const Color(
+                                    0xFF7E57C2,
+                                  ).withValues(alpha: 0.1),
+                                ],
+                              ),
+                            ),
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.article_outlined,
+                                    size: 48,
+                                    color: Color(0xFF311B92),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Blog Image',
+                                    style: TextStyle(
+                                      color: Color(0xFF311B92),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             Padding(
               padding: const EdgeInsets.all(16),

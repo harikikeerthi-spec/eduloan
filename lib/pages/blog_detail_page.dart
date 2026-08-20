@@ -946,18 +946,14 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
           _isSubmitting = false;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Comment posted!')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Comment posted!')));
         }
         return;
       }
 
-      await _blogService.addComment(
-        blogId,
-        content,
-        _authorName,
-      );
+      await _blogService.addComment(blogId, content, _authorName);
 
       // Refresh the blog data to show the new comment
       final updatedBlog = await _blogService.getBlogBySlug(widget.blog.slug);
@@ -1006,28 +1002,35 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
 
     if (confirmed != true) return;
 
-    final isLocal = commentId.startsWith('local_') || blogId.startsWith('blog_') || blogId.length < 20;
+    final isLocal =
+        commentId.startsWith('local_') ||
+        blogId.startsWith('blog_') ||
+        blogId.length < 20;
 
     if (!isLocal) {
       try {
         await _blogService.deleteComment(commentId);
       } catch (e) {
-        debugPrint('Backend delete comment failed, performing local delete: $e');
+        debugPrint(
+          'Backend delete comment failed, performing local delete: $e',
+        );
       }
     }
 
     final currentBlog = await _blogFuture;
     final updatedComments = currentBlog.comments
         .where((c) => c.id != commentId)
-        .map((c) => Comment(
-              id: c.id,
-              content: c.content,
-              authorName: c.authorName,
-              createdAt: c.createdAt,
-              parentId: c.parentId,
-              likes: c.likes,
-              replies: c.replies.where((r) => r.id != commentId).toList(),
-            ))
+        .map(
+          (c) => Comment(
+            id: c.id,
+            content: c.content,
+            authorName: c.authorName,
+            createdAt: c.createdAt,
+            parentId: c.parentId,
+            likes: c.likes,
+            replies: c.replies.where((r) => r.id != commentId).toList(),
+          ),
+        )
         .toList();
 
     final updatedBlog = Blog(
@@ -1076,7 +1079,10 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
       }
     });
 
-    final isLocal = commentId.startsWith('local_') || blogId.startsWith('blog_') || blogId.length < 20;
+    final isLocal =
+        commentId.startsWith('local_') ||
+        blogId.startsWith('blog_') ||
+        blogId.length < 20;
 
     if (!isLocal) {
       try {
@@ -1092,7 +1098,9 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     final currentBlog = await _blogFuture;
     final updatedComments = currentBlog.comments.map((c) {
       if (c.id == commentId) {
-        final newCount = wasLiked ? (c.likes > 0 ? c.likes - 1 : 0) : c.likes + 1;
+        final newCount = wasLiked
+            ? (c.likes > 0 ? c.likes - 1 : 0)
+            : c.likes + 1;
         return Comment(
           id: c.id,
           content: c.content,
@@ -1105,7 +1113,9 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
       }
       final updatedReplies = c.replies.map((r) {
         if (r.id == commentId) {
-          final newCount = wasLiked ? (r.likes > 0 ? r.likes - 1 : 0) : r.likes + 1;
+          final newCount = wasLiked
+              ? (r.likes > 0 ? r.likes - 1 : 0)
+              : r.likes + 1;
           return Comment(
             id: r.id,
             content: r.content,
@@ -1161,7 +1171,10 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
     if (controller == null || controller.text.trim().isEmpty) return;
 
     final content = controller.text.trim();
-    final isLocal = commentId.startsWith('local_') || widget.blog.id.startsWith('blog_') || widget.blog.id.length < 20;
+    final isLocal =
+        commentId.startsWith('local_') ||
+        widget.blog.id.startsWith('blog_') ||
+        widget.blog.id.length < 20;
 
     Comment? serverReply;
     if (!isLocal) {
@@ -1176,14 +1189,16 @@ class _BlogDetailPageState extends State<BlogDetailPage> {
       }
     }
 
-    final newReply = serverReply ?? Comment(
-      id: 'local_${DateTime.now().millisecondsSinceEpoch}',
-      content: content,
-      authorName: _authorName,
-      createdAt: DateTime.now(),
-      parentId: commentId,
-      likes: 0,
-    );
+    final newReply =
+        serverReply ??
+        Comment(
+          id: 'local_${DateTime.now().millisecondsSinceEpoch}',
+          content: content,
+          authorName: _authorName,
+          createdAt: DateTime.now(),
+          parentId: commentId,
+          likes: 0,
+        );
 
     final currentBlog = await _blogFuture;
     final updatedComments = currentBlog.comments.map((c) {

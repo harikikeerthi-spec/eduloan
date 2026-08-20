@@ -69,13 +69,18 @@ class _UserDetailsPageState extends State<UserDetailsPage>
         }
       }
       if (widget.currentPhone != null && widget.currentPhone != 'Not set') {
-        String cleanedPhone = widget.currentPhone!.replaceAll(RegExp(r'[^0-9]'), '');
+        String cleanedPhone = widget.currentPhone!.replaceAll(
+          RegExp(r'[^0-9]'),
+          '',
+        );
         if (cleanedPhone.length > 10) {
           cleanedPhone = cleanedPhone.substring(cleanedPhone.length - 10);
         }
         _phoneController.text = cleanedPhone;
       }
-      if (widget.currentDob != null && widget.currentDob != 'Not set' && widget.currentDob!.isNotEmpty) {
+      if (widget.currentDob != null &&
+          widget.currentDob != 'Not set' &&
+          widget.currentDob!.isNotEmpty) {
         String dob = widget.currentDob!;
         if (dob.contains('-')) {
           final parts = dob.split('T')[0].split('-');
@@ -104,7 +109,11 @@ class _UserDetailsPageState extends State<UserDetailsPage>
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+    final DateTime eighteenYearsAgo = DateTime(
+      now.year - 18,
+      now.month,
+      now.day,
+    );
     final DateTime fortyYearsAgo = DateTime(now.year - 40, now.month, now.day);
 
     DateTime initial = eighteenYearsAgo;
@@ -114,7 +123,11 @@ class _UserDetailsPageState extends State<UserDetailsPage>
         final d = int.tryParse(clean.substring(0, 2));
         final m = int.tryParse(clean.substring(2, 4));
         final y = int.tryParse(clean.substring(4, 8));
-        if (d != null && m != null && y != null && y >= now.year - 40 && y <= now.year - 18) {
+        if (d != null &&
+            m != null &&
+            y != null &&
+            y >= now.year - 40 &&
+            y <= now.year - 18) {
           try {
             initial = DateTime(y, m, d);
           } catch (_) {}
@@ -124,7 +137,10 @@ class _UserDetailsPageState extends State<UserDetailsPage>
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
+      initialDate:
+          initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo)
+          ? initial
+          : eighteenYearsAgo,
       firstDate: fortyYearsAgo,
       lastDate: eighteenYearsAgo, // Prevent under 18 or over 40 selection
       initialEntryMode: DatePickerEntryMode.calendarOnly,
@@ -228,9 +244,16 @@ class _UserDetailsPageState extends State<UserDetailsPage>
 
       if (result['success'] == true) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_firstName', _firstNameController.text.trim());
+        await prefs.setString(
+          'user_firstName',
+          _firstNameController.text.trim(),
+        );
         await prefs.setString('user_lastName', _lastNameController.text.trim());
-        await prefs.setString('user_name', '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim());
+        await prefs.setString(
+          'user_name',
+          '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+              .trim(),
+        );
         await prefs.setString('user_phone', _phoneController.text.trim());
         await prefs.setString('user_dob', _dobController.text.trim());
         if (!mounted) return;
@@ -247,7 +270,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           // Navigate to home page
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const MainNavigation(initialIndex: 2)),
+            MaterialPageRoute(
+              builder: (context) => const MainNavigation(initialIndex: 2),
+            ),
             (route) => false,
           );
         }
@@ -390,7 +415,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               TextFormField(
                                 controller: _firstNameController,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-zA-Z\s]'),
+                                  ),
                                 ],
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -421,7 +448,9 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                               TextFormField(
                                 controller: _lastNameController,
                                 inputFormatters: [
-                                  FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-zA-Z\s]'),
+                                  ),
                                 ],
                                 style: const TextStyle(
                                   fontSize: 16,
@@ -452,32 +481,56 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                 TextFormField(
                                   controller: _dobController,
                                   readOnly: true,
-                                  onTap: widget.isEdit ? null : () => _selectDate(context),
+                                  onTap: widget.isEdit
+                                      ? null
+                                      : () => _selectDate(context),
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: widget.isEdit ? Colors.black45 : Colors.black,
+                                    color: widget.isEdit
+                                        ? Colors.black45
+                                        : Colors.black,
                                   ),
-                                  decoration: _getInputDecoration(
-                                    'Date of Birth',
-                                    Icons.calendar_today,
-                                    hint: 'DD/MM/YYYY',
-                                  ).copyWith(
-                                    fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
-                                    suffixIcon: widget.isEdit
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(12.0),
-                                            child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
-                                          )
-                                        : IconButton(
-                                            icon: const Icon(Icons.calendar_month_rounded, color: Color(0xFF311B92)),
-                                            onPressed: () => _selectDate(context),
-                                            tooltip: 'Pick date from calendar',
-                                          ),
-                                    helperText: widget.isEdit ? 'Date of Birth is verified and locked after onboarding' : null,
-                                    helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
-                                  ),
-                                  validator: widget.isEdit ? null : _validateDob,
+                                  decoration:
+                                      _getInputDecoration(
+                                        'Date of Birth',
+                                        Icons.calendar_today,
+                                        hint: 'DD/MM/YYYY',
+                                      ).copyWith(
+                                        fillColor: widget.isEdit
+                                            ? const Color(0xFFE2E8F0)
+                                            : const Color(0xFFF3F4F6),
+                                        suffixIcon: widget.isEdit
+                                            ? const Padding(
+                                                padding: EdgeInsets.all(12.0),
+                                                child: Icon(
+                                                  Icons.lock_rounded,
+                                                  color: Colors.grey,
+                                                  size: 20,
+                                                ),
+                                              )
+                                            : IconButton(
+                                                icon: const Icon(
+                                                  Icons.calendar_month_rounded,
+                                                  color: Color(0xFF311B92),
+                                                ),
+                                                onPressed: () =>
+                                                    _selectDate(context),
+                                                tooltip:
+                                                    'Pick date from calendar',
+                                              ),
+                                        helperText: widget.isEdit
+                                            ? 'Date of Birth is verified and locked after onboarding'
+                                            : null,
+                                        helperStyle: TextStyle(
+                                          color: Colors.purple.shade900,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                  validator: widget.isEdit
+                                      ? null
+                                      : _validateDob,
                                 ),
                                 const SizedBox(height: 16),
 
@@ -486,7 +539,13 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   controller: _phoneController,
                                   readOnly: widget.isEdit,
                                   maxLength: 10,
-                                  buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+                                  buildCounter:
+                                      (
+                                        context, {
+                                        required currentLength,
+                                        required isFocused,
+                                        maxLength,
+                                      }) => null,
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
                                     LengthLimitingTextInputFormatter(10),
@@ -494,29 +553,46 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w500,
-                                    color: widget.isEdit ? Colors.black45 : Colors.black,
+                                    color: widget.isEdit
+                                        ? Colors.black45
+                                        : Colors.black,
                                   ),
-                                  decoration: _getInputDecoration(
-                                    'Mobile Number',
-                                    Icons.phone_outlined,
-                                    hint: 'XXXXXXXXXX',
-                                  ).copyWith(
-                                    fillColor: widget.isEdit ? const Color(0xFFE2E8F0) : const Color(0xFFF3F4F6),
-                                    prefixText: '+91 ',
-                                    prefixStyle: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: widget.isEdit ? Colors.black45 : Colors.black,
-                                    ),
-                                    suffixIcon: widget.isEdit
-                                        ? const Padding(
-                                            padding: EdgeInsets.all(12.0),
-                                            child: Icon(Icons.lock_rounded, color: Colors.grey, size: 20),
-                                          )
-                                        : null,
-                                    helperText: widget.isEdit ? 'Mobile Number is verified and locked after onboarding' : null,
-                                    helperStyle: TextStyle(color: Colors.purple.shade900, fontSize: 11, fontWeight: FontWeight.w600),
-                                  ),
+                                  decoration:
+                                      _getInputDecoration(
+                                        'Mobile Number',
+                                        Icons.phone_outlined,
+                                        hint: 'XXXXXXXXXX',
+                                      ).copyWith(
+                                        fillColor: widget.isEdit
+                                            ? const Color(0xFFE2E8F0)
+                                            : const Color(0xFFF3F4F6),
+                                        prefixText: '+91 ',
+                                        prefixStyle: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: widget.isEdit
+                                              ? Colors.black45
+                                              : Colors.black,
+                                        ),
+                                        suffixIcon: widget.isEdit
+                                            ? const Padding(
+                                                padding: EdgeInsets.all(12.0),
+                                                child: Icon(
+                                                  Icons.lock_rounded,
+                                                  color: Colors.grey,
+                                                  size: 20,
+                                                ),
+                                              )
+                                            : null,
+                                        helperText: widget.isEdit
+                                            ? 'Mobile Number is verified and locked after onboarding'
+                                            : null,
+                                        helperStyle: TextStyle(
+                                          color: Colors.purple.shade900,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                   keyboardType: TextInputType.phone,
                                   validator: widget.isEdit
                                       ? null
@@ -527,10 +603,13 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                           if (value.length != 10) {
                                             return 'Must be 10 digits';
                                           }
-                                          if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                          if (!RegExp(
+                                            r'^[6-9][0-9]{9}$',
+                                          ).hasMatch(value)) {
                                             return 'Invalid Indian mobile number';
                                           }
-                                          if (value.split('').toSet().length < 3) {
+                                          if (value.split('').toSet().length <
+                                              3) {
                                             return 'Highly repetitive number not allowed';
                                           }
                                           return null;

@@ -42,7 +42,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime now = DateTime.now();
-    final DateTime eighteenYearsAgo = DateTime(now.year - 18, now.month, now.day);
+    final DateTime eighteenYearsAgo = DateTime(
+      now.year - 18,
+      now.month,
+      now.day,
+    );
     final DateTime fortyYearsAgo = DateTime(now.year - 40, now.month, now.day);
 
     DateTime initial = eighteenYearsAgo;
@@ -52,7 +56,11 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         final d = int.tryParse(clean.substring(0, 2));
         final m = int.tryParse(clean.substring(2, 4));
         final y = int.tryParse(clean.substring(4, 8));
-        if (d != null && m != null && y != null && y >= now.year - 40 && y <= now.year - 18) {
+        if (d != null &&
+            m != null &&
+            y != null &&
+            y >= now.year - 40 &&
+            y <= now.year - 18) {
           try {
             initial = DateTime(y, m, d);
           } catch (_) {}
@@ -62,7 +70,10 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo) ? initial : eighteenYearsAgo,
+      initialDate:
+          initial.isBefore(eighteenYearsAgo) && initial.isAfter(fortyYearsAgo)
+          ? initial
+          : eighteenYearsAgo,
       firstDate: fortyYearsAgo,
       lastDate: eighteenYearsAgo,
       initialEntryMode: DatePickerEntryMode.calendarOnly,
@@ -76,9 +87,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
               onSurface: Colors.black,
             ),
             textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.black,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.black),
             ),
           ),
           child: child!,
@@ -178,9 +187,16 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_email', widget.email);
-        await prefs.setString('user_firstName', _firstNameController.text.trim());
+        await prefs.setString(
+          'user_firstName',
+          _firstNameController.text.trim(),
+        );
         await prefs.setString('user_lastName', _lastNameController.text.trim());
-        await prefs.setString('user_name', '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim());
+        await prefs.setString(
+          'user_name',
+          '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'
+              .trim(),
+        );
         await prefs.setString('user_phone', _phoneController.text.trim());
         await prefs.setString('user_dob', _dobController.text.trim());
         if (!mounted) return;
@@ -245,7 +261,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 32),
-  
+
                     // --- Main Content Card ---
                     Container(
                       width: double.infinity,
@@ -275,7 +291,7 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 24),
-  
+
                             // First Name
                             _buildLabel('First Name'),
                             const SizedBox(height: 8),
@@ -284,20 +300,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               hint: 'John',
                               icon: Icons.person_outline,
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-zA-Z\s]'),
+                                ),
                               ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Required';
                                 }
                                 if (value.length < 3) return 'Min 3 characters';
-                                if (value.length > 30) return 'Max 30 characters';
+                                if (value.length > 30)
+                                  return 'Max 30 characters';
                                 return null;
                               },
                             ),
-  
+
                             const SizedBox(height: 16),
-  
+
                             // Last Name
                             _buildLabel('Last Name'),
                             const SizedBox(height: 8),
@@ -306,20 +325,23 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               hint: 'Doe',
                               icon: Icons.person_outline,
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-zA-Z\s]'),
+                                ),
                               ],
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Required';
                                 }
                                 if (value.isEmpty) return 'Min 1 character';
-                                if (value.length > 30) return 'Max 30 characters';
+                                if (value.length > 30)
+                                  return 'Max 30 characters';
                                 return null;
                               },
                             ),
-  
+
                             const SizedBox(height: 16),
-  
+
                             // Phone
                             _buildLabel('Phone Number'),
                             const SizedBox(height: 8),
@@ -339,7 +361,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                 if (value.length != 10) {
                                   return 'Must be 10 digits';
                                 }
-                                if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(value)) {
+                                if (!RegExp(
+                                  r'^[6-9][0-9]{9}$',
+                                ).hasMatch(value)) {
                                   return 'Invalid Indian mobile number';
                                 }
                                 if (value.split('').toSet().length < 3) {
@@ -348,9 +372,9 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                                 return null;
                               },
                             ),
-  
+
                             const SizedBox(height: 16),
-  
+
                             // DOB
                             _buildLabel('Date of Birth'),
                             const SizedBox(height: 8),
@@ -359,21 +383,25 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
                               readOnly: true,
                               onTap: () => _selectDate(context),
                               style: GoogleFonts.inter(fontSize: 16),
-                              decoration: _inputDecoration(
-                                'DD/MM/YYYY',
-                                Icons.calendar_today_outlined,
-                              ).copyWith(
-                                suffixIcon: IconButton(
-                                  icon: const Icon(Icons.calendar_month_rounded, color: Colors.black),
-                                  onPressed: () => _selectDate(context),
-                                  tooltip: 'Pick date from calendar',
-                                ),
-                              ),
+                              decoration:
+                                  _inputDecoration(
+                                    'DD/MM/YYYY',
+                                    Icons.calendar_today_outlined,
+                                  ).copyWith(
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(
+                                        Icons.calendar_month_rounded,
+                                        color: Colors.black,
+                                      ),
+                                      onPressed: () => _selectDate(context),
+                                      tooltip: 'Pick date from calendar',
+                                    ),
+                                  ),
                               validator: _validateDob,
                             ),
-  
+
                             const SizedBox(height: 32),
-  
+
                             SizedBox(
                               height: 56,
                               child: ElevatedButton(
@@ -448,19 +476,24 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
         keyboardType: inputType,
         maxLength: inputType == TextInputType.phone ? 10 : null,
         buildCounter: inputType == TextInputType.phone
-            ? (context, {required currentLength, required isFocused, maxLength}) => null
+            ? (
+                context, {
+                required currentLength,
+                required isFocused,
+                maxLength,
+              }) => null
             : null,
-        inputFormatters: inputFormatters ??
+        inputFormatters:
+            inputFormatters ??
             (inputType == TextInputType.phone
                 ? [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(10),
                   ]
-                : inputType == TextInputType.emailAddress || hint.toLowerCase().contains('email')
-                    ? [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
-                      ]
-                    : null),
+                : inputType == TextInputType.emailAddress ||
+                      hint.toLowerCase().contains('email')
+                ? [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]'))]
+                : null),
         style: GoogleFonts.inter(fontSize: 16),
         decoration: InputDecoration(
           hintText: inputType == TextInputType.phone ? 'XXXXXXXXXX' : hint,
@@ -472,8 +505,12 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
           ),
           prefixIcon: Icon(icon, color: Colors.grey),
           prefixText: inputType == TextInputType.phone ? '+91 ' : null,
-          prefixStyle: inputType == TextInputType.phone 
-              ? GoogleFonts.inter(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w600)
+          prefixStyle: inputType == TextInputType.phone
+              ? GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                )
               : null,
         ),
         validator:

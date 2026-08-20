@@ -5,65 +5,86 @@ import 'package:http/http.dart' as http;
 class WikipediaService {
   /// Fetches a list of valid image URLs from a Wikipedia page matching the query.
   /// Typically passes a university name and optionally a city name for fallbacks.
-  static Future<List<String>> fetchImages(String universityName, {String? cityName}) async {
+  static Future<List<String>> fetchImages(
+    String universityName, {
+    String? cityName,
+  }) async {
     final cleanUniQuery = universityName.trim();
     if (cleanUniQuery.isEmpty) return [];
-    
+
     // Pass 1: Try Exact Title Match for University
     debugPrint('Wiki FETCH Pass 1: $cleanUniQuery');
-    var results = await _fetchFromWikiApi('action=query&redirects=1&generator=images&titles=${Uri.encodeComponent(cleanUniQuery)}&gimlimit=50&prop=imageinfo&iiprop=url&format=json');
-    
+    var results = await _fetchFromWikiApi(
+      'action=query&redirects=1&generator=images&titles=${Uri.encodeComponent(cleanUniQuery)}&gimlimit=50&prop=imageinfo&iiprop=url&format=json',
+    );
+
     // Pass 2: Search for "[University] campus"
     if (results.isEmpty) {
       debugPrint('Wiki FETCH Pass 2: $cleanUniQuery campus');
-      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery campus")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
-      
+      results = await _fetchFromWikiApi(
+        'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery campus")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50',
+      );
+
       // Pass 3: Search for "[University] building"
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 3: $cleanUniQuery building');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery building")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+        results = await _fetchFromWikiApi(
+          'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanUniQuery building")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50',
+        );
       }
     }
 
     // City-Level Fallbacks (If university specific photos are missing)
     if (results.isEmpty && cityName != null && cityName.isNotEmpty) {
       final cleanCity = cityName.trim();
-      
+
       // Pass 4: City landmarks
       debugPrint('Wiki FETCH Pass 4: $cleanCity landmarks');
-      results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity landmarks")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
-      
+      results = await _fetchFromWikiApi(
+        'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity landmarks")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50',
+      );
+
       // Pass 5: City bridges
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 5: $cleanCity bridges');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity bridge")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
+        results = await _fetchFromWikiApi(
+          'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity bridge")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50',
+        );
       }
-      
+
       // Pass 6: General City buildings
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 6: $cleanCity buildings');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity buildings")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+        results = await _fetchFromWikiApi(
+          'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity buildings")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50',
+        );
       }
-  
+
       // Pass 7: City skyline
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 7: $cleanCity skyline');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity skyline")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50');
+        results = await _fetchFromWikiApi(
+          'action=query&generator=search&gsrsearch=${Uri.encodeComponent("$cleanCity skyline")}&prop=imageinfo&iiprop=url&format=json&gsrlimit=3&gimlimit=50',
+        );
       }
 
       // Pass 8: Just the City Name (Last resort)
       if (results.isEmpty) {
         debugPrint('Wiki FETCH Pass 8: $cleanCity');
-        results = await _fetchFromWikiApi('action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity)}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50');
+        results = await _fetchFromWikiApi(
+          'action=query&generator=search&gsrsearch=${Uri.encodeComponent(cleanCity)}&prop=imageinfo&iiprop=url&format=json&gsrlimit=5&gimlimit=50',
+        );
       }
     }
-    
+
     if (results.isNotEmpty) {
-      debugPrint('Wiki FETCH SUCCESS for $cleanUniQuery: ${results.length} images');
+      debugPrint(
+        'Wiki FETCH SUCCESS for $cleanUniQuery: ${results.length} images',
+      );
     } else {
       debugPrint('Wiki FETCH FAILED for $cleanUniQuery');
     }
-    
+
     return results;
   }
 
@@ -71,12 +92,15 @@ class WikipediaService {
     try {
       final url = 'https://en.wikipedia.org/w/api.php?$queryParams';
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'EduloanApp/1.2 (https://vidhyaloan.com; research@vidhyaloan.com) University-Image-Bot/1.2',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: {
+              'User-Agent':
+                  'EduloanApp/1.2 (https://vidhyaloan.com; research@vidhyaloan.com) University-Image-Bot/1.2',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -104,9 +128,8 @@ class WikipediaService {
                   !lowerUrl.contains('signature') &&
                   !lowerUrl.contains('graph') &&
                   !lowerUrl.contains('chart')) {
-                
                 int score = 0;
-                
+
                 // Primary Building/Landmark Keywords (High Weight)
                 if (lowerUrl.contains('campus')) score += 70;
                 if (lowerUrl.contains('building')) score += 60;
@@ -126,7 +149,7 @@ class WikipediaService {
                 if (lowerUrl.contains('theatre')) score += 20;
                 if (lowerUrl.contains('monument')) score += 20;
                 if (lowerUrl.contains('statue')) score += 20;
-                
+
                 // Educational Keywords
                 if (lowerUrl.contains('university')) score += 10;
                 if (lowerUrl.contains('college')) score += 10;
@@ -150,17 +173,16 @@ class WikipediaService {
                 if (lowerUrl.contains('lecture')) score -= 100;
 
                 if (score > 0) {
-                  scoredUrls.add({
-                    'url': imgUrl,
-                    'score': score,
-                  });
+                  scoredUrls.add({'url': imgUrl, 'score': score});
                 }
               }
             }
           }
 
           if (scoredUrls.isNotEmpty) {
-            scoredUrls.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
+            scoredUrls.sort(
+              (a, b) => (b['score'] as int).compareTo(a['score'] as int),
+            );
             return scoredUrls.map((e) => e['url'] as String).toList();
           }
         }

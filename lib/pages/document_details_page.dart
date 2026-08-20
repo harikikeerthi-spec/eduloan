@@ -41,7 +41,9 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? 'anonymous';
-      _coApplicantRelation = prefs.getString('co_applicant_relation_$userId') ?? prefs.getString('co_applicant_relation');
+      _coApplicantRelation =
+          prefs.getString('co_applicant_relation_$userId') ??
+          prefs.getString('co_applicant_relation');
 
       // Load local OCR cached numbers strictly for this specific active userId
       final keys = prefs.getKeys();
@@ -61,12 +63,31 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
 
       // Read fallback profile document numbers
       final profileKeys = [
-        'pan_number', 'panNumber', 'user_pan', 'student_pan',
-        'aadhar_number', 'aadhaar_number', 'aadharNumber', 'user_aadhar', 'student_aadhar',
-        'passport_number', 'passportNumber', 'user_passport', 'student_passport',
-        'father_pan', 'father_pan_number', 'father_aadhar', 'father_aadhar_number',
-        'mother_pan', 'mother_pan_number', 'mother_aadhar', 'mother_aadhar_number',
-        'coapp_pan', 'coapp_pan_number', 'coapp_aadhar', 'coapp_aadhar_number',
+        'pan_number',
+        'panNumber',
+        'user_pan',
+        'student_pan',
+        'aadhar_number',
+        'aadhaar_number',
+        'aadharNumber',
+        'user_aadhar',
+        'student_aadhar',
+        'passport_number',
+        'passportNumber',
+        'user_passport',
+        'student_passport',
+        'father_pan',
+        'father_pan_number',
+        'father_aadhar',
+        'father_aadhar_number',
+        'mother_pan',
+        'mother_pan_number',
+        'mother_aadhar',
+        'mother_aadhar_number',
+        'coapp_pan',
+        'coapp_pan_number',
+        'coapp_aadhar',
+        'coapp_aadhar_number',
       ];
       for (var k in profileKeys) {
         final v = prefs.getString(k);
@@ -118,7 +139,9 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
 
     try {
       return _userDocs.firstWhere(
-        (doc) => doc.docType.trim().toLowerCase().replaceAll('-', '_') == targetClean,
+        (doc) =>
+            doc.docType.trim().toLowerCase().replaceAll('-', '_') ==
+            targetClean,
       );
     } catch (_) {}
 
@@ -126,27 +149,64 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
       return _userDocs.firstWhere((doc) {
         final dt = doc.docType.trim().toLowerCase().replaceAll('-', '_');
         if (targetClean.contains('pan')) {
-          if (targetClean.startsWith('father') && dt.contains('father') && dt.contains('pan')) return true;
-          if (targetClean.startsWith('mother') && dt.contains('mother') && dt.contains('pan')) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && dt.contains('pan')) return true;
-          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
+          if (targetClean.startsWith('father') &&
+              dt.contains('father') &&
+              dt.contains('pan'))
+            return true;
+          if (targetClean.startsWith('mother') &&
+              dt.contains('mother') &&
+              dt.contains('pan'))
+            return true;
+          if (targetClean.startsWith('coapp') &&
+              (dt.contains('coapp') || dt.contains('co_applicant')) &&
+              dt.contains('pan'))
+            return true;
+          if (targetClean.startsWith('student') &&
+              dt.contains('pan') &&
+              !dt.contains('father') &&
+              !dt.contains('mother') &&
+              !dt.contains('coapp'))
+            return true;
           if (dt == 'pan' || dt == 'pan_card') return true;
         }
         if (targetClean.contains('aadhar') || targetClean.contains('aadhaar')) {
-          if (targetClean.startsWith('father') && dt.contains('father') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('mother') && dt.contains('mother') && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp')) return true;
-          if (dt == 'aadhar' || dt == 'aadhaar' || dt == 'aadhar_card' || dt == 'aadhaar_card') return true;
+          if (targetClean.startsWith('father') &&
+              dt.contains('father') &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if (targetClean.startsWith('mother') &&
+              dt.contains('mother') &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if (targetClean.startsWith('coapp') &&
+              (dt.contains('coapp') || dt.contains('co_applicant')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if (targetClean.startsWith('student') &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')) &&
+              !dt.contains('father') &&
+              !dt.contains('mother') &&
+              !dt.contains('coapp'))
+            return true;
+          if (dt == 'aadhar' ||
+              dt == 'aadhaar' ||
+              dt == 'aadhar_card' ||
+              dt == 'aadhaar_card')
+            return true;
         }
         if (targetClean.contains('passport')) {
-          if (targetClean.contains('front') && (dt.contains('front') || dt == 'passport' || dt == 'student_passport')) return true;
+          if (targetClean.contains('front') &&
+              (dt.contains('front') ||
+                  dt == 'passport' ||
+                  dt == 'student_passport'))
+            return true;
           if (targetClean.contains('back') && dt.contains('back')) return true;
           if (dt == 'passport' || dt == 'student_passport') return true;
         }
         if (targetClean.contains('10th') && dt.contains('10th')) return true;
         if (targetClean.contains('12th') && dt.contains('12th')) return true;
-        if (targetClean.contains('degree') && dt.contains('degree')) return true;
+        if (targetClean.contains('degree') && dt.contains('degree'))
+          return true;
         return false;
       });
     } catch (_) {}
@@ -161,10 +221,13 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     }
 
     final doc = _findDocInDetails(type);
-    if (doc != null && doc.extractedNumber != null && doc.extractedNumber!.trim().isNotEmpty) {
+    if (doc != null &&
+        doc.extractedNumber != null &&
+        doc.extractedNumber!.trim().isNotEmpty) {
       return doc.extractedNumber!.trim();
     }
-    if (_localOcrNumbers.containsKey(type) && _localOcrNumbers[type]!.trim().isNotEmpty) {
+    if (_localOcrNumbers.containsKey(type) &&
+        _localOcrNumbers[type]!.trim().isNotEmpty) {
       return _localOcrNumbers[type]!.trim();
     }
 
@@ -172,17 +235,28 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     for (var entry in _localOcrNumbers.entries) {
       final k = entry.key.toLowerCase().replaceAll('-', '_');
       if (targetClean.contains('pan') && k.contains('pan')) return entry.value;
-      if ((targetClean.contains('aadhar') || targetClean.contains('aadhaar')) && (k.contains('aadhar') || k.contains('aadhaar'))) return entry.value;
-      if (targetClean.contains('passport') && k.contains('passport')) return entry.value;
+      if ((targetClean.contains('aadhar') || targetClean.contains('aadhaar')) &&
+          (k.contains('aadhar') || k.contains('aadhaar')))
+        return entry.value;
+      if (targetClean.contains('passport') && k.contains('passport'))
+        return entry.value;
     }
 
     if (doc != null && doc.uploaded) {
       final typeLower = type.toLowerCase();
-      if (typeLower.contains('student_pan') || (typeLower.contains('pan') && !typeLower.contains('father') && !typeLower.contains('mother') && !typeLower.contains('coapp'))) {
+      if (typeLower.contains('student_pan') ||
+          (typeLower.contains('pan') &&
+              !typeLower.contains('father') &&
+              !typeLower.contains('mother') &&
+              !typeLower.contains('coapp'))) {
         final val = _userProfileNumbers['pan'];
         if (val != null && val.isNotEmpty) return val;
       }
-      if (typeLower.contains('student_aadhar') || (typeLower.contains('aadhar') && !typeLower.contains('father') && !typeLower.contains('mother') && !typeLower.contains('coapp'))) {
+      if (typeLower.contains('student_aadhar') ||
+          (typeLower.contains('aadhar') &&
+              !typeLower.contains('father') &&
+              !typeLower.contains('mother') &&
+              !typeLower.contains('coapp'))) {
         final val = _userProfileNumbers['aadhar'];
         if (val != null && val.isNotEmpty) return val;
       }
@@ -238,7 +312,9 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
               Expanded(
                 child: _isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF311B92)),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF311B92),
+                        ),
                       )
                     : TabBarView(
                         controller: _tabController,
@@ -274,7 +350,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                   ),
                 ],
               ),
-              child: const Icon(Icons.arrow_back, color: Color(0xFF311B92), size: 20),
+              child: const Icon(
+                Icons.arrow_back,
+                color: Color(0xFF311B92),
+                size: 20,
+              ),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -314,7 +394,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                   ),
                 ],
               ),
-              child: const Icon(Icons.refresh_rounded, color: Color(0xFF311B92), size: 20),
+              child: const Icon(
+                Icons.refresh_rounded,
+                color: Color(0xFF311B92),
+                size: 20,
+              ),
             ),
             onPressed: _loadData,
           ),
@@ -339,8 +423,14 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
         unselectedLabelColor: const Color(0xFF64748B),
         indicatorColor: const Color(0xFF311B92),
         indicatorWeight: 3,
-        labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
-        unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
+        labelStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
         tabs: const [
           Tab(text: 'Student'),
           Tab(text: 'Co-Applicant'),
@@ -451,7 +541,10 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
           child: Text(
             'Parents documents are listed under Co-Applicant as per your application.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B)),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: const Color(0xFF64748B),
+            ),
           ),
         ),
       );
@@ -532,15 +625,24 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                         if (isUploaded) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.check_circle_rounded, size: 10, color: Color(0xFF10B981)),
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  size: 10,
+                                  color: Color(0xFF10B981),
+                                ),
                                 const SizedBox(width: 3),
                                 Text(
                                   'AI Verified',
@@ -561,8 +663,12 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                       displayVal,
                       style: GoogleFonts.inter(
                         fontSize: 15,
-                        color: isUploaded || hasNumber ? const Color(0xFF1E1B4B) : Colors.grey,
-                        fontWeight: isUploaded || hasNumber ? FontWeight.w700 : FontWeight.w400,
+                        color: isUploaded || hasNumber
+                            ? const Color(0xFF1E1B4B)
+                            : Colors.grey,
+                        fontWeight: isUploaded || hasNumber
+                            ? FontWeight.w700
+                            : FontWeight.w400,
                         letterSpacing: hasNumber ? 0.5 : 0.0,
                       ),
                     ),
@@ -578,7 +684,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                     color: const Color(0xFF311B92).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.mode_edit_outline_rounded, size: 18, color: Color(0xFF311B92)),
+                  child: const Icon(
+                    Icons.mode_edit_outline_rounded,
+                    size: 18,
+                    color: Color(0xFF311B92),
+                  ),
                 ),
                 onPressed: () {
                   _showEditDocNumberDialog(
@@ -599,7 +709,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                       color: const Color(0xFF311B92).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF311B92)),
+                    child: const Icon(
+                      Icons.copy_rounded,
+                      size: 18,
+                      color: Color(0xFF311B92),
+                    ),
                   ),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: displayVal));
@@ -629,10 +743,13 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     required Color color,
     required IconData icon,
   }) {
-    final bool isRealValue = currentValue != null &&
+    final bool isRealValue =
+        currentValue != null &&
         currentValue != 'Not Uploaded Yet' &&
         currentValue != 'Uploaded (AI Verified)';
-    final textController = TextEditingController(text: isRealValue ? currentValue : '');
+    final textController = TextEditingController(
+      text: isRealValue ? currentValue : '',
+    );
 
     final typeLower = type.toLowerCase();
     String hint = 'Enter document identifier';
@@ -650,7 +767,8 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     } else if (typeLower.contains('passport')) {
       hint = 'e.g. A1234567';
       maxLength = 9;
-    } else if (typeLower.contains('marksheet') || typeLower.contains('degree')) {
+    } else if (typeLower.contains('marksheet') ||
+        typeLower.contains('degree')) {
       hint = 'e.g. Roll No / Reg No / Certificate ID';
       maxLength = 25;
       textCapitalization = TextCapitalization.characters;
@@ -739,14 +857,21 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                 decoration: InputDecoration(
                   labelText: label,
                   hintText: hint,
-                  hintStyle: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 13),
+                  hintStyle: GoogleFonts.inter(
+                    color: Colors.grey.shade400,
+                    fontSize: 13,
+                  ),
                   labelStyle: GoogleFonts.inter(color: const Color(0xFF311B92)),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
                   counterText: '',
                   prefixIcon: Icon(Icons.edit_note_rounded, color: color),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.clear_rounded, size: 18, color: Colors.grey),
+                    icon: const Icon(
+                      Icons.clear_rounded,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
                     onPressed: () => textController.clear(),
                   ),
                   border: OutlineInputBorder(
@@ -755,7 +880,10 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFF311B92), width: 2),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF311B92),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -817,7 +945,11 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
     );
   }
 
-  Future<void> _saveCustomDocNumber(String type, String label, String value) async {
+  Future<void> _saveCustomDocNumber(
+    String type,
+    String label,
+    String value,
+  ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? 'anonymous';
@@ -844,7 +976,8 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
           await prefs.setString('pan_number', value);
           await prefs.setString('student_pan', value);
         }
-      } else if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
+      } else if (typeLower.contains('aadhar') ||
+          typeLower.contains('aadhaar')) {
         if (typeLower.contains('father')) {
           await prefs.setString('father_aadhar', value);
         } else if (typeLower.contains('mother')) {
@@ -869,14 +1002,21 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     value.isNotEmpty
                         ? '$label updated successfully!'
                         : '$label cleared',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -884,7 +1024,9 @@ class _DocumentDetailsPageState extends State<DocumentDetailsPage>
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
       }

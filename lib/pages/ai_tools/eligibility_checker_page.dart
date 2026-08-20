@@ -419,7 +419,13 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
     IconData icon,
     TextEditingController controller,
   ) {
-    final isAmountField = label.contains('Income') || label.contains('Loan') || label.contains('Amount') || label.contains('EMI') || label.contains('Fee') || label.contains('Salary');
+    final isAmountField =
+        label.contains('Income') ||
+        label.contains('Loan') ||
+        label.contains('Amount') ||
+        label.contains('EMI') ||
+        label.contains('Fee') ||
+        label.contains('Salary');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,10 +475,7 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
           ),
         ),
         if (isAmountField)
-          RupeeAmountHelperCard(
-            amountText: controller.text,
-            label: label,
-          ),
+          RupeeAmountHelperCard(amountText: controller.text, label: label),
       ],
     );
   }
@@ -553,7 +556,9 @@ class _EligibilityCheckerPageState extends State<EligibilityCheckerPage> {
                   value: value,
                   onChanged: onChanged,
                   activeThumbColor: const Color(0xFF6200EA),
-                  activeTrackColor: const Color(0xFF6200EA).withValues(alpha: 0.5),
+                  activeTrackColor: const Color(
+                    0xFF6200EA,
+                  ).withValues(alpha: 0.5),
                 ),
               ),
             ],

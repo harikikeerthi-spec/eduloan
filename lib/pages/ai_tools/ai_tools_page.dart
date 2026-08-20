@@ -20,7 +20,10 @@ class AiToolsPage extends StatelessWidget {
         elevation: 0,
         leading: canPop
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF1F2937)),
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Color(0xFF1F2937),
+                ),
                 onPressed: () => Navigator.pop(context),
               )
             : null,

@@ -289,11 +289,7 @@ class _LoanEligibilityCheckerPageState
               ],
             ),
             const SizedBox(height: 16),
-            _buildTextField(
-              "Annual Income",
-              _incomeController,
-              isNumber: true,
-            ),
+            _buildTextField("Annual Income", _incomeController, isNumber: true),
             const SizedBox(height: 16),
             _buildTextField(
               "Required Loan",
@@ -371,7 +367,14 @@ class _LoanEligibilityCheckerPageState
     bool isNumber = false,
     String? Function(String?)? validator,
   }) {
-    final isAmountField = isNumber && (label.contains('Income') || label.contains('Loan') || label.contains('Amount') || label.contains('EMI') || label.contains('Fee') || label.contains('Salary'));
+    final isAmountField =
+        isNumber &&
+        (label.contains('Income') ||
+            label.contains('Loan') ||
+            label.contains('Amount') ||
+            label.contains('EMI') ||
+            label.contains('Fee') ||
+            label.contains('Salary'));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,10 +410,7 @@ class _LoanEligibilityCheckerPageState
           ),
         ),
         if (isAmountField)
-          RupeeAmountHelperCard(
-            amountText: controller.text,
-            label: label,
-          ),
+          RupeeAmountHelperCard(amountText: controller.text, label: label),
       ],
     );
   }

@@ -36,8 +36,7 @@ class TokenRefreshService {
     try {
       // IMPORTANT:
       // Refresh token must come from secure storage.
-      final refreshToken =
-          await SecureStorageService.getRefreshToken();
+      final refreshToken = await SecureStorageService.getRefreshToken();
 
       if (refreshToken == null || refreshToken.isEmpty) {
         debugPrint('[TokenRefresh] No refresh token available');
@@ -51,19 +50,13 @@ class TokenRefreshService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/auth/refresh'),
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'refresh_token': refreshToken,
-            }),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refresh_token': refreshToken}),
           )
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
-        debugPrint(
-          '[TokenRefresh] Refresh failed: ${response.statusCode}',
-        );
+        debugPrint('[TokenRefresh] Refresh failed: ${response.statusCode}');
 
         if (response.statusCode == 401) {
           await _clearTokens();
@@ -81,8 +74,7 @@ class TokenRefreshService {
 
       final data = jsonDecode(body);
 
-      if (data is! Map<String, dynamic> ||
-          data['success'] != true) {
+      if (data is! Map<String, dynamic> || data['success'] != true) {
         debugPrint('[TokenRefresh] Invalid refresh response');
         return false;
       }
@@ -90,24 +82,18 @@ class TokenRefreshService {
       final newAccessToken = data['access_token'];
       final newRefreshToken = data['refresh_token'];
 
-      if (newAccessToken == null ||
-          newAccessToken.toString().isEmpty) {
+      if (newAccessToken == null || newAccessToken.toString().isEmpty) {
         debugPrint('[TokenRefresh] No new access token received');
         return false;
       }
 
       // Save the new access token securely.
-      await SecureStorageService.saveToken(
-        newAccessToken.toString(),
-      );
+      await SecureStorageService.saveToken(newAccessToken.toString());
 
       // Your backend rotates refresh tokens.
       // Therefore save the new refresh token too.
-      if (newRefreshToken != null &&
-          newRefreshToken.toString().isNotEmpty) {
-        await SecureStorageService.saveRefreshToken(
-          newRefreshToken.toString(),
-        );
+      if (newRefreshToken != null && newRefreshToken.toString().isNotEmpty) {
+        await SecureStorageService.saveRefreshToken(newRefreshToken.toString());
       }
 
       debugPrint('[TokenRefresh] Token refreshed successfully');

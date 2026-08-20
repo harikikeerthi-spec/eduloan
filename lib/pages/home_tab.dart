@@ -159,12 +159,14 @@ class HomeTabState extends State<HomeTab> {
     _loadSavedRecommendations(); // Load saved in parallel
     try {
       final prefs = await SharedPreferences.getInstance();
-      final bool hasSearched = prefs.getBool('has_searched_university_shortlist') ?? false;
+      final bool hasSearched =
+          prefs.getBool('has_searched_university_shortlist') ?? false;
       final String? cachedRecs = prefs.getString('latest_ai_recommendations');
       final String? userId = prefs.getString('userId');
 
       // Top recommendations should show on dashboard ONLY if user has searched shortlisting page
-      final bool userHasSearched = hasSearched || (cachedRecs != null && cachedRecs.isNotEmpty);
+      final bool userHasSearched =
+          hasSearched || (cachedRecs != null && cachedRecs.isNotEmpty);
 
       if (mounted) {
         setState(() {
@@ -284,7 +286,9 @@ class HomeTabState extends State<HomeTab> {
                 );
                 if (avatarData.isNotEmpty && avatarData['icon'] != null) {
                   return Container(
-                    color: (avatarData['color'] as Color).withValues(alpha: 0.1),
+                    color: (avatarData['color'] as Color).withValues(
+                      alpha: 0.1,
+                    ),
                     child: Icon(
                       avatarData['icon'] as IconData,
                       size: 24,
@@ -337,14 +341,19 @@ class HomeTabState extends State<HomeTab> {
                             children: [
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/direct-chats').then((_) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/direct-chats',
+                                  ).then((_) {
                                     _loadDirectChatUnreadCount();
                                   });
                                 },
                                 icon: _directChatUnreadCount > 0
                                     ? Badge(
                                         label: Text('$_directChatUnreadCount'),
-                                        backgroundColor: const Color(0xFF311B92),
+                                        backgroundColor: const Color(
+                                          0xFF311B92,
+                                        ),
                                         child: const Icon(
                                           Icons.chat_bubble_outline_rounded,
                                           color: Colors.black54,
@@ -362,7 +371,10 @@ class HomeTabState extends State<HomeTab> {
                               const SizedBox(width: 14),
                               IconButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, '/notifications').then((_) {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/notifications',
+                                  ).then((_) {
                                     _loadNotificationCount();
                                   });
                                 },
@@ -410,7 +422,10 @@ class HomeTabState extends State<HomeTab> {
 
                       // Quick Stats Card
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
@@ -449,8 +464,6 @@ class HomeTabState extends State<HomeTab> {
                   ),
                 ),
 
-
-
                 // Active Loans Section
                 if (_activeLoans.isNotEmpty)
                   Padding(
@@ -478,7 +491,10 @@ class HomeTabState extends State<HomeTab> {
                 const SizedBox(height: 20),
 
                 // ── AI Recommendations (Only shown after user searches on University Shortlisting page) ──
-                if (_hasSearchedUniversityShortlist && !_hasAppliedForLoan && (_aiRecommendations.isNotEmpty || _savedRecommendations.isNotEmpty)) ...[
+                if (_hasSearchedUniversityShortlist &&
+                    !_hasAppliedForLoan &&
+                    (_aiRecommendations.isNotEmpty ||
+                        _savedRecommendations.isNotEmpty)) ...[
                   _buildAiRecommendations(),
                   const SizedBox(height: 28),
                 ],
@@ -705,7 +721,12 @@ class HomeTabState extends State<HomeTab> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Image.asset(imagePath, width: 60, height: 60, fit: BoxFit.contain),
+              child: Image.asset(
+                imagePath,
+                width: 60,
+                height: 60,
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -799,7 +820,8 @@ class HomeTabState extends State<HomeTab> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (loan.targetCountry != null && loan.targetCountry!.isNotEmpty) ...[
+                    if (loan.targetCountry != null &&
+                        loan.targetCountry!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         loan.targetCountry!,
@@ -981,7 +1003,9 @@ class HomeTabState extends State<HomeTab> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
@@ -1107,8 +1131,7 @@ class HomeTabState extends State<HomeTab> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: const Color(0xFF311B92).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
@@ -1140,8 +1163,9 @@ class HomeTabState extends State<HomeTab> {
               children: [
                 CircleAvatar(
                   radius: 10,
-                  backgroundColor:
-                      const Color(0xFF311B92).withValues(alpha: 0.1),
+                  backgroundColor: const Color(
+                    0xFF311B92,
+                  ).withValues(alpha: 0.1),
                   child: const Icon(
                     Icons.person,
                     size: 12,
@@ -1163,10 +1187,7 @@ class HomeTabState extends State<HomeTab> {
                 ),
                 Text(
                   '${blog.readTime}m',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.black38,
-                  ),
+                  style: const TextStyle(fontSize: 11, color: Colors.black38),
                 ),
               ],
             ),
@@ -1273,7 +1294,10 @@ class HomeTabState extends State<HomeTab> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Column(
@@ -1298,8 +1322,6 @@ class HomeTabState extends State<HomeTab> {
       ),
     );
   }
-
-
 
   Widget _buildAiRecommendationCard(
     UniversityRecommendation uni,
@@ -1473,7 +1495,10 @@ class HomeTabState extends State<HomeTab> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
+                    Divider(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      height: 1,
+                    ),
                     const SizedBox(height: 16),
 
                     // Admit Chance Row
@@ -1576,15 +1601,18 @@ class HomeTabState extends State<HomeTab> {
                         features: [
                           {
                             'title': 'No SSN Required Initially',
-                            'desc': 'Apply before landing in the US with zero prior credit history required.',
+                            'desc':
+                                'Apply before landing in the US with zero prior credit history required.',
                           },
                           {
                             'title': 'Build Credit Score Early',
-                            'desc': 'Start building your US FICO score from your first campus semester.',
+                            'desc':
+                                'Start building your US FICO score from your first campus semester.',
                           },
                           {
                             'title': '0% Foreign Transaction Fees',
-                            'desc': 'Enjoy student cashback on textbooks, groceries, and dining.',
+                            'desc':
+                                'Enjoy student cashback on textbooks, groceries, and dining.',
                           },
                         ],
                       ),
@@ -1620,15 +1648,18 @@ class HomeTabState extends State<HomeTab> {
                         features: [
                           {
                             'title': 'Embassy Approved Sperrkonto',
-                            'desc': '100% recognized by German Foreign Office & Ausländerbehörde.',
+                            'desc':
+                                '100% recognized by German Foreign Office & Ausländerbehörde.',
                           },
                           {
                             'title': '24-Hour Digital Certificate',
-                            'desc': 'Receive your official blocked account confirmation certificate fast.',
+                            'desc':
+                                'Receive your official blocked account confirmation certificate fast.',
                           },
                           {
                             'title': 'Health Insurance Combo',
-                            'desc': 'Free TK / DAK German public health insurance package integration.',
+                            'desc':
+                                'Free TK / DAK German public health insurance package integration.',
                           },
                         ],
                       ),
@@ -1664,15 +1695,18 @@ class HomeTabState extends State<HomeTab> {
                         features: [
                           {
                             'title': 'Zero Forex Markup Rates',
-                            'desc': 'Lock in live interbank exchange rates with zero hidden markups.',
+                            'desc':
+                                'Lock in live interbank exchange rates with zero hidden markups.',
                           },
                           {
                             'title': 'Multi-Currency Smart Chip',
-                            'desc': 'Hold USD, GBP, EUR, CAD, AUD on a single contactless card.',
+                            'desc':
+                                'Hold USD, GBP, EUR, CAD, AUD on a single contactless card.',
                           },
                           {
                             'title': 'Emergency Cash Replacement',
-                            'desc': 'Free global replacement & 24/7 emergency card block assistance.',
+                            'desc':
+                                'Free global replacement & 24/7 emergency card block assistance.',
                           },
                         ],
                       ),
@@ -1708,15 +1742,18 @@ class HomeTabState extends State<HomeTab> {
                         features: [
                           {
                             'title': 'Pre-Arrival Account Opening',
-                            'desc': 'Obtain your UK Sort Code & Account Number before flying out.',
+                            'desc':
+                                'Obtain your UK Sort Code & Account Number before flying out.',
                           },
                           {
                             'title': 'Contactless Debit Card',
-                            'desc': 'Ready to tap on arrival for TfL London transit and campus shops.',
+                            'desc':
+                                'Ready to tap on arrival for TfL London transit and campus shops.',
                           },
                           {
                             'title': 'Zero Monthly Maintenance Fees',
-                            'desc': 'Enjoy fee-free student banking throughout your UK degree.',
+                            'desc':
+                                'Enjoy fee-free student banking throughout your UK degree.',
                           },
                         ],
                       ),
@@ -1800,7 +1837,6 @@ class HomeTabState extends State<HomeTab> {
       ),
     );
   }
-
 
   Widget _buildDefaultBg(String seed) {
     final List<String> defaultImages = [

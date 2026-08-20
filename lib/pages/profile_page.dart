@@ -91,19 +91,31 @@ class _ProfilePageState extends State<ProfilePage> {
           if (result['success'] == true) {
             final responseData = result['user'] ?? {};
             final nestedData = responseData['data'] ?? {};
-            final user = nestedData['user'] ?? responseData['user'] ?? responseData;
+            final user =
+                nestedData['user'] ?? responseData['user'] ?? responseData;
 
-            final String fname = (user['firstName']?.toString() ?? '').trim().isNotEmpty
+            final String fname =
+                (user['firstName']?.toString() ?? '').trim().isNotEmpty
                 ? user['firstName'].toString().trim()
                 : (prefs.getString('user_firstName') ?? '');
-            final String lname = (user['lastName']?.toString() ?? '').trim().isNotEmpty
+            final String lname =
+                (user['lastName']?.toString() ?? '').trim().isNotEmpty
                 ? user['lastName'].toString().trim()
                 : (prefs.getString('user_lastName') ?? '');
-            final String phone = (user['phoneNumber']?.toString() ?? '').trim().isNotEmpty
+            final String phone =
+                (user['phoneNumber']?.toString() ?? '').trim().isNotEmpty
                 ? user['phoneNumber'].toString().trim()
                 : (prefs.getString('user_phone') ?? '');
-            final String dob = (user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '').trim().isNotEmpty
-                ? (user['dateOfBirth']?.toString() ?? user['dob']?.toString() ?? '').trim()
+            final String dob =
+                (user['dateOfBirth']?.toString() ??
+                        user['dob']?.toString() ??
+                        '')
+                    .trim()
+                    .isNotEmpty
+                ? (user['dateOfBirth']?.toString() ??
+                          user['dob']?.toString() ??
+                          '')
+                      .trim()
                 : (prefs.getString('user_dob') ?? '');
 
             if (fname.isNotEmpty) prefs.setString('user_firstName', fname);
@@ -201,12 +213,18 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
           child: Stack(
             alignment: Alignment.center,
             children: [
               Container(
-                constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+                constraints: const BoxConstraints(
+                  maxWidth: 420,
+                  maxHeight: 520,
+                ),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0F172A),
@@ -231,7 +249,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.account_circle_rounded, color: Color(0xFF7C4DFF), size: 24),
+                            const Icon(
+                              Icons.account_circle_rounded,
+                              color: Color(0xFF7C4DFF),
+                              size: 24,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Profile Photo',
@@ -245,7 +267,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(ctx),
-                          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 24),
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white70,
+                            size: 24,
+                          ),
                         ),
                       ],
                     ),
@@ -255,7 +281,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         decoration: BoxDecoration(
                           color: Colors.black,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
@@ -263,9 +291,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             panEnabled: true,
                             minScale: 0.8,
                             maxScale: 4.0,
-                            child: Center(
-                              child: _buildEnlargedProfilePhoto(),
-                            ),
+                            child: Center(child: _buildEnlargedProfilePhoto()),
                           ),
                         ),
                       ),
@@ -288,7 +314,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        if (_profileImage != null && _profileImage!.isNotEmpty) ...[
+                        if (_profileImage != null &&
+                            _profileImage!.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Expanded(
                             child: ElevatedButton.icon(
@@ -296,12 +323,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Navigator.pop(ctx);
                                 _deleteProfilePhoto();
                               },
-                              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                              icon: const Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                              ),
                               label: const Text('Delete'),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.redAccent,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -345,10 +377,7 @@ class _ProfilePageState extends State<ProfilePage> {
       try {
         final base64Str = _profileImage!.split(',').last;
         final bytes = base64Decode(base64Str);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.contain,
-        );
+        return Image.memory(bytes, fit: BoxFit.contain);
       } catch (e) {
         debugPrint('Error decoding base64 image: $e');
       }
@@ -365,11 +394,7 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            avatarData['icon'],
-            size: 140,
-            color: avatarData['color'],
-          ),
+          Icon(avatarData['icon'], size: 140, color: avatarData['color']),
           const SizedBox(height: 16),
           Text(
             avatarData['label'] ?? 'Avatar',
@@ -423,7 +448,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.visibility_rounded, color: Color(0xFF7C4DFF)),
+                  child: const Icon(
+                    Icons.visibility_rounded,
+                    color: Color(0xFF7C4DFF),
+                  ),
                 ),
                 title: Text(
                   'View Profile Photo',
@@ -434,7 +462,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 subtitle: Text(
                   'View full size photo with zoom',
-                  style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                  style: GoogleFonts.outfit(
+                    color: Colors.white60,
+                    fontSize: 13,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -449,7 +480,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     color: const Color(0xFF00E676).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.photo_camera_rounded, color: Color(0xFF00E676)),
+                  child: const Icon(
+                    Icons.photo_camera_rounded,
+                    color: Color(0xFF00E676),
+                  ),
                 ),
                 title: Text(
                   'Change Profile Photo',
@@ -460,7 +494,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 subtitle: Text(
                   'Upload a new picture or choose avatar',
-                  style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                  style: GoogleFonts.outfit(
+                    color: Colors.white60,
+                    fontSize: 13,
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -476,7 +513,10 @@ class _ProfilePageState extends State<ProfilePage> {
                       color: Colors.redAccent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                    ),
                   ),
                   title: Text(
                     'Delete Profile Photo',
@@ -487,7 +527,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   subtitle: Text(
                     'Remove profile photo and reset to default',
-                    style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+                    style: GoogleFonts.outfit(
+                      color: Colors.white60,
+                      fontSize: 13,
+                    ),
                   ),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -530,12 +573,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 22),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Colors.red,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 10),
             Text(
               'Delete Photo',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
             ),
           ],
         ),
@@ -546,17 +596,28 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.outfit(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
-            child: Text('Delete', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+            child: Text(
+              'Delete',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -626,19 +687,18 @@ class _ProfilePageState extends State<ProfilePage> {
       return Scaffold(
         body: MeshBackground(
           child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF311B92),
-            ),
+            child: CircularProgressIndicator(color: Color(0xFF311B92)),
           ),
         ),
       );
     }
 
-    final isEditEnabled = !(_email == 'Loading...' ||
-        _email == 'Could not load profile' ||
-        _email.contains('Log Out') ||
-        !_email.contains('@') ||
-        _email.isEmpty);
+    final isEditEnabled =
+        !(_email == 'Loading...' ||
+            _email == 'Could not load profile' ||
+            _email.contains('Log Out') ||
+            !_email.contains('@') ||
+            _email.isEmpty);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -679,7 +739,9 @@ class _ProfilePageState extends State<ProfilePage> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                              color: const Color(
+                                0xFF311B92,
+                              ).withValues(alpha: 0.1),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -740,7 +802,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  const Color(0xFF7C4DFF).withValues(alpha: 0.35),
+                                  const Color(
+                                    0xFF7C4DFF,
+                                  ).withValues(alpha: 0.35),
                                   Colors.transparent,
                                 ],
                               ),
@@ -757,7 +821,9 @@ class _ProfilePageState extends State<ProfilePage> {
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
                                 colors: [
-                                  const Color(0xFF00E676).withValues(alpha: 0.2),
+                                  const Color(
+                                    0xFF00E676,
+                                  ).withValues(alpha: 0.2),
                                   Colors.transparent,
                                 ],
                               ),
@@ -766,20 +832,31 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 24,
+                          ),
                           child: Column(
                             children: [
                               // Top ID bar inside card
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.12),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.2),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
                                       ),
                                     ),
                                     child: Row(
@@ -804,12 +881,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF00E676).withValues(alpha: 0.15),
+                                      color: const Color(
+                                        0xFF00E676,
+                                      ).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFF00E676).withValues(alpha: 0.3),
+                                        color: const Color(
+                                          0xFF00E676,
+                                        ).withValues(alpha: 0.3),
                                       ),
                                     ),
                                     child: Row(
@@ -860,7 +944,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF7C4DFF).withValues(alpha: 0.45),
+                                            color: const Color(
+                                              0xFF7C4DFF,
+                                            ).withValues(alpha: 0.45),
                                             blurRadius: 22,
                                             spreadRadius: 2,
                                           ),
@@ -874,14 +960,24 @@ class _ProfilePageState extends State<ProfilePage> {
                                             color: Color(0xFF0F172A),
                                           ),
                                           child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(48),
+                                            borderRadius: BorderRadius.circular(
+                                              48,
+                                            ),
                                             child: Builder(
                                               builder: (context) {
                                                 if (_profileImage != null) {
-                                                  if (_profileImage!.startsWith('data:image/')) {
+                                                  if (_profileImage!.startsWith(
+                                                    'data:image/',
+                                                  )) {
                                                     try {
-                                                      final base64Str = _profileImage!.split(',').last;
-                                                      final bytes = base64Decode(base64Str);
+                                                      final base64Str =
+                                                          _profileImage!
+                                                              .split(',')
+                                                              .last;
+                                                      final bytes =
+                                                          base64Decode(
+                                                            base64Str,
+                                                          );
                                                       return Image.memory(
                                                         bytes,
                                                         width: 96,
@@ -889,19 +985,29 @@ class _ProfilePageState extends State<ProfilePage> {
                                                         fit: BoxFit.cover,
                                                       );
                                                     } catch (e) {
-                                                      debugPrint('Error decoding base64 image: $e');
+                                                      debugPrint(
+                                                        'Error decoding base64 image: $e',
+                                                      );
                                                     }
                                                   }
 
-                                                  final avatarData = AvatarSelectionDialog.avatars.firstWhere(
-                                                    (a) => a['name'] == _profileImage,
-                                                    orElse: () => AvatarSelectionDialog.avatars[0],
-                                                  );
+                                                  final avatarData =
+                                                      AvatarSelectionDialog
+                                                          .avatars
+                                                          .firstWhere(
+                                                            (a) =>
+                                                                a['name'] ==
+                                                                _profileImage,
+                                                            orElse: () =>
+                                                                AvatarSelectionDialog
+                                                                    .avatars[0],
+                                                          );
                                                   return Center(
                                                     child: Icon(
                                                       avatarData['icon'],
                                                       size: 48,
-                                                      color: avatarData['color'],
+                                                      color:
+                                                          avatarData['color'],
                                                     ),
                                                   );
                                                 }
@@ -928,13 +1034,21 @@ class _ProfilePageState extends State<ProfilePage> {
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             gradient: const LinearGradient(
-                                              colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
+                                              colors: [
+                                                Color(0xFF7C4DFF),
+                                                Color(0xFF651FFF),
+                                              ],
                                             ),
                                             shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.35),
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.35,
+                                                ),
                                                 blurRadius: 10,
                                               ),
                                             ],
@@ -958,16 +1072,29 @@ class _ProfilePageState extends State<ProfilePage> {
                                 onTap: _viewProfilePhoto,
                                 borderRadius: BorderRadius.circular(20),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF7C4DFF).withValues(alpha: 0.15),
+                                    color: const Color(
+                                      0xFF7C4DFF,
+                                    ).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF7C4DFF,
+                                      ).withValues(alpha: 0.3),
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.visibility_rounded, size: 14, color: Color(0xFFB39DDB)),
+                                      const Icon(
+                                        Icons.visibility_rounded,
+                                        size: 14,
+                                        color: Color(0xFFB39DDB),
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'View Photo',
@@ -1013,7 +1140,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                     textAlign: TextAlign.center,
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
-                                      color: Colors.white.withValues(alpha: 0.8),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -1024,7 +1153,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
                               // Bottom Info Strip
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.08),
                                   borderRadius: BorderRadius.circular(16),
@@ -1033,7 +1165,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   children: [
                                     Row(
                                       children: [
@@ -1056,23 +1189,28 @@ class _ProfilePageState extends State<ProfilePage> {
                                     Container(
                                       width: 1,
                                       height: 16,
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
                                     ),
                                     GestureDetector(
                                       onTap: isEditEnabled
                                           ? () async {
-                                              final updated = await Navigator.push<bool>(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => UserDetailsPage(
-                                                    email: _email,
-                                                    isEdit: true,
-                                                    currentName: _name,
-                                                    currentPhone: _phone,
-                                                    currentDob: _dob,
-                                                  ),
-                                                ),
-                                              );
+                                              final updated =
+                                                  await Navigator.push<bool>(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          UserDetailsPage(
+                                                            email: _email,
+                                                            isEdit: true,
+                                                            currentName: _name,
+                                                            currentPhone:
+                                                                _phone,
+                                                            currentDob: _dob,
+                                                          ),
+                                                    ),
+                                                  );
                                               if (updated == true) {
                                                 _fetchProfile();
                                               }
@@ -1111,7 +1249,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 24),
 
                 // ─── PERSONAL INFORMATION CARD ──────────────────────────────
-                _buildSectionHeader('PERSONAL DETAILS', Icons.person_pin_rounded),
+                _buildSectionHeader(
+                  'PERSONAL DETAILS',
+                  Icons.person_pin_rounded,
+                ),
                 const SizedBox(height: 10),
 
                 Container(
@@ -1186,7 +1327,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         icon: Icons.document_scanner_rounded,
                         iconColor: const Color(0xFF10B981),
                         title: 'Document Details (AI OCR)',
-                        subtitle: 'View extracted PAN, Aadhar, Passport & Marksheet numbers',
+                        subtitle:
+                            'View extracted PAN, Aadhar, Passport & Marksheet numbers',
                         isEnabled: true,
                         onTap: () {
                           Navigator.push(
@@ -1271,7 +1413,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             SnackBar(
                               content: Text(
                                 'Help & Support coming soon!',
-                                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                               backgroundColor: const Color(0xFF311B92),
                               behavior: SnackBarBehavior.floating,
@@ -1354,7 +1498,11 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           if (showCopy)
             IconButton(
-              icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF311B92)),
+              icon: const Icon(
+                Icons.copy_rounded,
+                size: 18,
+                color: Color(0xFF311B92),
+              ),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: value));
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1418,9 +1566,14 @@ class _ProfilePageState extends State<ProfilePage> {
                         if (badge != null) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF5821E).withValues(alpha: 0.12),
+                              color: const Color(
+                                0xFFF5821E,
+                              ).withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(

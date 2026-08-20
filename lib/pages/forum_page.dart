@@ -41,7 +41,8 @@ class _ForumPageState extends State<ForumPage> {
   }
 
   int _selectedMainTab = 1; // Default to 1 (Smart Group Chat) as requested!
-  int _smartSubTab = 0; // 0 = General Chat, 1 = Q&A, 2 = Polls, 3 = Announcements
+  int _smartSubTab =
+      0; // 0 = General Chat, 1 = Q&A, 2 = Polls, 3 = Announcements
 
   String _selectedCategory = 'General';
   String? _customTitle;
@@ -59,7 +60,8 @@ class _ForumPageState extends State<ForumPage> {
   final List<Map<String, dynamic>> _polls = [
     {
       'id': 'poll_1',
-      'question': 'Which country are you targeting for Fall 2026 / Spring 2027?',
+      'question':
+          'Which country are you targeting for Fall 2026 / Spring 2027?',
       'author': 'VidyaLoan Community',
       'totalVotes': 348,
       'userVotedIndex': 0,
@@ -74,7 +76,8 @@ class _ForumPageState extends State<ForumPage> {
     },
     {
       'id': 'poll_2',
-      'question': 'What is your biggest blocker in the loan application process?',
+      'question':
+          'What is your biggest blocker in the loan application process?',
       'author': 'Finance Advisory',
       'totalVotes': 210,
       'userVotedIndex': -1,
@@ -120,7 +123,8 @@ class _ForumPageState extends State<ForumPage> {
       'tag': 'VISA ALERT',
       'color': const Color(0xFFEF4444),
       'date': '24 July 2026',
-      'content': 'US Embassies across New Delhi, Mumbai, and Hyderabad have opened bulk interview slots for June-August 2026. Book immediately on the official portal!',
+      'content':
+          'US Embassies across New Delhi, Mumbai, and Hyderabad have opened bulk interview slots for June-August 2026. Book immediately on the official portal!',
       'action': 'Check Visa Simulator',
       'route': '/ai/visa-simulator',
     },
@@ -130,7 +134,8 @@ class _ForumPageState extends State<ForumPage> {
       'tag': 'OFFICIAL NOTICE',
       'color': const Color(0xFF311B92),
       'date': '22 July 2026',
-      'content': 'Partner banks Credila & Avanse have reduced ROI starting at 9.75% for top 100 global STEM programs. Existing applications automatically upgraded.',
+      'content':
+          'Partner banks Credila & Avanse have reduced ROI starting at 9.75% for top 100 global STEM programs. Existing applications automatically upgraded.',
       'action': 'Explore Offers',
       'route': '/ai/eligibility',
     },
@@ -140,7 +145,8 @@ class _ForumPageState extends State<ForumPage> {
       'tag': 'WEBINAR',
       'color': const Color(0xFF10B981),
       'date': '20 July 2026',
-      'content': 'Join Ivy League alumni as they evaluate live SOP samples and share secrets to crack top university admissions.',
+      'content':
+          'Join Ivy League alumni as they evaluate live SOP samples and share secrets to crack top university admissions.',
       'action': 'Use SOP Writer',
       'route': '/ai/sop-writer',
     },
@@ -157,18 +163,19 @@ class _ForumPageState extends State<ForumPage> {
           _smartGroups = groups
               .where((g) => !CommunityService.isStaticGroup(g))
               .map((g) {
-            final iconName = g['iconName'] ?? g['icon'] ?? 'school_rounded';
-            final colorHex = g['colorHex'] ?? g['color'] ?? '#311B92';
-            return {
-              ...g,
-              'icon': _parseGroupIcon(iconName),
-              'color': _parseGroupColor(colorHex),
-              'members': g['members'] ?? 1,
-              'online': g['online'] ?? 1,
-              'badge': g['badge'] ?? 'General',
-              'lastMsg': g['lastMsg'] ?? 'Active student channel',
-            };
-          }).toList();
+                final iconName = g['iconName'] ?? g['icon'] ?? 'school_rounded';
+                final colorHex = g['colorHex'] ?? g['color'] ?? '#311B92';
+                return {
+                  ...g,
+                  'icon': _parseGroupIcon(iconName),
+                  'color': _parseGroupColor(colorHex),
+                  'members': g['members'] ?? 1,
+                  'online': g['online'] ?? 1,
+                  'badge': g['badge'] ?? 'General',
+                  'lastMsg': g['lastMsg'] ?? 'Active student channel',
+                };
+              })
+              .toList();
         });
       }
     } catch (e) {
@@ -180,8 +187,10 @@ class _ForumPageState extends State<ForumPage> {
     if (icon is IconData) return icon;
     final str = icon.toString().toLowerCase();
     if (str.contains('verified')) return Icons.verified_user_rounded;
-    if (str.contains('balance') || str.contains('account')) return Icons.account_balance_rounded;
-    if (str.contains('public') || str.contains('global')) return Icons.public_rounded;
+    if (str.contains('balance') || str.contains('account'))
+      return Icons.account_balance_rounded;
+    if (str.contains('public') || str.contains('global'))
+      return Icons.public_rounded;
     return Icons.school_rounded;
   }
 
@@ -289,9 +298,9 @@ class _ForumPageState extends State<ForumPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to like post: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to like post: $e')));
     }
   }
 
@@ -337,7 +346,9 @@ class _ForumPageState extends State<ForumPage> {
             ),
             backgroundColor: const Color(0xFF311B92),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -347,7 +358,8 @@ class _ForumPageState extends State<ForumPage> {
 
     setState(() {
       final List options = poll['options'] as List;
-      options[optionIndex]['votes'] = (options[optionIndex]['votes'] as int) + 1;
+      options[optionIndex]['votes'] =
+          (options[optionIndex]['votes'] as int) + 1;
       poll['totalVotes'] = (poll['totalVotes'] as int) + 1;
       poll['userVotedIndex'] = optionIndex;
     });
@@ -365,9 +377,7 @@ class _ForumPageState extends State<ForumPage> {
           children: [
             Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
             SizedBox(width: 10),
-            Expanded(
-              child: Text('Vote recorded! Poll results unlocked 📊'),
-            ),
+            Expanded(child: Text('Vote recorded! Poll results unlocked 📊')),
           ],
         ),
         backgroundColor: const Color(0xFF10B981),
@@ -430,7 +440,11 @@ class _ForumPageState extends State<ForumPage> {
             if (canPop)
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: Color(0xFF311B92)),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 18,
+                  color: Color(0xFF311B92),
+                ),
               )
             else
               const SizedBox(width: 16),
@@ -445,7 +459,10 @@ class _ForumPageState extends State<ForumPage> {
               ),
             ),
             const Spacer(),
-            if (canPop) const SizedBox(width: 40) else const SizedBox(width: 16),
+            if (canPop)
+              const SizedBox(width: 40)
+            else
+              const SizedBox(width: 16),
           ],
         ),
       ),
@@ -469,12 +486,16 @@ class _ForumPageState extends State<ForumPage> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _selectedMainTab == 0 ? Colors.white : Colors.transparent,
+                  color: _selectedMainTab == 0
+                      ? Colors.white
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: _selectedMainTab == 0
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -516,12 +537,16 @@ class _ForumPageState extends State<ForumPage> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: _selectedMainTab == 1 ? Colors.white : Colors.transparent,
+                  color: _selectedMainTab == 1
+                      ? Colors.white
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: _selectedMainTab == 1
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF311B92).withValues(alpha: 0.1),
+                            color: const Color(
+                              0xFF311B92,
+                            ).withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -553,7 +578,10 @@ class _ForumPageState extends State<ForumPage> {
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF10B981),
                         borderRadius: BorderRadius.circular(8),
@@ -884,7 +912,9 @@ class _ForumPageState extends State<ForumPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)));
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF311B92)),
+      );
     }
 
     if (_error != null) {
@@ -970,7 +1000,9 @@ class _ForumPageState extends State<ForumPage> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.1),
+                      backgroundColor: const Color(
+                        0xFF311B92,
+                      ).withValues(alpha: 0.1),
                       child: Text(
                         (post.userName != null && post.userName!.isNotEmpty)
                             ? post.userName![0].toUpperCase()
@@ -1065,7 +1097,8 @@ class _ForumPageState extends State<ForumPage> {
     Color? color,
     VoidCallback? onTap,
   }) {
-    final activeColor = color ?? const Color(0xFF1E293B).withValues(alpha: 0.45);
+    final activeColor =
+        color ?? const Color(0xFF1E293B).withValues(alpha: 0.45);
     return GestureDetector(
       onTap: onTap,
       child: Row(
@@ -1126,7 +1159,11 @@ class _ForumPageState extends State<ForumPage> {
             ),
             child: Row(
               children: [
-                _buildSubTabItem(0, '💬 Chat', Icons.chat_bubble_outline_rounded),
+                _buildSubTabItem(
+                  0,
+                  '💬 Chat',
+                  Icons.chat_bubble_outline_rounded,
+                ),
                 _buildSubTabItem(1, '📊 Polls', Icons.poll_outlined),
                 _buildSubTabItem(2, '📢 Alerts', Icons.campaign_outlined),
               ],
@@ -1254,14 +1291,21 @@ class _ForumPageState extends State<ForumPage> {
             GestureDetector(
               onTap: _showCreateGroupModal,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF311B92).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFF311B92)),
+                    const Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 14,
+                      color: Color(0xFF311B92),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Create Group',
@@ -1336,7 +1380,10 @@ class _ForumPageState extends State<ForumPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF311B92),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1360,7 +1407,6 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-
   Widget _buildGroupChannelTile(Map<String, dynamic> group) {
     final Color color = group['color'] as Color;
     final String groupId = group['id']?.toString() ?? '';
@@ -1379,7 +1425,10 @@ class _ForumPageState extends State<ForumPage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: isAdmin
-                ? Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5), width: 1.5)
+                ? Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                    width: 1.5,
+                  )
                 : null,
             boxShadow: [
               BoxShadow(
@@ -1437,7 +1486,11 @@ class _ForumPageState extends State<ForumPage> {
                                 color: Color(0xFFF59E0B),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.shield_rounded, size: 10, color: Colors.white),
+                              child: const Icon(
+                                Icons.shield_rounded,
+                                size: 10,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                       ],
@@ -1464,9 +1517,14 @@ class _ForumPageState extends State<ForumPage> {
                               // Admin badge tag
                               if (isAdmin) ...[
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                    color: const Color(
+                                      0xFFF59E0B,
+                                    ).withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(7),
                                   ),
                                   child: Text(
@@ -1481,7 +1539,10 @@ class _ForumPageState extends State<ForumPage> {
                                 const SizedBox(width: 4),
                               ],
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: color.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
@@ -1532,14 +1593,25 @@ class _ForumPageState extends State<ForumPage> {
                           const SizedBox(height: 5),
                           Row(
                             children: [
-                              Icon(Icons.people_alt_outlined, size: 13, color: Colors.grey[500]),
+                              Icon(
+                                Icons.people_alt_outlined,
+                                size: 13,
+                                color: Colors.grey[500],
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${group['members']} members',
-                                style: GoogleFonts.inter(fontSize: 10.5, color: Colors.grey[600]),
+                                style: GoogleFonts.inter(
+                                  fontSize: 10.5,
+                                  color: Colors.grey[600],
+                                ),
                               ),
                               const SizedBox(width: 8),
-                              const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
+                              const Icon(
+                                Icons.circle,
+                                size: 7,
+                                color: Color(0xFF10B981),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${group['online']} online',
@@ -1560,7 +1632,9 @@ class _ForumPageState extends State<ForumPage> {
                           ? Icons.manage_accounts_rounded
                           : Icons.arrow_forward_ios_rounded,
                       size: isAdmin ? 18 : 13,
-                      color: isAdmin ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8),
+                      color: isAdmin
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFF94A3B8),
                     ),
                   ],
                 ),
@@ -1627,7 +1701,10 @@ class _ForumPageState extends State<ForumPage> {
                   const SizedBox(height: 4),
                   Text(
                     'AI Moderated: Groups must be related to study abroad, education, or loans.',
-                    style: GoogleFonts.inter(fontSize: 12.5, color: Colors.grey[600]),
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: Colors.grey[600],
+                    ),
                   ),
                   if (aiErrorMsg != null) ...[
                     const SizedBox(height: 12),
@@ -1640,7 +1717,11 @@ class _ForumPageState extends State<ForumPage> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline_rounded, color: Color(0xFFEF4444), size: 20),
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: Color(0xFFEF4444),
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -1786,12 +1867,14 @@ class _ForumPageState extends State<ForumPage> {
                                 aiErrorMsg = null;
                               });
 
-                              final verifyRes = await AiLogicService().verifyGroupTopic(title, sub);
+                              final verifyRes = await AiLogicService()
+                                  .verifyGroupTopic(title, sub);
 
                               if (verifyRes['isValid'] != true) {
                                 setModalState(() {
                                   isAiVerifying = false;
-                                  aiErrorMsg = verifyRes['reason'] ??
+                                  aiErrorMsg =
+                                      verifyRes['reason'] ??
                                       'Group title/topic must be related to study abroad, education, or loans.';
                                 });
                                 return;
@@ -1800,23 +1883,34 @@ class _ForumPageState extends State<ForumPage> {
                               final iconName = selectedBadge == 'Visa'
                                   ? 'verified_user_rounded'
                                   : selectedBadge == 'Finance'
-                                      ? 'account_balance_rounded'
-                                      : selectedBadge == 'Global'
-                                          ? 'public_rounded'
-                                          : 'school_rounded';
-                              final colorHex = '#${selectedColor.toARGB32().toRadixString(16).substring(2)}';
+                                  ? 'account_balance_rounded'
+                                  : selectedBadge == 'Global'
+                                  ? 'public_rounded'
+                                  : 'school_rounded';
+                              final colorHex =
+                                  '#${selectedColor.toARGB32().toRadixString(16).substring(2)}';
 
-                              final prefs = await SharedPreferences.getInstance();
-                              final userEmail = prefs.getString('user_email') ?? 'student@vidhyaloan.com';
-                              final fname = prefs.getString('user_firstName') ?? '';
-                              final lname = prefs.getString('user_lastName') ?? '';
-                              final userName = '$fname $lname'.trim().isEmpty ? 'Group Admin' : '$fname $lname'.trim();
-                              final newGroupId = 'group_${DateTime.now().millisecondsSinceEpoch}';
+                              final prefs =
+                                  await SharedPreferences.getInstance();
+                              final userEmail =
+                                  prefs.getString('user_email') ??
+                                  'student@vidhyaloan.com';
+                              final fname =
+                                  prefs.getString('user_firstName') ?? '';
+                              final lname =
+                                  prefs.getString('user_lastName') ?? '';
+                              final userName = '$fname $lname'.trim().isEmpty
+                                  ? 'Group Admin'
+                                  : '$fname $lname'.trim();
+                              final newGroupId =
+                                  'group_${DateTime.now().millisecondsSinceEpoch}';
 
                               final newGroupData = {
                                 'id': newGroupId,
                                 'title': title,
-                                'subtitle': sub.isEmpty ? 'Student discussion group' : sub,
+                                'subtitle': sub.isEmpty
+                                    ? 'Student discussion group'
+                                    : sub,
                                 'members': 1,
                                 'online': 1,
                                 'iconName': iconName,
@@ -1835,7 +1929,9 @@ class _ForumPageState extends State<ForumPage> {
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Group Created Successfully! 🎉'),
+                                    content: Text(
+                                      'Group Created Successfully! 🎉',
+                                    ),
                                     backgroundColor: Color(0xFF10B981),
                                   ),
                                 );
@@ -1931,14 +2027,21 @@ class _ForumPageState extends State<ForumPage> {
             GestureDetector(
               onTap: _showCreatePollModal,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEC4899).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFFEC4899)),
+                    const Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 14,
+                      color: Color(0xFFEC4899),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Create Poll',
@@ -1958,89 +2061,97 @@ class _ForumPageState extends State<ForumPage> {
         const SizedBox(height: 12),
 
         // ── Show active (non-expired) polls, or empty state ───────────────
-        Builder(builder: (context) {
-          final active = _activePolls;
-          if (active.isEmpty) {
-            return Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 4, bottom: 8),
-              padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFEC4899).withValues(alpha: 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEC4899).withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
+        Builder(
+          builder: (context) {
+            final active = _activePolls;
+            if (active.isEmpty) {
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 4, bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 40,
+                  horizontal: 24,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
                     ),
-                    child: const Icon(
-                      Icons.poll_outlined,
-                      size: 40,
-                      color: Color(0xFFEC4899),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Polls are Empty',
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF1E293B),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No active polls right now.\nPolls expire after 1 week — create one to get the community talking!',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF64748B),
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: _showCreatePollModal,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEC4899),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEC4899).withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
                       ),
-                      elevation: 0,
+                      child: const Icon(
+                        Icons.poll_outlined,
+                        size: 40,
+                        color: Color(0xFFEC4899),
+                      ),
                     ),
-                    icon: const Icon(Icons.add_rounded, size: 18),
-                    label: Text(
-                      'Create a Poll',
+                    const SizedBox(height: 16),
+                    Text(
+                      'Polls are Empty',
                       style: GoogleFonts.outfit(
-                        fontSize: 14,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1E293B),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'No active polls right now.\nPolls expire after 1 week — create one to get the community talking!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton.icon(
+                      onPressed: _showCreatePollModal,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEC4899),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: Text(
+                        'Create a Poll',
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: List.generate(
+                active.length,
+                (i) => _buildPollCard(i, active[i]),
               ),
             );
-          }
-          return Column(
-            children: List.generate(
-              active.length,
-              (i) => _buildPollCard(i, active[i]),
-            ),
-          );
-        }),
+          },
+        ),
       ],
     );
   }
@@ -2094,14 +2205,19 @@ class _ForumPageState extends State<ForumPage> {
               const SizedBox(height: 4),
               Text(
                 'Student Community: Create a live poll and ask fellow students',
-                style: GoogleFonts.inter(fontSize: 12.5, color: Colors.grey[600]),
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: Colors.grey[600],
+                ),
               ),
               const SizedBox(height: 18),
               TextField(
                 controller: qController,
                 decoration: InputDecoration(
                   labelText: 'Poll Question',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -2109,7 +2225,9 @@ class _ForumPageState extends State<ForumPage> {
                 controller: opt1Controller,
                 decoration: InputDecoration(
                   labelText: 'Option 1',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -2117,7 +2235,9 @@ class _ForumPageState extends State<ForumPage> {
                 controller: opt2Controller,
                 decoration: InputDecoration(
                   labelText: 'Option 2',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -2125,7 +2245,9 @@ class _ForumPageState extends State<ForumPage> {
                 controller: opt3Controller,
                 decoration: InputDecoration(
                   labelText: 'Option 3 (Optional)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -2133,7 +2255,9 @@ class _ForumPageState extends State<ForumPage> {
                 controller: opt4Controller,
                 decoration: InputDecoration(
                   labelText: 'Option 4 (Optional)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -2152,10 +2276,16 @@ class _ForumPageState extends State<ForumPage> {
                       {'text': o2, 'votes': 0},
                     ];
                     if (opt3Controller.text.trim().isNotEmpty) {
-                      opts.add({'text': opt3Controller.text.trim(), 'votes': 0});
+                      opts.add({
+                        'text': opt3Controller.text.trim(),
+                        'votes': 0,
+                      });
                     }
                     if (opt4Controller.text.trim().isNotEmpty) {
-                      opts.add({'text': opt4Controller.text.trim(), 'votes': 0});
+                      opts.add({
+                        'text': opt4Controller.text.trim(),
+                        'votes': 0,
+                      });
                     }
 
                     final newPoll = {
@@ -2164,7 +2294,8 @@ class _ForumPageState extends State<ForumPage> {
                       'author': 'Student Poll',
                       'totalVotes': 0,
                       'userVotedIndex': -1,
-                      'createdAt': DateTime.now(), // expiry = createdAt + 7 days
+                      'createdAt':
+                          DateTime.now(), // expiry = createdAt + 7 days
                       'options': opts,
                     };
 
@@ -2188,7 +2319,11 @@ class _ForumPageState extends State<ForumPage> {
                       SnackBar(
                         content: Row(
                           children: [
-                            const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 20),
+                            const Icon(
+                              Icons.notifications_active_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -2197,7 +2332,9 @@ class _ForumPageState extends State<ForumPage> {
                                 children: [
                                   Text(
                                     '📊 New Community Poll Published!',
-                                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   Text(
                                     'Saved to your VidyaLoan bell icon notifications',
@@ -2210,13 +2347,17 @@ class _ForumPageState extends State<ForumPage> {
                         ),
                         backgroundColor: const Color(0xFF311B92),
                         behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEC4899),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   child: Text(
                     'Publish Poll & Notify Users 🔔',
@@ -2248,7 +2389,10 @@ class _ForumPageState extends State<ForumPage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: hasVoted
-            ? Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15), width: 1.5)
+            ? Border.all(
+                color: const Color(0xFF311B92).withValues(alpha: 0.15),
+                width: 1.5,
+              )
             : null,
         boxShadow: [
           BoxShadow(
@@ -2263,7 +2407,11 @@ class _ForumPageState extends State<ForumPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.poll_rounded, color: Color(0xFF311B92), size: 18),
+              const Icon(
+                Icons.poll_rounded,
+                color: Color(0xFF311B92),
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Text(
                 poll['author'],
@@ -2317,7 +2465,9 @@ class _ForumPageState extends State<ForumPage> {
                               : const Color(0xFFF1F5F9),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             isSelected
-                                ? const Color(0xFF311B92).withValues(alpha: 0.25)
+                                ? const Color(
+                                    0xFF311B92,
+                                  ).withValues(alpha: 0.25)
                                 : const Color(0xFFE2E8F0),
                           ),
                         ),
@@ -2334,8 +2484,8 @@ class _ForumPageState extends State<ForumPage> {
                               isSelected
                                   ? Icons.check_circle_rounded
                                   : (hasVoted
-                                      ? Icons.circle_outlined
-                                      : Icons.radio_button_unchecked_rounded),
+                                        ? Icons.circle_outlined
+                                        : Icons.radio_button_unchecked_rounded),
                               size: 18,
                               color: isSelected
                                   ? const Color(0xFF311B92)
@@ -2365,7 +2515,10 @@ class _ForumPageState extends State<ForumPage> {
                                   if (isSelected) ...[
                                     const SizedBox(width: 8),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: const Color(0xFF311B92),
                                         borderRadius: BorderRadius.circular(6),
@@ -2409,7 +2562,11 @@ class _ForumPageState extends State<ForumPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(Icons.lock_rounded, size: 12, color: Color(0xFF10B981)),
+                const Icon(
+                  Icons.lock_rounded,
+                  size: 12,
+                  color: Color(0xFF10B981),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Vote locked • Poll results revealed',
@@ -2535,7 +2692,10 @@ class _ForumPageState extends State<ForumPage> {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -2566,7 +2726,6 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   bool _isLoadingMessages = true;
   bool _isJoined = false;
 
-
   String _mySenderName = 'You';
   Timer? _chatPollingTimer;
 
@@ -2584,7 +2743,8 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
       try {
         final dt = DateTime.parse(createdAtVal.toString()).toLocal();
         final now = DateTime.now();
-        final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        final isToday =
+            dt.year == now.year && dt.month == now.month && dt.day == now.day;
         final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
         final min = dt.minute.toString().padLeft(2, '0');
         final ampm = dt.hour >= 12 ? 'PM' : 'AM';
@@ -2593,13 +2753,28 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
         if (isToday) {
           return timeStr;
         } else {
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const months = [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun',
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
+          ];
           return '${dt.day} ${months[dt.month - 1]}, $timeStr';
         }
       } catch (_) {}
     }
 
-    if (timeVal != null && timeVal.toString().isNotEmpty && timeVal.toString() != 'Just now') {
+    if (timeVal != null &&
+        timeVal.toString().isNotEmpty &&
+        timeVal.toString() != 'Just now') {
       return timeVal.toString();
     }
 
@@ -2618,21 +2793,32 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     if (msgs.isEmpty && _messages.isNotEmpty) return;
 
     final parsed = msgs.map((m) {
-      final sender = (m['sender']?.toString().isNotEmpty == true) ? m['sender'].toString() : 'Student Member';
+      final sender = (m['sender']?.toString().isNotEmpty == true)
+          ? m['sender'].toString()
+          : 'Student Member';
       final colorHex = m['colorHex'] ?? '#311B92';
       Color color;
       try {
-        color = Color(int.parse('FF${colorHex.toString().replaceAll('#', '')}', radix: 16));
+        color = Color(
+          int.parse('FF${colorHex.toString().replaceAll('#', '')}', radix: 16),
+        );
       } catch (_) {
         color = const Color(0xFF311B92);
       }
-      final isMe = (sender.toLowerCase().trim() == _mySenderName.toLowerCase().trim()) || m['isMe'] == true;
-      final timeDisplay = _formatMessageTime(m['time'], m['createdAt'] ?? m['timestamp']);
+      final isMe =
+          (sender.toLowerCase().trim() == _mySenderName.toLowerCase().trim()) ||
+          m['isMe'] == true;
+      final timeDisplay = _formatMessageTime(
+        m['time'],
+        m['createdAt'] ?? m['timestamp'],
+      );
 
       return {
         'id': m['id'],
         'sender': sender,
-        'avatarLetter': m['avatarLetter'] ?? (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
+        'avatarLetter':
+            m['avatarLetter'] ??
+            (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
         'color': color,
         'role': m['role'] ?? 'Student',
         'text': m['text'] ?? '',
@@ -2641,7 +2827,8 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
       };
     }).toList();
 
-    if (parsed.isNotEmpty && (parsed.length != _messages.length || _messages.isEmpty)) {
+    if (parsed.isNotEmpty &&
+        (parsed.length != _messages.length || _messages.isEmpty)) {
       setState(() {
         _messages = parsed;
       });
@@ -2668,16 +2855,25 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   Future<void> _loadUserAndMessages() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final fname = prefs.getString('user_firstName') ?? prefs.getString('firstName') ?? prefs.getString('user_name') ?? prefs.getString('name') ?? '';
-      final lname = prefs.getString('user_lastName') ?? prefs.getString('lastName') ?? '';
+      final fname =
+          prefs.getString('user_firstName') ??
+          prefs.getString('firstName') ??
+          prefs.getString('user_name') ??
+          prefs.getString('name') ??
+          '';
+      final lname =
+          prefs.getString('user_lastName') ?? prefs.getString('lastName') ?? '';
       final fullName = '$fname $lname'.trim();
       if (fullName.isNotEmpty) {
         _mySenderName = fullName;
       } else {
-        final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
+        final email =
+            prefs.getString('user_email') ?? prefs.getString('email') ?? '';
         if (email.isNotEmpty && email.contains('@')) {
           final prefix = email.split('@')[0];
-          _mySenderName = prefix.isNotEmpty ? '${prefix[0].toUpperCase()}${prefix.substring(1)}' : 'Student';
+          _mySenderName = prefix.isNotEmpty
+              ? '${prefix[0].toUpperCase()}${prefix.substring(1)}'
+              : 'Student';
         } else {
           _mySenderName = 'Student';
         }
@@ -2686,7 +2882,10 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
 
     final groupId = widget.group['id'] as String;
     final adminEmail = widget.group['adminEmail'] as String?;
-    final status = await CommunityService().getGroupMembershipStatus(groupId, adminEmail);
+    final status = await CommunityService().getGroupMembershipStatus(
+      groupId,
+      adminEmail,
+    );
     final isJoined = (status == 'ADMIN' || status == 'APPROVED');
     List<Map<String, dynamic>> msgs = [];
     if (isJoined) {
@@ -2695,24 +2894,38 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
 
     if (mounted) {
       setState(() {
-
         _isJoined = isJoined;
         _messages = msgs.map((m) {
-          final sender = (m['sender']?.toString().isNotEmpty == true) ? m['sender'].toString() : 'Student Member';
+          final sender = (m['sender']?.toString().isNotEmpty == true)
+              ? m['sender'].toString()
+              : 'Student Member';
           final colorHex = m['colorHex'] ?? '#311B92';
           Color color;
           try {
-            color = Color(int.parse('FF${colorHex.toString().replaceAll('#', '')}', radix: 16));
+            color = Color(
+              int.parse(
+                'FF${colorHex.toString().replaceAll('#', '')}',
+                radix: 16,
+              ),
+            );
           } catch (_) {
             color = const Color(0xFF311B92);
           }
-          final isMe = (sender.toLowerCase().trim() == _mySenderName.toLowerCase().trim()) || m['isMe'] == true;
-          final timeDisplay = _formatMessageTime(m['time'], m['createdAt'] ?? m['timestamp']);
+          final isMe =
+              (sender.toLowerCase().trim() ==
+                  _mySenderName.toLowerCase().trim()) ||
+              m['isMe'] == true;
+          final timeDisplay = _formatMessageTime(
+            m['time'],
+            m['createdAt'] ?? m['timestamp'],
+          );
 
           return {
             'id': m['id'],
             'sender': sender,
-            'avatarLetter': m['avatarLetter'] ?? (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
+            'avatarLetter':
+                m['avatarLetter'] ??
+                (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
             'color': color,
             'role': m['role'] ?? 'Student',
             'text': m['text'] ?? '',
@@ -2741,7 +2954,6 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
 
     if (mounted) {
       setState(() {
-
         _isJoined = true;
       });
       await _loadUserAndMessages();
@@ -2750,7 +2962,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 18),
+                const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -2762,7 +2978,9 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             ),
             backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -2783,32 +3001,48 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                 color: const Color(0xFFEF4444).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626), size: 22),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFDC2626),
+                size: 22,
+              ),
             ),
             const SizedBox(width: 10),
             Text(
               'Delete Message?',
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF0F172A),
+              ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to delete this message? It will be permanently removed for everyone in the group.',
-          style: GoogleFonts.inter(fontSize: 13.5, color: const Color(0xFF64748B)),
+          style: GoogleFonts.inter(
+            fontSize: 13.5,
+            color: const Color(0xFF64748B),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text(
               'Cancel',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF64748B)),
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
             ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               elevation: 0,
             ),
             onPressed: () {
@@ -2850,12 +3084,13 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
           backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
   }
-
 
   void _sendMessage() async {
     final text = _msgController.text.trim();
@@ -2872,7 +3107,9 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     final tempMsg = {
       'id': 'msg_${now.millisecondsSinceEpoch}',
       'sender': _mySenderName,
-      'avatarLetter': _mySenderName.isNotEmpty ? _mySenderName[0].toUpperCase() : 'Y',
+      'avatarLetter': _mySenderName.isNotEmpty
+          ? _mySenderName[0].toUpperCase()
+          : 'Y',
       'color': const Color(0xFF311B92),
       'role': 'Student',
       'text': text,
@@ -2967,7 +3204,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                       ),
                       Row(
                         children: [
-                          const Icon(Icons.circle, size: 7, color: Color(0xFF10B981)),
+                          const Icon(
+                            Icons.circle,
+                            size: 7,
+                            color: Color(0xFF10B981),
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             '${widget.group['online']} Online • Live Group Chat',
@@ -2999,224 +3240,324 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
               child: _isLoadingMessages
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF311B92)),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF311B92),
+                        ),
                       ),
                     )
                   : !_isJoined
-                      ? _buildLockedGroupPreview()
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(18),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final bool isMe = msg['isMe'] == true;
+                  ? _buildLockedGroupPreview()
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(18),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = _messages[index];
+                        final bool isMe = msg['isMe'] == true;
 
-                            return Align(
-                              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 16),
-                                constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.of(context).size.width * 0.82,
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment:
-                                      isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                                  children: [
-                                    if (!isMe) ...[
-                                      GestureDetector(
-                                        onTap: () => _openMemberDirectChatModal(context, msg),
-                                        child: CircleAvatar(
-                                          radius: 17,
-                                          backgroundColor: (msg['color'] as Color).withValues(alpha: 0.15),
-                                          child: Text(
-                                            msg['avatarLetter'],
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
-                                              color: msg['color'] as Color,
-                                            ),
-                                          ),
+                        return Align(
+                          alignment: isMe
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.82,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: isMe
+                                  ? MainAxisAlignment.end
+                                  : MainAxisAlignment.start,
+                              children: [
+                                if (!isMe) ...[
+                                  GestureDetector(
+                                    onTap: () => _openMemberDirectChatModal(
+                                      context,
+                                      msg,
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 17,
+                                      backgroundColor: (msg['color'] as Color)
+                                          .withValues(alpha: 0.15),
+                                      child: Text(
+                                        msg['avatarLetter'],
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: msg['color'] as Color,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                    ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
 
-                                    Flexible(
-                                      child: Column(
-                                        crossAxisAlignment: isMe
-                                            ? CrossAxisAlignment.end
-                                            : CrossAxisAlignment.start,
-                                        children: [
-                                          if (!isMe)
-                                            GestureDetector(
-                                              onTap: () => _openMemberDirectChatModal(context, msg),
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 2, bottom: 4),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      msg['sender'],
-                                                      style: GoogleFonts.outfit(
-                                                        fontSize: 12.5,
-                                                        fontWeight: FontWeight.bold,
-                                                        color: const Color(0xFF1E293B),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 6),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                                                      decoration: BoxDecoration(
-                                                        color: (msg['color'] as Color).withValues(alpha: 0.1),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        msg['role'],
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 9.5,
-                                                          fontWeight: FontWeight.w700,
-                                                          color: msg['color'] as Color,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    const Icon(Icons.chat_bubble_outline_rounded, size: 12, color: Color(0xFF311B92)),
-                                                  ],
-                                                ),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: isMe
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.start,
+                                    children: [
+                                      if (!isMe)
+                                        GestureDetector(
+                                          onTap: () =>
+                                              _openMemberDirectChatModal(
+                                                context,
+                                                msg,
                                               ),
-                                            )
-                                          else
-                                            Padding(
-                                              padding: const EdgeInsets.only(right: 2, bottom: 4),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    'You',
-                                                    style: GoogleFonts.outfit(
-                                                      fontSize: 12.5,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: const Color(0xFF311B92),
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 5),
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                                                    decoration: BoxDecoration(
-                                                      color: const Color(0xFF311B92).withValues(alpha: 0.1),
-                                                      borderRadius: BorderRadius.circular(6),
-                                                    ),
-                                                    child: Text(
-                                                      'You',
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 9,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: const Color(0xFF311B92),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 2,
+                                              bottom: 4,
                                             ),
-
-                                          GestureDetector(
-                                            onLongPress: () {
-                                              if (isMe) _showDeleteMessageDialog(msg);
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                              decoration: BoxDecoration(
-                                                color: isMe ? const Color(0xFF311B92) : Colors.white,
-                                                borderRadius: BorderRadius.only(
-                                                  topLeft: const Radius.circular(16),
-                                                  topRight: const Radius.circular(16),
-                                                  bottomLeft: Radius.circular(isMe ? 16 : 4),
-                                                  bottomRight: Radius.circular(isMe ? 4 : 16),
-                                                ),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withValues(alpha: 0.04),
-                                                    blurRadius: 8,
-                                                    offset: const Offset(0, 2),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Text(
-                                                msg['text'],
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 13.5,
-                                                  color: isMe ? Colors.white : const Color(0xFF1E293B),
-                                                  height: 1.4,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-
-                                          const SizedBox(height: 4),
-
-                                          Padding(
-                                            padding: EdgeInsets.only(left: isMe ? 0 : 2, right: isMe ? 2 : 0),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                if (!isMe) ...[
-                                                  Icon(Icons.access_time_rounded, size: 10.5, color: Colors.grey[500]),
-                                                  const SizedBox(width: 3),
-                                                ],
                                                 Text(
-                                                  msg['time'],
-                                                  style: GoogleFonts.inter(
-                                                    fontSize: 10.5,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.grey[500],
-                                                  ),
-                                                ),
-                                                if (isMe) ...[
-                                                  const SizedBox(width: 6),
-                                                  GestureDetector(
-                                                    onTap: () => _showDeleteMessageDialog(msg),
-                                                    child: Container(
-                                                      padding: const EdgeInsets.all(3),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.red.withValues(alpha: 0.08),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                      ),
-                                                      child: const Icon(Icons.delete_outline_rounded, size: 13, color: Color(0xFFEF4444)),
+                                                  msg['sender'],
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 12.5,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: const Color(
+                                                      0xFF1E293B,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 4),
-                                                  const Icon(Icons.done_all_rounded, size: 13, color: Color(0xFF311B92)),
-                                                ],
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 1.5,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        (msg['color'] as Color)
+                                                            .withValues(
+                                                              alpha: 0.1,
+                                                            ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    msg['role'],
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 9.5,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color:
+                                                          msg['color'] as Color,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Icon(
+                                                  Icons
+                                                      .chat_bubble_outline_rounded,
+                                                  size: 12,
+                                                  color: Color(0xFF311B92),
+                                                ),
                                               ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
+                                        )
+                                      else
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 2,
+                                            bottom: 4,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                'You',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: const Color(
+                                                    0xFF311B92,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 5,
+                                                      vertical: 1.5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(
+                                                    0xFF311B92,
+                                                  ).withValues(alpha: 0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  'You',
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(
+                                                      0xFF311B92,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
 
-                                    if (isMe) ...[
-                                      const SizedBox(width: 8),
-                                      CircleAvatar(
-                                        radius: 17,
-                                        backgroundColor: const Color(0xFF311B92).withValues(alpha: 0.15),
-                                        child: Text(
-                                          _mySenderName.isNotEmpty ? _mySenderName[0].toUpperCase() : 'U',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF311B92),
+                                      GestureDetector(
+                                        onLongPress: () {
+                                          if (isMe)
+                                            _showDeleteMessageDialog(msg);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isMe
+                                                ? const Color(0xFF311B92)
+                                                : Colors.white,
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: const Radius.circular(
+                                                16,
+                                              ),
+                                              topRight: const Radius.circular(
+                                                16,
+                                              ),
+                                              bottomLeft: Radius.circular(
+                                                isMe ? 16 : 4,
+                                              ),
+                                              bottomRight: Radius.circular(
+                                                isMe ? 4 : 16,
+                                              ),
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.04,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Text(
+                                            msg['text'],
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13.5,
+                                              color: isMe
+                                                  ? Colors.white
+                                                  : const Color(0xFF1E293B),
+                                              height: 1.4,
+                                            ),
                                           ),
                                         ),
                                       ),
+
+                                      const SizedBox(height: 4),
+
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          left: isMe ? 0 : 2,
+                                          right: isMe ? 2 : 0,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (!isMe) ...[
+                                              Icon(
+                                                Icons.access_time_rounded,
+                                                size: 10.5,
+                                                color: Colors.grey[500],
+                                              ),
+                                              const SizedBox(width: 3),
+                                            ],
+                                            Text(
+                                              msg['time'],
+                                              style: GoogleFonts.inter(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.grey[500],
+                                              ),
+                                            ),
+                                            if (isMe) ...[
+                                              const SizedBox(width: 6),
+                                              GestureDetector(
+                                                onTap: () =>
+                                                    _showDeleteMessageDialog(
+                                                      msg,
+                                                    ),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.red
+                                                        .withValues(
+                                                          alpha: 0.08,
+                                                        ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          6,
+                                                        ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons
+                                                        .delete_outline_rounded,
+                                                    size: 13,
+                                                    color: Color(0xFFEF4444),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              const Icon(
+                                                Icons.done_all_rounded,
+                                                size: 13,
+                                                color: Color(0xFF311B92),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
+
+                                if (isMe) ...[
+                                  const SizedBox(width: 8),
+                                  CircleAvatar(
+                                    radius: 17,
+                                    backgroundColor: const Color(
+                                      0xFF311B92,
+                                    ).withValues(alpha: 0.15),
+                                    child: Text(
+                                      _mySenderName.isNotEmpty
+                                          ? _mySenderName[0].toUpperCase()
+                                          : 'U',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF311B92),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ),
 
@@ -3240,7 +3581,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: _joinGroupDirectly,
-                      icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.group_add_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       label: Text(
                         'Join Group to Start Chatting',
                         style: GoogleFonts.outfit(
@@ -3268,7 +3613,10 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             SafeArea(
               top: false,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -3350,11 +3698,12 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
-                border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+                border: Border.all(
+                  color: color.withValues(alpha: 0.3),
+                  width: 2,
+                ),
               ),
-              child: Center(
-                child: Icon(icon, size: 40, color: color),
-              ),
+              child: Center(child: Icon(icon, size: 40, color: color)),
             ),
             const SizedBox(height: 16),
             Container(
@@ -3386,7 +3735,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.people_alt_rounded, size: 14, color: Color(0xFF64748B)),
+                const Icon(
+                  Icons.people_alt_rounded,
+                  size: 14,
+                  color: Color(0xFF64748B),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   members,
@@ -3421,7 +3774,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                       color: const Color(0xFF311B92).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.lock_outline_rounded, color: Color(0xFF311B92), size: 20),
+                    child: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: Color(0xFF311B92),
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -3452,7 +3809,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
             const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _joinGroupDirectly,
-              icon: const Icon(Icons.group_add_rounded, color: Colors.white, size: 20),
+              icon: const Icon(
+                Icons.group_add_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               label: Text(
                 'Join Group Now',
                 style: GoogleFonts.outfit(
@@ -3476,12 +3837,16 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     );
   }
 
-  void _openMemberDirectChatModal(BuildContext context, Map<String, dynamic> msg) {
+  void _openMemberDirectChatModal(
+    BuildContext context,
+    Map<String, dynamic> msg,
+  ) {
     final senderName = msg['sender'] as String? ?? 'Student Member';
     final role = msg['role'] as String? ?? 'Student';
     final avatarLetter = msg['avatarLetter'] as String? ?? senderName[0];
     final color = (msg['color'] as Color?) ?? const Color(0xFF311B92);
-    final peerId = 'peer_${senderName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+    final peerId =
+        'peer_${senderName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
 
     showModalBottomSheet(
       context: context,
@@ -3550,7 +3915,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.shield_rounded, color: Color(0xFF311B92), size: 18),
+                  const Icon(
+                    Icons.shield_rounded,
+                    color: Color(0xFF311B92),
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -3582,7 +3951,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
                   ),
                 );
               },
-              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+              icon: const Icon(
+                Icons.chat_bubble_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
               label: const Text('Start Person-to-Person Chat'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF311B92),

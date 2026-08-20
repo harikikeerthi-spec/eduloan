@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/permission_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,18 +94,19 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         final Map<String, dynamic> decoded = jsonDecode(jsonStr);
         _customDocs = {
           'Student': List<Map<String, String>>.from(
-              (decoded['Student'] ?? []).map((x) => Map<String, String>.from(x))),
+            (decoded['Student'] ?? []).map((x) => Map<String, String>.from(x)),
+          ),
           'Co-Applicant': List<Map<String, String>>.from(
-              (decoded['Co-Applicant'] ?? []).map((x) => Map<String, String>.from(x))),
+            (decoded['Co-Applicant'] ?? []).map(
+              (x) => Map<String, String>.from(x),
+            ),
+          ),
           'Parents': List<Map<String, String>>.from(
-              (decoded['Parents'] ?? []).map((x) => Map<String, String>.from(x))),
+            (decoded['Parents'] ?? []).map((x) => Map<String, String>.from(x)),
+          ),
         };
       } else {
-        _customDocs = {
-          'Student': [],
-          'Co-Applicant': [],
-          'Parents': [],
-        };
+        _customDocs = {'Student': [], 'Co-Applicant': [], 'Parents': []};
       }
     } catch (e) {
       debugPrint('Error loading custom vault docs: $e');
@@ -114,7 +117,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('userId') ?? 'anonymous';
-      await prefs.setString('custom_vault_docs_$userId', jsonEncode(_customDocs));
+      await prefs.setString(
+        'custom_vault_docs_$userId',
+        jsonEncode(_customDocs),
+      );
     } catch (e) {
       debugPrint('Error saving custom vault docs: $e');
     }
@@ -129,7 +135,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       final sample = Uint8List(sampleSize);
       await raf.readInto(sample);
       await raf.close();
-      final sampleString = sample.sublist(0, sampleSize > 100 ? 100 : sampleSize).join('_');
+      final sampleString = sample
+          .sublist(0, sampleSize > 100 ? 100 : sampleSize)
+          .join('_');
       return '${length}_${name}_$sampleString';
     } catch (_) {
       return '${length}_$name';
@@ -163,7 +171,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     }
   }
 
-  Future<void> _saveFingerprint(String docType, String docName, String fingerprint) async {
+  Future<void> _saveFingerprint(
+    String docType,
+    String docName,
+    String fingerprint,
+  ) async {
     _uploadedFileFingerprints[docType] = fingerprint;
     _uploadedDocNames[docType] = docName;
     try {
@@ -195,18 +207,25 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       final bytes = await file.readAsBytes();
       final sampleLen = bytes.length > 50000 ? 50000 : bytes.length;
       final rawString = String.fromCharCodes(bytes.sublist(0, sampleLen));
-      
+
       String? extractedNumber;
 
       final typeLower = docType.toLowerCase();
       if (typeLower.contains('pan')) {
-        final match = RegExp(r'\b[A-Z]{5}[0-9]{4}[A-Z]\b').firstMatch(rawString.toUpperCase());
+        final match = RegExp(
+          r'\b[A-Z]{5}[0-9]{4}[A-Z]\b',
+        ).firstMatch(rawString.toUpperCase());
         if (match != null) extractedNumber = match.group(0);
-      } else if (typeLower.contains('aadhar') || typeLower.contains('aadhaar')) {
-        final match = RegExp(r'\b\d{4}\s?\d{4}\s?\d{4}\b').firstMatch(rawString);
+      } else if (typeLower.contains('aadhar') ||
+          typeLower.contains('aadhaar')) {
+        final match = RegExp(
+          r'\b\d{4}\s?\d{4}\s?\d{4}\b',
+        ).firstMatch(rawString);
         if (match != null) extractedNumber = match.group(0);
       } else if (typeLower.contains('passport')) {
-        final match = RegExp(r'\b[A-Z][0-9]{7}\b').firstMatch(rawString.toUpperCase());
+        final match = RegExp(
+          r'\b[A-Z][0-9]{7}\b',
+        ).firstMatch(rawString.toUpperCase());
         if (match != null) extractedNumber = match.group(0);
       }
 
@@ -220,34 +239,43 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     }
   }
 
-  Future<String?> _validateDocumentTypeMismatch(File file, String targetDocType, String targetDocName) async {
+  Future<String?> _validateDocumentTypeMismatch(
+    File file,
+    String targetDocType,
+    String targetDocName,
+  ) async {
     final pathLower = file.path.toLowerCase();
     String contentText = pathLower;
 
     try {
       final bytes = await file.readAsBytes();
       final sampleLen = bytes.length > 30000 ? 30000 : bytes.length;
-      final rawString = String.fromCharCodes(bytes.sublist(0, sampleLen)).toLowerCase();
+      final rawString = String.fromCharCodes(
+        bytes.sublist(0, sampleLen),
+      ).toLowerCase();
       contentText = '$pathLower $rawString';
     } catch (_) {}
 
     final typeLower = targetDocType.toLowerCase();
 
     // Keywords for Aadhaar Card
-    final isAadhaarContent = contentText.contains('unique identification') ||
+    final isAadhaarContent =
+        contentText.contains('unique identification') ||
         contentText.contains('aadhaar') ||
         contentText.contains('aadhar') ||
         contentText.contains('uidai') ||
         RegExp(r'\b\d{4}\s?\d{4}\s?\d{4}\b').hasMatch(contentText);
 
     // Keywords for PAN Card
-    final isPanContent = contentText.contains('income tax') ||
+    final isPanContent =
+        contentText.contains('income tax') ||
         contentText.contains('permanent account') ||
         contentText.contains('tax department') ||
         RegExp(r'[a-z]{5}[0-9]{4}[a-z]{1}').hasMatch(contentText);
 
     // Keywords for Passport
-    final isPassportContent = contentText.contains('passport') ||
+    final isPassportContent =
+        contentText.contains('passport') ||
         contentText.contains('republic of india') ||
         contentText.contains('p<ind') ||
         contentText.contains('mrz');
@@ -281,7 +309,8 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         return 'You are uploading a PAN Card in the Passport slot. Please change it and upload your Passport.';
       }
       if (isPassportContent) {
-        final hasParentsKeywords = contentText.contains('father') ||
+        final hasParentsKeywords =
+            contentText.contains('father') ||
             contentText.contains('mother') ||
             contentText.contains('guardian') ||
             contentText.contains('spouse') ||
@@ -304,16 +333,22 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
 
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId') ?? 'anonymous';
-    _coApplicantRelation = prefs.getString('co_applicant_relation_$userId') ?? prefs.getString('co_applicant_relation');
+    _coApplicantRelation =
+        prefs.getString('co_applicant_relation_$userId') ??
+        prefs.getString('co_applicant_relation');
 
     try {
       final loans = await LoanService().getUserLoans();
       if (loans.isNotEmpty) {
         final lastLoan = loans.first;
-        if (lastLoan.coApplicantRelation != null && lastLoan.coApplicantRelation!.isNotEmpty) {
+        if (lastLoan.coApplicantRelation != null &&
+            lastLoan.coApplicantRelation!.isNotEmpty) {
           _coApplicantRelation = lastLoan.coApplicantRelation;
           await prefs.setString('co_applicant_relation', _coApplicantRelation!);
-          await prefs.setString('co_applicant_relation_$userId', _coApplicantRelation!);
+          await prefs.setString(
+            'co_applicant_relation_$userId',
+            _coApplicantRelation!,
+          );
         }
       }
     } catch (e) {
@@ -326,15 +361,20 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     for (var doc in docs) {
       if (doc.docType.startsWith('custom_')) {
         String cat = 'Student';
-        if (doc.docType.contains('co_applicant') || doc.docType.contains('coapp')) {
+        if (doc.docType.contains('co_applicant') ||
+            doc.docType.contains('coapp')) {
           cat = 'Co-Applicant';
-        } else if (doc.docType.contains('parents') || doc.docType.contains('father') || doc.docType.contains('mother')) {
+        } else if (doc.docType.contains('parents') ||
+            doc.docType.contains('father') ||
+            doc.docType.contains('mother')) {
           cat = 'Parents';
         }
         final existingList = _customDocs[cat] ?? [];
         if (!existingList.any((item) => item['type'] == doc.docType)) {
           existingList.add({
-            'name': doc.displayName.isNotEmpty ? doc.displayName : 'Custom Document',
+            'name': doc.displayName.isNotEmpty
+                ? doc.displayName
+                : 'Custom Document',
             'type': doc.docType,
           });
           _customDocs[cat] = existingList;
@@ -363,7 +403,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     // 1. Direct case-insensitive match
     try {
       return _documents.firstWhere(
-        (doc) => doc.docType.trim().toLowerCase().replaceAll('-', '_') == targetClean,
+        (doc) =>
+            doc.docType.trim().toLowerCase().replaceAll('-', '_') ==
+            targetClean,
       );
     } catch (_) {}
 
@@ -372,37 +414,126 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       return _documents.firstWhere((doc) {
         final dt = doc.docType.trim().toLowerCase().replaceAll('-', '_');
         if (targetClean.contains('pan')) {
-          if ((targetClean.startsWith('father') || targetClean.contains('father')) && (dt.contains('father') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('mother') || targetClean.contains('mother')) && (dt.contains('mother') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('spouse') || targetClean.contains('spouse')) && (dt.contains('spouse') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('brother') || targetClean.contains('brother')) && (dt.contains('brother') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('sister') || targetClean.contains('sister')) && (dt.contains('sister') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('uncle') || targetClean.contains('uncle')) && (dt.contains('uncle') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if ((targetClean.startsWith('aunt') || targetClean.contains('aunt')) && (dt.contains('aunt') || dt.contains('coapp')) && dt.contains('pan')) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant') || (_coApplicantRelation != null && dt.contains(_coApplicantRelation!.toLowerCase()))) && dt.contains('pan')) return true;
-          if (targetClean.startsWith('student') && dt.contains('pan') && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp') && !dt.contains('spouse')) return true;
+          if ((targetClean.startsWith('father') ||
+                  targetClean.contains('father')) &&
+              (dt.contains('father') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('mother') ||
+                  targetClean.contains('mother')) &&
+              (dt.contains('mother') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('spouse') ||
+                  targetClean.contains('spouse')) &&
+              (dt.contains('spouse') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('brother') ||
+                  targetClean.contains('brother')) &&
+              (dt.contains('brother') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('sister') ||
+                  targetClean.contains('sister')) &&
+              (dt.contains('sister') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('uncle') ||
+                  targetClean.contains('uncle')) &&
+              (dt.contains('uncle') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if ((targetClean.startsWith('aunt') ||
+                  targetClean.contains('aunt')) &&
+              (dt.contains('aunt') || dt.contains('coapp')) &&
+              dt.contains('pan'))
+            return true;
+          if (targetClean.startsWith('coapp') &&
+              (dt.contains('coapp') ||
+                  dt.contains('co_applicant') ||
+                  (_coApplicantRelation != null &&
+                      dt.contains(_coApplicantRelation!.toLowerCase()))) &&
+              dt.contains('pan'))
+            return true;
+          if (targetClean.startsWith('student') &&
+              dt.contains('pan') &&
+              !dt.contains('father') &&
+              !dt.contains('mother') &&
+              !dt.contains('coapp') &&
+              !dt.contains('spouse'))
+            return true;
           if (dt == 'pan' || dt == 'pan_card') return true;
         }
         if (targetClean.contains('aadhar') || targetClean.contains('aadhaar')) {
-          if ((targetClean.startsWith('father') || targetClean.contains('father')) && (dt.contains('father') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('mother') || targetClean.contains('mother')) && (dt.contains('mother') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('spouse') || targetClean.contains('spouse')) && (dt.contains('spouse') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('brother') || targetClean.contains('brother')) && (dt.contains('brother') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('sister') || targetClean.contains('sister')) && (dt.contains('sister') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('uncle') || targetClean.contains('uncle')) && (dt.contains('uncle') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if ((targetClean.startsWith('aunt') || targetClean.contains('aunt')) && (dt.contains('aunt') || dt.contains('coapp')) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('coapp') && (dt.contains('coapp') || dt.contains('co_applicant') || (_coApplicantRelation != null && (dt.contains(_coApplicantRelation!.toLowerCase())))) && (dt.contains('aadhar') || dt.contains('aadhaar'))) return true;
-          if (targetClean.startsWith('student') && (dt.contains('aadhar') || dt.contains('aadhaar')) && !dt.contains('father') && !dt.contains('mother') && !dt.contains('coapp') && !dt.contains('spouse')) return true;
-          if (dt == 'aadhar' || dt == 'aadhaar' || dt == 'aadhar_card' || dt == 'aadhaar_card') return true;
+          if ((targetClean.startsWith('father') ||
+                  targetClean.contains('father')) &&
+              (dt.contains('father') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('mother') ||
+                  targetClean.contains('mother')) &&
+              (dt.contains('mother') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('spouse') ||
+                  targetClean.contains('spouse')) &&
+              (dt.contains('spouse') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('brother') ||
+                  targetClean.contains('brother')) &&
+              (dt.contains('brother') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('sister') ||
+                  targetClean.contains('sister')) &&
+              (dt.contains('sister') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('uncle') ||
+                  targetClean.contains('uncle')) &&
+              (dt.contains('uncle') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if ((targetClean.startsWith('aunt') ||
+                  targetClean.contains('aunt')) &&
+              (dt.contains('aunt') || dt.contains('coapp')) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if (targetClean.startsWith('coapp') &&
+              (dt.contains('coapp') ||
+                  dt.contains('co_applicant') ||
+                  (_coApplicantRelation != null &&
+                      (dt.contains(_coApplicantRelation!.toLowerCase())))) &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')))
+            return true;
+          if (targetClean.startsWith('student') &&
+              (dt.contains('aadhar') || dt.contains('aadhaar')) &&
+              !dt.contains('father') &&
+              !dt.contains('mother') &&
+              !dt.contains('coapp') &&
+              !dt.contains('spouse'))
+            return true;
+          if (dt == 'aadhar' ||
+              dt == 'aadhaar' ||
+              dt == 'aadhar_card' ||
+              dt == 'aadhaar_card')
+            return true;
         }
         if (targetClean.contains('passport')) {
-          if (targetClean.contains('front') && (dt.contains('front') || dt == 'passport' || dt == 'student_passport')) return true;
+          if (targetClean.contains('front') &&
+              (dt.contains('front') ||
+                  dt == 'passport' ||
+                  dt == 'student_passport'))
+            return true;
           if (targetClean.contains('back') && dt.contains('back')) return true;
           if (dt == 'passport' || dt == 'student_passport') return true;
         }
         if (targetClean.contains('10th') && dt.contains('10th')) return true;
         if (targetClean.contains('12th') && dt.contains('12th')) return true;
-        if (targetClean.contains('degree') && dt.contains('degree')) return true;
+        if (targetClean.contains('degree') && dt.contains('degree'))
+          return true;
         return false;
       });
     } catch (_) {}
@@ -448,7 +579,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSt) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
           title: Row(
             children: [
@@ -458,13 +591,21 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                   color: const Color(0xFF311B92).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.lock_rounded, color: Color(0xFF311B92), size: 20),
+                child: const Icon(
+                  Icons.lock_rounded,
+                  color: Color(0xFF311B92),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Document Password',
-                  style: GoogleFonts.outfit(fontSize: 17, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
               ),
             ],
@@ -474,11 +615,21 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 8),
-              Text('"$docName" is password protected.',
-                  style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF475569))),
+              Text(
+                '"$docName" is password protected.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: const Color(0xFF475569),
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Enter the document password to proceed with upload.',
-                  style: GoogleFonts.inter(fontSize: 12.5, color: const Color(0xFF64748B))),
+              Text(
+                'Enter the document password to proceed with upload.',
+                style: GoogleFonts.inter(
+                  fontSize: 12.5,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
               const SizedBox(height: 16),
               TextField(
                 controller: passCtrl,
@@ -487,31 +638,60 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 style: GoogleFonts.inter(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: 'Enter document password',
-                  hintStyle: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
-                  prefixIcon: const Icon(Icons.vpn_key_rounded, size: 18, color: Color(0xFF311B92)),
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: Colors.grey,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.vpn_key_rounded,
+                    size: 18,
+                    color: Color(0xFF311B92),
+                  ),
                   suffixIcon: IconButton(
-                    icon: Icon(obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                        size: 18, color: Colors.grey),
+                    icon: Icon(
+                      obscure
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
                     onPressed: () => setSt(() => obscure = !obscure),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF311B92),
+                      width: 1.5,
+                    ),
                   ),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFF94A3B8)),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: Color(0xFF94A3B8),
+                  ),
                   const SizedBox(width: 4),
                   Expanded(
-                    child: Text('Used only to unlock the document for verification.',
-                        style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF94A3B8))),
+                    child: Text(
+                      'Used only to unlock the document for verification.',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: const Color(0xFF94A3B8),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -522,7 +702,13 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, null),
-              child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600)),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.outfit(
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -533,10 +719,18 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF311B92),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
               ),
-              child: Text('Upload', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              child: Text(
+                'Upload',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -547,14 +741,26 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   Future<void> _uploadDocument(String type, String name) async {
     // ─── PASSPORT OR AADHAR MANDATORY FIRST CHECK ───────────────────────────
     final isPassport = type == 'student_passport' || type.contains('passport');
-    final isAadhar = type == 'student_aadhar' || type == 'aadhar' || type.contains('aadhar') || type.contains('aadhaar');
+    final isAadhar =
+        type == 'student_aadhar' ||
+        type == 'aadhar' ||
+        type.contains('aadhar') ||
+        type.contains('aadhaar');
     final isPrimaryDoc = isPassport || isAadhar;
 
     final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
-    final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
+    final bool isPassportUploaded =
+        passportDoc != null &&
+        (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
 
-    final aadharDoc = _findDoc('student_aadhar') ?? _findDoc('aadhar') ?? _findDoc('student_aadhaar') ?? _findDoc('aadhaar');
-    final bool isAadharUploaded = aadharDoc != null && (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
+    final aadharDoc =
+        _findDoc('student_aadhar') ??
+        _findDoc('aadhar') ??
+        _findDoc('student_aadhaar') ??
+        _findDoc('aadhaar');
+    final bool isAadharUploaded =
+        aadharDoc != null &&
+        (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
 
     final bool isPrimaryUploaded = isPassportUploaded || isAadharUploaded;
 
@@ -563,10 +769,16 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.lock_clock_rounded, color: Color(0xFF311B92), size: 28),
+                Icon(
+                  Icons.lock_clock_rounded,
+                  color: Color(0xFF311B92),
+                  size: 28,
+                ),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -590,7 +802,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: const Text('OK'),
               ),
@@ -601,9 +815,37 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       return;
     }
 
+    final granted = await PermissionService.requestPhotosPermission();
+    if (!granted) {
+      final isPermanent = await PermissionService.isPermanentlyDenied(
+        Permission.photos,
+      );
+      if (isPermanent && mounted) {
+        PermissionService.showSettingsDialog(
+          context: context,
+          title: 'Storage Access Required',
+          description:
+              'Please grant Photos and Storage access in Settings to upload documents from your device.',
+          icon: Icons.folder_open_rounded,
+          themeColor: const Color(0xFF311B92),
+        );
+      }
+      return;
+    }
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'heif', 'doc', 'docx', 'webp'],
+      allowedExtensions: [
+        'pdf',
+        'jpg',
+        'jpeg',
+        'png',
+        'heic',
+        'heif',
+        'doc',
+        'docx',
+        'webp',
+      ],
     );
 
     if (result == null || result.files.single.path == null) return;
@@ -625,10 +867,16 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Duplicate Document',
@@ -649,7 +897,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: const Text('OK'),
               ),
@@ -662,16 +912,26 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     // ──────────────────────────────────────────────────────────────────────
 
     // ─── DOCUMENT TYPE MISMATCH PRE-CHECK ──────────────────────────────────
-    final String? mismatchError = await _validateDocumentTypeMismatch(file, type, name);
+    final String? mismatchError = await _validateDocumentTypeMismatch(
+      file,
+      type,
+      name,
+    );
     if (mismatchError != null) {
       if (mounted) {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Wrong Document Type',
@@ -692,7 +952,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: const Text('OK'),
               ),
@@ -734,8 +996,12 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           content: Row(
             children: [
               const SizedBox(
-                width: 16, height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 12),
               Text('Uploading $name${isProtected ? ' (unlocking...)' : ''}...'),
@@ -771,17 +1037,24 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         // Push dual notification: system heads-up push banner + Bell Icon badge
         NotificationService.pushNotification(
           title: '❌ Document Rejected: $name',
-          message: 'Your $name was rejected: $errorMessage. Please re-upload a clear copy.',
+          message:
+              'Your $name was rejected: $errorMessage. Please re-upload a clear copy.',
           type: 'DOCUMENT_REJECTED',
         );
 
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 28,
+                ),
                 SizedBox(width: 10),
                 Text(
                   'Wrong Document Type',
@@ -802,7 +1075,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF311B92),
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 child: const Text('OK'),
               ),
@@ -861,7 +1136,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
     Map<String, List<Map<String, String>>> combined;
 
     if (category == 'Co-Applicant') {
-      final rel = (_coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty)
+      final rel =
+          (_coApplicantRelation != null &&
+              _coApplicantRelation!.trim().isNotEmpty)
           ? _coApplicantRelation!.trim()
           : 'Co-Applicant';
       final relSlug = rel.toLowerCase().replaceAll(' ', '_');
@@ -903,7 +1180,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               title: Row(
                 children: [
                   Container(
@@ -912,7 +1191,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       color: const Color(0xFF311B92).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.add_task_rounded, color: Color(0xFF311B92)),
+                    child: const Icon(
+                      Icons.add_task_rounded,
+                      color: Color(0xFF311B92),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -931,7 +1213,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                 children: [
                   Text(
                     'Select Category:',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.7)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black.withValues(alpha: 0.7),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -945,11 +1231,21 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       child: DropdownButton<String>(
                         value: selectedCategory,
                         isExpanded: true,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF311B92)),
-                        items: ['Student', 'Co-Applicant', 'Parents'].map((cat) {
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: Color(0xFF311B92),
+                        ),
+                        items: ['Student', 'Co-Applicant', 'Parents'].map((
+                          cat,
+                        ) {
                           return DropdownMenuItem<String>(
                             value: cat,
-                            child: Text(cat, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            child: Text(
+                              cat,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -963,7 +1259,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                   const SizedBox(height: 16),
                   Text(
                     'Document Name:',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black.withValues(alpha: 0.7)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black.withValues(alpha: 0.7),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -973,7 +1273,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       hintText: 'e.g. University Offer Letter',
                       filled: true,
                       fillColor: const Color(0xFFF3F4F6),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -984,7 +1287,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF311B92), width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Color(0xFF311B92),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -993,7 +1299,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -1010,9 +1319,15 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       return;
                     }
 
-                    final String slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_');
-                    final String catPrefix = selectedCategory.toLowerCase().replaceAll('-', '_');
-                    final String docType = 'custom_${catPrefix}_${slug}_${DateTime.now().millisecondsSinceEpoch}';
+                    final String slug = name.toLowerCase().replaceAll(
+                      RegExp(r'[^a-z0-9]'),
+                      '_',
+                    );
+                    final String catPrefix = selectedCategory
+                        .toLowerCase()
+                        .replaceAll('-', '_');
+                    final String docType =
+                        'custom_${catPrefix}_${slug}_${DateTime.now().millisecondsSinceEpoch}';
 
                     setState(() {
                       _customDocs[selectedCategory] ??= [];
@@ -1033,7 +1348,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
 
                     messenger.showSnackBar(
                       SnackBar(
-                        content: Text('"$name" added under $selectedCategory! Tap to upload.'),
+                        content: Text(
+                          '"$name" added under $selectedCategory! Tap to upload.',
+                        ),
                         backgroundColor: const Color(0xFF10B981),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -1042,7 +1359,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF311B92),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: const Text('Add Document'),
                 ),
@@ -1091,8 +1410,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildTabBar() {
-    final hasCoAppRelation = _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
-    final coAppTabTitle = hasCoAppRelation ? 'Co-Applicant (${_coApplicantRelation!.trim()})' : 'Co-Applicant';
+    final hasCoAppRelation =
+        _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
+    final coAppTabTitle = hasCoAppRelation
+        ? 'Co-Applicant (${_coApplicantRelation!.trim()})'
+        : 'Co-Applicant';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1122,7 +1444,8 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildCoApplicantHeaderBanner() {
-    final hasCoAppRelation = _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
+    final hasCoAppRelation =
+        _coApplicantRelation != null && _coApplicantRelation!.trim().isNotEmpty;
     final relationName = hasCoAppRelation ? _coApplicantRelation!.trim() : null;
 
     if (relationName == null) {
@@ -1132,11 +1455,17 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         decoration: BoxDecoration(
           color: const Color(0xFF311B92).withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.15)),
+          border: Border.all(
+            color: const Color(0xFF311B92).withValues(alpha: 0.15),
+          ),
         ),
         child: Row(
           children: [
-            const Icon(Icons.info_outline_rounded, color: Color(0xFF311B92), size: 20),
+            const Icon(
+              Icons.info_outline_rounded,
+              color: Color(0xFF311B92),
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -1166,7 +1495,9 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.2)),
+        border: Border.all(
+          color: const Color(0xFF311B92).withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -1176,7 +1507,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
               color: const Color(0xFF311B92),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.badge_rounded, color: Colors.white, size: 18),
+            child: const Icon(
+              Icons.badge_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -1195,7 +1530,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 1.5,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF311B92),
                         borderRadius: BorderRadius.circular(5),
@@ -1245,11 +1583,17 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       decoration: BoxDecoration(
         color: const Color(0xFFF0FDF4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF16A34A), size: 20),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            color: Color(0xFF16A34A),
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -1286,10 +1630,18 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
 
   Widget _buildPassportMandatoryBanner() {
     final passportDoc = _findDoc('student_passport') ?? _findDoc('passport');
-    final bool isPassportUploaded = passportDoc != null && (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
+    final bool isPassportUploaded =
+        passportDoc != null &&
+        (passportDoc.uploaded || passportDoc.status.toLowerCase() != 'pending');
 
-    final aadharDoc = _findDoc('student_aadhar') ?? _findDoc('aadhar') ?? _findDoc('student_aadhaar') ?? _findDoc('aadhaar');
-    final bool isAadharUploaded = aadharDoc != null && (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
+    final aadharDoc =
+        _findDoc('student_aadhar') ??
+        _findDoc('aadhar') ??
+        _findDoc('student_aadhaar') ??
+        _findDoc('aadhaar');
+    final bool isAadharUploaded =
+        aadharDoc != null &&
+        (aadharDoc.uploaded || aadharDoc.status.toLowerCase() != 'pending');
 
     if (isPassportUploaded || isAadharUploaded) return const SizedBox.shrink();
 
@@ -1303,7 +1655,11 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock_outline_rounded, color: Color(0xFFC2410C), size: 22),
+          const Icon(
+            Icons.lock_outline_rounded,
+            color: Color(0xFFC2410C),
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -1383,11 +1739,15 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
   }
 
   Widget _buildDocCard(String name, String type, UserDocument? doc) {
-    bool isFromDigilocker = (doc?.isDigilocker ?? false) || doc?.status == 'available_in_digilocker';
+    bool isFromDigilocker =
+        (doc?.isDigilocker ?? false) ||
+        doc?.status == 'available_in_digilocker';
     bool hasFile = doc?.filePath != null && doc!.filePath!.isNotEmpty;
     bool isVerified = doc?.status == 'verified';
-    bool isRejected = doc != null && (doc.status == 'rejected' || doc.status == 'requires_resubmission');
-    
+    bool isRejected =
+        doc != null &&
+        (doc.status == 'rejected' || doc.status == 'requires_resubmission');
+
     bool isAvailable = doc != null && (isFromDigilocker || hasFile);
     bool isUploaded = (isAvailable || isVerified) && !isRejected;
 
@@ -1400,10 +1760,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
           color: isRejected
               ? const Color(0xFFEF5350).withValues(alpha: 0.25)
               : isVerified
-                  ? const Color(0xFF4CAF50).withValues(alpha: 0.25)
-                  : isUploaded 
-                      ? Colors.green.withValues(alpha: 0.15) 
-                      : const Color(0xFF311B92).withValues(alpha: 0.08),
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.25)
+              : isUploaded
+              ? Colors.green.withValues(alpha: 0.15)
+              : const Color(0xFF311B92).withValues(alpha: 0.08),
           width: 1,
         ),
         boxShadow: [
@@ -1428,27 +1788,27 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                   color: isRejected
                       ? const Color(0xFFFFEBEE)
                       : isVerified
-                          ? const Color(0xFFE8F5E9)
-                          : isUploaded
-                              ? const Color(0xFFE8F5E9)
-                              : const Color(0xFFEDE7F6),
+                      ? const Color(0xFFE8F5E9)
+                      : isUploaded
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFEDE7F6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   isRejected
                       ? Icons.cancel_rounded
                       : isVerified
-                          ? Icons.verified_user_rounded
-                          : isUploaded
-                              ? Icons.verified_user_rounded
-                              : Icons.file_present_rounded,
+                      ? Icons.verified_user_rounded
+                      : isUploaded
+                      ? Icons.verified_user_rounded
+                      : Icons.file_present_rounded,
                   color: isRejected
                       ? const Color(0xFFC62828)
                       : isVerified
-                          ? const Color(0xFF2E7D32)
-                          : isUploaded
-                              ? const Color(0xFF2E7D32)
-                              : const Color(0xFF6200EA),
+                      ? const Color(0xFF2E7D32)
+                      : isUploaded
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFF6200EA),
                   size: 18,
                 ),
               ),
@@ -1473,35 +1833,38 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: isRejected
                                 ? const Color(0xFFFFEBEE)
                                 : isVerified
-                                    ? const Color(0xFFE8F5E9)
-                                    : isUploaded
-                                        ? const Color(0xFFE8F5E9)
-                                        : const Color(0xFFFFF3E0),
+                                ? const Color(0xFFE8F5E9)
+                                : isUploaded
+                                ? const Color(0xFFE8F5E9)
+                                : const Color(0xFFFFF3E0),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isRejected
                                 ? 'Rejected'
                                 : isVerified
-                                    ? 'Approved'
-                                    : isUploaded 
-                                        ? (isFromDigilocker ? 'DigiLocker' : 'Uploaded')
-                                        : 'Pending',
+                                ? 'Approved'
+                                : isUploaded
+                                ? (isFromDigilocker ? 'DigiLocker' : 'Uploaded')
+                                : 'Pending',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.bold,
                               color: isRejected
                                   ? const Color(0xFFC62828)
                                   : isVerified
-                                      ? const Color(0xFF2E7D32)
-                                      : isUploaded 
-                                          ? const Color(0xFF2E7D32) 
-                                          : const Color(0xFFE65100),
+                                  ? const Color(0xFF2E7D32)
+                                  : isUploaded
+                                  ? const Color(0xFF2E7D32)
+                                  : const Color(0xFFE65100),
                             ),
                           ),
                         ),
@@ -1509,12 +1872,17 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                           const SizedBox(width: 6),
                           Text(
                             doc!.uploadedAt!.toIso8601String().split('T')[0],
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.grey.shade500,
+                            ),
                           ),
                         ],
                       ],
                     ),
-                    if (isRejected && doc.rejectionReason != null && doc.rejectionReason!.trim().isNotEmpty) ...[
+                    if (isRejected &&
+                        doc.rejectionReason != null &&
+                        doc.rejectionReason!.trim().isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Reason: ${doc.rejectionReason}',
@@ -1541,15 +1909,22 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         onTap: () async {
                           final token = await _getToken();
                           final targetType = doc.docType;
-                          final url = await UserService.getDocumentViewUrl(targetType);
+                          final url = await UserService.getDocumentViewUrl(
+                            targetType,
+                          );
                           final uri = Uri.parse('$url?token=$token');
 
                           if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
                           } else {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Could not open document')),
+                                const SnackBar(
+                                  content: Text('Could not open document'),
+                                ),
                               );
                             }
                           }
@@ -1574,7 +1949,10 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       ),
                       child: const Text(
                         'Re-upload',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
@@ -1589,15 +1967,22 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                       onTap: () async {
                         final token = await _getToken();
                         final targetType = doc?.docType ?? type;
-                        final url = await UserService.getDocumentViewUrl(targetType);
+                        final url = await UserService.getDocumentViewUrl(
+                          targetType,
+                        );
                         final uri = Uri.parse('$url?token=$token');
 
                         if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
                         } else {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Could not open document')),
+                              const SnackBar(
+                                content: Text('Could not open document'),
+                              ),
                             );
                           }
                         }
@@ -1611,9 +1996,13 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
                         bool? confirm = await showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             title: const Text('Delete Document'),
-                            content: Text('Are you sure you want to delete $name?'),
+                            content: Text(
+                              'Are you sure you want to delete $name?',
+                            ),
                             actions: [
                               TextButton(
                                 child: const Text('Cancel'),
@@ -1685,13 +2074,7 @@ class _DocumentVaultPageState extends State<DocumentVaultPage>
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: onTap,
-          child: Center(
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
-            ),
-          ),
+          child: Center(child: Icon(icon, color: color, size: 16)),
         ),
       ),
     );

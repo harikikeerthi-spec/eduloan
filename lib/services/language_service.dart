@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LanguageService {
-  static final ValueNotifier<String> activeLanguageNotifier = ValueNotifier<String>('en');
+  static final ValueNotifier<String> activeLanguageNotifier =
+      ValueNotifier<String>('en');
 
   static const Map<String, Map<String, String>> _translations = {
     'en': {
@@ -44,7 +45,8 @@ class LanguageService {
       'loan_status_updates': 'Loan status updates & reminders',
       'support_coming_soon': '24/7 Support Portal • Coming Soon',
       'coming_soon': '🔒 Coming Soon',
-      'help_center_coming_soon': 'Connect with Support portal is coming soon in the next update!',
+      'help_center_coming_soon':
+          'Connect with Support portal is coming soon in the next update!',
       'legal_guidelines': 'Legal guidelines and policies',
       'apply_loan': 'Apply for Loan',
       'application_progress': 'Application Progress',
@@ -88,7 +90,8 @@ class LanguageService {
       'loan_status_updates': 'రుణ స్థితి నవీకరణలు & రిమైండర్లు',
       'support_coming_soon': '24/7 మద్దతు పోర్టల్ • త్వరలో వస్తోంది',
       'coming_soon': '🔒 త్వరలో',
-      'help_center_coming_soon': 'సపోర్ట్ పోర్టల్ తదుపరి నవీకరణలో అందుబాటులోకి వస్తుంది!',
+      'help_center_coming_soon':
+          'సపోర్ట్ పోర్టల్ తదుపరి నవీకరణలో అందుబాటులోకి వస్తుంది!',
       'legal_guidelines': 'చట్టపరమైన మార్గదర్శకాలు',
       'apply_loan': 'రుణానికి దరఖాస్తు చేయండి',
       'application_progress': 'దరఖాస్తు పురోగతి',
@@ -220,7 +223,8 @@ class LanguageService {
       'loan_status_updates': 'വായ്പ നില അപ്‌ഡേറ്റുകൾ',
       'support_coming_soon': '24/7 പിന്തുണ പോർട്ടൽ • ഉടൻ വരുന്നു',
       'coming_soon': '🔒 ഉടൻ',
-      'help_center_coming_soon': 'സപ്പോർട്ട് പോർട്ടൽ അടുത്ത അപ്‌ഡേറ്റിൽ ലഭ്യമാകും!',
+      'help_center_coming_soon':
+          'സപ്പോർട്ട് പോർട്ടൽ അടുത്ത അപ്‌ഡേറ്റിൽ ലഭ്യമാകും!',
       'legal_guidelines': 'നിയമ മാർഗ്ഗനിർദ്ദേശങ്ങൾ',
       'apply_loan': 'വായ്പയ്ക്ക് അപേക്ഷിക്കുക',
       'application_progress': 'അപേക്ഷ പ്രഗതി',
@@ -281,11 +285,21 @@ class LanguageService {
   }
 
   static String _nameToCode(String nameOrDisplayName) {
-    if (nameOrDisplayName.contains('Telugu') || nameOrDisplayName.contains('తెలుగు')) return 'te';
-    if (nameOrDisplayName.contains('Tamil') || nameOrDisplayName.contains('தமிழ்')) return 'ta';
-    if (nameOrDisplayName.contains('Kannada') || nameOrDisplayName.contains('ಕನ್ನಡ')) return 'kn';
-    if (nameOrDisplayName.contains('Malayalam') || nameOrDisplayName.contains('മലയാളം')) return 'ml';
-    if (nameOrDisplayName.contains('Hindi') || nameOrDisplayName.contains('हिंदी')) return 'hi';
+    if (nameOrDisplayName.contains('Telugu') ||
+        nameOrDisplayName.contains('తెలుగు'))
+      return 'te';
+    if (nameOrDisplayName.contains('Tamil') ||
+        nameOrDisplayName.contains('தமிழ்'))
+      return 'ta';
+    if (nameOrDisplayName.contains('Kannada') ||
+        nameOrDisplayName.contains('ಕನ್ನಡ'))
+      return 'kn';
+    if (nameOrDisplayName.contains('Malayalam') ||
+        nameOrDisplayName.contains('മലയാളം'))
+      return 'ml';
+    if (nameOrDisplayName.contains('Hindi') ||
+        nameOrDisplayName.contains('हिंदी'))
+      return 'hi';
     return 'en';
   }
 

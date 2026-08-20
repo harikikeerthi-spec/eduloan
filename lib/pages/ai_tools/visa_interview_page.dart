@@ -163,7 +163,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           } else if (_selectedAgent == 'agent_sarah') {
             index = englishVoices.length > 1 ? 1 : 0;
           } else if (_selectedAgent == 'agent_smith') {
-            index = englishVoices.length > 2 ? 2 : (englishVoices.length > 1 ? 1 : 0);
+            index = englishVoices.length > 2
+                ? 2
+                : (englishVoices.length > 1 ? 1 : 0);
           }
 
           final selectedVoice = englishVoices[index];
@@ -274,9 +276,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to start interview: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to start interview: $e')));
     }
   }
 
@@ -543,7 +545,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           _buildOfficerCard(
             id: 'agent_michael',
             name: 'VL Officer',
-            description: 'Neutral, methodical, friendly, follows procedure exactly but uses simple and easy-to-understand questions.',
+            description:
+                'Neutral, methodical, friendly, follows procedure exactly but uses simple and easy-to-understand questions.',
             difficulty: 'Easy',
             difficultyColor: Colors.green,
             icon: Icons.assignment_ind,
@@ -552,7 +555,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           _buildOfficerCard(
             id: 'agent_sarah',
             name: 'VL Officer',
-            description: 'Warm but sharp, conversational, catches everything behind a friendly tone.',
+            description:
+                'Warm but sharp, conversational, catches everything behind a friendly tone.',
             difficulty: 'Medium',
             difficultyColor: Colors.orange,
             icon: Icons.face,
@@ -561,7 +565,8 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
           _buildOfficerCard(
             id: 'agent_smith',
             name: 'VL Officer',
-            description: 'Strict, authoritative, 20+ years of experience, no patience for vague answers.',
+            description:
+                'Strict, authoritative, 20+ years of experience, no patience for vague answers.',
             difficulty: 'Hard',
             difficultyColor: Colors.red,
             icon: Icons.gavel,
@@ -881,7 +886,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF6200EE).withValues(alpha: 0.2)),
+        border: Border.all(
+          color: const Color(0xFF6200EE).withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         children: [
@@ -1039,7 +1046,9 @@ class _VisaInterviewPageState extends State<VisaInterviewPage> {
                       height: 140 * scale,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF6200EE).withValues(alpha: (0.05 / i)),
+                        color: const Color(
+                          0xFF6200EE,
+                        ).withValues(alpha: (0.05 / i)),
                       ),
                     );
                   },

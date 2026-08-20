@@ -50,9 +50,9 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading image: $e')));
       }
     }
   }
@@ -97,7 +97,10 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
 
       // White background
       final bgPaint = Paint()..color = Colors.white;
-      canvas.drawRect(const Rect.fromLTWH(0, 0, outputSize, outputSize), bgPaint);
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, outputSize, outputSize),
+        bgPaint,
+      );
 
       // Clip to circle
       final clipPath = Path()
@@ -131,12 +134,15 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
       canvas.drawImage(_uiImage!, Offset(-imgW / 2, -imgH / 2), paint);
 
       final picture = recorder.endRecording();
-      final croppedUiImage =
-          await picture.toImage(outputSize.toInt(), outputSize.toInt());
+      final croppedUiImage = await picture.toImage(
+        outputSize.toInt(),
+        outputSize.toInt(),
+      );
 
       // Step 2: Get raw RGBA bytes from canvas
-      final byteData =
-          await croppedUiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final byteData = await croppedUiImage.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
 
       if (byteData != null) {
         final rgbaBytes = byteData.buffer.asUint8List();
@@ -185,14 +191,23 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: TextButton.icon(
-              onPressed: (_isCropping || _isLoading) ? null : _handleCropAndSave,
+              onPressed: (_isCropping || _isLoading)
+                  ? null
+                  : _handleCropAndSave,
               icon: _isCropping
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
-                  : const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                  : const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
               label: Text(
                 'Done',
                 style: GoogleFonts.outfit(
@@ -203,30 +218,47 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
               ),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFF311B92),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF311B92)),
+            )
           : Column(
               children: [
                 // Instruction hint bar
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 16,
+                  ),
                   color: const Color(0xFF241E4D),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.touch_app_outlined, color: Colors.white70, size: 16),
+                      const Icon(
+                        Icons.touch_app_outlined,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Drag to position • Pinch to zoom',
-                        style: GoogleFonts.inter(fontSize: 12.5, color: Colors.white70),
+                        style: GoogleFonts.inter(
+                          fontSize: 12.5,
+                          color: Colors.white70,
+                        ),
                       ),
                     ],
                   ),
@@ -246,7 +278,10 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                         },
                         onScaleUpdate: (details) {
                           setState(() {
-                            _scale = (_startScale * details.scale).clamp(0.5, 4.0);
+                            _scale = (_startScale * details.scale).clamp(
+                              0.5,
+                              4.0,
+                            );
                             final delta = details.focalPoint - _startFocalPoint;
                             _offset = _lastOffset + delta;
                           });
@@ -258,9 +293,18 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                             if (_uiImage != null)
                               Transform(
                                 alignment: Alignment.center,
-                                transform: Matrix4.translationValues(_offset.dx, _offset.dy, 0.0)
-                                  ..rotateZ((_rotationTurns % 4) * (math.pi / 2))
-                                  ..scaleByVector3(vmath.Vector3(_scale, _scale, 1.0)),
+                                transform:
+                                    Matrix4.translationValues(
+                                        _offset.dx,
+                                        _offset.dy,
+                                        0.0,
+                                      )
+                                      ..rotateZ(
+                                        (_rotationTurns % 4) * (math.pi / 2),
+                                      )
+                                      ..scaleByVector3(
+                                        vmath.Vector3(_scale, _scale, 1.0),
+                                      ),
                                 child: RawImage(
                                   image: _uiImage,
                                   fit: BoxFit.contain,
@@ -284,7 +328,9 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                   decoration: const BoxDecoration(
                     color: Color(0xFF1A153B),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -292,7 +338,11 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                       // Zoom Slider
                       Row(
                         children: [
-                          const Icon(Icons.zoom_out_rounded, color: Colors.white70, size: 20),
+                          const Icon(
+                            Icons.zoom_out_rounded,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
                           Expanded(
                             child: SliderTheme(
                               data: SliderThemeData(
@@ -301,7 +351,9 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                                 thumbColor: Colors.white,
                                 overlayColor: const Color(0x297C4DFF),
                                 trackHeight: 3,
-                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 7,
+                                ),
                               ),
                               child: Slider(
                                 value: _scale.clamp(0.5, 4.0),
@@ -313,7 +365,11 @@ class _ImageCropDialogState extends State<ImageCropDialog> {
                               ),
                             ),
                           ),
-                          const Icon(Icons.zoom_in_rounded, color: Colors.white70, size: 20),
+                          const Icon(
+                            Icons.zoom_in_rounded,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -422,15 +478,33 @@ class _CropOverlayPainter extends CustomPainter {
     final top = center.dy - radius;
 
     canvas.save();
-    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
+    canvas.clipPath(
+      Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
+    );
 
     // Vertical lines
-    canvas.drawLine(Offset(left + third, top), Offset(left + third, top + cropSize), gridPaint);
-    canvas.drawLine(Offset(left + third * 2, top), Offset(left + third * 2, top + cropSize), gridPaint);
+    canvas.drawLine(
+      Offset(left + third, top),
+      Offset(left + third, top + cropSize),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(left + third * 2, top),
+      Offset(left + third * 2, top + cropSize),
+      gridPaint,
+    );
 
     // Horizontal lines
-    canvas.drawLine(Offset(left, top + third), Offset(left, top + third), gridPaint);
-    canvas.drawLine(Offset(left, top + third * 2), Offset(left + cropSize, top + third * 2), gridPaint);
+    canvas.drawLine(
+      Offset(left, top + third),
+      Offset(left, top + third),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(left, top + third * 2),
+      Offset(left + cropSize, top + third * 2),
+      gridPaint,
+    );
 
     canvas.restore();
   }

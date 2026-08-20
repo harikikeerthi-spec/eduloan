@@ -47,10 +47,7 @@ class _EssentialServicePageState extends State<EssentialServicePage>
       duration: const Duration(milliseconds: 1000),
     );
 
-    _scaleAnim = CurvedAnimation(
-      parent: _animCtrl,
-      curve: Curves.elasticOut,
-    );
+    _scaleAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.elasticOut);
 
     _fadeAnim = CurvedAnimation(
       parent: _animCtrl,
@@ -87,7 +84,8 @@ class _EssentialServicePageState extends State<EssentialServicePage>
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       setState(() {
-        _emailError = 'Please enter a valid Gmail address (e.g. name@gmail.com)';
+        _emailError =
+            'Please enter a valid Gmail address (e.g. name@gmail.com)';
       });
       return;
     }
@@ -104,7 +102,8 @@ class _EssentialServicePageState extends State<EssentialServicePage>
     // Trigger Dual Notification (In-App Bell + System Banner + Email Alert)
     await NotificationService.pushNotification(
       title: '🎁 ${widget.serviceTitle} VIP Launch List Confirmed!',
-      message: 'We will email $email as soon as ${widget.serviceTitle} launches on VidyaLoans!',
+      message:
+          'We will email $email as soon as ${widget.serviceTitle} launches on VidyaLoans!',
       type: 'ALERT',
     );
 
@@ -120,7 +119,11 @@ class _EssentialServicePageState extends State<EssentialServicePage>
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.mark_email_read_rounded, color: Colors.white, size: 22),
+            const Icon(
+              Icons.mark_email_read_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -129,7 +132,10 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                 children: [
                   Text(
                     'VIP Access Reserved! 🎉',
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                   Text(
                     'We will email $email as soon as ${widget.serviceTitle} launches!',
@@ -157,7 +163,10 @@ class _EssentialServicePageState extends State<EssentialServicePage>
             children: [
               // Custom App Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     IconButton(
@@ -185,7 +194,10 @@ class _EssentialServicePageState extends State<EssentialServicePage>
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
@@ -201,13 +213,18 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: LinearGradient(
-                                  colors: [widget.themeColor, widget.themeColor.withValues(alpha: 0.7)],
+                                  colors: [
+                                    widget.themeColor,
+                                    widget.themeColor.withValues(alpha: 0.7),
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: widget.themeColor.withValues(alpha: 0.35),
+                                    color: widget.themeColor.withValues(
+                                      alpha: 0.35,
+                                    ),
                                     blurRadius: 30,
                                     spreadRadius: 5,
                                   ),
@@ -224,7 +241,10 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF97316),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.5),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2.5,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.2),
@@ -244,7 +264,10 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                       const SizedBox(height: 24),
                       // Locked & Coming Soon Pill Badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFFEA580C), Color(0xFFF97316)],
@@ -252,7 +275,9 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFF97316).withValues(alpha: 0.35),
+                              color: const Color(
+                                0xFFF97316,
+                              ).withValues(alpha: 0.35),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -261,7 +286,11 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.lock_clock_rounded, color: Colors.white, size: 16),
+                            const Icon(
+                              Icons.lock_clock_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'LOCKED • COMING SOON',
@@ -303,14 +332,21 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                             const SizedBox(height: 20),
                             // Locked Status Notice Box
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFF7ED),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFFFEDD5)),
+                                border: Border.all(
+                                  color: const Color(0xFFFFEDD5),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFF97316).withValues(alpha: 0.08),
+                                    color: const Color(
+                                      0xFFF97316,
+                                    ).withValues(alpha: 0.08),
                                     blurRadius: 10,
                                     offset: const Offset(0, 4),
                                   ),
@@ -321,10 +357,16 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                      color: const Color(
+                                        0xFFF97316,
+                                      ).withValues(alpha: 0.15),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.lock_outline_rounded, color: Color(0xFFC2410C), size: 20),
+                                    child: const Icon(
+                                      Icons.lock_outline_rounded,
+                                      color: Color(0xFFC2410C),
+                                      size: 20,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -364,7 +406,9 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.03),
@@ -381,7 +425,9 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFEA4335).withValues(alpha: 0.1),
+                                          color: const Color(
+                                            0xFFEA4335,
+                                          ).withValues(alpha: 0.1),
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
@@ -419,7 +465,9 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                     keyboardType: TextInputType.emailAddress,
                                     enabled: !_isNotified || _isSubmitting,
                                     inputFormatters: [
-                                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@.]')),
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[a-zA-Z0-9@.]'),
+                                      ),
                                     ],
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
@@ -427,7 +475,8 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                       color: const Color(0xFF0F172A),
                                     ),
                                     decoration: InputDecoration(
-                                      hintText: 'Enter your Gmail address (e.g. name@gmail.com)',
+                                      hintText:
+                                          'Enter your Gmail address (e.g. name@gmail.com)',
                                       hintStyle: GoogleFonts.inter(
                                         fontSize: 13,
                                         color: const Color(0xFF94A3B8),
@@ -438,8 +487,14 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                         size: 20,
                                       ),
                                       filled: true,
-                                      fillColor: _isNotified ? const Color(0xFFF8FAFC) : const Color(0xFFF1F5F9),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                      fillColor: _isNotified
+                                          ? const Color(0xFFF8FAFC)
+                                          : const Color(0xFFF1F5F9),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(14),
                                         borderSide: BorderSide.none,
@@ -447,7 +502,9 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(14),
                                         borderSide: BorderSide(
-                                          color: _emailError != null ? Colors.red : const Color(0xFFCBD5E1),
+                                          color: _emailError != null
+                                              ? Colors.red
+                                              : const Color(0xFFCBD5E1),
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
@@ -464,33 +521,51 @@ class _EssentialServicePageState extends State<EssentialServicePage>
 
                                   if (_isNotified && _savedEmail != null) ...[
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                        color: const Color(
+                                          0xFF10B981,
+                                        ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                                        border: Border.all(
+                                          color: const Color(
+                                            0xFF10B981,
+                                          ).withValues(alpha: 0.3),
+                                        ),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+                                          const Icon(
+                                            Icons.check_circle_rounded,
+                                            color: Color(0xFF10B981),
+                                            size: 20,
+                                          ),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   '✓ VIP Launch Alert Reserved!',
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.bold,
-                                                    color: const Color(0xFF047857),
+                                                    color: const Color(
+                                                      0xFF047857,
+                                                    ),
                                                   ),
                                                 ),
                                                 Text(
                                                   'We will email $_savedEmail on launch day.',
                                                   style: GoogleFonts.inter(
                                                     fontSize: 11.5,
-                                                    color: const Color(0xFF065F46),
+                                                    color: const Color(
+                                                      0xFF065F46,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -503,18 +578,29 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                               });
                                             },
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 5,
+                                                  ),
                                               decoration: BoxDecoration(
                                                 color: Colors.white,
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: const Color(
+                                                    0xFF10B981,
+                                                  ).withValues(alpha: 0.4),
+                                                ),
                                               ),
                                               child: Text(
                                                 'Edit Gmail',
                                                 style: GoogleFonts.outfit(
                                                   fontSize: 11.5,
                                                   fontWeight: FontWeight.bold,
-                                                  color: const Color(0xFF047857),
+                                                  color: const Color(
+                                                    0xFF047857,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -527,29 +613,36 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                       width: double.infinity,
                                       height: 50,
                                       child: ElevatedButton(
-                                        onPressed: _isSubmitting ? null : _handleNotifyMe,
+                                        onPressed: _isSubmitting
+                                            ? null
+                                            : _handleNotifyMe,
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: widget.themeColor,
                                           foregroundColor: Colors.white,
                                           elevation: 0,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
                                           ),
                                         ),
                                         child: _isSubmitting
                                             ? const SizedBox(
                                                 width: 20,
                                                 height: 20,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.white,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
                                               )
                                             : Row(
-                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
                                                 children: [
                                                   const Icon(
-                                                    Icons.notifications_active_rounded,
+                                                    Icons
+                                                        .notifications_active_rounded,
                                                     size: 18,
                                                   ),
                                                   const SizedBox(width: 8),
@@ -557,7 +650,8 @@ class _EssentialServicePageState extends State<EssentialServicePage>
                                                     'Notify Me on Launch 🔔',
                                                     style: GoogleFonts.outfit(
                                                       fontSize: 15,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ],

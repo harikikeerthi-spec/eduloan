@@ -25,10 +25,12 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('user_email');
-      
+
       if (email != null) {
         final result = await AuthService.getUserDashboard(email);
-        if (result['success'] == true && result['user'] != null && result['user']['referralCode'] != null) {
+        if (result['success'] == true &&
+            result['user'] != null &&
+            result['user']['referralCode'] != null) {
           setState(() {
             _referralCode = result['user']['referralCode'];
           });
@@ -61,7 +63,11 @@ class _ReferAndEarnPageState extends State<ReferAndEarnPage> {
                       _buildPromoBanner(),
                       const SizedBox(height: 32),
                       if (_isLoading)
-                        const Center(child: CircularProgressIndicator(color: Color(0xFF311B92)))
+                        const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF311B92),
+                          ),
+                        )
                       else ...[
                         _buildReferralSection(context, _referralCode),
                         const SizedBox(height: 32),

@@ -12,15 +12,20 @@ import 'secure_storage_service.dart';
 
 class UserService {
   /// Global state tracking for active document uploads
-  static final ValueNotifier<bool> isUploadingNotifier = ValueNotifier<bool>(false);
-  static final ValueNotifier<String?> currentUploadingDocNotifier = ValueNotifier<String?>(null);
+  static final ValueNotifier<bool> isUploadingNotifier = ValueNotifier<bool>(
+    false,
+  );
+  static final ValueNotifier<String?> currentUploadingDocNotifier =
+      ValueNotifier<String?>(null);
   static Completer<void>? _currentUploadCompleter;
 
   static bool get isUploading => isUploadingNotifier.value;
   static String? get currentUploadingDoc => currentUploadingDocNotifier.value;
 
   /// Allows caller (e.g. Delete Account / Logout flow) to wait for active upload to finish
-  static Future<void> waitForCurrentUpload({Duration timeout = const Duration(seconds: 30)}) async {
+  static Future<void> waitForCurrentUpload({
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
     if (!isUploadingNotifier.value || _currentUploadCompleter == null) return;
     try {
       await _currentUploadCompleter!.future.timeout(timeout);
@@ -65,7 +70,10 @@ class UserService {
         }
         if (rawList != null) {
           return rawList
-              .map((item) => UserDocument.fromJson(Map<String, dynamic>.from(item)))
+              .map(
+                (item) =>
+                    UserDocument.fromJson(Map<String, dynamic>.from(item)),
+              )
               .toList();
         }
       }
@@ -121,13 +129,22 @@ class UserService {
       } else if (filePath.endsWith('.doc')) {
         contentType = MediaType('application', 'msword');
       } else if (filePath.endsWith('.docx')) {
-        contentType = MediaType('application', 'vnd.openxmlformats-officedocument.wordprocessingml.document');
+        contentType = MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
       } else {
         // Fallback: send as octet-stream so the server filter always accepts it
         contentType = MediaType('application', 'octet-stream');
       }
 
-      request.files.add(await http.MultipartFile.fromPath('file', file.path, contentType: contentType));
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          file.path,
+          contentType: contentType,
+        ),
+      );
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -138,8 +155,12 @@ class UserService {
           try {
             final prefs = await SharedPreferences.getInstance();
             final docData = data['data'];
-            final ocrResult = docData?['ocrResult'] ?? docData?['verification'] ?? data['ocrResult'];
-            final extractedFields = ocrResult?['extractedFields'] ??
+            final ocrResult =
+                docData?['ocrResult'] ??
+                docData?['verification'] ??
+                data['ocrResult'];
+            final extractedFields =
+                ocrResult?['extractedFields'] ??
                 ocrResult?['extracted_fields'] ??
                 ocrResult?['extracted_data'] ??
                 docData?['verificationMetadata']?['details']?['extractedFields'] ??
@@ -147,7 +168,8 @@ class UserService {
 
             if (extractedFields != null && extractedFields is Map) {
               final Map map = extractedFields;
-              final numVal = map['pan_number'] ??
+              final numVal =
+                  map['pan_number'] ??
                   map['panNumber'] ??
                   map['pan'] ??
                   map['aadhaar_number'] ??
@@ -161,7 +183,10 @@ class UserService {
                   map['registration_number'] ??
                   map['registrationNumber'];
               if (numVal != null && numVal.toString().trim().isNotEmpty) {
-                await prefs.setString('ocr_number_${userId}_$docType', numVal.toString().trim());
+                await prefs.setString(
+                  'ocr_number_${userId}_$docType',
+                  numVal.toString().trim(),
+                );
               }
             }
           } catch (e) {

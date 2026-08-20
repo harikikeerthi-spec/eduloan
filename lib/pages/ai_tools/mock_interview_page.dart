@@ -23,13 +23,15 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
   String? _sessionId;
   String? _feedbackText;
   int? _score;
-  
+
   final List<Map<String, String>> _messages = [];
 
   Future<void> _startInterview() async {
     if (_uniController.text.isEmpty || _programController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both University and Program')),
+        const SnackBar(
+          content: Text('Please enter both University and Program'),
+        ),
       );
       return;
     }
@@ -48,7 +50,9 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
         _isLoading = false;
         _messages.add({
           'sender': 'bot',
-          'text': response['message'] ?? 'Hello! I am your interviewer. Let\'s begin.',
+          'text':
+              response['message'] ??
+              'Hello! I am your interviewer. Let\'s begin.',
         });
       });
     } catch (e) {
@@ -74,7 +78,10 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
     _scrollToBottom();
 
     try {
-      final response = await _aiService.sendMockInterviewMessage(_sessionId!, userText);
+      final response = await _aiService.sendMockInterviewMessage(
+        _sessionId!,
+        userText,
+      );
       if (mounted) {
         setState(() {
           _messages.add({
@@ -90,7 +97,8 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
         setState(() {
           _messages.add({
             'sender': 'bot',
-            'text': 'Sorry, I encountered an error. Please check your connection.',
+            'text':
+                'Sorry, I encountered an error. Please check your connection.',
           });
           _isTyping = false;
         });
@@ -106,12 +114,19 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('End Interview?'),
-        content: const Text('Are you sure you want to end the interview and receive feedback?'),
+        content: const Text(
+          'Are you sure you want to end the interview and receive feedback?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF6200EE)),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF6200EE),
+            ),
             child: const Text('End & Evaluate'),
           ),
         ],
@@ -133,9 +148,9 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get feedback: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to get feedback: $e')));
       }
     }
   }
@@ -212,10 +227,7 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
           const SizedBox(height: 8),
           Text(
             'We will tailor the interview questions based on your university and program.',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
           const SizedBox(height: 32),
           _buildTextField(
@@ -373,7 +385,9 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(20).copyWith(bottomLeft: Radius.zero),
+          borderRadius: BorderRadius.circular(
+            20,
+          ).copyWith(bottomLeft: Radius.zero),
         ),
         child: const Text(
           'Interviewer is typing...',
@@ -414,7 +428,10 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
                   decoration: const InputDecoration(
                     hintText: 'Type your answer...',
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                   ),
                   maxLines: null,
                   onSubmitted: (_) => _sendMessage(),
@@ -430,7 +447,11 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
                   color: Color(0xFF6200EE),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
             ),
           ],
@@ -484,10 +505,7 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
                         ),
                         const Text(
                           '/ 100',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
                         ),
                       ],
                     ),
@@ -533,7 +551,8 @@ class _MockInterviewPageState extends State<MockInterviewPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _feedbackText ?? 'No detailed feedback available at this time.',
+                  _feedbackText ??
+                      'No detailed feedback available at this time.',
                   style: const TextStyle(
                     fontSize: 16,
                     height: 1.6,

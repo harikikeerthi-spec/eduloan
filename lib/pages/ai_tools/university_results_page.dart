@@ -26,7 +26,7 @@ class _UniversityResultsPageState extends State<UniversityResultsPage> {
   void initState() {
     super.initState();
     _allRecommendations = List.from(widget.recommendations);
-    
+
     _filteredRecommendations = _getFilteredList();
     _loadSavedStatus();
   }
@@ -605,9 +605,17 @@ class _UniversityCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(child: _buildKV("TUITION", _formatUSD(recommendation.tuition))),
                 Expanded(
-                  child: _buildKV("AVG. SALARY", _formatUSD(recommendation.avgSalary)),
+                  child: _buildKV(
+                    "TUITION",
+                    _formatUSD(recommendation.tuition),
+                  ),
+                ),
+                Expanded(
+                  child: _buildKV(
+                    "AVG. SALARY",
+                    _formatUSD(recommendation.avgSalary),
+                  ),
                 ),
                 Expanded(child: _buildKV("DEADLINE", recommendation.deadline)),
                 Expanded(
@@ -627,12 +635,15 @@ class _UniversityCard extends StatelessWidget {
 
   String _formatUSD(String rawValue) {
     if (rawValue.isEmpty || rawValue == '-') return 'N/A';
-    
+
     // Check if it already has a symbol
-    if (rawValue.contains('\$') || rawValue.contains('£') || rawValue.contains('€') || rawValue.contains('₹')) {
+    if (rawValue.contains('\$') ||
+        rawValue.contains('£') ||
+        rawValue.contains('€') ||
+        rawValue.contains('₹')) {
       return rawValue;
     }
-    
+
     // Extract digits and try to format as USD
     String digitsOnly = rawValue.replaceAll(RegExp(r'[^0-9.]'), '');
     double? val = double.tryParse(digitsOnly);
@@ -644,7 +655,7 @@ class _UniversityCard extends StatelessWidget {
       );
       return '\$$formatted';
     }
-    
+
     return rawValue;
   }
 

@@ -172,13 +172,13 @@ class Loan {
   int getEffectiveStageIndex({bool hasUploadedDocs = false}) {
     final effProgress = getEffectiveProgress(hasUploadedDocs: hasUploadedDocs);
     if (effProgress >= 100) return 7; // Disbursed
-    if (effProgress >= 95) return 6;  // Sanction
-    if (effProgress >= 90) return 5;  // Review
-    if (effProgress >= 75) return 4;  // Credit Check
-    if (effProgress >= 50) return 3;  // Submit to Bank
-    if (effProgress >= 40 || hasUploadedDocs) return 2;  // Documents
-    if (effProgress >= 25) return 1;  // Submitted
-    return 0;                         // Created
+    if (effProgress >= 95) return 6; // Sanction
+    if (effProgress >= 90) return 5; // Review
+    if (effProgress >= 75) return 4; // Credit Check
+    if (effProgress >= 50) return 3; // Submit to Bank
+    if (effProgress >= 40 || hasUploadedDocs) return 2; // Documents
+    if (effProgress >= 25) return 1; // Submitted
+    return 0; // Created
   }
 
   String currentStageLabel({bool hasUploadedDocs = false}) {
@@ -223,14 +223,18 @@ class Loan {
   }
 
   String get assignedStaffPhone {
-    if (hasAssignedStaff && counselorPhone != null && counselorPhone!.trim().isNotEmpty) {
+    if (hasAssignedStaff &&
+        counselorPhone != null &&
+        counselorPhone!.trim().isNotEmpty) {
       return counselorPhone!.trim();
     }
     return 'Will be allocated shortly';
   }
 
   String get assignedStaffEmail {
-    if (hasAssignedStaff && counselorEmail != null && counselorEmail!.trim().isNotEmpty) {
+    if (hasAssignedStaff &&
+        counselorEmail != null &&
+        counselorEmail!.trim().isNotEmpty) {
       return counselorEmail!.trim();
     }
     return 'support@vidyaloans.in';
@@ -245,7 +249,9 @@ class Loan {
     final s = val.toString().trim();
     if (s.isEmpty) return DateTime.now();
     try {
-      if (s.endsWith('Z') || s.contains('+') || RegExp(r'-\d{2}:\d{2}$').hasMatch(s)) {
+      if (s.endsWith('Z') ||
+          s.contains('+') ||
+          RegExp(r'-\d{2}:\d{2}$').hasMatch(s)) {
         return DateTime.parse(s).toLocal();
       }
       return DateTime.parse('${s}Z').toLocal();
@@ -289,8 +295,12 @@ class Loan {
       progress: json['progress'] != null
           ? int.tryParse(json['progress'].toString()) ?? 0
           : 0,
-      date: _parseDate(json['submittedAt'] ?? json['date'] ?? json['createdAt']),
-      updatedAt: _parseDate(json['updatedAt'] ?? json['submittedAt'] ?? json['date']),
+      date: _parseDate(
+        json['submittedAt'] ?? json['date'] ?? json['createdAt'],
+      ),
+      updatedAt: _parseDate(
+        json['updatedAt'] ?? json['submittedAt'] ?? json['date'],
+      ),
       counselorName: json['counselorName']?.toString(),
       counselorPhone: json['counselorPhone']?.toString(),
       counselorEmail: json['counselorEmail']?.toString(),

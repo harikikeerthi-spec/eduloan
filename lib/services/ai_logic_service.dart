@@ -141,7 +141,7 @@ class GradeConversionResult {
 
   factory GradeConversionResult.fromJson(Map<String, dynamic> json) {
     final analysisMap = Map<String, dynamic>.from(json['analysis'] ?? {});
-    
+
     // Copy root-level values into analysis map if they aren't already there
     if (json['percentage'] != null && analysisMap['percentage'] == null) {
       analysisMap['percentage'] = json['percentage'];
@@ -155,17 +155,20 @@ class GradeConversionResult {
     if (json['strength'] != null && analysisMap['strength'] == null) {
       analysisMap['strength'] = json['strength'];
     }
-    if (json['competitiveness'] != null && analysisMap['competitiveness'] == null) {
+    if (json['competitiveness'] != null &&
+        analysisMap['competitiveness'] == null) {
       analysisMap['competitiveness'] = json['competitiveness'];
     }
-    if (json['recommendations'] != null && analysisMap['recommendations'] == null) {
+    if (json['recommendations'] != null &&
+        analysisMap['recommendations'] == null) {
       analysisMap['recommendations'] = json['recommendations'];
     }
 
     return GradeConversionResult(
       score: (json['score'] ?? 0).toDouble(),
       scale: json['scale'] ?? '',
-      quality: json['quality'] ?? json['letterGrade'] ?? json['outputGrade'] ?? '',
+      quality:
+          json['quality'] ?? json['letterGrade'] ?? json['outputGrade'] ?? '',
       internationalEquivalent: Map<String, String>.from(
         json['internationalEquivalent'] ?? {},
       ),
@@ -415,11 +418,18 @@ class UniversityRecommendation {
       raceRatio: json['raceRatio'] ?? '',
       safetyStatus: json['safetyStatus'] ?? '',
       academicFocus: json['academicFocus'] ?? '',
-      images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      admissionProcess: (json['admissionProcess'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      testRequirements: (json['testRequirements'] as Map?)?.map(
+      images:
+          (json['images'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      admissionProcess:
+          (json['admissionProcess'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      testRequirements:
+          (json['testRequirements'] as Map?)?.map(
             (k, v) => MapEntry(k.toString(), v?.toString() ?? ''),
-          ) ?? {},
+          ) ??
+          {},
     );
   }
 
@@ -646,32 +656,34 @@ class EvaluationResult {
   }) {
     final int parsedScore = json['score'] != null
         ? (json['score'] is num
-            ? (json['score'] as num).toInt()
-            : int.tryParse(json['score'].toString()) ?? 0)
+              ? (json['score'] as num).toInt()
+              : int.tryParse(json['score'].toString()) ?? 0)
         : (json['overallScore'] is num
-            ? (json['overallScore'] as num).toInt()
-            : int.tryParse(json['overallScore']?.toString() ?? '0') ?? 0);
+              ? (json['overallScore'] as num).toInt()
+              : int.tryParse(json['overallScore']?.toString() ?? '0') ?? 0);
 
     final String questionText =
         (json['question'] != null && json['question'].toString().isNotEmpty)
-            ? json['question'].toString()
-            : defaultQuestion;
+        ? json['question'].toString()
+        : defaultQuestion;
 
     final String answerText =
         (json['answer'] != null && json['answer'].toString().isNotEmpty)
-            ? json['answer'].toString()
-            : (json['transcript'] != null ? json['transcript'].toString() : defaultAnswer);
+        ? json['answer'].toString()
+        : (json['transcript'] != null
+              ? json['transcript'].toString()
+              : defaultAnswer);
 
     final String feedbackText =
         json['feedback'] != null && json['feedback'].toString().isNotEmpty
-            ? json['feedback'].toString()
-            : (json['quickTip'] != null ? json['quickTip'].toString() : '');
+        ? json['feedback'].toString()
+        : (json['quickTip'] != null ? json['quickTip'].toString() : '');
 
     final List<String> improvementsList = json['improvements'] != null
         ? List<String>.from(json['improvements'])
         : (json['suggestedImprovement'] != null
-            ? List<String>.from(json['suggestedImprovement'])
-            : []);
+              ? List<String>.from(json['suggestedImprovement'])
+              : []);
 
     return EvaluationResult(
       question: questionText,
@@ -706,10 +718,7 @@ class AiLogicService {
   ) async {
     final String baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl/ai/$endpoint');
-    final response = await ApiClient.post(
-      url,
-      body: jsonEncode(body),
-    );
+    final response = await ApiClient.post(url, body: jsonEncode(body));
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
@@ -721,9 +730,7 @@ class AiLogicService {
   Future<dynamic> _getRequest(String endpoint) async {
     final String baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl/ai/$endpoint');
-    final response = await ApiClient.get(
-      url,
-    );
+    final response = await ApiClient.get(url);
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
@@ -740,10 +747,14 @@ class AiLogicService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final firstName = prefs.getString('user_firstName') ?? prefs.getString('name') ?? '';
+      final firstName =
+          prefs.getString('user_firstName') ?? prefs.getString('name') ?? '';
       final lastName = prefs.getString('user_lastName') ?? '';
-      final name = '$firstName $lastName'.trim().isNotEmpty ? '$firstName $lastName'.trim() : 'Student';
-      final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
+      final name = '$firstName $lastName'.trim().isNotEmpty
+          ? '$firstName $lastName'.trim()
+          : 'Student';
+      final email =
+          prefs.getString('user_email') ?? prefs.getString('email') ?? '';
       final phone = prefs.getString('user_phone') ?? 'N/A';
       final userId = await SecureStorageService.getUserId() ?? '';
 
@@ -764,7 +775,9 @@ class AiLogicService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        return data['success'] == true || data['id'] != null || data['inquiry'] != null;
+        return data['success'] == true ||
+            data['id'] != null ||
+            data['inquiry'] != null;
       }
       return false;
     } catch (e) {
@@ -779,8 +792,12 @@ class AiLogicService {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString('user_email') ?? prefs.getString('email') ?? '';
-      final userId = await SecureStorageService.getUserId() ?? prefs.getString('userId') ?? '';
+      final email =
+          prefs.getString('user_email') ?? prefs.getString('email') ?? '';
+      final userId =
+          await SecureStorageService.getUserId() ??
+          prefs.getString('userId') ??
+          '';
 
       if (email.isEmpty && userId.isEmpty) return false;
 
@@ -789,9 +806,7 @@ class AiLogicService {
         '$baseUrl/university-inquiry/check?email=${Uri.encodeComponent(email)}&userId=${Uri.encodeComponent(userId)}&universityName=${Uri.encodeComponent(universityName)}&type=$type',
       );
 
-      final response = await ApiClient.get(
-        url,
-      );
+      final response = await ApiClient.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['exists'] == true;
@@ -802,9 +817,64 @@ class AiLogicService {
     }
   }
 
-  Future<String> sendSupportMessage(String message) async {
-    final data = await _postRequest('support-chat', {'message': message});
-    return data['message'] ?? '';
+  Future<String> sendSupportMessage(
+    String message, {
+    List<Map<String, String>>? history,
+  }) async {
+    try {
+      final data = await _postRequest('support-chat', {
+        'message': message,
+        if (history != null && history.isNotEmpty) 'history': history,
+      });
+      return data['response'] ??
+          data['message'] ??
+          'How can I assist you further?';
+    } catch (e) {
+      debugPrint('AI Support remote error, using fallback: $e');
+      return _getLocalSupportFallback(message);
+    }
+  }
+
+  String _getLocalSupportFallback(String message) {
+    final lower = message.toLowerCase();
+    if (lower.contains('document') ||
+        lower.contains('doc') ||
+        lower.contains('paper')) {
+      return 'For your education loan with VidhyaLoan, the primary documents required are:\n\n'
+          '• Student KYC: Passport, PAN Card & Aadhaar Card\n'
+          '• Academic Records: 10th, 12th, Degree Marksheets & Entrance Test Scores (GRE/IELTS/TOEFL)\n'
+          '• University Admission: Official Admit Letter & Detailed Fee Schedule\n'
+          '• Co-Applicant Proofs: PAN, Aadhaar, 3 months salary slips / 2 years ITR, and 6 months bank statements.';
+    }
+    if (lower.contains('interest') ||
+        lower.contains('rate') ||
+        lower.contains('roi')) {
+      return 'VidhyaLoan partners with India\'s top lenders (SBI, HDFC Credila, Avanse, InCred, ICICI, etc.):\n\n'
+          '• Secured Loans (Collateralized): Starting from 8.50% – 9.50% p.a.\n'
+          '• Unsecured Loans (Non-Collateral): Starting from 9.75% – 11.25% p.a.\n\n'
+          'Check your customized rate using our built-in Repayment & EMI Calculator!';
+    }
+    if (lower.contains('collateral') ||
+        lower.contains('unsecured') ||
+        lower.contains('security')) {
+      return 'Yes! VidhyaLoan offers unsecured loans (without any collateral or property) up to ₹75 Lakhs for premier universities across USA, UK, Canada, Germany, and more. For larger amounts up to ₹1.5+ Crores, secured loans are available with attractive lower rates.';
+    }
+    if (lower.contains('contact') ||
+        lower.contains('support') ||
+        lower.contains('call') ||
+        lower.contains('phone') ||
+        lower.contains('help')) {
+      return 'You can reach out to our dedicated support specialists directly:\n\n'
+          '• Email: support@vidyaloans.in\n'
+          '• Phone: +91 92402 09000\n'
+          '• Hours: Mon – Sat, 9:30 AM to 7:00 PM IST';
+    }
+    return 'Thank you for reaching out to VidhyaLoan AI Support! I can assist you with:\n\n'
+        '1. Education loan options (Secured & Unsecured)\n'
+        '2. Complete document checklists for top banks\n'
+        '3. Country-specific financial guidance (USA, UK, Canada, Germany, etc.)\n'
+        '4. Application status & loan sanction procedures\n\n'
+        'What would you like to know today?';
   }
 
   Future<EligibilityResult> checkEligibility(EligibilityCheckDto dto) async {
@@ -920,7 +990,10 @@ class AiLogicService {
 
   ShortlistResult _getFallbackShortlist(Map<String, dynamic> profile) {
     final String country = (profile['country'] ?? 'USA').toString().trim();
-    final String major = (profile['major'] ?? profile['bachelorCourse'] ?? 'Computer Science').toString().trim();
+    final String major =
+        (profile['major'] ?? profile['bachelorCourse'] ?? 'Computer Science')
+            .toString()
+            .trim();
     final String gpa = (profile['gpa'] ?? '8.0').toString().trim();
 
     final Map<String, List<Map<String, dynamic>>> fallbackData = {
@@ -935,10 +1008,12 @@ class AiLogicService {
           'country': 'USA',
           'avgSalary': '\$92,000/yr',
           'deadline': 'Jan 15',
-          'reason': 'Excellent co-op program with high post-grad employment rate for $major.',
+          'reason':
+              'Excellent co-op program with high post-grad employment rate for $major.',
           'programName': 'MS in $major',
           'logoUrl': 'https://logo.clearbit.com/northeastern.edu',
-          'description': 'Top research university renowned for experiential learning.',
+          'description':
+              'Top research university renowned for experiential learning.',
           'acceptanceRate': '18%',
           'duration': '2 Years',
           'roi': 'High',
@@ -956,10 +1031,12 @@ class AiLogicService {
           'country': 'USA',
           'avgSalary': '\$85,000/yr',
           'deadline': 'Feb 1',
-          'reason': 'Located in Telecom Corridor tech hub, optimal fit for GPA $gpa.',
+          'reason':
+              'Located in Telecom Corridor tech hub, optimal fit for GPA $gpa.',
           'programName': 'MS in $major',
           'logoUrl': 'https://logo.clearbit.com/utdallas.edu',
-          'description': 'Rapidly growing research university with strong corporate links.',
+          'description':
+              'Rapidly growing research university with strong corporate links.',
           'acceptanceRate': '79%',
           'duration': '2 Years',
           'roi': 'High',
@@ -977,10 +1054,12 @@ class AiLogicService {
           'country': 'USA',
           'avgSalary': '\$82,000/yr',
           'deadline': 'Feb 15',
-          'reason': 'Generous merit scholarship opportunities for STEM international candidates.',
+          'reason':
+              'Generous merit scholarship opportunities for STEM international candidates.',
           'programName': 'MS in $major',
           'logoUrl': 'https://logo.clearbit.com/asu.edu',
-          'description': '#1 in Innovation, offering top-notch tech incubators.',
+          'description':
+              '#1 in Innovation, offering top-notch tech incubators.',
           'acceptanceRate': '88%',
           'duration': '2 Years',
           'roi': 'High',
@@ -1019,10 +1098,12 @@ class AiLogicService {
           'country': 'USA',
           'avgSalary': '\$88,000/yr',
           'deadline': 'Feb 15',
-          'reason': 'Great urban location in Chicago with rich industry networks.',
+          'reason':
+              'Great urban location in Chicago with rich industry networks.',
           'programName': 'MS in $major',
           'logoUrl': 'https://logo.clearbit.com/uic.edu',
-          'description': 'Major public research university offering abundant internships.',
+          'description':
+              'Major public research university offering abundant internships.',
           'acceptanceRate': '78%',
           'duration': '2 Years',
           'roi': 'High',
@@ -1042,7 +1123,8 @@ class AiLogicService {
           'country': 'UK',
           'avgSalary': '£45,000/yr',
           'deadline': 'Jan 31',
-          'reason': 'Prestigious Russell Group university matching your profile.',
+          'reason':
+              'Prestigious Russell Group university matching your profile.',
           'programName': 'MSc in $major',
           'logoUrl': 'https://logo.clearbit.com/manchester.ac.uk',
           'description': 'World-renowned institution with 25 Nobel laureates.',
@@ -1066,7 +1148,8 @@ class AiLogicService {
           'reason': 'Top targeted university by UK graduate employers.',
           'programName': 'MSc in $major',
           'logoUrl': 'https://logo.clearbit.com/bham.ac.uk',
-          'description': 'Red brick university offering cutting-edge research facilities.',
+          'description':
+              'Red brick university offering cutting-edge research facilities.',
           'acceptanceRate': '70%',
           'duration': '1 Year',
           'roi': 'High',
@@ -1086,10 +1169,12 @@ class AiLogicService {
           'country': 'Germany',
           'avgSalary': '€62,000/yr',
           'deadline': 'May 31',
-          'reason': 'Top engineering & tech university in Europe with minimal tuition.',
+          'reason':
+              'Top engineering & tech university in Europe with minimal tuition.',
           'programName': 'MSc in $major',
           'logoUrl': 'https://logo.clearbit.com/tum.de',
-          'description': 'Germany\'s premier technical university located in Munich\'s tech hub.',
+          'description':
+              'Germany\'s premier technical university located in Munich\'s tech hub.',
           'acceptanceRate': '25%',
           'duration': '2 Years',
           'roi': 'Very High',
@@ -1107,10 +1192,12 @@ class AiLogicService {
           'country': 'Germany',
           'avgSalary': '€58,000/yr',
           'deadline': 'Jul 15',
-          'reason': 'Zero tuition fee public university with elite industry partners.',
+          'reason':
+              'Zero tuition fee public university with elite industry partners.',
           'programName': 'MSc in $major',
           'logoUrl': 'https://logo.clearbit.com/rwth-aachen.de',
-          'description': 'Largest technical university in Germany, famous for engineering.',
+          'description':
+              'Largest technical university in Germany, famous for engineering.',
           'acceptanceRate': '50%',
           'duration': '2 Years',
           'roi': 'Very High',
@@ -1123,7 +1210,9 @@ class AiLogicService {
 
     final list = fallbackData[country] ?? fallbackData['USA']!;
     return ShortlistResult(
-      recommendations: list.map((e) => UniversityRecommendation.fromJson(e)).toList(),
+      recommendations: list
+          .map((e) => UniversityRecommendation.fromJson(e))
+          .toList(),
     );
   }
 
@@ -1158,22 +1247,28 @@ class AiLogicService {
     }
   }
 
-  Future<List<UniversityRecommendation>> getSavedAiRecommendations(String userId) async {
+  Future<List<UniversityRecommendation>> getSavedAiRecommendations(
+    String userId,
+  ) async {
     try {
       final data = await _getRequest('recommendations/$userId');
       if (data['success'] == true && data['recommendations'] is List) {
         final List<dynamic> list = data['recommendations'];
-        return list.map((json) => UniversityRecommendation.fromJson(json)).toList();
+        return list
+            .map((json) => UniversityRecommendation.fromJson(json))
+            .toList();
       }
     } catch (e) {
       debugPrint('Error fetching saved AI recommendations: $e');
     }
-    
+
     try {
       final chat = await getLatestShortlistChat(userId);
       if (chat != null && chat['recommendations'] is List) {
         final List<dynamic> list = chat['recommendations'];
-        return list.map((json) => UniversityRecommendation.fromJson(json)).toList();
+        return list
+            .map((json) => UniversityRecommendation.fromJson(json))
+            .toList();
       }
     } catch (e) {
       debugPrint('Fallback error fetching AI recommendations: $e');
@@ -1209,7 +1304,9 @@ class AiLogicService {
     }
 
     final queryLower = query.toLowerCase().trim();
-    bool hasCloseMatch = results.any((uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower));
+    bool hasCloseMatch = results.any(
+      (uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower),
+    );
 
     // 2. If no matching results, try the unified search endpoint
     if (!hasCloseMatch) {
@@ -1220,7 +1317,8 @@ class AiLogicService {
           'country': country,
           'degree': degree,
         });
-        final list = data['universities'] as List? ?? data['results'] as List? ?? [];
+        final list =
+            data['universities'] as List? ?? data['results'] as List? ?? [];
         final unifiedResults = list.map<Map<String, String>>((e) {
           if (e is Map) {
             return Map<String, String>.from(
@@ -1232,7 +1330,11 @@ class AiLogicService {
 
         // Add unified results that are not already in results
         for (var uni in unifiedResults) {
-          if (!results.any((r) => (r['name'] ?? '').toLowerCase() == (uni['name'] ?? '').toLowerCase())) {
+          if (!results.any(
+            (r) =>
+                (r['name'] ?? '').toLowerCase() ==
+                (uni['name'] ?? '').toLowerCase(),
+          )) {
             results.add(uni);
           }
         }
@@ -1241,17 +1343,22 @@ class AiLogicService {
       }
     }
 
-    hasCloseMatch = results.any((uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower));
+    hasCloseMatch = results.any(
+      (uni) => (uni['name'] ?? '').toLowerCase().contains(queryLower),
+    );
 
     // 3. Fallback to public universities API (hipolabs) if still no exact/close match is found
     if (!hasCloseMatch && queryLower.length >= 3) {
       try {
         final encodedQuery = Uri.encodeComponent(query);
-        String urlString = 'http://universities.hipolabs.com/search?name=$encodedQuery';
+        String urlString =
+            'http://universities.hipolabs.com/search?name=$encodedQuery';
         if (country != null && country.trim().isNotEmpty) {
           final cLower = country.trim().toLowerCase();
           String hCountry;
-          if (cLower == 'usa' || cLower == 'united states of america' || cLower == 'us') {
+          if (cLower == 'usa' ||
+              cLower == 'united states of america' ||
+              cLower == 'us') {
             hCountry = 'United States';
           } else if (cLower == 'uk' || cLower == 'united kingdom') {
             hCountry = 'United Kingdom';
@@ -1261,15 +1368,19 @@ class AiLogicService {
           urlString += '&country=${Uri.encodeComponent(hCountry)}';
         }
         final url = Uri.parse(urlString);
-        final response = await http.get(url).timeout(const Duration(seconds: 5));
+        final response = await http
+            .get(url)
+            .timeout(const Duration(seconds: 5));
         if (response.statusCode == 200) {
           final List<dynamic> decoded = jsonDecode(response.body);
           final hipoResults = decoded.map<Map<String, String>>((e) {
             final name = e['name']?.toString() ?? '';
             final countryVal = e['country']?.toString() ?? '';
             final stateProvince = e['state-province']?.toString() ?? '';
-            final location = stateProvince.isNotEmpty ? '$stateProvince, $countryVal' : countryVal;
-            
+            final location = stateProvince.isNotEmpty
+                ? '$stateProvince, $countryVal'
+                : countryVal;
+
             return <String, String>{
               'name': name,
               'country': countryVal,
@@ -1282,7 +1393,11 @@ class AiLogicService {
 
           // Add hipolabs results that are not already in results
           for (var uni in hipoResults) {
-            if (!results.any((r) => (r['name'] ?? '').toLowerCase() == (uni['name'] ?? '').toLowerCase())) {
+            if (!results.any(
+              (r) =>
+                  (r['name'] ?? '').toLowerCase() ==
+                  (uni['name'] ?? '').toLowerCase(),
+            )) {
               results.add(uni);
             }
           }
@@ -1328,10 +1443,7 @@ class AiLogicService {
       final data = await _postRequest('search', {
         'query': query,
         'type': 'course',
-        'context': {
-          'university': university,
-          'degree': degree,
-        }
+        'context': {'university': university, 'degree': degree},
       });
       final list = data['results'] as List? ?? data['courses'] as List? ?? [];
       results = list.map<Map<String, String>>((e) {
@@ -1348,51 +1460,52 @@ class AiLogicService {
     }
 
     // 3. Static fallback list of courses if both endpoints fail
-    final bool isBachelors = degree.toLowerCase().contains('bachelor') || 
-        degree.toLowerCase().contains('ug') || 
+    final bool isBachelors =
+        degree.toLowerCase().contains('bachelor') ||
+        degree.toLowerCase().contains('ug') ||
         degree.toLowerCase().contains('undergrad');
-    
-    final staticList = isBachelors 
-      ? [
-          'B.Tech Computer Science',
-          'Bachelor of Business Administration (BBA)',
-          'B.Sc Computer Science',
-          'B.Tech Information Technology',
-          'B.Sc Data Science & Analytics',
-          'B.Tech Mechanical Engineering',
-          'B.Tech Electrical Engineering',
-          'B.Tech Biotechnology',
-          'Bachelor of Commerce (B.Com)',
-          'B.Sc Cybersecurity',
-          'B.Tech Software Engineering',
-          'B.Tech Civil Engineering',
-          'B.Tech Chemical Engineering',
-          'Bachelor of Architecture (B.Arch)',
-          'Bachelor of Computer Applications (BCA)',
-        ]
-      : [
-          'MS Computer Science',
-          'MBA (Master of Business Administration)',
-          'MS Data Science & Analytics',
-          'MS Information Technology',
-          'MS Business Analytics',
-          'MS Mechanical Engineering',
-          'MS Electrical Engineering',
-          'MS Biotechnology',
-          'Master of Public Health (MPH)',
-          'MS Finance',
-          'MS Cybersecurity & Information Assurance',
-          'MS Software Engineering',
-          'MS Civil Engineering',
-          'MS Chemical Engineering',
-          'MS Industrial Engineering',
-          'MS Pharmacology & Toxicology',
-          'MS Project Management',
-          'MS Construction Management',
-          'MS Supply Chain Management',
-          'Master of Architecture',
-        ];
-    
+
+    final staticList = isBachelors
+        ? [
+            'B.Tech Computer Science',
+            'Bachelor of Business Administration (BBA)',
+            'B.Sc Computer Science',
+            'B.Tech Information Technology',
+            'B.Sc Data Science & Analytics',
+            'B.Tech Mechanical Engineering',
+            'B.Tech Electrical Engineering',
+            'B.Tech Biotechnology',
+            'Bachelor of Commerce (B.Com)',
+            'B.Sc Cybersecurity',
+            'B.Tech Software Engineering',
+            'B.Tech Civil Engineering',
+            'B.Tech Chemical Engineering',
+            'Bachelor of Architecture (B.Arch)',
+            'Bachelor of Computer Applications (BCA)',
+          ]
+        : [
+            'MS Computer Science',
+            'MBA (Master of Business Administration)',
+            'MS Data Science & Analytics',
+            'MS Information Technology',
+            'MS Business Analytics',
+            'MS Mechanical Engineering',
+            'MS Electrical Engineering',
+            'MS Biotechnology',
+            'Master of Public Health (MPH)',
+            'MS Finance',
+            'MS Cybersecurity & Information Assurance',
+            'MS Software Engineering',
+            'MS Civil Engineering',
+            'MS Chemical Engineering',
+            'MS Industrial Engineering',
+            'MS Pharmacology & Toxicology',
+            'MS Project Management',
+            'MS Construction Management',
+            'MS Supply Chain Management',
+            'Master of Architecture',
+          ];
+
     return staticList.map((name) => <String, String>{'name': name}).toList();
   }
 
@@ -1409,7 +1522,9 @@ class AiLogicService {
         return <String, String>{'name': e.toString()};
       }).toList();
     } catch (e) {
-      debugPrint('Error searching countries from backend: $e. Falling back to popular list.');
+      debugPrint(
+        'Error searching countries from backend: $e. Falling back to popular list.',
+      );
       try {
         final data = await _getRequest('popular-countries');
         final list = data['countries'] as List? ?? [];
@@ -1425,11 +1540,15 @@ class AiLogicService {
         }
         if (query.trim().isNotEmpty) {
           final q = query.toLowerCase();
-          return mapped.where((c) => (c['name'] ?? '').toLowerCase().contains(q)).toList();
+          return mapped
+              .where((c) => (c['name'] ?? '').toLowerCase().contains(q))
+              .toList();
         }
         return mapped;
       } catch (innerEx) {
-        debugPrint('Error fetching popular-countries: $innerEx. Using hardcoded fallback list.');
+        debugPrint(
+          'Error fetching popular-countries: $innerEx. Using hardcoded fallback list.',
+        );
         final List<Map<String, String>> list = [
           {'name': 'United States', 'code': 'US', 'flag': '🇺🇸'},
           {'name': 'United Kingdom', 'code': 'GB', 'flag': '🇬🇧'},
@@ -1448,7 +1567,9 @@ class AiLogicService {
         ];
         if (query.trim().isNotEmpty) {
           final q = query.toLowerCase();
-          return list.where((c) => (c['name'] ?? '').toLowerCase().contains(q)).toList();
+          return list
+              .where((c) => (c['name'] ?? '').toLowerCase().contains(q))
+              .toList();
         }
         return list;
       }
@@ -1481,7 +1602,7 @@ class AiLogicService {
       'malaysia': '🇲🇾',
       'united arab emirates': '🇦🇪',
       'uae': '🇦🇪',
-      'russia': '🇷🇺'
+      'russia': '🇷🇺',
     };
     final key = name.trim().toLowerCase();
     return flags[key] ?? '🌐';
@@ -1513,7 +1634,7 @@ class AiLogicService {
       'malaysia': 'MY',
       'united arab emirates': 'AE',
       'uae': 'AE',
-      'russia': 'RU'
+      'russia': 'RU',
     };
     final key = name.trim().toLowerCase();
     return codes[key] ?? '';
@@ -1525,7 +1646,9 @@ class AiLogicService {
       final list = data['fields'] as List? ?? [];
       return List<String>.from(list);
     } catch (e) {
-      debugPrint('Error searching fields from backend: $e. Falling back to local list.');
+      debugPrint(
+        'Error searching fields from backend: $e. Falling back to local list.',
+      );
       const List<String> list = [
         'Computer Science',
         'Data Science & Analytics',
@@ -1595,7 +1718,9 @@ class AiLogicService {
         return Map<String, dynamic>.from(data);
       }
     } catch (e) {
-      debugPrint('Backend pincode-lookup failed: $e. Trying direct postal API.');
+      debugPrint(
+        'Backend pincode-lookup failed: $e. Trying direct postal API.',
+      );
     }
 
     // 2. Direct Indian Postal API fallback for 6-digit PIN codes
@@ -1611,10 +1736,20 @@ class AiLogicService {
             final postOffices = resData[0]['PostOffice'] as List?;
             if (postOffices != null && postOffices.isNotEmpty) {
               final po = postOffices[0];
-              final name = po['Name'] != null && po['Name'].toString() != 'NA' ? po['Name'].toString() : '';
-              final block = po['Block'] != null && po['Block'].toString() != 'NA' ? po['Block'].toString() : '';
-              final district = po['District'] != null && po['District'].toString() != 'NA' ? po['District'].toString() : '';
-              final city = name.isNotEmpty ? name : (block.isNotEmpty ? block : district);
+              final name = po['Name'] != null && po['Name'].toString() != 'NA'
+                  ? po['Name'].toString()
+                  : '';
+              final block =
+                  po['Block'] != null && po['Block'].toString() != 'NA'
+                  ? po['Block'].toString()
+                  : '';
+              final district =
+                  po['District'] != null && po['District'].toString() != 'NA'
+                  ? po['District'].toString()
+                  : '';
+              final city = name.isNotEmpty
+                  ? name
+                  : (block.isNotEmpty ? block : district);
               final state = po['State'] ?? '';
               if (city.isNotEmpty) {
                 return {
@@ -1644,7 +1779,11 @@ class AiLogicService {
       '16': {'city': 'Chandigarh', 'state': 'Punjab', 'country': 'India'},
       '17': {'city': 'Shimla', 'state': 'Himachal Pradesh', 'country': 'India'},
       '18': {'city': 'Jammu', 'state': 'Jammu & Kashmir', 'country': 'India'},
-      '19': {'city': 'Srinagar', 'state': 'Jammu & Kashmir', 'country': 'India'},
+      '19': {
+        'city': 'Srinagar',
+        'state': 'Jammu & Kashmir',
+        'country': 'India',
+      },
       '20': {'city': 'Noida', 'state': 'Uttar Pradesh', 'country': 'India'},
       '21': {'city': 'Allahabad', 'state': 'Uttar Pradesh', 'country': 'India'},
       '22': {'city': 'Lucknow', 'state': 'Uttar Pradesh', 'country': 'India'},
@@ -1674,8 +1813,16 @@ class AiLogicService {
       '49': {'city': 'Raipur', 'state': 'Chhattisgarh', 'country': 'India'},
       '50': {'city': 'Hyderabad', 'state': 'Telangana', 'country': 'India'},
       '51': {'city': 'Tirupati', 'state': 'Andhra Pradesh', 'country': 'India'},
-      '52': {'city': 'Vijayawada', 'state': 'Andhra Pradesh', 'country': 'India'},
-      '53': {'city': 'Visakhapatnam', 'state': 'Andhra Pradesh', 'country': 'India'},
+      '52': {
+        'city': 'Vijayawada',
+        'state': 'Andhra Pradesh',
+        'country': 'India',
+      },
+      '53': {
+        'city': 'Visakhapatnam',
+        'state': 'Andhra Pradesh',
+        'country': 'India',
+      },
       '56': {'city': 'Bengaluru', 'state': 'Karnataka', 'country': 'India'},
       '57': {'city': 'Mangaluru', 'state': 'Karnataka', 'country': 'India'},
       '58': {'city': 'Hubballi', 'state': 'Karnataka', 'country': 'India'},
@@ -1687,7 +1834,11 @@ class AiLogicService {
       '64': {'city': 'Coimbatore', 'state': 'Tamil Nadu', 'country': 'India'},
       '67': {'city': 'Kozhikode', 'state': 'Kerala', 'country': 'India'},
       '68': {'city': 'Kochi', 'state': 'Kerala', 'country': 'India'},
-      '69': {'city': 'Thiruvananthapuram', 'state': 'Kerala', 'country': 'India'},
+      '69': {
+        'city': 'Thiruvananthapuram',
+        'state': 'Kerala',
+        'country': 'India',
+      },
       '70': {'city': 'Kolkata', 'state': 'West Bengal', 'country': 'India'},
       '71': {'city': 'Howrah', 'state': 'West Bengal', 'country': 'India'},
       '72': {'city': 'Kharagpur', 'state': 'West Bengal', 'country': 'India'},
@@ -1810,68 +1961,73 @@ class AiLogicService {
       'evaluations': evaluations.map((e) => e.toJson()).toList(),
       'visaType': visaType,
     });
-    
+
     final reportData = data['report'];
     if (reportData is Map) {
       final buffer = StringBuffer();
-      
+
       final score = reportData['overallScore'] ?? 'N/A';
       final risk = reportData['overallRisk'] ?? 'N/A';
       final likelihood = reportData['approvalLikelihood'] ?? 'N/A';
       final verdict = reportData['verdict'] ?? '';
-      
+
       buffer.writeln('🎯 Overall Score: $score/100');
       buffer.writeln('⚠️ Risk Level: $risk');
       buffer.writeln('👍 Approval Likelihood: $likelihood');
       buffer.writeln();
-      
+
       if (verdict.isNotEmpty) {
         buffer.writeln('📝 Consular Verdict:\n$verdict');
         buffer.writeln();
       }
-      
-      if (reportData['strengths'] is List && (reportData['strengths'] as List).isNotEmpty) {
+
+      if (reportData['strengths'] is List &&
+          (reportData['strengths'] as List).isNotEmpty) {
         buffer.writeln('💪 Key Strengths:');
         for (var str in reportData['strengths']) {
           buffer.writeln('• $str');
         }
         buffer.writeln();
       }
-      
-      if (reportData['weaknesses'] is List && (reportData['weaknesses'] as List).isNotEmpty) {
+
+      if (reportData['weaknesses'] is List &&
+          (reportData['weaknesses'] as List).isNotEmpty) {
         buffer.writeln('🥀 Weaknesses:');
         for (var weak in reportData['weaknesses']) {
           buffer.writeln('• $weak');
         }
         buffer.writeln();
       }
-      
-      if (reportData['criticalIssues'] is List && (reportData['criticalIssues'] as List).isNotEmpty) {
+
+      if (reportData['criticalIssues'] is List &&
+          (reportData['criticalIssues'] as List).isNotEmpty) {
         buffer.writeln('🚨 Critical Issues:');
         for (var issue in reportData['criticalIssues']) {
           buffer.writeln('• $issue');
         }
         buffer.writeln();
       }
-      
-      if (reportData['ds160Inconsistencies'] is List && (reportData['ds160Inconsistencies'] as List).isNotEmpty) {
+
+      if (reportData['ds160Inconsistencies'] is List &&
+          (reportData['ds160Inconsistencies'] as List).isNotEmpty) {
         buffer.writeln('❓ Inconsistencies:');
         for (var inc in reportData['ds160Inconsistencies']) {
           buffer.writeln('• $inc');
         }
         buffer.writeln();
       }
-      
-      if (reportData['tips'] is List && (reportData['tips'] as List).isNotEmpty) {
+
+      if (reportData['tips'] is List &&
+          (reportData['tips'] as List).isNotEmpty) {
         buffer.writeln('💡 Tips for the Real Interview:');
         for (var tip in reportData['tips']) {
           buffer.writeln('• $tip');
         }
       }
-      
+
       return buffer.toString().trim();
     }
-    
+
     return reportData?.toString() ?? '';
   }
 
@@ -1886,15 +2042,18 @@ class AiLogicService {
     if (userId != null) {
       try {
         final data = await _getRequest('university/favorites/$userId');
-        final List<dynamic>? listData = data is List 
-            ? data 
-            : (data is Map ? (data['data'] as List? ?? data['favorites'] as List?) : null);
-        
+        final List<dynamic>? listData = data is List
+            ? data
+            : (data is Map
+                  ? (data['data'] as List? ?? data['favorites'] as List?)
+                  : null);
+
         if (listData != null) {
           final serverList = listData
               .map(
-                (json) =>
-                    UniversityRecommendation.fromJson(json['universityData'] ?? json),
+                (json) => UniversityRecommendation.fromJson(
+                  json['universityData'] ?? json,
+                ),
               )
               .toList();
 
@@ -2007,7 +2166,11 @@ class AiLogicService {
     }
   }
 
-  Future<Map<String, dynamic>> verifyUniversity(String name, String country, {String? course}) async {
+  Future<Map<String, dynamic>> verifyUniversity(
+    String name,
+    String country, {
+    String? course,
+  }) async {
     try {
       final data = await _postRequest('verify-university', {
         'name': name,
@@ -2024,7 +2187,11 @@ class AiLogicService {
       };
     } catch (e) {
       debugPrint('Error verifying university: $e');
-      return _localAcademicCheck(country: country, university: name, course: course ?? '');
+      return _localAcademicCheck(
+        country: country,
+        university: name,
+        course: course ?? '',
+      );
     }
   }
 
@@ -2043,16 +2210,21 @@ class AiLogicService {
     String reason = '';
 
     // Direct check for Boston University -> USA mismatch
-    if (u.contains('boston university') && !c.contains('usa') && !c.contains('united states') && !c.contains('us')) {
+    if (u.contains('boston university') &&
+        !c.contains('usa') &&
+        !c.contains('united states') &&
+        !c.contains('us')) {
       countryMatch = false;
       actualCountry = 'United States (USA)';
-      reason = '$university is located in the United States (USA), NOT in $country.';
+      reason =
+          '$university is located in the United States (USA), NOT in $country.';
     }
 
     // Direct check for Animation Engineering -> non-existent course
     if (crs.contains('animation engineering') || crs.contains('fake degree')) {
       courseMatch = false;
-      final courseErr = '\'$course\' is not a recognized degree program offered at $university.';
+      final courseErr =
+          '\'$course\' is not a recognized degree program offered at $university.';
       reason = reason.isNotEmpty ? '$reason Also, $courseErr' : courseErr;
     }
 
@@ -2066,42 +2238,151 @@ class AiLogicService {
     };
   }
 
-  Future<Map<String, dynamic>> verifyGroupTopic(String title, String topic) async {
+  Future<Map<String, dynamic>> verifyGroupTopic(
+    String title,
+    String topic,
+  ) async {
     final text = '$title $topic'.toLowerCase();
-    
+
     // Explicit blacklist of irrelevant / prohibited topics
     final banned = [
-      'movie', 'torrent', 'pubg', 'free fire', 'game', 'gaming', 'crypto', 'bitcoin',
-      'gambling', 'betting', 'gossip', 'dating', 'singles', 'casual', 'hack', 'crack',
-      'mod apk', 'porn', 'adult', 'rumor'
+      'movie',
+      'torrent',
+      'pubg',
+      'free fire',
+      'game',
+      'gaming',
+      'crypto',
+      'bitcoin',
+      'gambling',
+      'betting',
+      'gossip',
+      'dating',
+      'singles',
+      'casual',
+      'hack',
+      'crack',
+      'mod apk',
+      'porn',
+      'adult',
+      'rumor',
     ];
     for (final b in banned) {
       if (text.contains(b)) {
         return {
           'isValid': false,
-          'reason': 'Topic "$b" is irrelevant. Group topics must be related to study abroad, education, or loans.',
+          'reason':
+              'Topic "$b" is irrelevant. Group topics must be related to study abroad, education, or loans.',
         };
       }
     }
 
     // Required domain keywords
     final allowedKeywords = [
-      'study', 'abroad', 'university', 'uni', 'college', 'campus', 'admit', 'admission',
-      'application', 'intake', 'fall', 'spring', 'summer', '2024', '2025', '2026', '2027',
-      'loan', 'bank', 'hdfc', 'sbi', 'icici', 'axis', 'prodigy', 'mpower', 'nbfc', 'collateral',
-      'interest', 'sanction', 'disburse', 'finance', 'budget', 'money', 'scholarship', 'grant',
-      'visa', 'f1', 'j1', 'cas', 'i20', 'vfs', 'embassy', 'interview', 'consulate', 'passport',
-      'gre', 'gmat', 'ielts', 'toefl', 'duolingo', 'sat', 'pte', 'exam', 'prep',
-      'usa', 'us', 'uk', 'canada', 'germany', 'australia', 'ireland', 'france', 'europe', 'dallas',
-      'boston', 'new york', 'london', 'toronto', 'munich', 'sydney', 'housing', 'roommate',
-      'accommodation', 'flat', 'flight', 'travel', 'sop', 'lor', 'resume', 'cv', 'career',
-      'internship', 'ta', 'ra', 'assistantship', 'student', 'aspirants', 'batch', 'group',
-      'connect', 'meetup', 'discussion', 'advice', 'guidance', 'eduloan', 'vidyaloan'
+      'study',
+      'abroad',
+      'university',
+      'uni',
+      'college',
+      'campus',
+      'admit',
+      'admission',
+      'application',
+      'intake',
+      'fall',
+      'spring',
+      'summer',
+      '2024',
+      '2025',
+      '2026',
+      '2027',
+      'loan',
+      'bank',
+      'hdfc',
+      'sbi',
+      'icici',
+      'axis',
+      'prodigy',
+      'mpower',
+      'nbfc',
+      'collateral',
+      'interest',
+      'sanction',
+      'disburse',
+      'finance',
+      'budget',
+      'money',
+      'scholarship',
+      'grant',
+      'visa',
+      'f1',
+      'j1',
+      'cas',
+      'i20',
+      'vfs',
+      'embassy',
+      'interview',
+      'consulate',
+      'passport',
+      'gre',
+      'gmat',
+      'ielts',
+      'toefl',
+      'duolingo',
+      'sat',
+      'pte',
+      'exam',
+      'prep',
+      'usa',
+      'us',
+      'uk',
+      'canada',
+      'germany',
+      'australia',
+      'ireland',
+      'france',
+      'europe',
+      'dallas',
+      'boston',
+      'new york',
+      'london',
+      'toronto',
+      'munich',
+      'sydney',
+      'housing',
+      'roommate',
+      'accommodation',
+      'flat',
+      'flight',
+      'travel',
+      'sop',
+      'lor',
+      'resume',
+      'cv',
+      'career',
+      'internship',
+      'ta',
+      'ra',
+      'assistantship',
+      'student',
+      'aspirants',
+      'batch',
+      'group',
+      'connect',
+      'meetup',
+      'discussion',
+      'advice',
+      'guidance',
+      'eduloan',
+      'vidyaloan',
     ];
 
     bool hasKeyword = allowedKeywords.any((k) => text.contains(k));
     if (hasKeyword) {
-      return {'isValid': true, 'reason': 'Topic is relevant to study abroad & education loans.'};
+      return {
+        'isValid': true,
+        'reason': 'Topic is relevant to study abroad & education loans.',
+      };
     }
 
     // If keywords match didn't catch it, attempt AI backend endpoint check
@@ -2112,12 +2393,15 @@ class AiLogicService {
       });
       return {
         'isValid': data['isValid'] ?? false,
-        'reason': data['reason'] ?? 'Topic must be related to study abroad, education, or loans.',
+        'reason':
+            data['reason'] ??
+            'Topic must be related to study abroad, education, or loans.',
       };
     } catch (e) {
       return {
         'isValid': false,
-        'reason': 'Group title/topic must be related to study abroad, education, or loans.',
+        'reason':
+            'Group title/topic must be related to study abroad, education, or loans.',
       };
     }
   }

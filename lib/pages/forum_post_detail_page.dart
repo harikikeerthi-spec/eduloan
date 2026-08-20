@@ -86,7 +86,6 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
     }
   }
 
-
   Widget _buildCommentTile(ForumComment comment, {int depth = 0}) {
     final isAuthor =
         _currentUserId != null && comment.authorId == _currentUserId;
@@ -197,7 +196,9 @@ class _ForumPostDetailPageState extends State<ForumPostDetailPage> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: const Color(0xFF6605C7).withValues(alpha: 0.6),
+                              color: const Color(
+                                0xFF6605C7,
+                              ).withValues(alpha: 0.6),
                             ),
                           ),
                         ),

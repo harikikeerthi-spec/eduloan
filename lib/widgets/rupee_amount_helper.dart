@@ -65,7 +65,9 @@ String getRupeeAmountHelperText(String val, {String label = 'Amount'}) {
   final amount = double.tryParse(cleanStr) ?? 0;
   if (amount <= 0) return '';
 
-  final formattedRupees = IndianCurrencyFormatter.formatIndianCurrency(cleanStr);
+  final formattedRupees = IndianCurrencyFormatter.formatIndianCurrency(
+    cleanStr,
+  );
   final lakhs = amount / 100000;
   final crores = amount / 10000000;
 
@@ -100,7 +102,9 @@ class RupeeAmountHelperCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF311B92).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF311B92).withValues(alpha: 0.18)),
+        border: Border.all(
+          color: const Color(0xFF311B92).withValues(alpha: 0.18),
+        ),
       ),
       child: Row(
         children: [

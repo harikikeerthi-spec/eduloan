@@ -25,8 +25,10 @@ class UserDocument {
 
   factory UserDocument.fromJson(Map<String, dynamic> json) {
     // Check if verificationMetadata mentions DigiLocker or if digilockerTxId exists
-    bool fromDigilocker = json['digilockerTxId'] != null || 
-                          (json['verificationMetadata']?.toString().contains('DigiLocker') ?? false);
+    bool fromDigilocker =
+        json['digilockerTxId'] != null ||
+        (json['verificationMetadata']?.toString().contains('DigiLocker') ??
+            false);
 
     String? reason = json['rejectionReason']?.toString();
     Map<String, dynamic>? meta;
@@ -40,7 +42,8 @@ class UserDocument {
       reason = meta['rejectionReason']?.toString();
     }
 
-    final String? path = json['filePath']?.toString() ??
+    final String? path =
+        json['filePath']?.toString() ??
         json['fileUrl']?.toString() ??
         json['url']?.toString() ??
         json['documentUrl']?.toString() ??
@@ -48,8 +51,10 @@ class UserDocument {
         json['file_url']?.toString() ??
         json['path']?.toString();
 
-    final String statusStr = (json['status']?.toString() ?? 'pending').toLowerCase();
-    final bool isUploadedBool = json['uploaded'] == true ||
+    final String statusStr = (json['status']?.toString() ?? 'pending')
+        .toLowerCase();
+    final bool isUploadedBool =
+        json['uploaded'] == true ||
         (path != null && path.isNotEmpty) ||
         statusStr == 'uploaded' ||
         statusStr == 'verified' ||
@@ -67,7 +72,9 @@ class UserDocument {
       filePath: path,
       uploadedAt: json['uploadedAt'] != null
           ? DateTime.tryParse(json['uploadedAt'].toString())
-          : (json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null),
+          : (json['created_at'] != null
+                ? DateTime.tryParse(json['created_at'].toString())
+                : null),
       isDigilocker: fromDigilocker,
       rejectionReason: reason,
       verificationMetadata: meta,
@@ -127,7 +134,8 @@ class UserDocument {
     addCandidate(verificationMetadata!['verification']);
 
     for (var data in mapsToCheck) {
-      final val = data['pan_number'] ??
+      final val =
+          data['pan_number'] ??
           data['panNumber'] ??
           data['pan'] ??
           data['pan_card_number'] ??

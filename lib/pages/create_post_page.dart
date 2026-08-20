@@ -251,8 +251,9 @@ class _CreatePostPageState extends State<CreatePostPage>
             ),
             backgroundColor: const Color(0xFF6605C7),
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
         Navigator.pop(context, true);
@@ -266,16 +267,17 @@ class _CreatePostPageState extends State<CreatePostPage>
         // Extract the human-readable message
         final msgMatch = RegExp(r'"message":"([^"]+)"').firstMatch(errStr);
         setState(() {
-          _moderationError = msgMatch?.group(1) ??
+          _moderationError =
+              msgMatch?.group(1) ??
               'Your post appears to be off-topic for this platform. '
                   'Please post about education, loans, universities, scholarships, or study abroad.';
           _isSubmitting = false;
         });
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create post: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Failed to create post: $e')));
         }
       }
     } finally {
@@ -511,15 +513,16 @@ class _CreatePostPageState extends State<CreatePostPage>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide:
-              const BorderSide(color: Color(0xFF6605C7), width: 1.5),
+          borderSide: const BorderSide(color: Color(0xFF6605C7), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Colors.red),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       validator: validator,
     );
@@ -541,15 +544,9 @@ class _CreatePostPageState extends State<CreatePostPage>
           Icons.keyboard_arrow_down_rounded,
           color: Color(0xFF6605C7),
         ),
-        style: const TextStyle(
-          fontSize: 14,
-          color: Color(0xFF1E293B),
-        ),
+        style: const TextStyle(fontSize: 14, color: Color(0xFF1E293B)),
         items: _categories.map((cat) {
-          return DropdownMenuItem(
-            value: cat,
-            child: Text(cat),
-          );
+          return DropdownMenuItem(value: cat, child: Text(cat));
         }).toList(),
         onChanged: (val) {
           if (val != null) {
@@ -592,7 +589,8 @@ class _CreatePostPageState extends State<CreatePostPage>
                     focusNode: _hashtagFocusNode,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                          RegExp(r'[a-zA-Z0-9_]')),
+                        RegExp(r'[a-zA-Z0-9_]'),
+                      ),
                       LengthLimitingTextInputFormatter(30),
                     ],
                     decoration: InputDecoration(
@@ -648,8 +646,7 @@ class _CreatePostPageState extends State<CreatePostPage>
       children: _hashtags
           .map(
             (tag) => Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF6605C7),
                 borderRadius: BorderRadius.circular(20),
@@ -668,7 +665,11 @@ class _CreatePostPageState extends State<CreatePostPage>
                   const SizedBox(width: 6),
                   GestureDetector(
                     onTap: () => _removeHashtag(tag),
-                    child: const Icon(Icons.close, size: 14, color: Colors.white),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -700,11 +701,12 @@ class _CreatePostPageState extends State<CreatePostPage>
                 (tag) => GestureDetector(
                   onTap: () => _addHashtag(tag),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          const Color(0xFF6605C7).withValues(alpha: 0.07),
+                      color: const Color(0xFF6605C7).withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: const Color(0xFF6605C7).withValues(alpha: 0.2),
@@ -794,7 +796,9 @@ class _CreatePostPageState extends State<CreatePostPage>
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF6605C7),
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFF6605C7).withValues(alpha: 0.5),
+          disabledBackgroundColor: const Color(
+            0xFF6605C7,
+          ).withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -831,10 +835,7 @@ class _CreatePostPageState extends State<CreatePostPage>
                   SizedBox(width: 8),
                   Text(
                     'Analyze & Publish',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

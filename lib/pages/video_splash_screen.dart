@@ -21,8 +21,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
   bool _navigated = false;
   bool _videoReady = false;
 
-  static const MethodChannel _audioChannel =
-      MethodChannel('com.vidyaloan/audio_check');
+  static const MethodChannel _audioChannel = MethodChannel(
+    'com.vidyaloan/audio_check',
+  );
 
   @override
   void initState() {
@@ -47,7 +48,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     // ── Hard safety net — max 3.2 seconds ────────────────────────────────
     Future.delayed(const Duration(milliseconds: 3200), () {
       if (mounted && !_navigated) {
-        debugPrint('VideoSplashScreen: Safety timeout reached. Navigating instantly.');
+        debugPrint(
+          'VideoSplashScreen: Safety timeout reached. Navigating instantly.',
+        );
         FlutterNativeSplash.remove();
         _navigateAway();
       }
@@ -56,7 +59,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     // ── Check if user is in a phone call or Google Meet / Zoom / WhatsApp call ──
     final bool isInCall = await _checkActiveCallOrMeet();
     if (isInCall) {
-      debugPrint('VideoSplashScreen: Active phone call or Meet detected. Instantly bypassing video splash.');
+      debugPrint(
+        'VideoSplashScreen: Active phone call or Meet detected. Instantly bypassing video splash.',
+      );
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
         _navigateAway();
@@ -71,10 +76,15 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       final tempDir = await getTemporaryDirectory();
       tempVideoFile = File('${tempDir.path}/splash_video.mp4');
       await tempVideoFile.writeAsBytes(
-        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
+        byteData.buffer.asUint8List(
+          byteData.offsetInBytes,
+          byteData.lengthInBytes,
+        ),
         flush: true,
       );
-      debugPrint('VideoSplashScreen: Video copied to temp file: ${tempVideoFile.path}');
+      debugPrint(
+        'VideoSplashScreen: Video copied to temp file: ${tempVideoFile.path}',
+      );
 
       if (!mounted || _navigated) return;
 
@@ -107,8 +117,12 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       await controller.play();
       debugPrint('VideoSplashScreen: Video playing successfully.');
     } catch (error) {
-      debugPrint('VideoSplashScreen: Video failed or timed out ($error). Instantly navigating to app.');
-      try { await tempVideoFile?.delete(); } catch (_) {}
+      debugPrint(
+        'VideoSplashScreen: Video failed or timed out ($error). Instantly navigating to app.',
+      );
+      try {
+        await tempVideoFile?.delete();
+      } catch (_) {}
       if (mounted && !_navigated) {
         FlutterNativeSplash.remove();
         _navigateAway();
@@ -122,7 +136,9 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
     if (ctrl == null || !ctrl.value.isInitialized) return;
 
     if (ctrl.value.hasError) {
-      debugPrint('VideoSplashScreen: Player error — ${ctrl.value.errorDescription}');
+      debugPrint(
+        'VideoSplashScreen: Player error — ${ctrl.value.errorDescription}',
+      );
       if (mounted && !_navigated) {
         ctrl.removeListener(_videoListener);
         FlutterNativeSplash.remove();
@@ -131,7 +147,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       return;
     }
 
-    final isFinished = ctrl.value.duration > Duration.zero &&
+    final isFinished =
+        ctrl.value.duration > Duration.zero &&
         ctrl.value.position >= ctrl.value.duration;
 
     if (isFinished) {
@@ -150,8 +167,10 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
       final String? authToken = prefs.getString('auth_token');
       final String? userId = prefs.getString('userId');
       final bool isLoggedIn =
-          authToken != null && authToken.isNotEmpty &&
-          userId != null && userId.isNotEmpty;
+          authToken != null &&
+          authToken.isNotEmpty &&
+          userId != null &&
+          userId.isNotEmpty;
 
       if (!mounted) return;
 
@@ -162,10 +181,8 @@ class _VideoSplashScreenState extends State<VideoSplashScreen>
           if (email.isNotEmpty) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (context) => CompleteProfilePage(
-                  email: email,
-                  isNewUser: false,
-                ),
+                builder: (context) =>
+                    CompleteProfilePage(email: email, isNewUser: false),
               ),
               (route) => false,
             );

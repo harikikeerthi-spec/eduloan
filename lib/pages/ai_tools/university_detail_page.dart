@@ -327,25 +327,33 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     double toInrMultiplier = 83.0; // Default: assume USD
     String inputSymbol = '\$';
 
-    if (rawValue.contains('£') || rawValue.toLowerCase().contains('gbp') || rawValue.toLowerCase().contains('pound')) {
+    if (rawValue.contains('£') ||
+        rawValue.toLowerCase().contains('gbp') ||
+        rawValue.toLowerCase().contains('pound')) {
       toInrMultiplier = 105.0;
       inputSymbol = '£';
-    } else if (rawValue.contains('€') || rawValue.toLowerCase().contains('eur')) {
+    } else if (rawValue.contains('€') ||
+        rawValue.toLowerCase().contains('eur')) {
       toInrMultiplier = 90.0;
       inputSymbol = '€';
-    } else if (rawValue.contains('A\$') || rawValue.toLowerCase().contains('aud')) {
+    } else if (rawValue.contains('A\$') ||
+        rawValue.toLowerCase().contains('aud')) {
       toInrMultiplier = 55.0;
       inputSymbol = 'A\$';
-    } else if (rawValue.contains('C\$') || rawValue.toLowerCase().contains('cad')) {
+    } else if (rawValue.contains('C\$') ||
+        rawValue.toLowerCase().contains('cad')) {
       toInrMultiplier = 60.0;
       inputSymbol = 'C\$';
-    } else if (rawValue.contains('S\$') || rawValue.toLowerCase().contains('sgd')) {
+    } else if (rawValue.contains('S\$') ||
+        rawValue.toLowerCase().contains('sgd')) {
       toInrMultiplier = 62.0;
       inputSymbol = 'S\$';
-    } else if (rawValue.contains('NZ\$') || rawValue.toLowerCase().contains('nzd')) {
+    } else if (rawValue.contains('NZ\$') ||
+        rawValue.toLowerCase().contains('nzd')) {
       toInrMultiplier = 51.0;
       inputSymbol = 'NZ\$';
-    } else if (rawValue.contains('\$') || rawValue.toLowerCase().contains('usd')) {
+    } else if (rawValue.contains('\$') ||
+        rawValue.toLowerCase().contains('usd')) {
       toInrMultiplier = 83.0;
       inputSymbol = '\$';
     }
@@ -369,7 +377,8 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     // 3. Format value based on isUsd (meaning USD/original currency vs INR)
     if (isUsd) {
       String suffix = '';
-      if (rawValue.toLowerCase().contains('/month') || rawValue.toLowerCase().contains('month')) {
+      if (rawValue.toLowerCase().contains('/month') ||
+          rawValue.toLowerCase().contains('month')) {
         suffix = '/mo';
       }
 
@@ -378,9 +387,10 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
     } else {
       double inrValue = numericValue * toInrMultiplier;
       String formattedInr = _formatIndianCurrency(inrValue);
-      
+
       String suffix = '';
-      if (rawValue.toLowerCase().contains('/month') || rawValue.toLowerCase().contains('month')) {
+      if (rawValue.toLowerCase().contains('/month') ||
+          rawValue.toLowerCase().contains('month')) {
         suffix = '/mo';
       }
       return '₹ $formattedInr$suffix';
@@ -635,7 +645,11 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           Flexible(
-            child: _buildStatItem('ROI', widget.university.roi, const Color(0xFF4ADE80)),
+            child: _buildStatItem(
+              'ROI',
+              widget.university.roi,
+              const Color(0xFF4ADE80),
+            ),
           ),
           _buildStatDivider(),
           Flexible(
@@ -689,9 +703,12 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
   }
 
   Widget _buildStatDivider() {
-    return Container(height: 40, width: 1, color: Colors.grey.withValues(alpha: 0.1));
+    return Container(
+      height: 40,
+      width: 1,
+      color: Colors.grey.withValues(alpha: 0.1),
+    );
   }
-
 
   Widget _buildInfoGrid() {
     return Row(
@@ -1451,7 +1468,9 @@ class _UniversityDetailPageState extends State<UniversityDetailPage> {
                   value: _isUsd,
                   onChanged: (val) => setState(() => _isUsd = val),
                   activeThumbColor: const Color(0xFF6200EA),
-                  activeTrackColor: const Color(0xFF6200EA).withValues(alpha: 0.5),
+                  activeTrackColor: const Color(
+                    0xFF6200EA,
+                  ).withValues(alpha: 0.5),
                 ),
                 const Text(
                   'USD',

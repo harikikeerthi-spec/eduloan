@@ -100,11 +100,9 @@ class PdfGeneratorService {
       final docs = await UserService.getUserDocuments();
       final pdfBytes = await buildPdfBytes(loan, docs);
 
-      final fileName = 'Loan_Application_${loan.applicationNumber ?? loan.id}.pdf';
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename: fileName,
-      );
+      final fileName =
+          'Loan_Application_${loan.applicationNumber ?? loan.id}.pdf';
+      await Printing.sharePdf(bytes: pdfBytes, filename: fileName);
     } catch (e) {
       debugPrint('Error generating or downloading PDF: $e');
       rethrow;
@@ -112,14 +110,20 @@ class PdfGeneratorService {
   }
 
   /// Builds PDF byte data containing loan details and uploaded documents list.
-  static Future<Uint8List> buildPdfBytes(Loan loan, List<UserDocument> docs) async {
+  static Future<Uint8List> buildPdfBytes(
+    Loan loan,
+    List<UserDocument> docs,
+  ) async {
     final pdf = pw.Document();
     final primaryColor = PdfColor.fromHex('#311B92');
     final secondaryColor = PdfColor.fromHex('#10B981');
     final darkTextColor = PdfColor.fromHex('#1F2937');
     final lightBgColor = PdfColor.fromHex('#F8FAFC');
 
-    final currencyFormatter = NumberFormat.currency(symbol: 'Rs. ', decimalDigits: 0);
+    final currencyFormatter = NumberFormat.currency(
+      symbol: 'Rs. ',
+      decimalDigits: 0,
+    );
     final dateFormatter = DateFormat('dd MMM yyyy, hh:mm a');
 
     // Filter documents that are verified / accepted
@@ -171,13 +175,20 @@ class PdfGeneratorService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: pw.BoxDecoration(
-                          color: hasVerifiedDocs ? secondaryColor : PdfColor.fromHex('#3B82F6'),
+                          color: hasVerifiedDocs
+                              ? secondaryColor
+                              : PdfColor.fromHex('#3B82F6'),
                           borderRadius: pw.BorderRadius.circular(6),
                         ),
                         child: pw.Text(
-                          hasVerifiedDocs ? (loan.status).toUpperCase() : 'SUBMITTED',
+                          hasVerifiedDocs
+                              ? (loan.status).toUpperCase()
+                              : 'SUBMITTED',
                           style: pw.TextStyle(
                             color: PdfColors.white,
                             fontSize: 10,
@@ -213,11 +224,17 @@ class PdfGeneratorService {
               children: [
                 pw.Text(
                   'Generated on ${dateFormatter.format(DateTime.now())}',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
                 ),
                 pw.Text(
                   'Page ${context.pageNumber} of ${context.pagesCount}',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ],
             ),
@@ -236,7 +253,12 @@ class PdfGeneratorService {
             ),
             child: pw.Column(
               children: [
-                _buildInfoRow('Student Full Name', loan.fullName, 'Target Country', loan.targetCountry ?? 'N/A'),
+                _buildInfoRow(
+                  'Student Full Name',
+                  loan.fullName,
+                  'Target Country',
+                  loan.targetCountry ?? 'N/A',
+                ),
                 _buildInfoRow(
                   'University Name',
                   loan.universityName ?? 'N/A',
@@ -255,14 +277,22 @@ class PdfGeneratorService {
                   'Contact Phone',
                   loan.phoneNumber.isEmpty ? 'N/A' : loan.phoneNumber,
                 ),
-                _buildInfoRow('Email Address', loan.email, 'Address / City', '${loan.city ?? "N/A"} ${loan.pincode ?? ""}'.trim()),
+                _buildInfoRow(
+                  'Email Address',
+                  loan.email,
+                  'Address / City',
+                  '${loan.city ?? "N/A"} ${loan.pincode ?? ""}'.trim(),
+                ),
               ],
             ),
           ),
           pw.SizedBox(height: 16),
 
           // Section 2: Co-Applicant Details
-          _buildSectionHeader('2. CO-APPLICANT & FINANCIAL DETAILS', primaryColor),
+          _buildSectionHeader(
+            '2. CO-APPLICANT & FINANCIAL DETAILS',
+            primaryColor,
+          ),
           pw.SizedBox(height: 8),
           pw.Container(
             padding: const pw.EdgeInsets.all(12),
@@ -303,10 +333,19 @@ class PdfGeneratorService {
 
           // Section 3: Verified Documents (or Verification Pending Notice)
           if (hasVerifiedDocs) ...[
-            _buildSectionHeader('3. VERIFIED KYC & DOCUMENTS DOSSIER', primaryColor),
+            _buildSectionHeader(
+              '3. VERIFIED KYC & DOCUMENTS DOSSIER',
+              primaryColor,
+            ),
             pw.SizedBox(height: 8),
             pw.TableHelper.fromTextArray(
-              headers: ['#', 'Document Name', 'Type / Code', 'Verification Source', 'Verified Date'],
+              headers: [
+                '#',
+                'Document Name',
+                'Type / Code',
+                'Verification Source',
+                'Verified Date',
+              ],
               data: List<List<String>>.generate(verifiedDocs.length, (index) {
                 final doc = verifiedDocs[index];
                 final docTitle = docNames[doc.docType] ?? doc.docType;
@@ -330,9 +369,7 @@ class PdfGeneratorService {
                 fontWeight: pw.FontWeight.bold,
                 fontSize: 9,
               ),
-              headerDecoration: pw.BoxDecoration(
-                color: primaryColor,
-              ),
+              headerDecoration: pw.BoxDecoration(color: primaryColor),
               rowDecoration: const pw.BoxDecoration(
                 border: pw.Border(
                   bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
@@ -340,7 +377,10 @@ class PdfGeneratorService {
               ),
               cellAlignment: pw.Alignment.centerLeft,
               cellStyle: const pw.TextStyle(fontSize: 8),
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              cellPadding: const pw.EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
             ),
             pw.SizedBox(height: 20),
 
@@ -376,7 +416,10 @@ class PdfGeneratorService {
             ),
           ] else ...[
             // Notice Box for newly submitted applications with pending doc verification
-            _buildSectionHeader('3. DOCUMENT VERIFICATION STATUS', primaryColor),
+            _buildSectionHeader(
+              '3. DOCUMENT VERIFICATION STATUS',
+              primaryColor,
+            ),
             pw.SizedBox(height: 8),
             pw.Container(
               padding: const pw.EdgeInsets.all(14),
@@ -391,7 +434,10 @@ class PdfGeneratorService {
                   pw.Row(
                     children: [
                       pw.Container(
-                        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const pw.EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: pw.BoxDecoration(
                           color: PdfColor.fromHex('#F59E0B'),
                           borderRadius: pw.BorderRadius.circular(4),
@@ -419,7 +465,10 @@ class PdfGeneratorService {
                   pw.SizedBox(height: 6),
                   pw.Text(
                     'Your loan application details have been submitted and registered with VidyaLoans. As your KYC and academic documents are verified and accepted, they will automatically be updated and included in this official PDF dossier.',
-                    style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+                    style: const pw.TextStyle(
+                      fontSize: 8.5,
+                      color: PdfColors.grey700,
+                    ),
                   ),
                 ],
               ),
@@ -450,7 +499,12 @@ class PdfGeneratorService {
     );
   }
 
-  static pw.Widget _buildInfoRow(String label1, String value1, String label2, String value2) {
+  static pw.Widget _buildInfoRow(
+    String label1,
+    String value1,
+    String label2,
+    String value2,
+  ) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
       child: pw.Row(
@@ -459,11 +513,20 @@ class PdfGeneratorService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(label1, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                pw.Text(
+                  label1,
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
                 pw.SizedBox(height: 2),
                 pw.Text(
                   value1.isEmpty ? 'N/A' : value1,
-                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -472,11 +535,20 @@ class PdfGeneratorService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(label2, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                pw.Text(
+                  label2,
+                  style: const pw.TextStyle(
+                    fontSize: 8,
+                    color: PdfColors.grey600,
+                  ),
+                ),
                 pw.SizedBox(height: 2),
                 pw.Text(
                   value2.isEmpty ? 'N/A' : value2,
-                  style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
               ],
             ),

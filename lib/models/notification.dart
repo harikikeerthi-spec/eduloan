@@ -40,9 +40,4 @@ class NotificationModel {
   }
 }
 
-enum NotificationType {
-  loanUpdate,
-  communityMessage,
-  offer,
-  system,
-}
+enum NotificationType { loanUpdate, communityMessage, offer, system }

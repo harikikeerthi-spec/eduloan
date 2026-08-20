@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter/services.dart';
 import '../widgets/mesh_background.dart';
-import '../widgets/institute_selection_modal.dart';
 import '../widgets/rupee_amount_helper.dart';
-import '../data/institutes_data.dart';
 
 class EmiCalculatorPage extends StatefulWidget {
   const EmiCalculatorPage({super.key});
@@ -39,7 +37,8 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
   void _calculateEmi() {
     FocusScope.of(context).unfocus();
 
-    final double amount = double.tryParse(_amountController.text) ?? 0;
+    final double amount =
+        double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
     final double rate = double.tryParse(_rateController.text) ?? 0;
     final double years = double.tryParse(_tenureController.text) ?? 0;
 
@@ -65,25 +64,6 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
       _totalPayment = emi * months;
       _totalInterest = _totalPayment! - amount;
     });
-  }
-
-  Future<void> _showInstituteSelection() async {
-    final result = await showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => const InstituteSelectionModal(),
-    );
-
-    if (result != null && result is Map) {
-      final Institute institute = result['institute'];
-      final String course = result['course'];
-
-      setState(() {
-        _instituteController.text = institute.name;
-        _courseController.text = course;
-      });
-    }
   }
 
   @override
@@ -184,26 +164,25 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black, // Changed from white
+                        color: Colors.black,
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Institute Input
-                    _buildInputField(
-                      hint: 'Select Institute',
+                    // Institute Input (Manual)
+                    _buildTextInputField(
+                      label: 'Institute / University',
+                      hint: 'Enter institute name (e.g. Stanford University)',
                       icon: Icons.account_balance_outlined,
-                      onTap: _showInstituteSelection,
                       controller: _instituteController,
                     ),
                     const SizedBox(height: 16),
 
-                    // Course Input
-                    _buildInputField(
-                      hint: 'Select Course',
+                    // Course Input (Manual)
+                    _buildTextInputField(
+                      label: 'Course / Degree',
+                      hint: 'Enter course name (e.g. MS in Computer Science)',
                       icon: Icons.school_outlined,
-                      onTap:
-                          _showInstituteSelection, // Re-open selection if clicked
                       controller: _courseController,
                     ),
                     const SizedBox(height: 16),
@@ -405,7 +384,11 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
     required TextEditingController controller,
     bool isCurrency = false,
   }) {
-    final checkCurrency = isCurrency || icon == Icons.currency_rupee || label.contains('Amount') || label.contains('Income');
+    final checkCurrency =
+        isCurrency ||
+        icon == Icons.currency_rupee ||
+        label.contains('Amount') ||
+        label.contains('Income');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,7 +413,9 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
           ),
           child: TextField(
             controller: controller,
-            keyboardType: checkCurrency ? TextInputType.number : const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: checkCurrency
+                ? TextInputType.number
+                : const TextInputType.numberWithOptions(decimal: true),
             onChanged: (v) => setState(() {}),
             inputFormatters: checkCurrency
                 ? [
@@ -466,43 +451,55 @@ class _EmiCalculatorPageState extends State<EmiCalculatorPage> {
     );
   }
 
-  Widget _buildInputField({
+  Widget _buildTextInputField({
+    required String label,
     required String hint,
     required IconData icon,
-    required VoidCallback onTap,
     required TextEditingController controller,
+    TextCapitalization textCapitalization = TextCapitalization.words,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF311B92).withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFF311B92).withValues(alpha: 0.05),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black87,
           ),
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                controller.text.isEmpty ? hint : controller.text,
-                style: TextStyle(
-                  color: controller.text.isEmpty
-                      ? Colors.black.withValues(alpha: 0.4)
-                      : Colors.black,
-                  fontSize: 16,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF311B92).withValues(alpha: 0.05),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            textCapitalization: textCapitalization,
+            onChanged: (v) => setState(() {}),
+            style: const TextStyle(fontSize: 16, color: Colors.black),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(
+                color: Colors.black.withValues(alpha: 0.4),
+                fontSize: 15,
+              ),
+              border: InputBorder.none,
+              suffixIcon: Icon(
+                icon,
+                color: const Color(0xFF311B92).withValues(alpha: 0.5),
+                size: 20,
               ),
             ),
-            Icon(icon, color: const Color(0xFF311B92).withValues(alpha: 0.5)),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

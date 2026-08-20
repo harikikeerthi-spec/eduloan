@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/permission_service.dart';
 import 'image_crop_dialog.dart';
 
 class AvatarSelectionDialog extends StatefulWidget {
@@ -13,10 +15,26 @@ class AvatarSelectionDialog extends StatefulWidget {
     {'icon': Icons.face_2, 'color': Color(0xFFD32F2F), 'name': 'female_1'},
     {'icon': Icons.face, 'color': Color(0xFF388E3C), 'name': 'male_2'},
     {'icon': Icons.face_3, 'color': Color(0xFFF57C00), 'name': 'female_2'},
-    {'icon': Icons.person_outline, 'color': Color(0xFF00796B), 'name': 'male_3'},
-    {'icon': Icons.person_2_outlined, 'color': Color(0xFF1976D2), 'name': 'female_3'},
-    {'icon': Icons.account_circle, 'color': Color(0xFF7B1FA2), 'name': 'male_4'},
-    {'icon': Icons.account_circle_outlined, 'color': Color(0xFFFBC02D), 'name': 'female_4'},
+    {
+      'icon': Icons.person_outline,
+      'color': Color(0xFF00796B),
+      'name': 'male_3',
+    },
+    {
+      'icon': Icons.person_2_outlined,
+      'color': Color(0xFF1976D2),
+      'name': 'female_3',
+    },
+    {
+      'icon': Icons.account_circle,
+      'color': Color(0xFF7B1FA2),
+      'name': 'male_4',
+    },
+    {
+      'icon': Icons.account_circle_outlined,
+      'color': Color(0xFFFBC02D),
+      'name': 'female_4',
+    },
   ];
 
   @override
@@ -29,6 +47,46 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
   Future<void> _pickImage(ImageSource source) async {
     setState(() => _isPicking = true);
     try {
+      if (source == ImageSource.gallery) {
+        final granted = await PermissionService.requestPhotosPermission();
+        if (!granted) {
+          setState(() => _isPicking = false);
+          final isPermanent = await PermissionService.isPermanentlyDenied(
+            Permission.photos,
+          );
+          if (isPermanent && mounted) {
+            PermissionService.showSettingsDialog(
+              context: context,
+              title: 'Photos Access Required',
+              description:
+                  'Please grant Photo Library access in Settings to upload your profile avatar.',
+              icon: Icons.photo_library_rounded,
+              themeColor: const Color(0xFF311B92),
+            );
+          }
+          return;
+        }
+      } else if (source == ImageSource.camera) {
+        final granted = await PermissionService.request(Permission.camera);
+        if (!granted) {
+          setState(() => _isPicking = false);
+          final isPermanent = await PermissionService.isPermanentlyDenied(
+            Permission.camera,
+          );
+          if (isPermanent && mounted) {
+            PermissionService.showSettingsDialog(
+              context: context,
+              title: 'Camera Access Required',
+              description:
+                  'Please grant Camera access in Settings to take a profile photo.',
+              icon: Icons.camera_alt_rounded,
+              themeColor: const Color(0xFF311B92),
+            );
+          }
+          return;
+        }
+      }
+
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: source,
@@ -60,15 +118,17 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isPicking = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     }
   }
 
   Future<void> _cropCurrentPhoto() async {
-    if (widget.currentAvatar == null || !widget.currentAvatar!.startsWith('data:image/')) return;
+    if (widget.currentAvatar == null ||
+        !widget.currentAvatar!.startsWith('data:image/'))
+      return;
     try {
       final base64Str = widget.currentAvatar!.split(',').last;
       final bytes = base64Decode(base64Str);
@@ -89,7 +149,8 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasCustomPhoto = widget.currentAvatar != null &&
+    final bool hasCustomPhoto =
+        widget.currentAvatar != null &&
         widget.currentAvatar!.startsWith('data:image/');
 
     return Container(
@@ -224,16 +285,24 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
               );
             },
           ),
-          if (widget.currentAvatar != null && widget.currentAvatar!.isNotEmpty) ...[
+          if (widget.currentAvatar != null &&
+              widget.currentAvatar!.isNotEmpty) ...[
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: () => Navigator.pop(context, 'REMOVE_PHOTO'),
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
                 label: const Text(
                   'Remove Profile Photo',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -247,4 +316,3 @@ class _AvatarSelectionDialogState extends State<AvatarSelectionDialog> {
     );
   }
 }
-

@@ -320,7 +320,9 @@ class _SopWriterPageState extends State<SopWriterPage> {
                   const SizedBox(height: 8),
                   Text(
                     area['recommendation']!,
-                    style: TextStyle(color: Colors.black.withValues(alpha: 0.7)),
+                    style: TextStyle(
+                      color: Colors.black.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),

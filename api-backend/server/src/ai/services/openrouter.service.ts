@@ -100,6 +100,47 @@ export class OpenRouterService {
         }
     }
 
+    async chatWithMessages(
+        messages: { role: string; content: string }[],
+        model: string = 'google/gemini-2.5-flash',
+    ): Promise<string> {
+        if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
+            throw new Error('OPENROUTER_API_KEY is not configured in environment variables.');
+        }
+
+        const modelsToTry = [model, ...this.FALLBACK_MODELS].filter((m, i, a) => a.indexOf(m) === i);
+
+        for (const currentModel of modelsToTry) {
+            try {
+                const response = await fetch(this.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': 'https://vidyaloan.com',
+                        'X-Title': 'VidyaLoan',
+                    },
+                    body: JSON.stringify({
+                        model: currentModel,
+                        messages,
+                        max_tokens: 2048,
+                    }),
+                    signal: this.createTimeoutSignal(),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const content = data.choices?.[0]?.message?.content || '';
+                    if (content) return content;
+                }
+            } catch (e: any) {
+                console.warn(`[chatWithMessages] Model ${currentModel} failed:`, e?.message || e);
+            }
+        }
+
+        return "I am here to help you with education loans, interest rates, document checklists, and university options. How can I assist you today?";
+    }
+
     async getJson<T>(prompt: string, model: string = 'google/gemini-2.5-flash'): Promise<T> {
         const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond ONLY with valid JSON. Do not include markdown formatting.`;
         if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') throw new Error('OPENROUTER_API_KEY is not configured');

@@ -14,6 +14,7 @@ import { UniversitySearchService, University, UniversityDetails } from './servic
 import { VisaInterviewService, InterviewMessage, EvaluationResult } from './services/visa-interview.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { ShortlistingService } from './services/shortlisting.service';
+import { AiSupportService } from './services/ai-support.service';
 
 @Controller('ai')
 export class AiController {
@@ -25,6 +26,7 @@ export class AiController {
     private readonly universityComparisonService: UniversityComparisonService,
     private readonly admitPredictorService: AdmitPredictorService,
     private readonly openRouterService: OpenRouterService,
+    private readonly aiSupportService: AiSupportService,
     private readonly universitySearchService: UniversitySearchService,
     private readonly visaInterviewService: VisaInterviewService,
     private readonly shortlistingService: ShortlistingService,
@@ -1507,6 +1509,24 @@ Rules:
         reason: 'Could not verify at this time.',
       };
     }
+  }
+
+  @Post('support-chat')
+  async supportChat(
+    @Body() body: { message: string; history?: any[] },
+  ) {
+    if (!body?.message?.trim()) {
+      throw new BadRequestException('message is required');
+    }
+    const response = await this.aiSupportService.getResponse(
+      body.message.trim(),
+      body.history || [],
+    );
+    return {
+      success: true,
+      response,
+      message: response,
+    };
   }
 }
 

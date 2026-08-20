@@ -49,6 +49,14 @@
 		<string>We need microphone access for the AI Visa Simulator to hear your interview answers.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
 		<string>We need speech recognition access to transcribe your interview answers in real-time.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>We need location access to find nearby education loan partner bank branches.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>We need location access to notify you of nearby partner bank branches and verification centers.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We need photo library access to let you upload documents and update your profile photo.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We need camera access to take profile photos and scan documents.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 		<key>CFBundleURLTypes</key>

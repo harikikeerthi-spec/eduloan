@@ -377,9 +377,7 @@ class AuthService {
   }
 
   /// Fetches user dashboard data (Profile)
-  static Future<Map<String, dynamic>> getUserDashboard(
-    String email,
-  ) async {
+  static Future<Map<String, dynamic>> getUserDashboard(String email) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await ApiClient.post(

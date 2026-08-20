@@ -17,6 +17,7 @@ import { UniversitySearchService } from './services/university-search.service';
 import { VisaInterviewService } from './services/visa-interview.service';
 import { KycService } from './services/kyc.service';
 import { ShortlistingService } from './services/shortlisting.service';
+import { AiSupportService } from './services/ai-support.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ShortlistingService } from './services/shortlisting.service';
   controllers: [AiController],
   providers: [
     OpenRouterService,
+    AiSupportService,
     EligibilityService,
     LoanRecommendationService,
     SopAnalysisService,
@@ -43,6 +45,7 @@ import { ShortlistingService } from './services/shortlisting.service';
   ],
   exports: [
     OpenRouterService,
+    AiSupportService,
     EligibilityService,
     LoanRecommendationService,
     SopAnalysisService,

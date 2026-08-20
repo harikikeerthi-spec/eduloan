@@ -34,22 +34,22 @@ class ApiClient {
       final httpClient = HttpClient(context: securityContext)
         ..badCertificateCallback =
             (X509Certificate cert, String host, int port) {
-          if (kReleaseMode) {
-            debugPrint(
-              '[SSL] Rejecting untrusted certificate for host: $host',
-            );
-            return false;
-          }
+              if (kReleaseMode) {
+                debugPrint(
+                  '[SSL] Rejecting untrusted certificate for host: $host',
+                );
+                return false;
+              }
 
-          // Development-only hosts.
-          final isDevHost =
-              host == '10.0.2.2' ||
-              host == 'localhost' ||
-              host.contains('trycloudflare.com') ||
-              host.contains('ngrok');
+              // Development-only hosts.
+              final isDevHost =
+                  host == '10.0.2.2' ||
+                  host == 'localhost' ||
+                  host.contains('trycloudflare.com') ||
+                  host.contains('ngrok');
 
-          return isDevHost;
-        };
+              return isDevHost;
+            };
 
       _customClient = IOClient(httpClient);
     } else {
@@ -69,8 +69,7 @@ class ApiClient {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'X-Client-Platform': _getPlatform(),
-      'X-Request-Timestamp':
-          DateTime.now().toUtc().toIso8601String(),
+      'X-Request-Timestamp': DateTime.now().toUtc().toIso8601String(),
     };
 
     if (token != null && token.isNotEmpty) {
@@ -98,17 +97,11 @@ class ApiClient {
   }) async {
     _enforceHttps(uri);
 
-    return _executeWithRefresh(
-      () async {
-        final secureHeaders =
-            await getSecureHeaders(extraHeaders: headers);
+    return _executeWithRefresh(() async {
+      final secureHeaders = await getSecureHeaders(extraHeaders: headers);
 
-        return client
-            .get(uri, headers: secureHeaders)
-            .timeout(timeout);
-      },
-      uri,
-    );
+      return client.get(uri, headers: secureHeaders).timeout(timeout);
+    }, uri);
   }
 
   /// POST request with automatic token refresh + retry.
@@ -120,21 +113,13 @@ class ApiClient {
   }) async {
     _enforceHttps(uri);
 
-    return _executeWithRefresh(
-      () async {
-        final secureHeaders =
-            await getSecureHeaders(extraHeaders: headers);
+    return _executeWithRefresh(() async {
+      final secureHeaders = await getSecureHeaders(extraHeaders: headers);
 
-        return client
-            .post(
-              uri,
-              headers: secureHeaders,
-              body: body,
-            )
-            .timeout(timeout);
-      },
-      uri,
-    );
+      return client
+          .post(uri, headers: secureHeaders, body: body)
+          .timeout(timeout);
+    }, uri);
   }
 
   /// PUT request with automatic token refresh + retry.
@@ -146,21 +131,13 @@ class ApiClient {
   }) async {
     _enforceHttps(uri);
 
-    return _executeWithRefresh(
-      () async {
-        final secureHeaders =
-            await getSecureHeaders(extraHeaders: headers);
+    return _executeWithRefresh(() async {
+      final secureHeaders = await getSecureHeaders(extraHeaders: headers);
 
-        return client
-            .put(
-              uri,
-              headers: secureHeaders,
-              body: body,
-            )
-            .timeout(timeout);
-      },
-      uri,
-    );
+      return client
+          .put(uri, headers: secureHeaders, body: body)
+          .timeout(timeout);
+    }, uri);
   }
 
   /// DELETE request with automatic token refresh + retry.
@@ -172,21 +149,13 @@ class ApiClient {
   }) async {
     _enforceHttps(uri);
 
-    return _executeWithRefresh(
-      () async {
-        final secureHeaders =
-            await getSecureHeaders(extraHeaders: headers);
+    return _executeWithRefresh(() async {
+      final secureHeaders = await getSecureHeaders(extraHeaders: headers);
 
-        return client
-            .delete(
-              uri,
-              headers: secureHeaders,
-              body: body,
-            )
-            .timeout(timeout);
-      },
-      uri,
-    );
+      return client
+          .delete(uri, headers: secureHeaders, body: body)
+          .timeout(timeout);
+    }, uri);
   }
 
   /// Executes an API request.
@@ -243,9 +212,7 @@ class ApiClient {
   /// only ONE refresh request is sent.
   static Future<bool> _refreshAccessToken() async {
     if (_refreshingToken != null) {
-      debugPrint(
-        '[ApiClient] Token refresh already running. Waiting...',
-      );
+      debugPrint('[ApiClient] Token refresh already running. Waiting...');
 
       return await _refreshingToken!;
     }
@@ -283,8 +250,7 @@ class ApiClient {
     }
 
     if (uri.scheme != 'https') {
-      if (uri.host != 'localhost' &&
-          uri.host != '10.0.2.2') {
+      if (uri.host != 'localhost' && uri.host != '10.0.2.2') {
         throw SecurityException(
           'Insecure HTTP request rejected. HTTPS is strictly required.',
         );
