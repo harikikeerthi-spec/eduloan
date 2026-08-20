@@ -10,8 +10,6 @@ import '../services/google_auth_service.dart';
 import '../services/user_service.dart';
 import '../services/secure_storage_service.dart';
 import 'legal_page.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../services/permission_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -20,98 +18,17 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage>
-    with WidgetsBindingObserver {
+class _SettingsPageState extends State<SettingsPage> {
   String _email = '';
   String _userName = '';
   String? _profileImage;
   bool _isLoading = false;
   bool _pushNotifications = true;
 
-  bool _notificationsGranted = false;
-  bool _phoneGranted = false;
-  bool _locationGranted = false;
-  bool _photosGranted = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _loadUserData();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _checkPermissionsStatus();
-    }
-  }
-
-  Future<void> _checkPermissionsStatus() async {
-    final notif = await PermissionService.isGranted(Permission.notification);
-    final phone = await PermissionService.isGranted(Permission.phone);
-    final loc = await PermissionService.isGranted(Permission.locationWhenInUse);
-    final photos =
-        await PermissionService.isGranted(Permission.photos) ||
-        await PermissionService.isGranted(Permission.storage);
-
-    if (mounted) {
-      setState(() {
-        _notificationsGranted = notif;
-        _phoneGranted = phone;
-        _locationGranted = loc;
-        _photosGranted = photos;
-      });
-    }
-  }
-
-  Future<void> _togglePermission({
-    required Permission permission,
-    required bool currentlyGranted,
-    required String name,
-    required String rationale,
-    required IconData icon,
-    required Color themeColor,
-  }) async {
-    if (currentlyGranted) {
-      await PermissionService.showSettingsDialog(
-        context: context,
-        title: '$name Access Enabled',
-        description:
-            'To disable $name permission, please turn it off in the system settings of your device.',
-        icon: icon,
-        themeColor: themeColor,
-      );
-    } else {
-      bool granted;
-      if (permission == Permission.photos) {
-        granted = await PermissionService.requestPhotosPermission();
-      } else {
-        granted = await PermissionService.request(permission);
-      }
-
-      if (!granted) {
-        final isPermanent = await PermissionService.isPermanentlyDenied(
-          permission,
-        );
-        if (isPermanent && mounted) {
-          PermissionService.showSettingsDialog(
-            context: context,
-            title: '$name Access Required',
-            description: rationale,
-            icon: icon,
-            themeColor: themeColor,
-          );
-        }
-      }
-      await _checkPermissionsStatus();
-    }
   }
 
   Future<void> _loadUserData() async {
@@ -128,7 +45,6 @@ class _SettingsPageState extends State<SettingsPage>
             prefs.getBool('push_notifications_enabled') ?? true;
       });
     }
-    await _checkPermissionsStatus();
   }
 
   Future<void> _handleLogout() async {
@@ -827,133 +743,6 @@ class _SettingsPageState extends State<SettingsPage>
                               ),
                             ),
                           ]),
-
-                          const SizedBox(height: 24),
-
-                          // Section: App Permissions
-                          _buildSectionHeader(
-                            'APP PERMISSIONS',
-                            const Color(0xFF0284C7),
-                          ),
-                          const SizedBox(height: 10),
-                          _buildCard([
-                            _buildTile(
-                              icon: Icons.notifications_active_rounded,
-                              gradientColors: [
-                                const Color(0xFF0284C7),
-                                const Color(0xFF38BDF8),
-                              ],
-                              title: 'System Notifications',
-                              subtitle: 'Real-time loan progress & alerts',
-                              trailing: Text(
-                                _notificationsGranted ? 'Allowed' : 'Configure',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _notificationsGranted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              onTap: () => _togglePermission(
-                                permission: Permission.notification,
-                                currentlyGranted: _notificationsGranted,
-                                name: 'Notifications',
-                                rationale:
-                                    'Please enable notifications permission in settings to receive real-time loan progress updates.',
-                                icon: Icons.notifications_active_rounded,
-                                themeColor: const Color(0xFF0284C7),
-                              ),
-                            ),
-                            _buildDivider(),
-                            _buildTile(
-                              icon: Icons.phone_callback_rounded,
-                              gradientColors: [
-                                const Color(0xFF10B981),
-                                const Color(0xFF34D399),
-                              ],
-                              title: 'Phone Call Access',
-                              subtitle: 'Direct support dialing from the app',
-                              trailing: Text(
-                                _phoneGranted ? 'Allowed' : 'Configure',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _phoneGranted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              onTap: () => _togglePermission(
-                                permission: Permission.phone,
-                                currentlyGranted: _phoneGranted,
-                                name: 'Phone calls',
-                                rationale:
-                                    'Please enable phone call permissions in settings to reach our loan support experts directly.',
-                                icon: Icons.phone_callback_rounded,
-                                themeColor: const Color(0xFF10B981),
-                              ),
-                            ),
-                            _buildDivider(),
-                            _buildTile(
-                              icon: Icons.photo_library_rounded,
-                              gradientColors: [
-                                const Color(0xFFEC4899),
-                                const Color(0xFFF472B6),
-                              ],
-                              title: 'Photos & Storage',
-                              subtitle: 'Upload documents & custom avatars',
-                              trailing: Text(
-                                _photosGranted ? 'Allowed' : 'Configure',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _photosGranted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              onTap: () => _togglePermission(
-                                permission: Permission.photos,
-                                currentlyGranted: _photosGranted,
-                                name: 'Photos',
-                                rationale:
-                                    'Please enable photo library access in settings to upload files and select profile avatars.',
-                                icon: Icons.photo_library_rounded,
-                                themeColor: const Color(0xFFEC4899),
-                              ),
-                            ),
-                            _buildDivider(),
-                            _buildTile(
-                              icon: Icons.location_on_rounded,
-                              gradientColors: [
-                                const Color(0xFFF59E0B),
-                                const Color(0xFFFBBF24),
-                              ],
-                              title: 'Location Services',
-                              subtitle: 'Find nearby partner banks & offices',
-                              trailing: Text(
-                                _locationGranted ? 'Allowed' : 'Configure',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _locationGranted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              onTap: () => _togglePermission(
-                                permission: Permission.locationWhenInUse,
-                                currentlyGranted: _locationGranted,
-                                name: 'Location',
-                                rationale:
-                                    'Please enable location permissions in settings to identify local partner bank branches.',
-                                icon: Icons.location_on_rounded,
-                                themeColor: const Color(0xFFF59E0B),
-                              ),
-                            ),
-                          ]),
-
                           const SizedBox(height: 24),
 
                           // Section 2: Support & Legal
