@@ -896,35 +896,6 @@ class _SettingsPageState extends State<SettingsPage>
                             ),
                             _buildDivider(),
                             _buildTile(
-                              icon: Icons.location_on_rounded,
-                              gradientColors: [
-                                const Color(0xFFF59E0B),
-                                const Color(0xFFFBBF24),
-                              ],
-                              title: 'Location Services',
-                              subtitle: 'Find nearby partner banks & offices',
-                              trailing: Text(
-                                _locationGranted ? 'Allowed' : 'Configure',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: _locationGranted
-                                      ? const Color(0xFF10B981)
-                                      : const Color(0xFF64748B),
-                                ),
-                              ),
-                              onTap: () => _togglePermission(
-                                permission: Permission.locationWhenInUse,
-                                currentlyGranted: _locationGranted,
-                                name: 'Location',
-                                rationale:
-                                    'Please enable location permissions in settings to identify local partner bank branches.',
-                                icon: Icons.location_on_rounded,
-                                themeColor: const Color(0xFFF59E0B),
-                              ),
-                            ),
-                            _buildDivider(),
-                            _buildTile(
                               icon: Icons.photo_library_rounded,
                               gradientColors: [
                                 const Color(0xFFEC4899),
@@ -950,6 +921,35 @@ class _SettingsPageState extends State<SettingsPage>
                                     'Please enable photo library access in settings to upload files and select profile avatars.',
                                 icon: Icons.photo_library_rounded,
                                 themeColor: const Color(0xFFEC4899),
+                              ),
+                            ),
+                            _buildDivider(),
+                            _buildTile(
+                              icon: Icons.location_on_rounded,
+                              gradientColors: [
+                                const Color(0xFFF59E0B),
+                                const Color(0xFFFBBF24),
+                              ],
+                              title: 'Location Services',
+                              subtitle: 'Find nearby partner banks & offices',
+                              trailing: Text(
+                                _locationGranted ? 'Allowed' : 'Configure',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: _locationGranted
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFF64748B),
+                                ),
+                              ),
+                              onTap: () => _togglePermission(
+                                permission: Permission.locationWhenInUse,
+                                currentlyGranted: _locationGranted,
+                                name: 'Location',
+                                rationale:
+                                    'Please enable location permissions in settings to identify local partner bank branches.',
+                                icon: Icons.location_on_rounded,
+                                themeColor: const Color(0xFFF59E0B),
                               ),
                             ),
                           ]),
