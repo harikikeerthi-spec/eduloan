@@ -1,4 +1,4 @@
-package com.example.vidyaloans
+package in.vidyaloans.app
 
 import android.content.Context
 import android.media.AudioAttributes

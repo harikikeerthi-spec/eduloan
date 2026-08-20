@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.vidyaloans"
+    namespace = "in.vidyaloans.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
