@@ -40,27 +40,15 @@ class PushNotificationService {
 
   static Future<void> initialize() async {
     try {
-      // 1. Request Push Permissions
-      NotificationSettings settings = await _fcm.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
-
-      debugPrint(
-        'Push Notification Authorization status: ${settings.authorizationStatus}',
-      );
-
-      // 2. Initialize Local Notifications Plugin
+      // 1. Initialize Local Notifications Plugin
       const AndroidInitializationSettings androidSettings =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
       const DarwinInitializationSettings iosSettings =
           DarwinInitializationSettings(
-            requestAlertPermission: true,
-            requestBadgePermission: true,
-            requestSoundPermission: true,
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
           );
 
       const InitializationSettings initSettings = InitializationSettings(

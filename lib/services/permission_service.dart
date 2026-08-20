@@ -1,7 +1,44 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
+  static bool _startupPermissionsRequested = false;
+
+  /// Sequentially requests Notifications, Phone Call, Photos, and Location permissions.
+  /// Only runs once per app execution session.
+  static Future<void> checkAndRequestStartupPermissions() async {
+    if (_startupPermissionsRequested) return;
+    _startupPermissionsRequested = true;
+
+    // 1. Notification
+    try {
+      await requestNotificationPermission();
+    } catch (e) {
+      debugPrint('Startup Notification Request Error: $e');
+    }
+
+    // 2. Phone Call
+    try {
+      await requestPhonePermission();
+    } catch (e) {
+      debugPrint('Startup Phone Request Error: $e');
+    }
+
+    // 3. Photos
+    try {
+      await requestPhotosPermission();
+    } catch (e) {
+      debugPrint('Startup Photos Request Error: $e');
+    }
+
+    // 4. Location
+    try {
+      await requestLocationPermission();
+    } catch (e) {
+      debugPrint('Startup Location Request Error: $e');
+    }
+  }
   /// Checks if a specific permission is granted.
   static Future<bool> isGranted(Permission permission) async {
     final status = await permission.status;
@@ -50,7 +87,19 @@ class PermissionService {
 
   /// Request Notifications permission.
   static Future<bool> requestNotificationPermission() async {
-    return await request(Permission.notification);
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (e) {
+      debugPrint('Error requesting notifications permission via FCM: $e');
+      return await request(Permission.notification);
+    }
   }
 
   /// Shows a premium explanation dialog when a permission is permanently denied

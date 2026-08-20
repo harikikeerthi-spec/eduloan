@@ -10,6 +10,7 @@ import 'login_page.dart';
 import 'complete_profile_page.dart';
 import '../services/loan_service.dart';
 import '../services/language_service.dart';
+import '../services/permission_service.dart';
 
 class MainNavigation extends StatefulWidget {
   final int initialIndex;
@@ -98,8 +99,11 @@ class MainNavigationState extends State<MainNavigation> {
           );
         }
       }
-      return;
+    } else {
+      // Trigger startup permissions check (Notification, Calls, Photos, Location in sequence)
+      await PermissionService.checkAndRequestStartupPermissions();
     }
+    return;
   }
 
   void openDrawer() {
