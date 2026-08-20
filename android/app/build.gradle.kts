@@ -5,6 +5,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
     id("com.google.gms.google-services")
 }
+val keystoreProperties = java.util.Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+}
 
 android {
     namespace = "in.vidyaloans.app"
@@ -25,6 +30,15 @@ android {
         noCompress += "mp4"
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as? String
+            keyPassword = keystoreProperties["keyPassword"] as? String
+            storeFile = (keystoreProperties["storeFile"] as? String)?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as? String
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "in.vidyaloans.app"
@@ -38,8 +52,7 @@ android {
 
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             // ProGuard rules to keep video_player (ExoPlayer) classes from being stripped
