@@ -931,20 +931,32 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
     return text.replace(phoneRegex, 'XXXXXXXXXX');
   }
 
+  private normalizeUserKey(id: string): string {
+    if (!id) return '';
+    return id.toLowerCase().trim().replace(/^(peer_|user_)/, '');
+  }
+
+  private isSameUser(id1?: string, id2?: string): boolean {
+    if (!id1 || !id2) return false;
+    if (id1 === id2) return true;
+    return this.normalizeUserKey(id1) === this.normalizeUserKey(id2);
+  }
+
   // Shared global in-memory persistence for real-time 1-on-1 Direct Chats
   private static inMemoryDirectConversations: Map<string, any> = new Map();
   private static inMemoryDirectMessages: Map<string, any[]> = new Map();
 
   async getDirectConversations(userId: string) {
+    const normUser = this.normalizeUserKey(userId);
     const memConvs = Array.from(CommunityService.inMemoryDirectConversations.values()).filter(
-      (c: any) => !userId || c.participant1Id === userId || c.participant2Id === userId || userId === 'user_me'
+      (c: any) => !userId || userId === 'user_me' || this.isSameUser(c.participant1Id, normUser) || this.isSameUser(c.participant2Id, normUser) || this.isSameUser(c.senderId, normUser) || this.isSameUser(c.peerId, normUser)
     );
 
     try {
-      const { data: dbConvs, error } = await this.db
+      const { data: dbConvs } = await this.db
         .from('DirectConversation')
         .select('*')
-        .or(`participant1Id.eq.${userId},participant2Id.eq.${userId}`)
+        .or(`participant1Id.ilike.%${normUser}%,participant2Id.ilike.%${normUser}%`)
         .order('lastMessageAt', { ascending: false });
 
       const convMap = new Map<string, any>();
@@ -953,31 +965,76 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       }
       memConvs.forEach((c: any) => convMap.set(c.id, c));
 
-      const formatted = Array.from(convMap.values()).map((c: any) => ({
-        ...c,
-        lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
-      }));
-      formatted.sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+      const formatted = Array.from(convMap.values()).map((c: any) => {
+        const isUserP1 = this.isSameUser(c.participant1Id, normUser);
+        const peerId = isUserP1 ? (c.participant2Id || c.peerId) : (c.participant1Id || c.senderId);
+        const peerName = isUserP1 ? (c.participant2Name || c.peerName || 'Student Member') : (c.participant1Name || c.senderName || 'Student Member');
+        const peerRole = isUserP1 ? (c.participant2Role || c.peerRole || 'Student') : (c.participant1Role || 'Student');
+        const avatarLetter = isUserP1 ? (c.participant2Avatar || c.avatarLetter || (peerName ? peerName[0].toUpperCase() : 'S')) : (c.participant1Avatar || (peerName ? peerName[0].toUpperCase() : 'S'));
+        const colorValue = isUserP1 ? (c.participant2Color || c.colorValue || 3218322) : (c.participant1Color || 3218322);
 
+        return {
+          id: c.id,
+          peerId: peerId || 'student_member',
+          peerName: peerName,
+          peerRole: peerRole,
+          avatarLetter: avatarLetter,
+          colorValue: colorValue,
+          isOnline: true,
+          lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
+          lastTimestamp: c.lastMessageAt || c.lastTimestamp || new Date().toISOString(),
+          unreadCount: this.isSameUser(c.lastSenderId, normUser) ? 0 : (c.unreadCount || 0),
+        };
+      });
+
+      formatted.sort((a, b) => new Date(b.lastTimestamp || 0).getTime() - new Date(a.lastTimestamp || 0).getTime());
       return { success: true, data: formatted };
     } catch (e) {
       console.error('[CommunityService] getDirectConversations fallback to memory:', e);
-      const formatted = memConvs.map((c: any) => ({
-        ...c,
-        lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
-      }));
-      formatted.sort((a, b) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
+      const formatted = memConvs.map((c: any) => {
+        const isUserP1 = this.isSameUser(c.participant1Id, normUser);
+        const peerId = isUserP1 ? (c.participant2Id || c.peerId) : (c.participant1Id || c.senderId);
+        const peerName = isUserP1 ? (c.participant2Name || c.peerName || 'Student Member') : (c.participant1Name || c.senderName || 'Student Member');
+        return {
+          id: c.id,
+          peerId: peerId || 'student_member',
+          peerName: peerName,
+          peerRole: isUserP1 ? (c.participant2Role || 'Student') : (c.participant1Role || 'Student'),
+          avatarLetter: isUserP1 ? (c.participant2Avatar || (peerName ? peerName[0].toUpperCase() : 'S')) : (c.participant1Avatar || (peerName ? peerName[0].toUpperCase() : 'S')),
+          colorValue: isUserP1 ? (c.participant2Color || 3218322) : (c.participant1Color || 3218322),
+          isOnline: true,
+          lastMessage: this.maskPhoneNumbers(c.lastMessage || ''),
+          lastTimestamp: c.lastMessageAt || c.lastTimestamp || new Date().toISOString(),
+          unreadCount: this.isSameUser(c.lastSenderId, normUser) ? 0 : (c.unreadCount || 0),
+        };
+      });
+      formatted.sort((a, b) => new Date(b.lastTimestamp || 0).getTime() - new Date(a.lastTimestamp || 0).getTime());
       return { success: true, data: formatted };
     }
   }
 
   async getDirectMessages(conversationId: string, userId?: string) {
-    const memMsgs = CommunityService.inMemoryDirectMessages.get(conversationId) || [];
+    let convKey = conversationId;
+    if (!CommunityService.inMemoryDirectMessages.has(convKey)) {
+      const parts = conversationId.replace(/^conv_/, '').split('_');
+      if (parts.length >= 2) {
+        const p1 = this.normalizeUserKey(parts[0]);
+        const p2 = this.normalizeUserKey(parts.slice(1).join('_'));
+        const normKey1 = `conv_${p1 < p2 ? p1 : p2}_${p1 < p2 ? p2 : p1}`;
+        if (CommunityService.inMemoryDirectMessages.has(normKey1)) {
+          convKey = normKey1;
+        }
+      }
+    }
+
+    const memMsgs = CommunityService.inMemoryDirectMessages.get(convKey) || [];
+    const normUser = userId ? this.normalizeUserKey(userId) : '';
+
     try {
-      const { data: dbMsgs, error } = await this.db
+      const { data: dbMsgs } = await this.db
         .from('DirectMessage')
         .select('*')
-        .eq('conversationId', conversationId)
+        .or(`conversationId.eq.${conversationId},conversationId.eq.${convKey}`)
         .order('createdAt', { ascending: true });
 
       const msgMap = new Map<string, any>();
@@ -988,7 +1045,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
       const formatted = Array.from(msgMap.values()).map((m: any) => {
         const rawContent = m.content || m.text || '';
-        const isMe = userId ? (m.senderId === userId || m.senderId === 'user_me') : (m.isMe ?? false);
+        const isMe = normUser ? this.isSameUser(m.senderId, normUser) : (m.isMe ?? false);
         return {
           id: m.id,
           conversationId: m.conversationId,
@@ -1008,22 +1065,30 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       return { success: true, data: formatted };
     } catch (e) {
       console.error('[CommunityService] getDirectMessages fallback to memory:', e);
-      const formatted = memMsgs.map((m: any) => ({
-        ...m,
-        text: this.maskPhoneNumbers(m.text || m.content || ''),
-        isMe: userId ? (m.senderId === userId || m.senderId === 'user_me') : (m.isMe ?? false),
-      }));
+      const formatted = memMsgs.map((m: any) => {
+        const rawContent = m.content || m.text || '';
+        const isMe = normUser ? this.isSameUser(m.senderId, normUser) : (m.isMe ?? false);
+        return {
+          ...m,
+          text: this.maskPhoneNumbers(rawContent),
+          content: this.maskPhoneNumbers(rawContent),
+          isMe: isMe,
+        };
+      });
+      formatted.sort((a, b) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime());
       return { success: true, data: formatted };
     }
   }
 
-  async sendDirectMessage(senderId: string, data: { peerId: string; peerName?: string; peerRole?: string; avatarLetter?: string; colorValue?: number; senderName?: string; text: string }) {
-    const p1 = senderId < data.peerId ? senderId : data.peerId;
-    const p2 = senderId < data.peerId ? data.peerId : senderId;
+  async sendDirectMessage(senderId: string, data: { id?: string; peerId: string; peerName?: string; peerRole?: string; avatarLetter?: string; colorValue?: number; senderName?: string; text: string }) {
+    const normSender = this.normalizeUserKey(senderId);
+    const normPeer = this.normalizeUserKey(data.peerId);
+    const p1 = normSender < normPeer ? normSender : normPeer;
+    const p2 = normSender < normPeer ? normPeer : normSender;
     const conversationId = `conv_${p1}_${p2}`;
     const now = new Date().toISOString();
     const maskedText = this.maskPhoneNumbers(data.text);
-    const messageId = `dmsg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const messageId = data.id || `dmsg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const newMsg = {
       id: messageId,
@@ -1033,7 +1098,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       recipientId: data.peerId,
       peerName: data.peerName || 'Student Member',
       peerRole: data.peerRole || 'Student',
-      avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
+      avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0].toUpperCase() : 'S'),
       colorValue: data.colorValue || 3218322,
       content: data.text,
       text: maskedText,
@@ -1043,24 +1108,34 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
       createdAt: now,
     };
 
-    // 1. Store in shared in-memory message list
+    // 1. Store in shared in-memory message list (deduplicating by ID)
     if (!CommunityService.inMemoryDirectMessages.has(conversationId)) {
       CommunityService.inMemoryDirectMessages.set(conversationId, []);
     }
-    CommunityService.inMemoryDirectMessages.get(conversationId)!.push(newMsg);
+    const msgs = CommunityService.inMemoryDirectMessages.get(conversationId)!;
+    const existingIdx = msgs.findIndex((m: any) => m.id === messageId);
+    if (existingIdx >= 0) {
+      msgs[existingIdx] = newMsg;
+    } else {
+      msgs.push(newMsg);
+    }
 
-    // 2. Update in-memory conversation
+    // 2. Store participants' metadata on conversation
     const convObj = {
       id: conversationId,
       participant1Id: p1,
+      participant1Name: p1 === normSender ? (data.senderName || 'Student') : (data.peerName || 'Student'),
+      participant1Role: p1 === normSender ? 'Student' : (data.peerRole || 'Student'),
+      participant1Avatar: p1 === normSender ? (data.senderName ? data.senderName[0].toUpperCase() : 'S') : (data.avatarLetter || (data.peerName ? data.peerName[0].toUpperCase() : 'S')),
+      participant1Color: p1 === normSender ? 3218322 : (data.colorValue || 3218322),
+
       participant2Id: p2,
-      senderId,
-      senderName: data.senderName || 'Student',
-      peerId: data.peerId,
-      peerName: data.peerName || 'Student Member',
-      peerRole: data.peerRole || 'Student',
-      avatarLetter: data.avatarLetter || (data.peerName ? data.peerName[0] : 'S'),
-      colorValue: data.colorValue || 3218322,
+      participant2Name: p2 === normSender ? (data.senderName || 'Student') : (data.peerName || 'Student'),
+      participant2Role: p2 === normSender ? 'Student' : (data.peerRole || 'Student'),
+      participant2Avatar: p2 === normSender ? (data.senderName ? data.senderName[0].toUpperCase() : 'S') : (data.avatarLetter || (data.peerName ? data.peerName[0].toUpperCase() : 'S')),
+      participant2Color: p2 === normSender ? 3218322 : (data.colorValue || 3218322),
+
+      lastSenderId: senderId,
       lastMessage: maskedText,
       lastMessageAt: now,
       unreadCount: 1,
@@ -1090,7 +1165,7 @@ Analyze the post. Respond ONLY with a JSON object in the following format:
 
       await this.db
         .from('DirectMessage')
-        .insert({
+        .upsert({
           id: messageId,
           conversationId,
           senderId,

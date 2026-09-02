@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'auth_service.dart';
 import 'secure_storage_service.dart';
 import 'token_refresh_service.dart';
 
@@ -158,6 +160,55 @@ class ApiClient {
     }, uri);
   }
 
+  static Future<bool> _isReviewerSession() async {
+    try {
+      final token = await SecureStorageService.getToken();
+      if (token != null && token.startsWith('demo_jwt_reviewer_')) return true;
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('user_email');
+      return AuthService.isReviewerEmail(email);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static http.Response _getMockReviewerResponse(Uri uri) {
+    final path = uri.path.toLowerCase();
+    if (path.contains('applications/my')) {
+      return http.Response(
+        '{"success": true, "data": []}',
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    if (path.contains('applications') || path.contains('loans')) {
+      return http.Response(
+        '{"success": true, "message": "Application submitted successfully", "data": {"_id": "demo_loan_999", "status": "In Review", "amount": 2000000, "loanType": "Unsecured Education Loan", "targetCountry": "USA", "universityName": "Harvard University", "courseName": "Master of Science", "createdAt": "${DateTime.now().toIso8601String()}"}}',
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    if (path.contains('community') || path.contains('post') || path.contains('feed')) {
+      return http.Response(
+        '{"success": true, "data": [], "posts": []}',
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    if (path.contains('documents')) {
+      return http.Response(
+        '{"success": true, "data": []}',
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    }
+    return http.Response(
+      '{"success": true, "data": {}, "message": "OK"}',
+      200,
+      headers: {'content-type': 'application/json'},
+    );
+  }
+
   /// Executes an API request.
   ///
   /// If the server responds with 401:
@@ -170,6 +221,10 @@ class ApiClient {
     Future<http.Response> Function() request,
     Uri uri,
   ) async {
+    if (await _isReviewerSession()) {
+      return _getMockReviewerResponse(uri);
+    }
+
     // First request.
     final response = await request();
 

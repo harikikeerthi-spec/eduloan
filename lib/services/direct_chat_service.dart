@@ -163,17 +163,36 @@ class DirectChatService {
     _initialized = true;
   }
 
+  String _normalizeId(String id) {
+    if (id.isEmpty) return '';
+    return id.toLowerCase().trim().replaceAll(RegExp(r'^(peer_|user_)'), '');
+  }
+
+  bool _isSameUser(String? id1, String? id2) {
+    if (id1 == null || id2 == null) return false;
+    if (id1 == id2) return true;
+    return _normalizeId(id1) == _normalizeId(id2);
+  }
+
   Future<String> getMyUserId() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      String? id = prefs.getString('userId') ?? prefs.getString('user_id');
+      String? id = prefs.getString('userId') ?? prefs.getString('user_id') ?? prefs.getString('id');
       if (id != null && id.isNotEmpty) return id;
-      final email = prefs.getString('user_email');
-      if (email != null && email.isNotEmpty)
-        return 'user_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
-      final phone = prefs.getString('user_phone');
-      if (phone != null && phone.isNotEmpty)
+      final email = prefs.getString('user_email') ?? prefs.getString('email');
+      if (email != null && email.isNotEmpty) {
+        return 'user_${email.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+      }
+      final phone = prefs.getString('user_phone') ?? prefs.getString('phone');
+      if (phone != null && phone.isNotEmpty) {
         return 'user_${phone.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+      }
+      final fname = prefs.getString('user_firstName') ?? prefs.getString('firstName') ?? prefs.getString('user_name') ?? prefs.getString('name') ?? '';
+      final lname = prefs.getString('user_lastName') ?? prefs.getString('lastName') ?? '';
+      final fullName = '$fname $lname'.trim();
+      if (fullName.isNotEmpty) {
+        return 'user_${fullName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+      }
 
       var guestId = prefs.getString('persistent_chat_user_id');
       if (guestId == null || guestId.isEmpty) {
@@ -189,21 +208,25 @@ class DirectChatService {
   Future<String> getMyUserName() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final fname = prefs.getString('user_firstName') ?? '';
-      final lname = prefs.getString('user_lastName') ?? '';
+      final fname = prefs.getString('user_firstName') ?? prefs.getString('firstName') ?? prefs.getString('user_name') ?? prefs.getString('name') ?? '';
+      final lname = prefs.getString('user_lastName') ?? prefs.getString('lastName') ?? '';
       final fullName = '$fname $lname'.trim();
       if (fullName.isNotEmpty) return fullName;
-      final name = prefs.getString('user_name');
-      if (name != null && name.isNotEmpty) return name;
-      return 'You';
+      final email = prefs.getString('user_email') ?? prefs.getString('email');
+      if (email != null && email.isNotEmpty) {
+        return email.split('@')[0];
+      }
+      return 'Student';
     } catch (_) {
-      return 'You';
+      return 'Student';
     }
   }
 
   String getConversationId(String myId, String peerId) {
-    final p1 = myId.compareTo(peerId) < 0 ? myId : peerId;
-    final p2 = myId.compareTo(peerId) < 0 ? peerId : myId;
+    final norm1 = _normalizeId(myId);
+    final norm2 = _normalizeId(peerId);
+    final p1 = norm1.compareTo(norm2) < 0 ? norm1 : norm2;
+    final p2 = norm1.compareTo(norm2) < 0 ? norm2 : norm1;
     return 'conv_${p1}_$p2';
   }
 
@@ -236,20 +259,19 @@ class DirectChatService {
             final Map<String, dynamic> c = Map<String, dynamic>.from(
               item as Map,
             );
-            final String peerId =
+            final String peerId = c['peerId']?.toString() ??
                 (c['participant1Id'] == myId
                     ? c['participant2Id']
                     : c['participant1Id']) ??
-                c['peerId'] ??
                 '';
-            if (peerId.isEmpty) continue;
+            if (peerId.isEmpty || _isSameUser(peerId, myId)) continue;
 
             final existing = _conversations[peerId];
             final lastMsg = c['lastMessage'] ?? existing?.lastMessage ?? '';
             final lastTime =
                 DateTime.tryParse(
                   c['lastMessageAt'] ?? c['lastTimestamp'] ?? '',
-                ) ??
+                )?.toLocal() ??
                 existing?.lastTimestamp ??
                 DateTime.now();
 
@@ -257,7 +279,7 @@ class DirectChatService {
               peerId: peerId,
               peerName: c['peerName'] ?? existing?.peerName ?? 'Student Member',
               peerRole: c['peerRole'] ?? existing?.peerRole ?? 'Student',
-              avatarLetter: c['avatarLetter'] ?? existing?.avatarLetter ?? 'S',
+              avatarLetter: c['avatarLetter'] ?? existing?.avatarLetter ?? (c['peerName'] != null && c['peerName'].toString().isNotEmpty ? c['peerName'].toString()[0].toUpperCase() : 'S'),
               colorValue: c['colorValue'] ?? existing?.colorValue ?? 0xFF311B92,
               isOnline: c['isOnline'] ?? existing?.isOnline ?? true,
               lastMessage: lastMsg,
@@ -337,11 +359,8 @@ class DirectChatService {
         if (decoded['success'] == true && decoded['data'] is List) {
           final List rawList = decoded['data'];
           final List<DirectChatMessage> serverMsgs = rawList.map((m) {
-            final senderId = m['senderId'] ?? '';
-            final isMe =
-                (senderId == myId ||
-                senderId == 'user_me' ||
-                m['isMe'] == true);
+            final senderId = m['senderId']?.toString() ?? '';
+            final isMe = _isSameUser(senderId, myId) || m['isMe'] == true;
             return DirectChatMessage(
               id: m['id']?.toString() ?? '',
               senderId: senderId,
@@ -350,25 +369,41 @@ class DirectChatService {
                   (isMe ? 'You' : (conv?.peerName ?? 'Student')),
               text: m['text'] ?? m['content'] ?? '',
               timestamp:
-                  DateTime.tryParse(m['timestamp'] ?? m['createdAt'] ?? '') ??
+                  DateTime.tryParse(m['timestamp'] ?? m['createdAt'] ?? '')?.toLocal() ??
                   DateTime.now(),
               isMe: isMe,
             );
           }).toList();
 
-          // Merge local and server messages
+          // Smart merge and deduplication
           final Map<String, DirectChatMessage> mergedMap = {};
-          for (var m in localMsgs) {
-            mergedMap[m.id.isNotEmpty
-                    ? m.id
-                    : '${m.senderId}_${m.text}_${m.timestamp}'] =
-                m;
-          }
-          for (var m in serverMsgs) {
-            mergedMap[m.id.isNotEmpty
-                    ? m.id
-                    : '${m.senderId}_${m.text}_${m.timestamp}'] =
-                m;
+          final allMessages = [...localMsgs, ...serverMsgs];
+          
+          for (var m in allMessages) {
+            final existingKey = mergedMap.keys.firstWhere(
+              (k) {
+                final existing = mergedMap[k]!;
+                if (existing.id.isNotEmpty && m.id.isNotEmpty && existing.id == m.id) {
+                  return true;
+                }
+                final bool sameSender = _isSameUser(existing.senderId, m.senderId);
+                final bool sameText = existing.text.trim() == m.text.trim();
+                final bool closeTime = (existing.timestamp.difference(m.timestamp).inSeconds).abs() < 20;
+                return sameSender && sameText && closeTime;
+              },
+              orElse: () => '',
+            );
+
+            if (existingKey.isNotEmpty) {
+              if (m.id.isNotEmpty) {
+                mergedMap[existingKey] = m;
+              }
+            } else {
+              final key = m.id.isNotEmpty
+                  ? m.id
+                  : '${m.senderId}_${m.text}_${m.timestamp.millisecondsSinceEpoch}';
+              mergedMap[key] = m;
+            }
           }
 
           final mergedList = mergedMap.values.toList();
@@ -412,8 +447,9 @@ class DirectChatService {
     final myId = await getMyUserId();
     final myName = await getMyUserName();
     final now = DateTime.now();
+    final msgId = 'dmsg_${now.millisecondsSinceEpoch}_${(1000 + (now.microsecond % 9000))}';
     final msg = DirectChatMessage(
-      id: 'dmsg_${now.millisecondsSinceEpoch}',
+      id: msgId,
       senderId: myId,
       senderName: myName,
       text: rawText,
@@ -439,7 +475,7 @@ class DirectChatService {
     await _saveToStorage();
 
     // Dynamically persist message into backend database & broadcast to peer
-    _syncMessageToBackend(peerId, conv, rawText, myId, myName);
+    _syncMessageToBackend(peerId, conv, rawText, myId, myName, msgId);
 
     return msg;
   }
@@ -450,6 +486,7 @@ class DirectChatService {
     String text,
     String myId,
     String myName,
+    String msgId,
   ) async {
     try {
       final baseUrl = await ApiConfig.getBaseUrl();
@@ -459,6 +496,7 @@ class DirectChatService {
             Uri.parse('$baseUrl/community/direct-chats/send'),
             headers: {'Content-Type': 'application/json'},
             body: json.encode({
+              'id': msgId,
               'senderId': myId,
               'senderName': myName,
               'peerId': peerId,

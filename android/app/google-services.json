@@ -7,49 +7,28 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:135351691177:android:d58e94f789d39bffe906b8",
-        "android_client_info": {
-          "package_name": "com.example.vidyaloans"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "135351691177-p10cl08ph90l88m55715ng7fsfi5m11v.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.vidyaloans",
-            "certificate_hash": "55c8a96225441ce8a3554074f3521a7d7bc195f7"
-          }
-        },
-        {
-          "client_id": "135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBjFwMBjbQowPCMKxgqimV8XIq402fsE_w"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "135351691177-t9b07ogavck8p6u38pum9bs7jut51392.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:135351691177:android:24b5897f9cc730dde906b8",
         "android_client_info": {
           "package_name": "in.vidyaloans.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "135351691177-9m8e1lesj188ikcp5pnp4hcqa94j2r35.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "in.vidyaloans.app",
+            "certificate_hash": "1d160054d40fd838e2d7b7525dbc71c426380cea"
+          }
+        },
+        {
+          "client_id": "135351691177-g1enf7rdjuh8d2sffc5j0hbphn7vugdu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "in.vidyaloans.app",
+            "certificate_hash": "ef882bd764975c8c8b68eb72491c6ced82383f12"
+          }
+        },
         {
           "client_id": "135351691177-sljtqtul6pqno6g94hajc0kop5r1cq8c.apps.googleusercontent.com",
           "client_type": 1,

@@ -76,7 +76,12 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
     if (!mounted) return;
     if (msgs.isEmpty && _messages.isNotEmpty) return;
 
-    if (msgs.length != _messages.length) {
+    bool hasChanged = msgs.length != _messages.length;
+    if (!hasChanged && msgs.isNotEmpty && _messages.isNotEmpty) {
+      hasChanged = msgs.last.id != _messages.last.id || msgs.last.text != _messages.last.text;
+    }
+
+    if (hasChanged) {
       setState(() {
         _messages = msgs;
       });
@@ -109,13 +114,17 @@ class _DirectChatDetailPageState extends State<DirectChatDetailPage> {
 
     final sentMsg = await _chatService.sendMessage(widget.peerId, text);
 
-    setState(() {
-      _messages.add(sentMsg);
-      if (containsPhone) {
-        _showPhoneAlertBanner = true;
-      }
-    });
-    _scrollToBottom();
+    if (mounted) {
+      setState(() {
+        if (!_messages.any((m) => m.id == sentMsg.id)) {
+          _messages.add(sentMsg);
+        }
+        if (containsPhone) {
+          _showPhoneAlertBanner = true;
+        }
+      });
+      _scrollToBottom();
+    }
 
     if (containsPhone && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

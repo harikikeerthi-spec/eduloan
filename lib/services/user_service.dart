@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_document.dart';
 import 'api_config.dart';
 import 'api_client.dart';
+import 'auth_service.dart';
 import 'secure_storage_service.dart';
 
 class UserService {
@@ -42,6 +43,11 @@ class UserService {
 
   static Future<List<UserDocument>> getUserDocuments() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('user_email');
+      if (AuthService.isReviewerEmail(userEmail)) {
+        return [];
+      }
       final token = await _getToken();
       if (token == null) return [];
       final userId = await _getUserId();

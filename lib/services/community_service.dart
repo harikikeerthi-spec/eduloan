@@ -18,8 +18,36 @@ class CommunityService {
     };
   }
 
+  bool _isReviewerToken(String? token) {
+    return token != null && token.startsWith('demo_jwt_reviewer_');
+  }
+
   /// Helper for GET requests
   Future<dynamic> _getRequest(String endpoint, {bool isRetry = false}) async {
+    final token = await SecureStorageService.getToken();
+    if (_isReviewerToken(token)) {
+      if (endpoint.contains('posts') || endpoint.contains('feed')) {
+        return {
+          'success': true,
+          'data': [
+            {
+              '_id': 'demo_post_1',
+              'title': 'Tips for US Visa & Education Loan Process',
+              'content':
+                  'Always ensure your loan sanction letter aligns with your I-20 financial requirements.',
+              'authorName': 'Vidyaloans Advisor',
+              'authorEmail': 'advisor@vidyaloans.in',
+              'category': 'Visa Guidance',
+              'likesCount': 15,
+              'repliesCount': 3,
+              'createdAt': DateTime.now().toIso8601String(),
+            }
+          ],
+        };
+      }
+      return {'success': true, 'data': []};
+    }
+
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -53,6 +81,11 @@ class CommunityService {
     Map<String, dynamic> body, {
     bool isRetry = false,
   }) async {
+    final token = await SecureStorageService.getToken();
+    if (_isReviewerToken(token)) {
+      return {'success': true, 'message': 'Success', 'data': {}};
+    }
+
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');
@@ -85,6 +118,11 @@ class CommunityService {
     String endpoint, {
     bool isRetry = false,
   }) async {
+    final token = await SecureStorageService.getToken();
+    if (_isReviewerToken(token)) {
+      return {'success': true, 'message': 'Deleted successfully'};
+    }
+
     final headers = await _getHeaders();
     final baseUrl = await ApiConfig.getBaseUrl();
     final url = Uri.parse('$baseUrl$endpoint');

@@ -15,11 +15,8 @@ class GoogleAuthService {
   /// Handles Google Sign-In and returns the Firebase User
   Future<User?> signInWithGoogle() async {
     try {
-      // Force account picker to appear every time by clearing any cached session
+      // Force account picker to appear by clearing previous local session
       await _googleSignIn.signOut().catchError(
-        (_) => null as GoogleSignInAccount?,
-      );
-      await _googleSignIn.disconnect().catchError(
         (_) => null as GoogleSignInAccount?,
       );
 

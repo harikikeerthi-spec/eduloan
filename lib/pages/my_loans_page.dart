@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/permission_service.dart';
 import '../services/pdf_generator_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 import '../services/language_service.dart';
 
 class MyLoansPage extends StatefulWidget {
@@ -148,6 +150,20 @@ class _MyLoansPageState extends State<MyLoansPage> {
     }
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('user_email');
+      if (AuthService.isReviewerEmail(userEmail)) {
+        if (mounted) {
+          setState(() {
+            _loans = [];
+            _hasUploadedDocs = false;
+            _isLoading = false;
+            _error = null;
+          });
+        }
+        return;
+      }
+
       final loans = await _loanService.getUserLoans();
       final bool allDocsAcceptedByStaff =
           await PdfGeneratorService.isEveryDocumentUploaded();

@@ -10,6 +10,7 @@ import '../services/notification_service.dart';
 import '../services/ai_logic_service.dart';
 import '../widgets/mesh_background.dart';
 import 'direct_chat_detail_page.dart';
+import '../services/direct_chat_service.dart';
 import '../services/language_service.dart';
 
 class ForumPage extends StatefulWidget {
@@ -2816,6 +2817,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
       return {
         'id': m['id'],
         'sender': sender,
+        'senderId': m['senderId'] ?? m['userId'] ?? '',
         'avatarLetter':
             m['avatarLetter'] ??
             (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
@@ -2923,6 +2925,7 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
           return {
             'id': m['id'],
             'sender': sender,
+            'senderId': m['senderId'] ?? m['userId'] ?? '',
             'avatarLetter':
                 m['avatarLetter'] ??
                 (sender.isNotEmpty ? sender[0].toUpperCase() : 'S'),
@@ -3123,9 +3126,11 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
     });
 
     try {
+      final myId = await DirectChatService().getMyUserId();
       final msgPayload = {
         'id': tempMsg['id'],
         'sender': _mySenderName,
+        'senderId': myId,
         'avatarLetter': tempMsg['avatarLetter'],
         'colorHex': '#311B92',
         'role': 'Student',
@@ -3847,10 +3852,12 @@ class _SmartChatRoomModalState extends State<_SmartChatRoomModal> {
   ) {
     final senderName = msg['sender'] as String? ?? 'Student Member';
     final role = msg['role'] as String? ?? 'Student';
-    final avatarLetter = msg['avatarLetter'] as String? ?? senderName[0];
+    final avatarLetter = msg['avatarLetter'] as String? ?? (senderName.isNotEmpty ? senderName[0] : 'S');
     final color = (msg['color'] as Color?) ?? const Color(0xFF311B92);
-    final peerId =
-        'peer_${senderName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
+    final senderId = msg['senderId']?.toString() ?? '';
+    final peerId = senderId.isNotEmpty
+        ? senderId
+        : 'user_${senderName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}';
 
     showModalBottomSheet(
       context: context,

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/loan.dart';
 import 'api_config.dart';
 import 'api_client.dart';
+import 'auth_service.dart';
 
 class LoanService {
   Future<Loan> createLoan({
@@ -106,6 +107,12 @@ class LoanService {
 
   Future<List<Loan>> getUserLoans({bool isRetry = false}) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final userEmail = prefs.getString('user_email');
+      if (AuthService.isReviewerEmail(userEmail)) {
+        return [];
+      }
+
       final baseUrl = await ApiConfig.getBaseUrl();
       final response = await ApiClient.get(
         Uri.parse('$baseUrl/applications/my'),
